@@ -8,3 +8,4 @@
 export { buildApplication, type ApplicationBuilderOptions, type ApplicationBuilderOutput, } from './builders/application';
 export { type BuildOutputFile, BuildOutputFileType } from './tools/esbuild/bundler-context';
 export type { BuildOutputAsset } from './tools/esbuild/bundler-execution-result';
+export { executeDevServerBuilder, DevServerBuilderOptions, DevServerBuilderOutput, } from './builders/dev-server';

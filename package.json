@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "18.0.0-next.3+sha-c4cd1ed",
+  "version": "18.0.0-next.3+sha-4ffe07a",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -23,15 +23,17 @@
   "builders": "builders.json",
   "dependencies": {
     "@ampproject/remapping": "2.3.0",
-    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#c4cd1ed",
+    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#4ffe07a",
     "@babel/core": "7.24.4",
     "@babel/helper-annotate-as-pure": "7.22.5",
     "@babel/helper-split-export-declaration": "7.22.6",
+    "@vitejs/plugin-basic-ssl": "1.1.0",
     "browserslist": "^4.23.0",
     "critters": "0.0.22",
     "esbuild": "0.20.2",
     "fast-glob": "3.3.2",
     "https-proxy-agent": "7.0.4",
+    "inquirer": "9.2.19",
     "less": "4.2.0",
     "magic-string": "0.30.10",
     "mrmime": "2.0.0",
@@ -42,6 +44,7 @@
     "sass": "1.75.0",
     "semver": "7.6.0",
     "undici": "6.13.0",
+    "vite": "5.2.10",
     "watchpack": "2.4.1"
   },
   "peerDependencies": {

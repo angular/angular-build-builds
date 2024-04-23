@@ -24,3 +24,4 @@ Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./normalize-asset-patterns"), exports);
 __exportStar(require("./normalize-optimization"), exports);
 __exportStar(require("./normalize-source-maps"), exports);
+__exportStar(require("./load-proxy-config"), exports);
