@@ -50,7 +50,26 @@ exports.LessStylesheetLanguage = Object.freeze({
     },
 });
 async function compileString(data, filename, options, resolver, unsafeInlineJavaScript) {
-    const less = (lessPreprocessor ??= (await Promise.resolve().then(() => __importStar(require('less')))).default);
+    try {
+        lessPreprocessor ??= (await Promise.resolve().then(() => __importStar(require('less')))).default;
+    }
+    catch {
+        return {
+            errors: [
+                {
+                    text: 'Unable to load the "less" stylesheet preprocessor.',
+                    location: null,
+                    notes: [
+                        {
+                            text: 'Ensure that the "less" Node.js package is installed within the project. ' +
+                                "If not present, installation via the project's package manager should resolve the error.",
+                        },
+                    ],
+                },
+            ],
+        };
+    }
+    const less = lessPreprocessor;
     const resolverPlugin = {
         install({ FileManager }, pluginManager) {
             const resolverFileManager = new (class extends FileManager {
