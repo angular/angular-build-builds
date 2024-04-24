@@ -45,8 +45,8 @@ async function initialize(initialOptions, projectName, context) {
     await (0, internal_1.purgeStaleBuildCache)(context);
     const normalizedOptions = await (0, options_1.normalizeOptions)(context, projectName, initialOptions);
     const builderName = await context.getBuilderNameForTarget(normalizedOptions.buildTarget);
-    if (!normalizedOptions.disableHostCheck &&
-        !/^127\.\d+\.\d+\.\d+/g.test(normalizedOptions.host) &&
+    if (!/^127\.\d+\.\d+\.\d+/g.test(normalizedOptions.host) &&
+        normalizedOptions.host !== '::1' &&
         normalizedOptions.host !== 'localhost') {
         context.logger.warn(`
 Warning: This is a simple server for use in testing or debugging Angular applications
@@ -54,13 +54,8 @@ locally. It hasn't been reviewed for security issues.
 
 Binding this server to an open connection can result in compromising your application or
 computer. Using a different host than the one passed to the "--host" flag might result in
-websocket connection issues. You might need to use "--disable-host-check" if that's the
-case.
+websocket connection issues.
     `);
-    }
-    if (normalizedOptions.disableHostCheck) {
-        context.logger.warn('Warning: Running a server with --disable-host-check is a security risk. ' +
-            'See https://medium.com/webpack/webpack-dev-server-middleware-security-issues-1489d950874a for more information.');
     }
     normalizedOptions.port = await (0, check_port_1.checkPort)(normalizedOptions.port, normalizedOptions.host);
     return {

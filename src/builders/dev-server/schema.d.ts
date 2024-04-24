@@ -3,33 +3,11 @@
  */
 export interface Schema {
     /**
-     * List of hosts that are allowed to access the dev server. This option has no effect when
-     * using the 'application' or other esbuild-based builders.
-     */
-    allowedHosts?: string[];
-    /**
-     * A browser builder target to serve in the format of `project:target[:configuration]`. You
-     * can also pass in more than one configuration name as a comma-separated list. Example:
-     * `project:target:production,staging`.
-     * @deprecated Use 'buildTarget' instead.
-     */
-    browserTarget?: string;
-    /**
      * A build builder target to serve in the format of `project:target[:configuration]`. You
      * can also pass in more than one configuration name as a comma-separated list. Example:
      * `project:target:production,staging`.
      */
-    buildTarget?: string;
-    /**
-     * Don't verify connected clients are part of allowed hosts. This option has no effect when
-     * using the 'application' or other esbuild-based builders.
-     */
-    disableHostCheck?: boolean;
-    /**
-     * Force the development server to use the 'browser-esbuild' builder when building. This is
-     * a developer preview option for the esbuild-based build system.
-     */
-    forceEsbuild?: boolean;
+    buildTarget: string;
     /**
      * Custom HTTP headers to be added to all responses.
      */
@@ -62,8 +40,7 @@ export interface Schema {
     port?: number;
     /**
      * Enable and control the Vite-based development server's prebundling capabilities. To
-     * enable prebundling, the Angular CLI cache must also be enabled. This option has no effect
-     * when using the 'browser' or other Webpack-based builders.
+     * enable prebundling, the Angular CLI cache must also be enabled.
      */
     prebundle?: PrebundleUnion;
     /**
@@ -71,13 +48,6 @@ export interface Schema {
      * https://angular.io/guide/build#proxying-to-a-backend-server.
      */
     proxyConfig?: string;
-    /**
-     * The URL that the browser client (or live-reload client, if enabled) should use to connect
-     * to the development server. Use for a complex dev server setup, such as one with reverse
-     * proxies. This option has no effect when using the 'application' or other esbuild-based
-     * builders.
-     */
-    publicHost?: string;
     /**
      * The pathname where the application will be served.
      */
@@ -105,8 +75,7 @@ export interface Schema {
 }
 /**
  * Enable and control the Vite-based development server's prebundling capabilities. To
- * enable prebundling, the Angular CLI cache must also be enabled. This option has no effect
- * when using the 'browser' or other Webpack-based builders.
+ * enable prebundling, the Angular CLI cache must also be enabled.
  */
 export type PrebundleUnion = boolean | PrebundleClass;
 export interface PrebundleClass {

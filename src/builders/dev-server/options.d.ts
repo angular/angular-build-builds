@@ -34,14 +34,10 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     workspaceRoot: string;
     projectRoot: string;
     cacheOptions: import("../../utils/normalize-cache").NormalizedCachedOptions;
-    allowedHosts: string[] | undefined;
-    disableHostCheck: boolean | undefined;
     proxyConfig: string | undefined;
     servePath: string | undefined;
-    publicHost: string | undefined;
     ssl: boolean | undefined;
     sslCert: string | undefined;
     sslKey: string | undefined;
-    forceEsbuild: boolean | undefined;
     prebundle: import("./schema").PrebundleUnion;
 }>;
