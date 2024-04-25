@@ -12,6 +12,23 @@ const node_crypto_1 = require("node:crypto");
 const node_path_1 = require("node:path");
 const load_esm_1 = require("../load-esm");
 const html_rewriting_stream_1 = require("./html-rewriting-stream");
+/** A list of valid self closing HTML elements */
+const VALID_SELF_CLOSING_TAGS = new Set([
+    'area',
+    'base',
+    'br',
+    'col',
+    'embed',
+    'hr',
+    'img',
+    'input',
+    'link',
+    'meta',
+    'param',
+    'source',
+    'track',
+    'wbr',
+]);
 /*
  * Helper function used by the IndexHtmlWebpackPlugin.
  * Can also be directly used by builder, e. g. in order to generate an index.html
@@ -120,7 +137,7 @@ async function augmentIndexHtml(params) {
     const baseTagExists = html.includes('<base');
     const foundPreconnects = new Set();
     rewriter
-        .on('startTag', (tag) => {
+        .on('startTag', (tag, rawTagHtml) => {
         switch (tag.tagName) {
             case 'html':
                 // Adjust document locale if specified
@@ -153,6 +170,11 @@ async function augmentIndexHtml(params) {
                     }
                 }
                 break;
+            default:
+                if (tag.selfClosing && !VALID_SELF_CLOSING_TAGS.has(tag.tagName)) {
+                    errors.push(`Invalid self-closing element in index HTML file: '${rawTagHtml}'.`);
+                    return;
+                }
         }
         rewriter.emitStartTag(tag);
     })
