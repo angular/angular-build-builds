@@ -334,7 +334,7 @@ function transformSupportedBrowsersToTargets(supportedBrowsers) {
     return transformed;
 }
 exports.transformSupportedBrowsersToTargets = transformSupportedBrowsersToTargets;
-const SUPPORTED_NODE_VERSIONS = '^18.19.1 || >=20.11.1';
+const SUPPORTED_NODE_VERSIONS = '^18.19.1 || ^20.11.1 || >=22.0.0';
 /**
  * Transform supported Node.js versions to esbuild target.
  * @see https://esbuild.github.io/api/#target
