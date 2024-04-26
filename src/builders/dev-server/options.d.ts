@@ -39,5 +39,5 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     ssl: boolean | undefined;
     sslCert: string | undefined;
     sslKey: string | undefined;
-    prebundle: import("./schema").PrebundleUnion | undefined;
+    prebundle: import("./schema").PrebundleUnion;
 }>;
