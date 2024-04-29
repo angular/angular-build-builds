@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "18.0.0-next.5+sha-940e382",
+  "version": "18.0.0-next.5+sha-b329103",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -23,7 +23,7 @@
   "builders": "builders.json",
   "dependencies": {
     "@ampproject/remapping": "2.3.0",
-    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#940e382",
+    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#b329103",
     "@babel/core": "7.24.4",
     "@babel/helper-annotate-as-pure": "7.22.5",
     "@babel/helper-split-export-declaration": "7.22.6",
@@ -34,7 +34,7 @@
     "esbuild": "0.20.2",
     "fast-glob": "3.3.2",
     "https-proxy-agent": "7.0.4",
-    "inquirer": "9.2.19",
+    "inquirer": "9.2.20",
     "magic-string": "0.30.10",
     "mrmime": "2.0.0",
     "ora": "5.4.1",
