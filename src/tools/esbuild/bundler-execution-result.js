@@ -23,6 +23,7 @@ class ExecutionResult {
     warnings = [];
     logs = [];
     externalMetadata;
+    extraWatchFiles = [];
     constructor(rebuildContexts, codeBundleCache) {
         this.rebuildContexts = rebuildContexts;
         this.codeBundleCache = codeBundleCache;
@@ -103,7 +104,7 @@ class ExecutionResult {
             // Load result caches internally normalize file dependencies
             files.push(...this.codeBundleCache.loadResultCache.watchFiles);
         }
-        return files;
+        return files.concat(this.extraWatchFiles);
     }
     createRebuildState(fileChanges) {
         this.codeBundleCache?.invalidate([...fileChanges.modified, ...fileChanges.removed]);

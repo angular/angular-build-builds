@@ -92,6 +92,10 @@ async function executeBuild(options, context, rebuildState) {
     if (options.extractLicenses) {
         executionResult.addOutputFile('3rdpartylicenses.txt', await (0, license_extractor_1.extractLicenses)(metafile, workspaceRoot), bundler_context_1.BuildOutputFileType.Root);
     }
+    // Watch input index HTML file if configured
+    if (options.indexHtmlOptions) {
+        executionResult.extraWatchFiles.push(options.indexHtmlOptions.input);
+    }
     // Perform i18n translation inlining if enabled
     if (i18nOptions.shouldInline) {
         const result = await (0, i18n_1.inlineI18n)(options, executionResult, initialFiles);
