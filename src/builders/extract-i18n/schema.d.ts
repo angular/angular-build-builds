@@ -7,7 +7,7 @@ export interface Schema {
      * `project:target[:configuration]`. You can also pass in more than one configuration name
      * as a comma-separated list. Example: `project:target:production,staging`.
      */
-    buildTarget: string;
+    buildTarget?: string;
     /**
      * Output format for the generated file.
      */
