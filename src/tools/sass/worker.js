@@ -38,14 +38,14 @@ node_worker_threads_1.parentPort.on('message', (message) => {
             // functions combined with the shared memory `importSignal` and the Node.js
             // `receiveMessageOnPort` function are used to ensure synchronous behavior.
             const proxyImporter = {
-                findFileUrl: (url, options) => {
+                findFileUrl: (url, { fromImport, containingUrl }) => {
                     Atomics.store(importerSignal, 0, 0);
                     workerImporterPort.postMessage({
                         id,
                         url,
                         options: {
-                            ...options,
-                            containingUrl: options.containingUrl ? (0, node_url_1.fileURLToPath)(options.containingUrl) : null,
+                            fromImport,
+                            containingUrl: containingUrl ? (0, node_url_1.fileURLToPath)(containingUrl) : null,
                         },
                     });
                     Atomics.wait(importerSignal, 0, 0);
