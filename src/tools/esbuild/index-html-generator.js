@@ -15,6 +15,11 @@ const node_assert_1 = __importDefault(require("node:assert"));
 const node_path_1 = __importDefault(require("node:path"));
 const index_html_generator_1 = require("../../utils/index-file/index-html-generator");
 const bundler_context_1 = require("./bundler-context");
+/**
+ * The maximum number of module preload link elements that should be added for
+ * initial scripts.
+ */
+const MODULE_PRELOAD_MAX = 3;
 async function generateIndexHtml(initialFiles, outputFiles, buildOptions, lang) {
     // Analyze metafile for initial link-based hints.
     // Skip if the internal externalPackages option is enabled since this option requires
@@ -23,12 +28,18 @@ async function generateIndexHtml(initialFiles, outputFiles, buildOptions, lang) 
     const { indexHtmlOptions, externalPackages, optimizationOptions, crossOrigin, subresourceIntegrity, baseHref, } = buildOptions;
     (0, node_assert_1.default)(indexHtmlOptions, 'indexHtmlOptions cannot be undefined.');
     if (!externalPackages && indexHtmlOptions.preloadInitial) {
+        let modulePreloadCount = 0;
         for (const [key, value] of initialFiles) {
             if (value.entrypoint || value.serverFile) {
                 // Entry points are already referenced in the HTML
                 continue;
             }
-            if (value.type === 'script') {
+            // Only add shallow preloads
+            if (value.depth > 1) {
+                continue;
+            }
+            if (value.type === 'script' && modulePreloadCount < MODULE_PRELOAD_MAX) {
+                modulePreloadCount++;
                 hints.push({ url: key, mode: 'modulepreload' });
             }
             else if (value.type === 'style') {

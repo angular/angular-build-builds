@@ -233,6 +233,7 @@ class BundlerContext {
                         type,
                         entrypoint: true,
                         serverFile: this.#platformIsServer,
+                        depth: 0,
                     };
                     if (!this.initialFilter || this.initialFilter(record)) {
                         initialFiles.set(relativeFilePath, record);
@@ -241,10 +242,17 @@ class BundlerContext {
             }
         }
         // Analyze for transitive initial files
-        const files = [...initialFiles.keys()];
-        for (const file of files) {
-            for (const initialImport of result.metafile.outputs[file].imports) {
-                if (initialFiles.has(initialImport.path)) {
+        const entriesToAnalyze = [...initialFiles];
+        let currentEntry;
+        while ((currentEntry = entriesToAnalyze.pop())) {
+            const [entryPath, entryRecord] = currentEntry;
+            for (const initialImport of result.metafile.outputs[entryPath].imports) {
+                const existingRecord = initialFiles.get(initialImport.path);
+                if (existingRecord) {
+                    // Store the smallest value depth
+                    if (existingRecord.depth > entryRecord.depth + 1) {
+                        existingRecord.depth = entryRecord.depth + 1;
+                    }
                     continue;
                 }
                 if (initialImport.kind === 'import-statement' || initialImport.kind === 'import-rule') {
@@ -253,12 +261,13 @@ class BundlerContext {
                         entrypoint: false,
                         external: initialImport.external,
                         serverFile: this.#platformIsServer,
+                        depth: entryRecord.depth + 1,
                     };
                     if (!this.initialFilter || this.initialFilter(record)) {
                         initialFiles.set(initialImport.path, record);
                     }
                     if (!initialImport.external) {
-                        files.push(initialImport.path);
+                        entriesToAnalyze.push([initialImport.path, record]);
                     }
                 }
             }
