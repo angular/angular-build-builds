@@ -68,22 +68,27 @@ async function renderPage({ route, serverContext, document, inlineCriticalCss, o
             },
         },
     ];
-    let html;
     (0, node_assert_1.default)(bootstrapAppFnOrModule, 'The file "./main.server.mjs" does not have a default export for an AppServerModule or a bootstrapping function.');
+    let renderAppPromise;
     if (isBootstrapFn(bootstrapAppFnOrModule)) {
-        html = await renderApplication(bootstrapAppFnOrModule, {
+        renderAppPromise = renderApplication(bootstrapAppFnOrModule, {
             document,
             url: route,
             platformProviders,
         });
     }
     else {
-        html = await renderModule(bootstrapAppFnOrModule, {
+        renderAppPromise = renderModule(bootstrapAppFnOrModule, {
             document,
             url: route,
             extraProviders: platformProviders,
         });
     }
+    // The below should really handled by the framework!!!.
+    // See: https://github.com/angular/angular/issues/51549
+    let timer;
+    const renderingTimeout = new Promise((_, reject) => (timer = setTimeout(() => reject(new Error(`Page ${new URL(route, 'resolve://').pathname} did not render in 30 seconds.`)), 30_000)));
+    const html = await Promise.race([renderAppPromise, renderingTimeout]).finally(() => clearTimeout(timer));
     if (inlineCriticalCss) {
         const { InlineCriticalCssProcessor } = await Promise.resolve().then(() => __importStar(require('../../utils/index-file/inline-critical-css')));
         const inlineCriticalCssProcessor = new InlineCriticalCssProcessor({
