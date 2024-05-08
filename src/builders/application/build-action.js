@@ -136,6 +136,8 @@ async function* runEsBuildBuildAction(action, options) {
             if (verbose) {
                 logger.info(changes.toDebugString());
             }
+            // Clear removed files from current watch files
+            changes.removed.forEach((removedPath) => currentWatchFiles.delete(removedPath));
             result = await withProgress('Changes detected. Rebuilding...', () => action(result.createRebuildState(changes)));
             // Log all diagnostic (error/warning/logs) messages
             await (0, utils_1.logMessages)(logger, result, colors, jsonLogs);
