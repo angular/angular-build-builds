@@ -15,6 +15,7 @@ const magic_string_1 = __importDefault(require("magic-string"));
 const node_fs_1 = require("node:fs");
 const node_path_1 = require("node:path");
 const node_url_1 = require("node:url");
+const error_1 = require("../../utils/error");
 const lexer_1 = require("./lexer");
 /**
  * Ensures that a bare specifier URL path that is intended to be treated as
@@ -195,8 +196,15 @@ class RelativeUrlRebasingImporter extends UrlRebasingImporter {
             try {
                 entries = (0, node_fs_1.readdirSync)(directory, { withFileTypes: true });
             }
-            catch {
-                return null;
+            catch (error) {
+                (0, error_1.assertIsError)(error);
+                // If the containing directory does not exist return null to indicate it cannot be resolved
+                if (error.code === 'ENOENT') {
+                    return null;
+                }
+                throw new Error(`Error reading directory ["${directory}"] while resolving Sass import`, {
+                    cause: error,
+                });
             }
             foundDefaults = [];
             foundImports = [];
@@ -205,7 +213,7 @@ class RelativeUrlRebasingImporter extends UrlRebasingImporter {
                 let isDirectory;
                 let isFile;
                 if (entry.isSymbolicLink()) {
-                    const stats = (0, node_fs_1.statSync)((0, node_path_1.join)(entry.path, entry.name));
+                    const stats = (0, node_fs_1.statSync)((0, node_path_1.join)(directory, entry.name));
                     isDirectory = stats.isDirectory();
                     isFile = stats.isFile();
                 }
