@@ -6,12 +6,64 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.io/license
  */
+var __addDisposableResource = (this && this.__addDisposableResource) || function (env, value, async) {
+    if (value !== null && value !== void 0) {
+        if (typeof value !== "object" && typeof value !== "function") throw new TypeError("Object expected.");
+        var dispose;
+        if (async) {
+            if (!Symbol.asyncDispose) throw new TypeError("Symbol.asyncDispose is not defined.");
+            dispose = value[Symbol.asyncDispose];
+        }
+        if (dispose === void 0) {
+            if (!Symbol.dispose) throw new TypeError("Symbol.dispose is not defined.");
+            dispose = value[Symbol.dispose];
+        }
+        if (typeof dispose !== "function") throw new TypeError("Object not disposable.");
+        env.stack.push({ value: value, dispose: dispose, async: async });
+    }
+    else if (async) {
+        env.stack.push({ async: true });
+    }
+    return value;
+};
+var __disposeResources = (this && this.__disposeResources) || (function (SuppressedError) {
+    return function (env) {
+        function fail(e) {
+            env.error = env.hasError ? new SuppressedError(e, env.error, "An error was suppressed during disposal.") : e;
+            env.hasError = true;
+        }
+        function next() {
+            while (env.stack.length) {
+                var rec = env.stack.pop();
+                try {
+                    var result = rec.dispose && rec.dispose.call(rec.value);
+                    if (rec.async) return Promise.resolve(result).then(next, function(e) { fail(e); return next(); });
+                }
+                catch (e) {
+                    fail(e);
+                }
+            }
+            if (env.hasError) throw env.error;
+        }
+        return next();
+    };
+})(typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
+    var e = new Error(message);
+    return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+});
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SassWorkerImplementation = void 0;
-const node_path_1 = require("node:path");
+const node_assert_1 = __importDefault(require("node:assert"));
 const node_url_1 = require("node:url");
 const node_worker_threads_1 = require("node:worker_threads");
+const piscina_1 = require("piscina");
 const environment_options_1 = require("../../utils/environment-options");
+// Polyfill Symbol.dispose if not present
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+Symbol.dispose ??= Symbol('Symbol Dispose');
 /**
  * The maximum number of Workers that will be created to execute render requests.
  */
@@ -24,14 +76,22 @@ const MAX_RENDER_WORKERS = environment_options_1.maxWorkers;
  */
 class SassWorkerImplementation {
     rebase;
-    workers = [];
-    availableWorkers = [];
-    requests = new Map();
-    workerPath = (0, node_path_1.join)(__dirname, './worker.js');
-    idCounter = 1;
-    nextWorkerIndex = 0;
-    constructor(rebase = false) {
+    maxThreads;
+    #workerPool;
+    constructor(rebase = false, maxThreads = MAX_RENDER_WORKERS) {
         this.rebase = rebase;
+        this.maxThreads = maxThreads;
+    }
+    #ensureWorkerPool() {
+        this.#workerPool ??= new piscina_1.Piscina({
+            filename: require.resolve('./worker'),
+            minThreads: 1,
+            maxThreads: this.maxThreads,
+            // Shutdown idle threads after 1 second of inactivity
+            idleTimeout: 1000,
+            recordTiming: false,
+        });
+        return this.#workerPool;
     }
     /**
      * Provides information about the Sass implementation.
@@ -52,49 +112,20 @@ class SassWorkerImplementation {
      * @param source The contents to compile.
      * @param options The `dart-sass` options to use when rendering the stylesheet.
      */
-    compileStringAsync(source, options) {
-        // The `functions`, `logger` and `importer` options are JavaScript functions that cannot be transferred.
-        // If any additional function options are added in the future, they must be excluded as well.
-        const { functions, importers, url, logger, ...serializableOptions } = options;
-        // The CLI's configuration does not use or expose the ability to defined custom Sass functions
-        if (functions && Object.keys(functions).length > 0) {
-            throw new Error('Sass custom functions are not supported.');
-        }
-        return new Promise((resolve, reject) => {
-            let workerIndex = this.availableWorkers.pop();
-            if (workerIndex === undefined) {
-                if (this.workers.length < MAX_RENDER_WORKERS) {
-                    workerIndex = this.workers.length;
-                    this.workers.push(this.createWorker());
-                }
-                else {
-                    workerIndex = this.nextWorkerIndex++;
-                    if (this.nextWorkerIndex >= this.workers.length) {
-                        this.nextWorkerIndex = 0;
-                    }
-                }
+    async compileStringAsync(source, options) {
+        const env_1 = { stack: [], error: void 0, hasError: false };
+        try {
+            // The `functions`, `logger` and `importer` options are JavaScript functions that cannot be transferred.
+            // If any additional function options are added in the future, they must be excluded as well.
+            const { functions, importers, url, logger, ...serializableOptions } = options;
+            // The CLI's configuration does not use or expose the ability to define custom Sass functions
+            if (functions && Object.keys(functions).length > 0) {
+                throw new Error('Sass custom functions are not supported.');
             }
-            const callback = (error, result) => {
-                if (error) {
-                    const url = error.span?.url;
-                    if (url) {
-                        error.span.url = (0, node_url_1.pathToFileURL)(url);
-                    }
-                    reject(error);
-                    return;
-                }
-                if (!result) {
-                    reject(new Error('No result.'));
-                    return;
-                }
-                resolve(result);
-            };
-            const request = this.createRequest(workerIndex, callback, logger, importers);
-            this.requests.set(request.id, request);
-            this.workers[workerIndex].postMessage({
-                id: request.id,
+            const importerChannel = __addDisposableResource(env_1, importers?.length ? this.#createImporterChannel(importers) : undefined, false);
+            const response = (await this.#ensureWorkerPool().run({
                 source,
-                hasImporter: !!importers?.length,
+                importerChannel,
                 hasLogger: !!logger,
                 rebase: this.rebase,
                 options: {
@@ -102,39 +133,13 @@ class SassWorkerImplementation {
                     // URL is not serializable so to convert to string here and back to URL in the worker.
                     url: url ? (0, node_url_1.fileURLToPath)(url) : undefined,
                 },
-            });
-        });
-    }
-    /**
-     * Shutdown the Sass render worker.
-     * Executing this method will stop any pending render requests.
-     */
-    close() {
-        for (const worker of this.workers) {
-            try {
-                void worker.terminate();
-            }
-            catch { }
-        }
-        this.requests.clear();
-    }
-    createWorker() {
-        const { port1: mainImporterPort, port2: workerImporterPort } = new node_worker_threads_1.MessageChannel();
-        const importerSignal = new Int32Array(new SharedArrayBuffer(4));
-        const worker = new node_worker_threads_1.Worker(this.workerPath, {
-            workerData: { workerImporterPort, importerSignal },
-            transferList: [workerImporterPort],
-        });
-        worker.on('message', (response) => {
-            const request = this.requests.get(response.id);
-            if (!request) {
-                return;
-            }
-            this.requests.delete(response.id);
-            this.availableWorkers.push(request.workerIndex);
-            if (response.warnings && request.logger?.warn) {
-                for (const { message, span, ...options } of response.warnings) {
-                    request.logger.warn(message, {
+            }, {
+                transferList: importerChannel ? [importerChannel.port] : undefined,
+            }));
+            const { result, error, warnings } = response;
+            if (warnings && logger?.warn) {
+                for (const { message, span, ...options } of warnings) {
+                    logger.warn(message, {
                         ...options,
                         span: span && {
                             ...span,
@@ -143,26 +148,49 @@ class SassWorkerImplementation {
                     });
                 }
             }
-            if (response.result) {
-                request.callback(undefined, {
-                    ...response.result,
-                    // URL is not serializable so in the worker we convert to string and here back to URL.
-                    loadedUrls: response.result.loadedUrls.map((p) => (0, node_url_1.pathToFileURL)(p)),
-                });
+            if (error) {
+                // Convert stringified url value required for cloning back to a URL object
+                const url = error.span?.url;
+                if (url) {
+                    error.span.url = (0, node_url_1.pathToFileURL)(url);
+                }
+                throw error;
             }
-            else {
-                request.callback(response.error);
+            (0, node_assert_1.default)(result, 'Sass render worker should always return a result or an error');
+            return {
+                ...result,
+                // URL is not serializable so in the worker we convert to string and here back to URL.
+                loadedUrls: result.loadedUrls.map((p) => (0, node_url_1.pathToFileURL)(p)),
+            };
+        }
+        catch (e_1) {
+            env_1.error = e_1;
+            env_1.hasError = true;
+        }
+        finally {
+            __disposeResources(env_1);
+        }
+    }
+    /**
+     * Shutdown the Sass render worker.
+     * Executing this method will stop any pending render requests.
+     * @returns A void promise that resolves when closing is complete.
+     */
+    async close() {
+        if (this.#workerPool) {
+            try {
+                await this.#workerPool.destroy();
             }
-        });
-        mainImporterPort.on('message', ({ id, url, options }) => {
-            const request = this.requests.get(id);
-            if (!request?.importers) {
-                mainImporterPort.postMessage(null);
-                Atomics.store(importerSignal, 0, 1);
-                Atomics.notify(importerSignal, 0);
-                return;
+            finally {
+                this.#workerPool = undefined;
             }
-            this.processImporters(request.importers, url, {
+        }
+    }
+    #createImporterChannel(importers) {
+        const { port1: mainImporterPort, port2: workerImporterPort } = new node_worker_threads_1.MessageChannel();
+        const importerSignal = new Int32Array(new SharedArrayBuffer(4));
+        mainImporterPort.on('message', ({ url, options }) => {
+            this.processImporters(importers, url, {
                 ...options,
                 // URL is not serializable so in the worker we convert to string and here back to URL.
                 containingUrl: options.containingUrl
@@ -181,7 +209,13 @@ class SassWorkerImplementation {
             });
         });
         mainImporterPort.unref();
-        return worker;
+        return {
+            port: workerImporterPort,
+            signal: importerSignal,
+            [Symbol.dispose]() {
+                mainImporterPort.close();
+            },
+        };
     }
     async processImporters(importers, url, options) {
         for (const importer of importers) {
@@ -196,15 +230,6 @@ class SassWorkerImplementation {
             }
         }
         return null;
-    }
-    createRequest(workerIndex, callback, logger, importers) {
-        return {
-            id: this.idCounter++,
-            workerIndex,
-            callback,
-            logger,
-            importers,
-        };
     }
     isFileImporter(value) {
         return 'findFileUrl' in value;

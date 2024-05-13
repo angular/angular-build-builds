@@ -5,7 +5,7 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.io/license
  */
-import { CompileResult, Deprecation, SourceSpan, StringOptions } from 'sass';
+import type { CompileResult, Deprecation, SourceSpan, StringOptions } from 'sass';
 export interface SerializableVersion {
     major: number;
     minor: number;
@@ -36,14 +36,10 @@ export type SerializableWarningMessage = ({
  * the worker which can be up to two times faster than the asynchronous variant.
  */
 export declare class SassWorkerImplementation {
-    private rebase;
-    private readonly workers;
-    private readonly availableWorkers;
-    private readonly requests;
-    private readonly workerPath;
-    private idCounter;
-    private nextWorkerIndex;
-    constructor(rebase?: boolean);
+    #private;
+    private readonly rebase;
+    readonly maxThreads: number;
+    constructor(rebase?: boolean, maxThreads?: number);
     /**
      * Provides information about the Sass implementation.
      * This mimics enough of the `dart-sass` value to be used with the `sass-loader`.
@@ -63,10 +59,9 @@ export declare class SassWorkerImplementation {
     /**
      * Shutdown the Sass render worker.
      * Executing this method will stop any pending render requests.
+     * @returns A void promise that resolves when closing is complete.
      */
-    close(): void;
-    private createWorker;
+    close(): Promise<void>;
     private processImporters;
-    private createRequest;
     private isFileImporter;
 }
