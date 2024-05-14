@@ -41,7 +41,7 @@ function isSassException(error) {
 }
 function shutdownSassWorkerPool() {
     if (sassWorkerPool) {
-        sassWorkerPool.close();
+        void sassWorkerPool.close();
         sassWorkerPool = undefined;
     }
     else if (sassWorkerPoolPromise) {
