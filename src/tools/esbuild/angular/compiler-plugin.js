@@ -38,6 +38,7 @@ const node_assert_1 = __importDefault(require("node:assert"));
 const path = __importStar(require("node:path"));
 const environment_options_1 = require("../../../utils/environment-options");
 const javascript_transformer_1 = require("../javascript-transformer");
+const lmdb_cache_store_1 = require("../lmdb-cache-store");
 const load_result_cache_1 = require("../load-result-cache");
 const profiling_1 = require("../profiling");
 const compilation_1 = require("./compilation");
@@ -54,7 +55,11 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
             let setupWarnings = [];
             const preserveSymlinks = build.initialOptions.preserveSymlinks;
             // Initialize a worker pool for JavaScript transformations
-            const javascriptTransformer = new javascript_transformer_1.JavaScriptTransformer(pluginOptions, environment_options_1.maxWorkers);
+            let cacheStore;
+            if (pluginOptions.sourceFileCache?.persistentCachePath) {
+                cacheStore = new lmdb_cache_store_1.LmbdCacheStore(pluginOptions.sourceFileCache.persistentCachePath + '/angular-compiler.db');
+            }
+            const javascriptTransformer = new javascript_transformer_1.JavaScriptTransformer(pluginOptions, environment_options_1.maxWorkers, cacheStore?.createCache('jstransformer'));
             // Setup defines based on the values used by the Angular compiler-cli
             build.initialOptions.define ??= {};
             build.initialOptions.define['ngI18nClosureMode'] ??= 'false';
