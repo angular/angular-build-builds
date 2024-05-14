@@ -45,7 +45,7 @@ function createCssInlineFontsPlugin({ cache, cacheOptions, }) {
                         errors: [
                             {
                                 text: `Failed to inline external stylesheet '${args.path}'.`,
-                                detail: error,
+                                notes: error instanceof Error ? [{ text: error.toString() }] : undefined,
                             },
                         ],
                     };
