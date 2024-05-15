@@ -22,7 +22,12 @@ function createExternalPackagesPlugin(options) {
     return {
         name: 'angular-external-packages',
         setup(build) {
-            const loaderOptionKeys = build.initialOptions.loader && Object.keys(build.initialOptions.loader);
+            // Find all loader keys that are not using the 'file' loader.
+            // The 'file' loader is automatically handled by Vite and does not need exclusion.
+            const loaderOptionKeys = build.initialOptions.loader &&
+                Object.entries(build.initialOptions.loader)
+                    .filter(([, value]) => value !== 'file')
+                    .map(([key]) => key);
             // Safe to use native packages external option if no loader options or exclusions present
             if (!exclusions && !loaderOptionKeys?.length) {
                 build.initialOptions.packages = 'external';
