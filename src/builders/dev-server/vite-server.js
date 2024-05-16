@@ -189,6 +189,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
             if (!projectName) {
                 throw new Error('The builder requires a target.');
             }
+            context.logger.info('NOTE: Raw file sizes do not reflect development server per-request transformations.');
             const { root = '' } = await context.getProjectMetadata(projectName);
             const projectRoot = (0, node_path_1.join)(context.workspaceRoot, root);
             const browsers = (0, internal_1.getSupportedBrowsers)(projectRoot, context.logger);
