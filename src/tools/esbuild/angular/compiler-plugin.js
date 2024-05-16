@@ -57,7 +57,7 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
             // Initialize a worker pool for JavaScript transformations
             let cacheStore;
             if (pluginOptions.sourceFileCache?.persistentCachePath) {
-                cacheStore = new lmdb_cache_store_1.LmbdCacheStore(pluginOptions.sourceFileCache.persistentCachePath + '/angular-compiler.db');
+                cacheStore = new lmdb_cache_store_1.LmbdCacheStore(path.join(pluginOptions.sourceFileCache.persistentCachePath, 'angular-compiler.db'));
             }
             const javascriptTransformer = new javascript_transformer_1.JavaScriptTransformer(pluginOptions, environment_options_1.maxWorkers, cacheStore?.createCache('jstransformer'));
             // Setup defines based on the values used by the Angular compiler-cli
@@ -325,6 +325,7 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
                 sharedTSCompilationState?.dispose();
                 void stylesheetBundler.dispose();
                 void compilation.close?.();
+                void cacheStore?.close();
             });
             /**
              * Checks if the file has side-effects when `advancedOptimizations` is enabled.
