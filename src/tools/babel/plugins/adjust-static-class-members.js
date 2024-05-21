@@ -216,77 +216,10 @@ function default_1() {
                 const { wrapStatementPaths, hasPotentialSideEffects } = exportDefaultAnalysis.get(classNode) ??
                     analyzeClassSiblings(origin, classNode.id, wrapDecorators);
                 visitedClasses.add(classNode);
-                if (hasPotentialSideEffects) {
-                    return;
-                }
                 // If no statements to wrap, check for static class properties.
-                // Static class properties may be downleveled at later stages in the build pipeline
-                // which results in additional function calls outside the class body. These calls
-                // then cause the class to be referenced and not eligible for removal. Since it is
-                // not known at this stage whether the class needs to be downleveled, the transform
-                // wraps classes preemptively to allow for potential removal within the optimization
-                // stages.
-                if (wrapStatementPaths.length === 0) {
-                    let shouldWrap = false;
-                    for (const element of path.get('body').get('body')) {
-                        if (element.isClassProperty()) {
-                            // Only need to analyze static properties
-                            if (!element.node.static) {
-                                continue;
-                            }
-                            // Check for potential side effects.
-                            // These checks are conservative and could potentially be expanded in the future.
-                            const elementKey = element.get('key');
-                            const elementValue = element.get('value');
-                            if (elementKey.isIdentifier() &&
-                                (!elementValue.isExpression() ||
-                                    canWrapProperty(elementKey.node.name, elementValue))) {
-                                shouldWrap = true;
-                            }
-                            else {
-                                // Not safe to wrap
-                                shouldWrap = false;
-                                break;
-                            }
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        }
-                        else if (element.isStaticBlock()) {
-                            // Only need to analyze static blocks
-                            const body = element.get('body');
-                            if (Array.isArray(body) && body.length > 1) {
-                                // Not safe to wrap
-                                shouldWrap = false;
-                                break;
-                            }
-                            const expression = body.find((n) => n.isExpressionStatement());
-                            const assignmentExpression = expression?.get('expression');
-                            if (assignmentExpression?.isAssignmentExpression()) {
-                                const left = assignmentExpression.get('left');
-                                if (!left.isMemberExpression()) {
-                                    continue;
-                                }
-                                if (!left.get('object').isThisExpression()) {
-                                    // Not safe to wrap
-                                    shouldWrap = false;
-                                    break;
-                                }
-                                const element = left.get('property');
-                                const right = assignmentExpression.get('right');
-                                if (element.isIdentifier() &&
-                                    (!right.isExpression() || canWrapProperty(element.node.name, right))) {
-                                    shouldWrap = true;
-                                }
-                                else {
-                                    // Not safe to wrap
-                                    shouldWrap = false;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    if (!shouldWrap) {
-                        return;
-                    }
+                if (hasPotentialSideEffects ||
+                    (wrapStatementPaths.length === 0 && !analyzeClassStaticProperties(path).shouldWrap)) {
+                    return;
                 }
                 const wrapStatementNodes = [];
                 for (const statementPath of wrapStatementPaths) {
@@ -310,9 +243,7 @@ function default_1() {
             ClassExpression(path, state) {
                 const { node: classNode, parentPath } = path;
                 const { wrapDecorators } = state.opts;
-                // Class expressions are used by TypeScript to represent downlevel class/constructor decorators.
-                // If not wrapping decorators, they do not need to be processed.
-                if (!wrapDecorators || visitedClasses.has(classNode)) {
+                if (visitedClasses.has(classNode)) {
                     return;
                 }
                 if (!parentPath.isVariableDeclarator() || !core_1.types.isIdentifier(parentPath.node.id)) {
@@ -324,7 +255,9 @@ function default_1() {
                 }
                 const { wrapStatementPaths, hasPotentialSideEffects } = analyzeClassSiblings(origin, parentPath.node.id, wrapDecorators);
                 visitedClasses.add(classNode);
-                if (hasPotentialSideEffects || wrapStatementPaths.length === 0) {
+                // If no statements to wrap, check for static class properties.
+                if (hasPotentialSideEffects ||
+                    (wrapStatementPaths.length === 0 && !analyzeClassStaticProperties(path).shouldWrap)) {
                     return;
                 }
                 const wrapStatementNodes = [];
@@ -349,3 +282,69 @@ function default_1() {
     };
 }
 exports.default = default_1;
+/**
+ * Static class properties may be downleveled at later stages in the build pipeline
+ * which results in additional function calls outside the class body. These calls
+ * then cause the class to be referenced and not eligible for removal. Since it is
+ * not known at this stage whether the class needs to be downleveled, the transform
+ * wraps classes preemptively to allow for potential removal within the optimization stages.
+ */
+function analyzeClassStaticProperties(path) {
+    let shouldWrap = false;
+    for (const element of path.get('body').get('body')) {
+        if (element.isClassProperty()) {
+            // Only need to analyze static properties
+            if (!element.node.static) {
+                continue;
+            }
+            // Check for potential side effects.
+            // These checks are conservative and could potentially be expanded in the future.
+            const elementKey = element.get('key');
+            const elementValue = element.get('value');
+            if (elementKey.isIdentifier() &&
+                (!elementValue.isExpression() || canWrapProperty(elementKey.node.name, elementValue))) {
+                shouldWrap = true;
+            }
+            else {
+                // Not safe to wrap
+                shouldWrap = false;
+                break;
+            }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        }
+        else if (element.isStaticBlock()) {
+            // Only need to analyze static blocks
+            const body = element.get('body');
+            if (Array.isArray(body) && body.length > 1) {
+                // Not safe to wrap
+                shouldWrap = false;
+                break;
+            }
+            const expression = body.find((n) => n.isExpressionStatement());
+            const assignmentExpression = expression?.get('expression');
+            if (assignmentExpression?.isAssignmentExpression()) {
+                const left = assignmentExpression.get('left');
+                if (!left.isMemberExpression()) {
+                    continue;
+                }
+                if (!left.get('object').isThisExpression()) {
+                    // Not safe to wrap
+                    shouldWrap = false;
+                    break;
+                }
+                const element = left.get('property');
+                const right = assignmentExpression.get('right');
+                if (element.isIdentifier() &&
+                    (!right.isExpression() || canWrapProperty(element.node.name, right))) {
+                    shouldWrap = true;
+                }
+                else {
+                    // Not safe to wrap
+                    shouldWrap = false;
+                    break;
+                }
+            }
+        }
+    }
+    return { shouldWrap };
+}
