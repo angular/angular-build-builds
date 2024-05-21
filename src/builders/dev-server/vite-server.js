@@ -133,7 +133,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
             // If server is active, send an error notification
             if (result.errors?.length && server) {
                 hadError = true;
-                server.ws.send({
+                server.hot.send({
                     type: 'error',
                     err: {
                         message: result.errors[0].text,
@@ -147,7 +147,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
         else if (hadError && server) {
             hadError = false;
             // Send an empty update to clear the error overlay
-            server.ws.send({
+            server.hot.send({
                 'type': 'update',
                 updates: [],
             });
@@ -194,11 +194,8 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
             const projectRoot = (0, node_path_1.join)(context.workspaceRoot, root);
             const browsers = (0, internal_1.getSupportedBrowsers)(projectRoot, context.logger);
             const target = (0, internal_1.transformSupportedBrowsersToTargets)(browsers);
-            const polyfills = Array.isArray((browserOptions.polyfills ??= []))
-                ? browserOptions.polyfills
-                : [browserOptions.polyfills];
             // Setup server and start listening
-            const serverConfiguration = await setupServer(serverOptions, generatedFiles, assetFiles, browserOptions.preserveSymlinks, externalMetadata, !!browserOptions.ssr, prebundleTransformer, target, (0, internal_1.isZonelessApp)(polyfills), browserOptions.loader, extensions?.middleware, transformers?.indexHtml, thirdPartySourcemaps);
+            const serverConfiguration = await setupServer(serverOptions, generatedFiles, assetFiles, browserOptions.preserveSymlinks, externalMetadata, !!browserOptions.ssr, prebundleTransformer, target, (0, internal_1.isZonelessApp)(browserOptions.polyfills), browserOptions.loader, extensions?.middleware, transformers?.indexHtml, thirdPartySourcemaps);
             server = await createServer(serverConfiguration);
             await server.listen();
             if (serverConfiguration.ssr?.optimizeDeps?.disabled === false) {
@@ -225,7 +222,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                         key: 'r',
                         description: 'force reload browser',
                         action(server) {
-                            server.ws.send({
+                            server.hot.send({
                                 type: 'full-reload',
                                 path: '*',
                             });
