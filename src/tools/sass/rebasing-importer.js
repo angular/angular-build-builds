@@ -78,6 +78,10 @@ class UrlRebasingImporter {
             if (value[0] === '#' && value[1] !== '{') {
                 continue;
             }
+            // Skip if value is value contains a function call
+            if (/#\{.+\(.+\)\}/.test(value)) {
+                continue;
+            }
             // Sass variable usage either starts with a `$` or contains a namespace and a `.$`
             const valueNormalized = value[0] === '$' || /^\w+\.\$/.test(value) ? `#{${value}}` : value;
             const rebasedPath = (0, node_path_1.relative)(this.entryDirectory, stylesheetDirectory) + '||file:' + valueNormalized;
