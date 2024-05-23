@@ -12,23 +12,7 @@ const node_crypto_1 = require("node:crypto");
 const node_path_1 = require("node:path");
 const load_esm_1 = require("../load-esm");
 const html_rewriting_stream_1 = require("./html-rewriting-stream");
-/** A list of valid self closing HTML elements */
-const VALID_SELF_CLOSING_TAGS = new Set([
-    'area',
-    'base',
-    'br',
-    'col',
-    'embed',
-    'hr',
-    'img',
-    'input',
-    'link',
-    'meta',
-    'param',
-    'source',
-    'track',
-    'wbr',
-]);
+const valid_self_closing_tags_1 = require("./valid-self-closing-tags");
 /*
  * Helper function used by the IndexHtmlWebpackPlugin.
  * Can also be directly used by builder, e. g. in order to generate an index.html
@@ -171,7 +155,7 @@ async function augmentIndexHtml(params) {
                 }
                 break;
             default:
-                if (tag.selfClosing && !VALID_SELF_CLOSING_TAGS.has(tag.tagName)) {
+                if (tag.selfClosing && !valid_self_closing_tags_1.VALID_SELF_CLOSING_TAGS.has(tag.tagName)) {
                     errors.push(`Invalid self-closing element in index HTML file: '${rawTagHtml}'.`);
                     return;
                 }
