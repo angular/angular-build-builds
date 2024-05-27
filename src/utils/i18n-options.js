@@ -43,7 +43,7 @@ function createI18nOptions(projectMetadata, inline) {
     ensureObject(metadata, 'i18n');
     const i18n = {
         inlineLocales: new Set(),
-        // en-US is the default locale added to Angular applications (https://angular.io/guide/i18n#i18n-pipes)
+        // en-US is the default locale added to Angular applications (https://angular.dev/guide/i18n/format-data-locale)
         sourceLocale: 'en-US',
         locales: {},
         get shouldInline() {
