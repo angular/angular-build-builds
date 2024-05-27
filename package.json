@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "18.1.0-next.0+sha-3107ad7",
+  "version": "18.1.0-next.0+sha-255f9d8",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -23,15 +23,15 @@
   "builders": "builders.json",
   "dependencies": {
     "@ampproject/remapping": "2.3.0",
-    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#3107ad7",
-    "@babel/core": "7.24.5",
-    "@babel/helper-annotate-as-pure": "7.22.5",
-    "@babel/helper-split-export-declaration": "7.24.5",
+    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#255f9d8",
+    "@babel/core": "7.24.6",
+    "@babel/helper-annotate-as-pure": "7.24.6",
+    "@babel/helper-split-export-declaration": "7.24.6",
     "@vitejs/plugin-basic-ssl": "1.1.0",
     "ansi-colors": "4.1.3",
     "browserslist": "^4.23.0",
     "critters": "0.0.22",
-    "esbuild": "0.21.3",
+    "esbuild": "0.21.4",
     "fast-glob": "3.3.2",
     "https-proxy-agent": "7.0.4",
     "inquirer": "9.2.22",
