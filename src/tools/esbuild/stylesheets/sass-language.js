@@ -137,7 +137,14 @@ async function compileString(data, filePath, syntax, options, resolveUrl) {
                 },
             ],
             logger: {
-                warn: (text, { deprecation, span }) => {
+                warn: (text, { deprecation, stack, span }) => {
+                    const notes = [];
+                    if (deprecation) {
+                        notes.push({ text });
+                    }
+                    if (stack && !span) {
+                        notes.push({ text: stack });
+                    }
                     warnings.push({
                         text: deprecation ? 'Deprecation' : text,
                         location: span && {
@@ -147,7 +154,7 @@ async function compileString(data, filePath, syntax, options, resolveUrl) {
                             line: span.start.line + 1,
                             column: span.start.column,
                         },
-                        notes: deprecation ? [{ text }] : undefined,
+                        notes,
                     });
                 },
             },
