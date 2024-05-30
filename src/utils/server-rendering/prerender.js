@@ -10,7 +10,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.prerenderPages = void 0;
+exports.prerenderPages = prerenderPages;
 const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
 const node_url_1 = require("node:url");
@@ -72,7 +72,6 @@ async function prerenderPages(workspaceRoot, appShellOptions = {}, prerenderOpti
         prerenderedRoutes: allRoutes,
     };
 }
-exports.prerenderPages = prerenderPages;
 class RoutesSet extends Set {
     add(value) {
         return super.add(addLeadingSlash(value));

@@ -10,7 +10,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkPort = void 0;
+exports.checkPort = checkPort;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_net_1 = require("node:net");
 const load_esm_1 = require("./load-esm");
@@ -55,4 +55,3 @@ async function checkPort(port, host) {
             .listen(port, host);
     });
 }
-exports.checkPort = checkPort;

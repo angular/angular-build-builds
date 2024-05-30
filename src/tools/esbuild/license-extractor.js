@@ -10,7 +10,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.extractLicenses = void 0;
+exports.extractLicenses = extractLicenses;
 const promises_1 = require("node:fs/promises");
 const node_path_1 = __importDefault(require("node:path"));
 /**
@@ -155,4 +155,3 @@ async function extractLicenses(metafile, rootDirectory) {
     }
     return extractedLicenseContent;
 }
-exports.extractLicenses = extractLicenses;

@@ -26,7 +26,7 @@ export declare class JavaScriptTransformer {
     #private;
     readonly maxThreads: number;
     private readonly cache?;
-    constructor(options: JavaScriptTransformerOptions, maxThreads: number, cache?: Cache<Uint8Array, import("./cache").CacheStore<Uint8Array>> | undefined);
+    constructor(options: JavaScriptTransformerOptions, maxThreads: number, cache?: Cache<Uint8Array> | undefined);
     /**
      * Performs JavaScript transformations on a file from the filesystem.
      * If no transformations are required, the data for the original file will be returned.

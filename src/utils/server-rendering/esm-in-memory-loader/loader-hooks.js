@@ -10,7 +10,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.load = exports.resolve = exports.initialize = void 0;
+exports.initialize = initialize;
+exports.resolve = resolve;
+exports.load = load;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_crypto_1 = require("node:crypto");
 const node_path_1 = require("node:path");
@@ -38,7 +40,6 @@ function initialize(data) {
     memoryVirtualRootUrl = (0, node_url_1.pathToFileURL)((0, node_path_1.join)(data.workspaceRoot, `.angular/prerender-root/${(0, node_crypto_1.randomUUID)()}/`)).href;
     outputFiles = data.outputFiles;
 }
-exports.initialize = initialize;
 function resolve(specifier, context, nextResolve) {
     // In-memory files loaded from external code will contain a memory scheme
     if (specifier.startsWith(MEMORY_URL_SCHEME)) {
@@ -89,7 +90,6 @@ function resolve(specifier, context, nextResolve) {
         parentURL: new URL('index.js', memoryVirtualRootUrl).href,
     });
 }
-exports.resolve = resolve;
 async function load(url, context, nextLoad) {
     const { format } = context;
     // Load the file from memory if the URL is based in the virtual root
@@ -117,7 +117,6 @@ async function load(url, context, nextLoad) {
     // Let Node.js handle all other URLs.
     return nextLoad(url);
 }
-exports.load = load;
 function isFileProtocol(url) {
     return url.startsWith('file://');
 }

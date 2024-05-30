@@ -10,7 +10,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getSupportedBrowsers = void 0;
+exports.getSupportedBrowsers = getSupportedBrowsers;
 const browserslist_1 = __importDefault(require("browserslist"));
 function getSupportedBrowsers(projectRoot, logger) {
     browserslist_1.default.defaults = [
@@ -39,4 +39,3 @@ function getSupportedBrowsers(projectRoot, logger) {
     }
     return Array.from(browsersFromConfigOrDefault);
 }
-exports.getSupportedBrowsers = getSupportedBrowsers;

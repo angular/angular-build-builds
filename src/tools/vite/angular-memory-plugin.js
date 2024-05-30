@@ -10,7 +10,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createAngularMemoryPlugin = void 0;
+exports.createAngularMemoryPlugin = createAngularMemoryPlugin;
 const remapping_1 = __importDefault(require("@ampproject/remapping"));
 const mrmime_1 = require("mrmime");
 const node_assert_1 = __importDefault(require("node:assert"));
@@ -221,7 +221,6 @@ function createAngularMemoryPlugin(options) {
         },
     };
 }
-exports.createAngularMemoryPlugin = createAngularMemoryPlugin;
 /**
  * Reads the resolved Vite client code from disk and updates the content to remove
  * an unactionable suggestion to update the Vite configuration file to disable the

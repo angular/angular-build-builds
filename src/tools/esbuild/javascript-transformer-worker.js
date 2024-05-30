@@ -33,6 +33,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = transformJavaScript;
 const core_1 = require("@babel/core");
 const node_fs_1 = __importDefault(require("node:fs"));
 const node_path_1 = __importDefault(require("node:path"));
@@ -47,7 +48,6 @@ async function transformJavaScript(request) {
     // Transfer the data via `move` instead of cloning
     return piscina_1.default.move(textEncoder.encode(transformedData));
 }
-exports.default = transformJavaScript;
 /**
  * Cached instance of the compiler-cli linker's createEs2015LinkerPlugin function.
  */

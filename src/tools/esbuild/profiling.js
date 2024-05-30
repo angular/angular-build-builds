@@ -7,13 +7,15 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.profileSync = exports.profileAsync = exports.logCumulativeDurations = exports.resetCumulativeDurations = void 0;
+exports.resetCumulativeDurations = resetCumulativeDurations;
+exports.logCumulativeDurations = logCumulativeDurations;
+exports.profileAsync = profileAsync;
+exports.profileSync = profileSync;
 const environment_options_1 = require("../../utils/environment-options");
 let cumulativeDurations;
 function resetCumulativeDurations() {
     cumulativeDurations?.clear();
 }
-exports.resetCumulativeDurations = resetCumulativeDurations;
 function logCumulativeDurations() {
     if (!environment_options_1.debugPerformance || !cumulativeDurations) {
         return;
@@ -36,7 +38,6 @@ function logCumulativeDurations() {
         console.log(`DURATION[${name}]: ${total.toFixed(9)}s [count: ${durations.length}; avg: ${average.toFixed(9)}s; min: ${min?.toFixed(9)}s; max: ${max?.toFixed(9)}s]`);
     }
 }
-exports.logCumulativeDurations = logCumulativeDurations;
 function recordDuration(name, startTime, cumulative) {
     const duration = Number(process.hrtime.bigint() - startTime) / 10 ** 9;
     if (cumulative) {
@@ -62,7 +63,6 @@ async function profileAsync(name, action, cumulative) {
         recordDuration(name, startTime, cumulative);
     }
 }
-exports.profileAsync = profileAsync;
 function profileSync(name, action, cumulative) {
     if (!environment_options_1.debugPerformance) {
         return action();
@@ -75,4 +75,3 @@ function profileSync(name, action, cumulative) {
         recordDuration(name, startTime, cumulative);
     }
 }
-exports.profileSync = profileSync;

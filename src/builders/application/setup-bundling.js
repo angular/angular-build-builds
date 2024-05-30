@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setupBundlerContexts = void 0;
+exports.setupBundlerContexts = setupBundlerContexts;
 const application_code_bundle_1 = require("../../tools/esbuild/application-code-bundle");
 const bundler_context_1 = require("../../tools/esbuild/bundler-context");
 const global_scripts_1 = require("../../tools/esbuild/global-scripts");
@@ -68,4 +68,3 @@ function setupBundlerContexts(options, browsers, codeBundleCache) {
     }
     return bundlerContexts;
 }
-exports.setupBundlerContexts = setupBundlerContexts;

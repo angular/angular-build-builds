@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.addEventDispatchContract = void 0;
+exports.addEventDispatchContract = addEventDispatchContract;
 const promises_1 = require("node:fs/promises");
 const html_rewriting_stream_1 = require("./html-rewriting-stream");
 let jsActionContractScript;
@@ -25,4 +25,3 @@ async function addEventDispatchContract(html) {
     });
     return transformedContent();
 }
-exports.addEventDispatchContract = addEventDispatchContract;

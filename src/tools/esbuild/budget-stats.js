@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateBudgetStats = void 0;
+exports.generateBudgetStats = generateBudgetStats;
 const node_path_1 = require("node:path");
 /**
  * Generates a bundle budget calculator compatible stats object that provides
@@ -56,4 +56,3 @@ function generateBudgetStats(metafile, initialFiles) {
     }
     return stats;
 }
-exports.generateBudgetStats = generateBudgetStats;

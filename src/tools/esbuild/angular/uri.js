@@ -7,7 +7,10 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseJitUri = exports.generateJitInlineUri = exports.generateJitFileUri = exports.JIT_NAMESPACE_REGEXP = exports.JIT_TEMPLATE_NAMESPACE = exports.JIT_STYLE_NAMESPACE = void 0;
+exports.JIT_NAMESPACE_REGEXP = exports.JIT_TEMPLATE_NAMESPACE = exports.JIT_STYLE_NAMESPACE = void 0;
+exports.generateJitFileUri = generateJitFileUri;
+exports.generateJitInlineUri = generateJitInlineUri;
+exports.parseJitUri = parseJitUri;
 /**
  * A string value representing the base namespace for Angular JIT mode related imports.
  */
@@ -39,7 +42,6 @@ exports.JIT_NAMESPACE_REGEXP = new RegExp(`^${JIT_BASE_NAMESPACE}:(template|styl
 function generateJitFileUri(file, type) {
     return `${JIT_BASE_NAMESPACE}:${type}:file;${file}`;
 }
-exports.generateJitFileUri = generateJitFileUri;
 /**
  * Generates an Angular JIT mode namespace URI for a given inline style or template.
  * The provided content is base64 encoded and included in the URI.
@@ -50,7 +52,6 @@ exports.generateJitFileUri = generateJitFileUri;
 function generateJitInlineUri(data, type) {
     return `${JIT_BASE_NAMESPACE}:${type}:inline;${Buffer.from(data).toString('base64')}`;
 }
-exports.generateJitInlineUri = generateJitInlineUri;
 /**
  * Parses a string containing a JIT namespace URI.
  * JIT namespace URIs are used to encode the information for an Angular component's stylesheets
@@ -71,4 +72,3 @@ function parseJitUri(uri) {
         specifier: matches[3],
     };
 }
-exports.parseJitUri = parseJitUri;

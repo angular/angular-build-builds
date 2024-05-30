@@ -30,7 +30,9 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.augmentAppWithServiceWorkerCore = exports.augmentAppWithServiceWorkerEsbuild = exports.augmentAppWithServiceWorker = void 0;
+exports.augmentAppWithServiceWorker = augmentAppWithServiceWorker;
+exports.augmentAppWithServiceWorkerEsbuild = augmentAppWithServiceWorkerEsbuild;
+exports.augmentAppWithServiceWorkerCore = augmentAppWithServiceWorkerCore;
 const crypto = __importStar(require("crypto"));
 const node_fs_1 = require("node:fs");
 const path = __importStar(require("path"));
@@ -157,7 +159,6 @@ async function augmentAppWithServiceWorker(appRoot, workspaceRoot, outputPath, b
         await copy(source, destination);
     }
 }
-exports.augmentAppWithServiceWorker = augmentAppWithServiceWorker;
 // This is currently used by the esbuild-based builder
 async function augmentAppWithServiceWorkerEsbuild(workspaceRoot, configPath, baseHref, indexHtml, outputFiles, assetFiles) {
     // Read the configuration file
@@ -182,7 +183,6 @@ async function augmentAppWithServiceWorkerEsbuild(workspaceRoot, configPath, bas
     }
     return augmentAppWithServiceWorkerCore(config, new ResultFilesystem(outputFiles, assetFiles), baseHref);
 }
-exports.augmentAppWithServiceWorkerEsbuild = augmentAppWithServiceWorkerEsbuild;
 async function augmentAppWithServiceWorkerCore(config, serviceWorkerFilesystem, baseHref) {
     // Load ESM `@angular/service-worker/config` using the TypeScript dynamic import workaround.
     // Once TypeScript provides support for keeping the dynamic import this workaround can be
@@ -208,4 +208,3 @@ async function augmentAppWithServiceWorkerCore(config, serviceWorkerFilesystem, 
     }
     return result;
 }
-exports.augmentAppWithServiceWorkerCore = augmentAppWithServiceWorkerCore;

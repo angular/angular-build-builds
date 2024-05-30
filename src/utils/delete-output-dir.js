@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteOutputDir = void 0;
+exports.deleteOutputDir = deleteOutputDir;
 const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
 /**
@@ -43,4 +43,3 @@ async function deleteOutputDir(root, outputPath, emptyOnlyDirectories) {
         await (0, promises_1.rm)(fullEntry, { force: true, recursive: true, maxRetries: 3 });
     }
 }
-exports.deleteOutputDir = deleteOutputDir;

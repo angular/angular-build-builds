@@ -10,6 +10,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = renderSassStylesheet;
 const remapping_1 = __importDefault(require("@ampproject/remapping"));
 const node_path_1 = require("node:path");
 const node_url_1 = require("node:url");
@@ -126,7 +127,6 @@ async function renderSassStylesheet(request) {
         }
     }
 }
-exports.default = renderSassStylesheet;
 /**
  * Converts a Sass SourceSpan object into a serializable form.
  * The SourceSpan object contains a URL property which must be converted into a string.

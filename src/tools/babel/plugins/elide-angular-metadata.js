@@ -7,7 +7,8 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getKeywords = void 0;
+exports.getKeywords = getKeywords;
+exports.default = default_1;
 /**
  * The name of the Angular class metadata function created by the Angular compiler.
  */
@@ -29,7 +30,6 @@ const SET_CLASS_DEBUG_INFO_NAME = 'ɵsetClassDebugInfo';
 function getKeywords() {
     return Object.keys(angularMetadataFunctions);
 }
-exports.getKeywords = getKeywords;
 /**
  * An object map of function names and related value checks for discovery of Angular generated
  * metadata calls.
@@ -77,7 +77,6 @@ function default_1() {
         },
     };
 }
-exports.default = default_1;
 /** Determines if a function call is a call to `setClassMetadata`. */
 function isSetClassMetadataCall(callArguments) {
     // `setClassMetadata` calls have to meet the following criteria:

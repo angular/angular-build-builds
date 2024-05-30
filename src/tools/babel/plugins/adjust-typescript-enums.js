@@ -10,7 +10,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getKeywords = void 0;
+exports.getKeywords = getKeywords;
+exports.default = default_1;
 const core_1 = require("@babel/core");
 const helper_annotate_as_pure_1 = __importDefault(require("@babel/helper-annotate-as-pure"));
 /**
@@ -22,7 +23,6 @@ const helper_annotate_as_pure_1 = __importDefault(require("@babel/helper-annotat
 function getKeywords() {
     return ['var'];
 }
-exports.getKeywords = getKeywords;
 /**
  * A babel plugin factory function for adjusting TypeScript emitted enums.
  *
@@ -110,4 +110,3 @@ function default_1() {
         },
     };
 }
-exports.default = default_1;

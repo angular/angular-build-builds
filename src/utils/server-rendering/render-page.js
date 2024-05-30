@@ -33,7 +33,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.renderPage = void 0;
+exports.renderPage = renderPage;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_path_1 = require("node:path");
 const load_esm_from_memory_1 = require("./load-esm-from-memory");
@@ -108,7 +108,6 @@ async function renderPage({ route, serverContext, document, inlineCriticalCss, o
         content: html,
     };
 }
-exports.renderPage = renderPage;
 function isBootstrapFn(value) {
     // We can differentiate between a module and a bootstrap function by reading compiler-generated `ɵmod` static property:
     return typeof value === 'function' && !('ɵmod' in value);

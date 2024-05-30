@@ -7,7 +7,9 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.loadPostcssConfiguration = exports.findTailwindConfiguration = exports.generateSearchDirectories = void 0;
+exports.generateSearchDirectories = generateSearchDirectories;
+exports.findTailwindConfiguration = findTailwindConfiguration;
+exports.loadPostcssConfiguration = loadPostcssConfiguration;
 const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
 const postcssConfigurationFiles = ['postcss.config.json', '.postcssrc.json'];
@@ -23,7 +25,6 @@ async function generateSearchDirectories(roots) {
         files: new Set(entries.filter((entry) => entry.isFile()).map((entry) => entry.name)),
     }))));
 }
-exports.generateSearchDirectories = generateSearchDirectories;
 function findFile(searchDirectories, potentialFiles) {
     for (const { root, files } of searchDirectories) {
         for (const potential of potentialFiles) {
@@ -37,7 +38,6 @@ function findFile(searchDirectories, potentialFiles) {
 function findTailwindConfiguration(searchDirectories) {
     return findFile(searchDirectories, tailwindConfigFiles);
 }
-exports.findTailwindConfiguration = findTailwindConfiguration;
 async function readPostcssConfiguration(configurationFile) {
     const data = await (0, promises_1.readFile)(configurationFile, 'utf-8');
     const config = JSON.parse(data);
@@ -83,4 +83,3 @@ async function loadPostcssConfiguration(searchDirectories) {
     }
     return config;
 }
-exports.loadPostcssConfiguration = loadPostcssConfiguration;

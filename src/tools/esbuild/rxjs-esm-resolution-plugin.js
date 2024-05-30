@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createRxjsEsmResolutionPlugin = void 0;
+exports.createRxjsEsmResolutionPlugin = createRxjsEsmResolutionPlugin;
 const RXJS_ESM_RESOLUTION = Symbol('RXJS_ESM_RESOLUTION');
 /**
  * Creates a plugin that forces ESM resolution of rxjs.
@@ -41,4 +41,3 @@ function createRxjsEsmResolutionPlugin() {
         },
     };
 }
-exports.createRxjsEsmResolutionPlugin = createRxjsEsmResolutionPlugin;

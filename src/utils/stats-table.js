@@ -7,7 +7,8 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateBuildStatsTable = exports.generateEsbuildBuildStatsTable = void 0;
+exports.generateEsbuildBuildStatsTable = generateEsbuildBuildStatsTable;
+exports.generateBuildStatsTable = generateBuildStatsTable;
 const node_util_1 = require("node:util");
 const color_1 = require("./color");
 const format_bytes_1 = require("./format-bytes");
@@ -24,12 +25,10 @@ function generateEsbuildBuildStatsTable([browserStats, serverStats], colors, sho
     }
     return generateTableText(bundleInfo, colors);
 }
-exports.generateEsbuildBuildStatsTable = generateEsbuildBuildStatsTable;
 function generateBuildStatsTable(data, colors, showTotalSize, showEstimatedTransferSize, budgetFailures) {
     const bundleInfo = generateBuildStatsData(data, colors, showTotalSize, showEstimatedTransferSize, budgetFailures, true);
     return generateTableText(bundleInfo, colors);
 }
-exports.generateBuildStatsTable = generateBuildStatsTable;
 function generateBuildStatsData(data, colors, showTotalSize, showEstimatedTransferSize, budgetFailures, verbose) {
     if (data.length === 0) {
         return [];

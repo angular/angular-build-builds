@@ -7,7 +7,8 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MemoryLoadResultCache = exports.createCachedLoad = void 0;
+exports.MemoryLoadResultCache = void 0;
+exports.createCachedLoad = createCachedLoad;
 const node_path_1 = require("node:path");
 function createCachedLoad(cache, callback) {
     if (cache === undefined) {
@@ -31,7 +32,6 @@ function createCachedLoad(cache, callback) {
         return result;
     };
 }
-exports.createCachedLoad = createCachedLoad;
 class MemoryLoadResultCache {
     #loadResults = new Map();
     #fileDependencies = new Map();

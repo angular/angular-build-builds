@@ -30,7 +30,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.loadProxyConfiguration = void 0;
+exports.loadProxyConfiguration = loadProxyConfiguration;
 const fast_glob_1 = require("fast-glob");
 const node_fs_1 = require("node:fs");
 const promises_1 = require("node:fs/promises");
@@ -96,7 +96,6 @@ async function loadProxyConfiguration(root, proxyConfig) {
     }
     return normalizeProxyConfiguration(proxyConfiguration);
 }
-exports.loadProxyConfiguration = loadProxyConfiguration;
 /**
  * Converts glob patterns to regular expressions to support Vite's proxy option.
  * Also converts the Webpack supported array form to an object form supported by both.

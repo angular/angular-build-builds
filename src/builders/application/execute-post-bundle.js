@@ -10,7 +10,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.executePostBundleSteps = void 0;
+exports.executePostBundleSteps = executePostBundleSteps;
 const node_assert_1 = __importDefault(require("node:assert"));
 const bundler_context_1 = require("../../tools/esbuild/bundler-context");
 const index_html_generator_1 = require("../../tools/esbuild/index-html-generator");
@@ -90,4 +90,3 @@ async function executePostBundleSteps(options, outputFiles, assetFiles, initialF
         additionalOutputFiles,
     };
 }
-exports.executePostBundleSteps = executePostBundleSteps;

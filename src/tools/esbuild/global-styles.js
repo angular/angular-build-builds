@@ -10,7 +10,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createGlobalStylesBundleOptions = void 0;
+exports.createGlobalStylesBundleOptions = createGlobalStylesBundleOptions;
 const node_assert_1 = __importDefault(require("node:assert"));
 const bundle_options_1 = require("./stylesheets/bundle-options");
 const virtual_module_plugin_1 = require("./virtual-module-plugin");
@@ -71,4 +71,3 @@ function createGlobalStylesBundleOptions(options, target, initial) {
         return buildOptions;
     };
 }
-exports.createGlobalStylesBundleOptions = createGlobalStylesBundleOptions;

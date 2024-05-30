@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.execute = void 0;
+exports.execute = execute;
 const check_port_1 = require("../../utils/check-port");
 const internal_1 = require("./internal");
 const options_1 = require("./options");
@@ -39,7 +39,6 @@ async function* execute(options, context, extensions) {
     }
     yield* (0, vite_server_1.serveWithVite)(normalizedOptions, builderName, (options, context, plugins) => (0, internal_1.buildApplicationInternal)(options, context, { write: false }, { codePlugins: plugins }), context, { indexHtml: extensions?.indexHtmlTransformer }, extensions);
 }
-exports.execute = execute;
 async function initialize(initialOptions, projectName, context) {
     // Purge old build disk cache.
     await (0, internal_1.purgeStaleBuildCache)(context);

@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.loadEsmModuleFromMemory = void 0;
+exports.loadEsmModuleFromMemory = loadEsmModuleFromMemory;
 const error_1 = require("../error");
 const load_esm_1 = require("../load-esm");
 function loadEsmModuleFromMemory(path) {
@@ -23,4 +23,3 @@ function loadEsmModuleFromMemory(path) {
         throw error;
     });
 }
-exports.loadEsmModuleFromMemory = loadEsmModuleFromMemory;

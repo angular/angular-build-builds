@@ -10,7 +10,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createAngularCompilerHost = exports.ensureSourceFileVersions = void 0;
+exports.ensureSourceFileVersions = ensureSourceFileVersions;
+exports.createAngularCompilerHost = createAngularCompilerHost;
 const node_crypto_1 = require("node:crypto");
 const node_path_1 = __importDefault(require("node:path"));
 /**
@@ -32,7 +33,6 @@ function ensureSourceFileVersions(program) {
         return files;
     };
 }
-exports.ensureSourceFileVersions = ensureSourceFileVersions;
 function augmentHostWithCaching(host, cache) {
     const baseGetSourceFile = host.getSourceFile;
     host.getSourceFile = function (fileName, languageVersion, onError, shouldCreateNewSourceFile, ...parameters) {
@@ -131,4 +131,3 @@ function createAngularCompilerHost(typescript, compilerOptions, hostOptions) {
     }
     return host;
 }
-exports.createAngularCompilerHost = createAngularCompilerHost;

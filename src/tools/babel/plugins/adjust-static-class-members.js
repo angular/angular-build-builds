@@ -10,7 +10,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getKeywords = void 0;
+exports.getKeywords = getKeywords;
+exports.default = default_1;
 const core_1 = require("@babel/core");
 const helper_annotate_as_pure_1 = __importDefault(require("@babel/helper-annotate-as-pure"));
 const helper_split_export_declaration_1 = __importDefault(require("@babel/helper-split-export-declaration"));
@@ -57,7 +58,6 @@ const angularStaticsToElide = {
 function getKeywords() {
     return ['class'];
 }
-exports.getKeywords = getKeywords;
 /**
  * Determines whether a property and its initializer value can be safely wrapped in a pure
  * annotated IIFE. Values that may cause side effects are not considered safe to wrap.
@@ -281,7 +281,6 @@ function default_1() {
         },
     };
 }
-exports.default = default_1;
 /**
  * Static class properties may be downleveled at later stages in the build pipeline
  * which results in additional function calls outside the class body. These calls

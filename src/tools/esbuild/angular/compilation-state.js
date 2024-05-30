@@ -7,7 +7,8 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getSharedCompilationState = exports.SharedTSCompilationState = void 0;
+exports.SharedTSCompilationState = void 0;
+exports.getSharedCompilationState = getSharedCompilationState;
 class SharedTSCompilationState {
     #pendingCompilation = true;
     #resolveCompilationReady;
@@ -41,4 +42,3 @@ let globalSharedCompilationState;
 function getSharedCompilationState() {
     return (globalSharedCompilationState ??= new SharedTSCompilationState());
 }
-exports.getSharedCompilationState = getSharedCompilationState;

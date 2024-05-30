@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createCompilerPluginOptions = void 0;
+exports.createCompilerPluginOptions = createCompilerPluginOptions;
 function createCompilerPluginOptions(options, target, sourceFileCache) {
     const { workspaceRoot, optimizationOptions, sourcemapOptions, tsconfig, outputNames, fileReplacements, externalDependencies, preserveSymlinks, stylePreprocessorOptions, advancedOptimizations, inlineStyleLanguage, jit, cacheOptions, tailwindConfiguration, postcssConfiguration, publicPath, } = options;
     return {
@@ -46,4 +46,3 @@ function createCompilerPluginOptions(options, target, sourceFileCache) {
         },
     };
 }
-exports.createCompilerPluginOptions = createCompilerPluginOptions;

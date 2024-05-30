@@ -30,7 +30,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SassStylesheetLanguage = exports.shutdownSassWorkerPool = void 0;
+exports.SassStylesheetLanguage = void 0;
+exports.shutdownSassWorkerPool = shutdownSassWorkerPool;
 const node_path_1 = require("node:path");
 const node_url_1 = require("node:url");
 const cache_1 = require("../cache");
@@ -49,7 +50,6 @@ function shutdownSassWorkerPool() {
     }
     sassWorkerPoolPromise = undefined;
 }
-exports.shutdownSassWorkerPool = shutdownSassWorkerPool;
 exports.SassStylesheetLanguage = Object.freeze({
     name: 'sass',
     componentFilter: /^s[ac]ss;/,

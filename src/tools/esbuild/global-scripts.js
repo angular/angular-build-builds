@@ -33,7 +33,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createGlobalScriptsBundleOptions = void 0;
+exports.createGlobalScriptsBundleOptions = createGlobalScriptsBundleOptions;
 const magic_string_1 = __importStar(require("magic-string"));
 const node_assert_1 = __importDefault(require("node:assert"));
 const promises_1 = require("node:fs/promises");
@@ -139,4 +139,3 @@ function createGlobalScriptsBundleOptions(options, target, initial) {
         };
     };
 }
-exports.createGlobalScriptsBundleOptions = createGlobalScriptsBundleOptions;

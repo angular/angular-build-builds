@@ -30,7 +30,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createAngularCompilation = void 0;
+exports.createAngularCompilation = createAngularCompilation;
 const environment_options_1 = require("../../../../utils/environment-options");
 /**
  * Creates an Angular compilation object that can be used to perform Angular application
@@ -53,4 +53,3 @@ async function createAngularCompilation(jit) {
         return new AotCompilation();
     }
 }
-exports.createAngularCompilation = createAngularCompilation;

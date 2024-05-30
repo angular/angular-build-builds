@@ -10,7 +10,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateIndexHtml = void 0;
+exports.generateIndexHtml = generateIndexHtml;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_path_1 = __importDefault(require("node:path"));
 const index_html_generator_1 = require("../../utils/index-file/index-html-generator");
@@ -89,4 +89,3 @@ async function generateIndexHtml(initialFiles, outputFiles, buildOptions, lang) 
         hints,
     });
 }
-exports.generateIndexHtml = generateIndexHtml;

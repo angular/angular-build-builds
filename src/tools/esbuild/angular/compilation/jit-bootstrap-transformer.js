@@ -10,7 +10,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.elideImports = exports.replaceBootstrap = void 0;
+exports.replaceBootstrap = replaceBootstrap;
+exports.elideImports = elideImports;
 const typescript_1 = __importDefault(require("typescript"));
 /**
  * The name of the Angular platform that should be replaced within
@@ -57,7 +58,6 @@ function replaceBootstrap(getTypeChecker) {
         };
     };
 }
-exports.replaceBootstrap = replaceBootstrap;
 // Remove imports for which all identifiers have been removed.
 // Needs type checker, and works even if it's not the first transformer.
 // Works by removing imports for symbols whose identifiers have all been removed.
@@ -179,4 +179,3 @@ function elideImports(sourceFile, removedNodes, getTypeChecker, compilerOptions)
     }
     return importNodeRemovals;
 }
-exports.elideImports = elideImports;

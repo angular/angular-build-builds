@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.convertTypeScriptDiagnostic = void 0;
+exports.convertTypeScriptDiagnostic = convertTypeScriptDiagnostic;
 const node_os_1 = require("node:os");
 /**
  * Converts TypeScript Diagnostic related information into an esbuild compatible note object.
@@ -66,4 +66,3 @@ function convertTypeScriptDiagnostic(typescript, diagnostic) {
     }
     return message;
 }
-exports.convertTypeScriptDiagnostic = convertTypeScriptDiagnostic;

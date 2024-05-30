@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.formatSize = void 0;
+exports.formatSize = formatSize;
 function formatSize(size) {
     if (size <= 0) {
         return '0 bytes';
@@ -19,4 +19,3 @@ function formatSize(size) {
     const fractionDigits = index === 0 ? 0 : 2;
     return `${roundedSize.toFixed(fractionDigits)} ${abbreviations[index]}`;
 }
-exports.formatSize = formatSize;

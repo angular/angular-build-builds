@@ -10,7 +10,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sassBindWorkaround = exports.LoadPathsUrlRebasingImporter = exports.ModuleUrlRebasingImporter = exports.RelativeUrlRebasingImporter = void 0;
+exports.LoadPathsUrlRebasingImporter = exports.ModuleUrlRebasingImporter = exports.RelativeUrlRebasingImporter = void 0;
+exports.sassBindWorkaround = sassBindWorkaround;
 const magic_string_1 = __importDefault(require("magic-string"));
 const node_fs_1 = require("node:fs");
 const node_path_1 = require("node:path");
@@ -328,4 +329,3 @@ function sassBindWorkaround(importer) {
     importer.load = importer.load.bind(importer);
     return importer;
 }
-exports.sassBindWorkaround = sassBindWorkaround;

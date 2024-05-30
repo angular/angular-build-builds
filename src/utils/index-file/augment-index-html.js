@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.augmentIndexHtml = void 0;
+exports.augmentIndexHtml = augmentIndexHtml;
 const node_crypto_1 = require("node:crypto");
 const node_path_1 = require("node:path");
 const load_esm_1 = require("../load-esm");
@@ -197,7 +197,6 @@ async function augmentIndexHtml(params) {
         errors,
     };
 }
-exports.augmentIndexHtml = augmentIndexHtml;
 function generateSriAttributes(content) {
     const algo = 'sha384';
     const hash = (0, node_crypto_1.createHash)(algo).update(content, 'utf8').digest('base64');

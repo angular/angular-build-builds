@@ -10,7 +10,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createWatcher = exports.ChangedFiles = void 0;
+exports.ChangedFiles = void 0;
+exports.createWatcher = createWatcher;
 const watchpack_1 = __importDefault(require("watchpack"));
 class ChangedFiles {
     added = new Set();
@@ -115,4 +116,3 @@ function createWatcher(options) {
         },
     };
 }
-exports.createWatcher = createWatcher;

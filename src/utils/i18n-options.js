@@ -10,7 +10,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.loadTranslations = exports.createI18nOptions = void 0;
+exports.createI18nOptions = createI18nOptions;
+exports.loadTranslations = loadTranslations;
 const node_path_1 = __importDefault(require("node:path"));
 function normalizeTranslationFileOption(option, locale, expectObjectInError) {
     if (typeof option === 'string') {
@@ -112,7 +113,6 @@ function createI18nOptions(projectMetadata, inline) {
     }
     return i18n;
 }
-exports.createI18nOptions = createI18nOptions;
 function loadTranslations(locale, desc, workspaceRoot, loader, logger, usedFormats, duplicateTranslation) {
     let translations = undefined;
     for (const file of desc.files) {
@@ -158,4 +158,3 @@ function loadTranslations(locale, desc, workspaceRoot, loader, logger, usedForma
     }
     desc.translation = translations;
 }
-exports.loadTranslations = loadTranslations;

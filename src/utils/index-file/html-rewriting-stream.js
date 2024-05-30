@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.htmlRewritingStream = void 0;
+exports.htmlRewritingStream = htmlRewritingStream;
 const node_stream_1 = require("node:stream");
 const promises_1 = require("node:stream/promises");
 const load_esm_1 = require("../load-esm");
@@ -25,4 +25,3 @@ async function htmlRewritingStream(content) {
         }),
     };
 }
-exports.htmlRewritingStream = htmlRewritingStream;

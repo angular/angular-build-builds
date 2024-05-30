@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.findUrls = void 0;
+exports.findUrls = findUrls;
 // TODO: Combine everything into a single pass lexer
 /**
  * Determines if a unicode code point is a CSS whitespace character.
@@ -169,4 +169,3 @@ function* findUrls(contents) {
         }
     }
 }
-exports.findUrls = findUrls;

@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkCommonJSModules = void 0;
+exports.checkCommonJSModules = checkCommonJSModules;
 /**
  * Checks the input files of a build to determine if any of the files included
  * in the build are not ESM. ESM files can be tree-shaken and otherwise optimized
@@ -107,7 +107,6 @@ function checkCommonJSModules(metafile, allowedCommonJsDependencies) {
     }
     return messages;
 }
-exports.checkCommonJSModules = checkCommonJSModules;
 /**
  * Determines if a file path has an extension that is a JavaScript or TypeScript
  * code file.

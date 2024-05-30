@@ -10,7 +10,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createJitResourceTransformer = void 0;
+exports.createJitResourceTransformer = createJitResourceTransformer;
 const typescript_1 = __importDefault(require("typescript"));
 const uri_1 = require("./uri");
 /**
@@ -50,7 +50,6 @@ function createJitResourceTransformer(getTypeChecker) {
         };
     };
 }
-exports.createJitResourceTransformer = createJitResourceTransformer;
 function visitDecorator(nodeFactory, node, typeChecker, resourceImportDeclarations) {
     const origin = getDecoratorOrigin(node, typeChecker);
     if (!origin || origin.module !== '@angular/core' || origin.name !== 'Component') {

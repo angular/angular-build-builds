@@ -7,7 +7,8 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createAngularLocaleDataPlugin = exports.LOCALE_DATA_BASE_MODULE = exports.LOCALE_DATA_NAMESPACE = void 0;
+exports.LOCALE_DATA_BASE_MODULE = exports.LOCALE_DATA_NAMESPACE = void 0;
+exports.createAngularLocaleDataPlugin = createAngularLocaleDataPlugin;
 /**
  * The internal namespace used by generated locale import statements and Angular locale data plugin.
  */
@@ -117,4 +118,3 @@ function createAngularLocaleDataPlugin() {
         },
     };
 }
-exports.createAngularLocaleDataPlugin = createAngularLocaleDataPlugin;

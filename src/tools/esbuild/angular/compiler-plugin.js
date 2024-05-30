@@ -33,7 +33,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createCompilerPlugin = void 0;
+exports.createCompilerPlugin = createCompilerPlugin;
 const node_assert_1 = __importDefault(require("node:assert"));
 const path = __importStar(require("node:path"));
 const environment_options_1 = require("../../../utils/environment-options");
@@ -343,7 +343,6 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
         },
     };
 }
-exports.createCompilerPlugin = createCompilerPlugin;
 function createCompilerOptionsTransformer(setupWarnings, pluginOptions, preserveSymlinks) {
     return (compilerOptions) => {
         // target of 9 is ES2022 (using the number avoids an expensive import of typescript just for an enum)

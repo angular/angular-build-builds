@@ -33,6 +33,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = default_1;
 const helper_annotate_as_pure_1 = __importDefault(require("@babel/helper-annotate-as-pure"));
 const tslib = __importStar(require("tslib"));
 /**
@@ -87,4 +88,3 @@ function default_1() {
         },
     };
 }
-exports.default = default_1;

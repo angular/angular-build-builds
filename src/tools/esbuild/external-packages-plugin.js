@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createExternalPackagesPlugin = void 0;
+exports.createExternalPackagesPlugin = createExternalPackagesPlugin;
 const node_path_1 = require("node:path");
 const EXTERNAL_PACKAGE_RESOLUTION = Symbol('EXTERNAL_PACKAGE_RESOLUTION');
 /**
@@ -72,4 +72,3 @@ function createExternalPackagesPlugin(options) {
         },
     };
 }
-exports.createExternalPackagesPlugin = createExternalPackagesPlugin;

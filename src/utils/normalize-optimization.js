@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.normalizeOptimization = void 0;
+exports.normalizeOptimization = normalizeOptimization;
 function normalizeOptimization(optimization = true) {
     if (typeof optimization === 'object') {
         const styleOptimization = !!optimization.styles;
@@ -39,4 +39,3 @@ function normalizeOptimization(optimization = true) {
         },
     };
 }
-exports.normalizeOptimization = normalizeOptimization;

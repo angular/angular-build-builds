@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createVirtualModulePlugin = void 0;
+exports.createVirtualModulePlugin = createVirtualModulePlugin;
 const load_result_cache_1 = require("./load-result-cache");
 /**
  * Creates an esbuild plugin that generated virtual modules.
@@ -40,4 +40,3 @@ function createVirtualModulePlugin(options) {
         },
     };
 }
-exports.createVirtualModulePlugin = createVirtualModulePlugin;

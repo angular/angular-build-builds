@@ -131,8 +131,8 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     } | undefined;
     postcssConfiguration: import("../../utils/postcss-configuration").PostcssConfiguration | undefined;
     i18nOptions: I18nOptions & {
-        duplicateTranslationBehavior?: I18NTranslation | undefined;
-        missingTranslationBehavior?: I18NTranslation | undefined;
+        duplicateTranslationBehavior?: I18NTranslation;
+        missingTranslationBehavior?: I18NTranslation;
     };
     namedChunks: boolean | undefined;
     budgets: import("./schema").Budget[] | undefined;

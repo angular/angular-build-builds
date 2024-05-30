@@ -7,7 +7,10 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkThresholds = exports.checkBudgets = exports.calculateThresholds = exports.ThresholdSeverity = exports.BudgetType = void 0;
+exports.ThresholdSeverity = exports.BudgetType = void 0;
+exports.calculateThresholds = calculateThresholds;
+exports.checkBudgets = checkBudgets;
+exports.checkThresholds = checkThresholds;
 const schema_1 = require("../builders/application/schema");
 Object.defineProperty(exports, "BudgetType", { enumerable: true, get: function () { return schema_1.Type; } });
 const format_bytes_1 = require("./format-bytes");
@@ -75,7 +78,6 @@ function* calculateThresholds(budget) {
         };
     }
 }
-exports.calculateThresholds = calculateThresholds;
 /**
  * Calculates the sizes for bundles in the budget type provided.
  */
@@ -266,7 +268,6 @@ function* checkBudgets(budgets, stats, checkComponentStyles) {
         }
     }
 }
-exports.checkBudgets = checkBudgets;
 function* checkThresholds(thresholds, size, label) {
     for (const threshold of thresholds) {
         switch (threshold.type) {
@@ -300,4 +301,3 @@ function* checkThresholds(thresholds, size, label) {
         }
     }
 }
-exports.checkThresholds = checkThresholds;

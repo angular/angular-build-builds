@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.purgeStaleBuildCache = void 0;
+exports.purgeStaleBuildCache = purgeStaleBuildCache;
 const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
 const normalize_cache_1 = require("./normalize-cache");
@@ -37,4 +37,3 @@ async function purgeStaleBuildCache(context) {
         .map((stalePath) => (0, promises_1.rm)(stalePath, { force: true, recursive: true, maxRetries: 3 }));
     await Promise.allSettled(entriesToDelete);
 }
-exports.purgeStaleBuildCache = purgeStaleBuildCache;

@@ -10,7 +10,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createServerPolyfillBundleOptions = exports.createServerCodeBundleOptions = exports.createBrowserPolyfillBundleOptions = exports.createBrowserCodeBundleOptions = void 0;
+exports.createBrowserCodeBundleOptions = createBrowserCodeBundleOptions;
+exports.createBrowserPolyfillBundleOptions = createBrowserPolyfillBundleOptions;
+exports.createServerCodeBundleOptions = createServerCodeBundleOptions;
+exports.createServerPolyfillBundleOptions = createServerPolyfillBundleOptions;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_crypto_1 = require("node:crypto");
 const promises_1 = require("node:fs/promises");
@@ -66,7 +69,6 @@ function createBrowserCodeBundleOptions(options, target, sourceFileCache) {
     }
     return buildOptions;
 }
-exports.createBrowserCodeBundleOptions = createBrowserCodeBundleOptions;
 function createBrowserPolyfillBundleOptions(options, target, sourceFileCache) {
     const namespace = 'angular:polyfills';
     const polyfillBundleOptions = getEsBuildCommonPolyfillsOptions(options, namespace, true, sourceFileCache);
@@ -104,7 +106,6 @@ function createBrowserPolyfillBundleOptions(options, target, sourceFileCache) {
     // cannot be used with fully incremental bundling yet.
     return hasTypeScriptEntries ? buildOptions : () => buildOptions;
 }
-exports.createBrowserPolyfillBundleOptions = createBrowserPolyfillBundleOptions;
 /**
  * Create an esbuild 'build' options object for the server bundle.
  * @param options The builder's user-provider normalized options.
@@ -185,7 +186,6 @@ function createServerCodeBundleOptions(options, target, sourceFileCache) {
     }
     return buildOptions;
 }
-exports.createServerCodeBundleOptions = createServerCodeBundleOptions;
 function createServerPolyfillBundleOptions(options, target, sourceFileCache) {
     const serverPolyfills = [];
     const polyfillsFromConfig = new Set(options.polyfills);
@@ -230,7 +230,6 @@ function createServerPolyfillBundleOptions(options, target, sourceFileCache) {
     };
     return () => buildOptions;
 }
-exports.createServerPolyfillBundleOptions = createServerPolyfillBundleOptions;
 function getEsBuildCommonOptions(options) {
     const { workspaceRoot, outExtension, optimizationOptions, sourcemapOptions, tsconfig, externalDependencies, outputNames, preserveSymlinks, jit, loaderExtensions, jsonLogs, } = options;
     // Ensure unique hashes for i18n translation changes when using post-process inlining.

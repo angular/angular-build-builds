@@ -10,6 +10,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = inlineLocale;
 const remapping_1 = __importDefault(require("@ampproject/remapping"));
 const core_1 = require("@babel/core");
 const node_assert_1 = __importDefault(require("node:assert"));
@@ -39,7 +40,6 @@ async function inlineLocale(request) {
         messages: result.diagnostics.messages,
     };
 }
-exports.default = inlineLocale;
 /**
  * Cached instance of the `@angular/localize/tools` module.
  * This is used to remove the need to repeatedly import the module per file translation.

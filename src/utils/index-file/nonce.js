@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.addNonce = void 0;
+exports.addNonce = addNonce;
 const html_rewriting_stream_1 = require("./html-rewriting-stream");
 /**
  * Pattern matching the name of the Angular nonce attribute. Note that this is
@@ -34,7 +34,6 @@ async function addNonce(html) {
     });
     return transformedContent();
 }
-exports.addNonce = addNonce;
 /** Finds the Angular nonce in an HTML string. */
 async function findNonce(html) {
     // Inexpensive check to avoid parsing the HTML when we're sure there's no nonce.

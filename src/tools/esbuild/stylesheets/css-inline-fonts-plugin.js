@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createCssInlineFontsPlugin = void 0;
+exports.createCssInlineFontsPlugin = createCssInlineFontsPlugin;
 const inline_fonts_1 = require("../../../utils/index-file/inline-fonts");
 const load_result_cache_1 = require("../load-result-cache");
 /**
@@ -54,4 +54,3 @@ function createCssInlineFontsPlugin({ cache, cacheOptions, }) {
         },
     };
 }
-exports.createCssInlineFontsPlugin = createCssInlineFontsPlugin;

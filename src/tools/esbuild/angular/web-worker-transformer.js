@@ -10,7 +10,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createWorkerTransformer = void 0;
+exports.createWorkerTransformer = createWorkerTransformer;
 const typescript_1 = __importDefault(require("typescript"));
 /**
  * Creates a TypeScript Transformer to process Worker and SharedWorker entry points and transform
@@ -91,4 +91,3 @@ function createWorkerTransformer(fileProcessor) {
         };
     };
 }
-exports.createWorkerTransformer = createWorkerTransformer;

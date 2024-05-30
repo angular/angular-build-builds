@@ -10,7 +10,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.update = exports.emit = exports.diagnose = exports.initialize = void 0;
+exports.initialize = initialize;
+exports.diagnose = diagnose;
+exports.emit = emit;
+exports.update = update;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_crypto_1 = require("node:crypto");
 const node_worker_threads_1 = require("node:worker_threads");
@@ -71,20 +74,16 @@ async function initialize(request) {
         compilerOptions: { allowJs: compilerOptions.allowJs },
     };
 }
-exports.initialize = initialize;
 async function diagnose(modes) {
     (0, node_assert_1.default)(compilation);
     const diagnostics = await compilation.diagnoseFiles(modes);
     return diagnostics;
 }
-exports.diagnose = diagnose;
 async function emit() {
     (0, node_assert_1.default)(compilation);
     const files = await compilation.emitAffectedFiles();
     return [...files];
 }
-exports.emit = emit;
 function update(files) {
     sourceFileCache.invalidate(files);
 }
-exports.update = update;

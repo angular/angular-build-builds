@@ -33,7 +33,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.runEsBuildBuildAction = void 0;
+exports.runEsBuildBuildAction = runEsBuildBuildAction;
 const node_fs_1 = require("node:fs");
 const node_path_1 = __importDefault(require("node:path"));
 const sass_language_1 = require("../../tools/esbuild/stylesheets/sass-language");
@@ -167,7 +167,6 @@ async function* runEsBuildBuildAction(action, options) {
         (0, sass_language_1.shutdownSassWorkerPool)();
     }
 }
-exports.runEsBuildBuildAction = runEsBuildBuildAction;
 async function writeAndEmitOutput(writeToFileSystem, { outputFiles, output, outputWithFiles, assetFiles }, outputOptions, writeToFileSystemFilter) {
     if (writeToFileSystem) {
         // Write output files

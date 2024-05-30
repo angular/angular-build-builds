@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.patchFetchToLoadInMemoryAssets = void 0;
+exports.patchFetchToLoadInMemoryAssets = patchFetchToLoadInMemoryAssets;
 const mrmime_1 = require("mrmime");
 const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
@@ -64,4 +64,3 @@ function patchFetchToLoadInMemoryAssets() {
     };
     global.fetch = patchedFetch;
 }
-exports.patchFetchToLoadInMemoryAssets = patchFetchToLoadInMemoryAssets;

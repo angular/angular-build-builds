@@ -10,7 +10,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.normalizeOptions = void 0;
+exports.normalizeOptions = normalizeOptions;
 const node_fs_1 = require("node:fs");
 const promises_1 = require("node:fs/promises");
 const node_module_1 = require("node:module");
@@ -247,7 +247,6 @@ async function normalizeOptions(context, projectName, options, extensions) {
         define,
     };
 }
-exports.normalizeOptions = normalizeOptions;
 async function getTailwindConfig(searchDirectories, workspaceRoot, context) {
     const tailwindConfigurationPath = (0, postcss_configuration_1.findTailwindConfiguration)(searchDirectories);
     if (!tailwindConfigurationPath) {

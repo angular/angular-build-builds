@@ -10,7 +10,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resolveAssets = void 0;
+exports.resolveAssets = resolveAssets;
 const fast_glob_1 = __importDefault(require("fast-glob"));
 const node_path_1 = __importDefault(require("node:path"));
 async function resolveAssets(entries, root) {
@@ -32,4 +32,3 @@ async function resolveAssets(entries, root) {
     }
     return outputFiles;
 }
-exports.resolveAssets = resolveAssets;

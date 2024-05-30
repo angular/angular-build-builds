@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createSourcemapIgnorelistPlugin = void 0;
+exports.createSourcemapIgnorelistPlugin = createSourcemapIgnorelistPlugin;
 /**
  * The field identifier for the sourcemap Chrome Devtools ignore list extension.
  *
@@ -70,4 +70,3 @@ function createSourcemapIgnorelistPlugin() {
         },
     };
 }
-exports.createSourcemapIgnorelistPlugin = createSourcemapIgnorelistPlugin;

@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.executeBuild = void 0;
+exports.executeBuild = executeBuild;
 const source_file_cache_1 = require("../../tools/esbuild/angular/source-file-cache");
 const budget_stats_1 = require("../../tools/esbuild/budget-stats");
 const bundler_context_1 = require("../../tools/esbuild/bundler-context");
@@ -126,4 +126,3 @@ async function executeBuild(options, context, rebuildState) {
     }
     return executionResult;
 }
-exports.executeBuild = executeBuild;

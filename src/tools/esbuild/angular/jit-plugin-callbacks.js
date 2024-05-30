@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setupJitPluginCallbacks = void 0;
+exports.setupJitPluginCallbacks = setupJitPluginCallbacks;
 const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
 const load_result_cache_1 = require("../load-result-cache");
@@ -114,4 +114,3 @@ function setupJitPluginCallbacks(build, stylesheetBundler, additionalResultFiles
         };
     }));
 }
-exports.setupJitPluginCallbacks = setupJitPluginCallbacks;

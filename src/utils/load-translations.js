@@ -30,7 +30,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createTranslationLoader = void 0;
+exports.createTranslationLoader = createTranslationLoader;
 const crypto_1 = require("crypto");
 const fs = __importStar(require("fs"));
 const load_esm_1 = require("./load-esm");
@@ -60,7 +60,6 @@ async function createTranslationLoader() {
             messages.join('\n'));
     };
 }
-exports.createTranslationLoader = createTranslationLoader;
 async function importParsers() {
     try {
         // Load ESM `@angular/localize/tools` using the TypeScript dynamic import workaround.

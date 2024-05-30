@@ -7,7 +7,8 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.loadActiveTranslations = exports.inlineI18n = void 0;
+exports.inlineI18n = inlineI18n;
+exports.loadActiveTranslations = loadActiveTranslations;
 const node_path_1 = require("node:path");
 const bundler_context_1 = require("../../tools/esbuild/bundler-context");
 const i18n_inliner_1 = require("../../tools/esbuild/i18n-inliner");
@@ -89,7 +90,6 @@ async function inlineI18n(options, executionResult, initialFiles) {
     }
     return inlineResult;
 }
-exports.inlineI18n = inlineI18n;
 function getLocaleBaseHref(baseHref, i18n, locale) {
     if (i18n.flatOutput) {
         return undefined;
@@ -125,4 +125,3 @@ async function loadActiveTranslations(context, i18n) {
         }, undefined, i18n.duplicateTranslationBehavior);
     }
 }
-exports.loadActiveTranslations = loadActiveTranslations;

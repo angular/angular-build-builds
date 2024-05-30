@@ -33,7 +33,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setupServer = exports.serveWithVite = void 0;
+exports.serveWithVite = serveWithVite;
+exports.setupServer = setupServer;
 const node_assert_1 = __importDefault(require("node:assert"));
 const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
@@ -244,7 +245,6 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
     }
     await new Promise((resolve) => (deferred = resolve));
 }
-exports.serveWithVite = serveWithVite;
 function handleUpdate(normalizePath, generatedFiles, server, serverOptions, logger) {
     const updatedFiles = [];
     // Invalidate any updated files
@@ -477,7 +477,6 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
     }
     return configuration;
 }
-exports.setupServer = setupServer;
 function getDepOptimizationConfig({ disabled, exclude, include, target, zoneless, prebundleTransformer, ssr, loader, thirdPartySourcemaps, }) {
     const plugins = [
         {

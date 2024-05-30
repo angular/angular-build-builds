@@ -5,8 +5,6 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.io/license
  */
-/// <reference types="node" />
-/// <reference types="source-map-js/source-map" />
 import { MessagePort } from 'node:worker_threads';
 import { SourceSpan, StringOptions } from 'sass';
 import type { SerializableWarningMessage } from './sass-service';

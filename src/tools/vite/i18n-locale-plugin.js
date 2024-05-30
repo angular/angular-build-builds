@@ -7,7 +7,8 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createAngularLocaleDataPlugin = exports.LOCALE_DATA_BASE_MODULE = void 0;
+exports.LOCALE_DATA_BASE_MODULE = void 0;
+exports.createAngularLocaleDataPlugin = createAngularLocaleDataPlugin;
 /**
  * The base module location used to search for locale specific data.
  */
@@ -52,4 +53,3 @@ function createAngularLocaleDataPlugin() {
         },
     };
 }
-exports.createAngularLocaleDataPlugin = createAngularLocaleDataPlugin;

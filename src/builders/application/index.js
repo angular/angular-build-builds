@@ -7,7 +7,8 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.buildApplication = exports.buildApplicationInternal = void 0;
+exports.buildApplicationInternal = buildApplicationInternal;
+exports.buildApplication = buildApplication;
 const architect_1 = require("@angular-devkit/architect");
 const bundler_context_1 = require("../../tools/esbuild/bundler-context");
 const utils_1 = require("../../tools/esbuild/utils");
@@ -104,7 +105,6 @@ context, infrastructureSettings, extensions) {
         signal,
     });
 }
-exports.buildApplicationInternal = buildApplicationInternal;
 function buildApplication(options, context, pluginsOrExtensions) {
     let extensions;
     if (pluginsOrExtensions && Array.isArray(pluginsOrExtensions)) {
@@ -117,5 +117,4 @@ function buildApplication(options, context, pluginsOrExtensions) {
     }
     return buildApplicationInternal(options, context, undefined, extensions);
 }
-exports.buildApplication = buildApplication;
 exports.default = (0, architect_1.createBuilder)(buildApplication);

@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.assertCompatibleAngularVersion = void 0;
+exports.assertCompatibleAngularVersion = assertCompatibleAngularVersion;
 /* eslint-disable no-console */
 const node_module_1 = require("node:module");
 const semver_1 = require("semver");
@@ -62,4 +62,3 @@ function assertCompatibleAngularVersion(projectRoot) {
         process.exit(3);
     }
 }
-exports.assertCompatibleAngularVersion = assertCompatibleAngularVersion;

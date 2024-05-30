@@ -10,7 +10,21 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isZonelessApp = exports.logMessages = exports.createJsonBuildManifest = exports.getSupportedNodeTargets = exports.transformSupportedBrowsersToTargets = exports.convertOutputFile = exports.createOutputFileFromData = exports.createOutputFileFromText = exports.emitFilesToDisk = exports.writeResultFiles = exports.getFeatureSupport = exports.withNoProgress = exports.withSpinner = exports.calculateEstimatedTransferSizes = exports.logBuildStats = void 0;
+exports.logBuildStats = logBuildStats;
+exports.calculateEstimatedTransferSizes = calculateEstimatedTransferSizes;
+exports.withSpinner = withSpinner;
+exports.withNoProgress = withNoProgress;
+exports.getFeatureSupport = getFeatureSupport;
+exports.writeResultFiles = writeResultFiles;
+exports.emitFilesToDisk = emitFilesToDisk;
+exports.createOutputFileFromText = createOutputFileFromText;
+exports.createOutputFileFromData = createOutputFileFromData;
+exports.convertOutputFile = convertOutputFile;
+exports.transformSupportedBrowsersToTargets = transformSupportedBrowsersToTargets;
+exports.getSupportedNodeTargets = getSupportedNodeTargets;
+exports.createJsonBuildManifest = createJsonBuildManifest;
+exports.logMessages = logMessages;
+exports.isZonelessApp = isZonelessApp;
 const esbuild_1 = require("esbuild");
 const node_crypto_1 = require("node:crypto");
 const node_fs_1 = require("node:fs");
@@ -76,7 +90,6 @@ function logBuildStats(metafile, initial, budgetFailures, colors, changedFiles, 
     }
     return '';
 }
-exports.logBuildStats = logBuildStats;
 async function calculateEstimatedTransferSizes(outputFiles) {
     const sizes = new Map();
     if (outputFiles.length <= 0) {
@@ -115,7 +128,6 @@ async function calculateEstimatedTransferSizes(outputFiles) {
         }
     });
 }
-exports.calculateEstimatedTransferSizes = calculateEstimatedTransferSizes;
 async function withSpinner(text, action) {
     const spinner = new spinner_1.Spinner(text);
     spinner.start();
@@ -126,11 +138,9 @@ async function withSpinner(text, action) {
         spinner.stop();
     }
 }
-exports.withSpinner = withSpinner;
 async function withNoProgress(text, action) {
     return action();
 }
-exports.withNoProgress = withNoProgress;
 /**
  * Generates a syntax feature object map for Angular applications based on a list of targets.
  * A full set of feature names can be found here: https://esbuild.github.io/api/#supported
@@ -181,7 +191,6 @@ function getFeatureSupport(target, nativeAsyncAwait) {
     }
     return supported;
 }
-exports.getFeatureSupport = getFeatureSupport;
 async function writeResultFiles(outputFiles, assetFiles, { base, browser, server }) {
     const directoryExists = new Set();
     const ensureDirectoryExists = async (destPath) => {
@@ -224,7 +233,6 @@ async function writeResultFiles(outputFiles, assetFiles, { base, browser, server
         });
     }
 }
-exports.writeResultFiles = writeResultFiles;
 const MAX_CONCURRENT_WRITES = 64;
 async function emitFilesToDisk(files, writeFileCallback) {
     // Write files in groups of MAX_CONCURRENT_WRITES to avoid too many open files
@@ -237,7 +245,6 @@ async function emitFilesToDisk(files, writeFileCallback) {
         await Promise.all(actions);
     }
 }
-exports.emitFilesToDisk = emitFilesToDisk;
 function createOutputFileFromText(path, text, type) {
     return {
         path,
@@ -254,7 +261,6 @@ function createOutputFileFromText(path, text, type) {
         },
     };
 }
-exports.createOutputFileFromText = createOutputFileFromText;
 function createOutputFileFromData(path, data, type) {
     return {
         path,
@@ -273,7 +279,6 @@ function createOutputFileFromData(path, data, type) {
         },
     };
 }
-exports.createOutputFileFromData = createOutputFileFromData;
 function convertOutputFile(file, type) {
     const { path, contents, hash } = file;
     return {
@@ -289,7 +294,6 @@ function convertOutputFile(file, type) {
         },
     };
 }
-exports.convertOutputFile = convertOutputFile;
 /**
  * Transform browserlists result to esbuild target.
  * @see https://esbuild.github.io/api/#target
@@ -333,7 +337,6 @@ function transformSupportedBrowsersToTargets(supportedBrowsers) {
     }
     return transformed;
 }
-exports.transformSupportedBrowsersToTargets = transformSupportedBrowsersToTargets;
 const SUPPORTED_NODE_VERSIONS = '^18.19.1 || ^20.11.1 || >=22.0.0';
 /**
  * Transform supported Node.js versions to esbuild target.
@@ -346,7 +349,6 @@ function getSupportedNodeTargets() {
     }
     return SUPPORTED_NODE_VERSIONS.split('||').map((v) => 'node' + (0, semver_1.coerce)(v)?.version);
 }
-exports.getSupportedNodeTargets = getSupportedNodeTargets;
 async function createJsonBuildManifest(result, normalizedOptions) {
     const { colors: color, outputOptions: { base, server, browser }, ssrOptions, } = normalizedOptions;
     const { warnings, errors, prerenderedRoutes } = result;
@@ -362,7 +364,6 @@ async function createJsonBuildManifest(result, normalizedOptions) {
     };
     return JSON.stringify(manifest, undefined, 2);
 }
-exports.createJsonBuildManifest = createJsonBuildManifest;
 async function logMessages(logger, executionResult, color, jsonLogs) {
     const { warnings, errors, logs } = executionResult;
     if (logs.length) {
@@ -378,7 +379,6 @@ async function logMessages(logger, executionResult, color, jsonLogs) {
         logger.error((await (0, esbuild_1.formatMessages)(errors, { kind: 'error', color })).join('\n'));
     }
 }
-exports.logMessages = logMessages;
 /**
  * Ascertain whether the application operates without `zone.js`, we currently rely on the polyfills setting to determine its status.
  * If a file with an extension is provided or if `zone.js` is included in the polyfills, the application is deemed as not zoneless.
@@ -389,4 +389,3 @@ function isZonelessApp(polyfills) {
     // TODO: Instead, we should rely on the presence of zone.js in the polyfills build metadata.
     return !polyfills?.some((p) => p === 'zone.js' || /\.[mc]?[jt]s$/.test(p));
 }
-exports.isZonelessApp = isZonelessApp;
