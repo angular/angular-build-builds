@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "18.1.0-next.0+sha-65fb005",
+  "version": "18.1.0-next.0+sha-e5cf3c8",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -23,7 +23,7 @@
   "builders": "builders.json",
   "dependencies": {
     "@ampproject/remapping": "2.3.0",
-    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#65fb005",
+    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#e5cf3c8",
     "@babel/core": "7.24.6",
     "@babel/helper-annotate-as-pure": "7.24.6",
     "@babel/helper-split-export-declaration": "7.24.6",
@@ -42,9 +42,9 @@
     "picomatch": "4.0.2",
     "piscina": "4.5.1",
     "parse5-html-rewriting-stream": "7.0.0",
-    "sass": "1.77.2",
+    "sass": "1.77.3",
     "semver": "7.6.2",
-    "undici": "6.18.1",
+    "undici": "6.18.2",
     "vite": "5.2.12",
     "watchpack": "2.4.1"
   },
