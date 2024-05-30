@@ -37,6 +37,7 @@ exports.serveWithVite = serveWithVite;
 exports.setupServer = setupServer;
 const node_assert_1 = __importDefault(require("node:assert"));
 const promises_1 = require("node:fs/promises");
+const node_module_1 = require("node:module");
 const node_path_1 = require("node:path");
 const angular_memory_plugin_1 = require("../../tools/vite/angular-memory-plugin");
 const i18n_locale_plugin_1 = require("../../tools/vite/i18n-locale-plugin");
@@ -162,16 +163,24 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
             }
         }
         // To avoid disconnecting the array objects from the option, these arrays need to be mutated instead of replaced.
+        let requiresServerRestart = false;
         if (result.externalMetadata) {
             const { implicitBrowser, implicitServer, explicit } = result.externalMetadata;
+            const implicitServerFiltered = implicitServer.filter((m) => removeNodeJsBuiltinModules(m) && removeAbsoluteUrls(m));
+            const implicitBrowserFiltered = implicitBrowser.filter(removeAbsoluteUrls);
+            if (browserOptions.ssr && serverOptions.prebundle !== false) {
+                const previousImplicitServer = new Set(externalMetadata.implicitServer);
+                // Restart the server to force SSR dep re-optimization when a dependency has been added.
+                // This is a workaround for: https://github.com/vitejs/vite/issues/14896
+                requiresServerRestart = implicitServerFiltered.some((dep) => !previousImplicitServer.has(dep));
+            }
             // Empty Arrays to avoid growing unlimited with every re-build.
             externalMetadata.explicit.length = 0;
             externalMetadata.implicitServer.length = 0;
             externalMetadata.implicitBrowser.length = 0;
             externalMetadata.explicit.push(...explicit);
-            // Remove any absolute URLs (http://, https://, //) to avoid Vite's prebundling from processing them as files
-            externalMetadata.implicitServer.push(...implicitServer.filter((value) => !/^(?:https?:)?\/\//.test(value)));
-            externalMetadata.implicitBrowser.push(...implicitBrowser.filter((value) => !/^(?:https?:)?\/\//.test(value)));
+            externalMetadata.implicitServer.push(...implicitServerFiltered);
+            externalMetadata.implicitBrowser.push(...implicitBrowserFiltered);
             // The below needs to be sorted as Vite uses these options are part of the hashing invalidation algorithm.
             // See: https://github.com/vitejs/vite/blob/0873bae0cfe0f0718ad2f5743dd34a17e4ab563d/packages/vite/src/node/optimizer/index.ts#L1203-L1239
             externalMetadata.explicit.sort();
@@ -183,7 +192,12 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
             server.config.server.fs.allow = [
                 ...new Set([...server.config.server.fs.allow, ...assetFiles.values()]),
             ];
-            handleUpdate(normalizePath, generatedFiles, server, serverOptions, context.logger);
+            await handleUpdate(normalizePath, generatedFiles, server, serverOptions, context.logger);
+            if (requiresServerRestart) {
+                // Restart the server to force SSR dep re-optimization when a dependency has been added.
+                // This is a workaround for: https://github.com/vitejs/vite/issues/14896
+                await server.restart();
+            }
         }
         else {
             const projectName = context.target?.project;
@@ -203,16 +217,10 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
             const serverConfiguration = await setupServer(serverOptions, generatedFiles, assetFiles, browserOptions.preserveSymlinks, externalMetadata, !!browserOptions.ssr, prebundleTransformer, target, (0, internal_1.isZonelessApp)(polyfills), browserOptions.loader, extensions?.middleware, transformers?.indexHtml, thirdPartySourcemaps);
             server = await createServer(serverConfiguration);
             await server.listen();
-            if (serverConfiguration.ssr?.optimizeDeps?.disabled === false) {
-                /**
-                 * Vite will only start dependency optimization of SSR modules when the first request comes in.
-                 * In some cases, this causes a long waiting time. To mitigate this, we call `ssrLoadModule` to
-                 * initiate this process before the first request.
-                 *
-                 * NOTE: This will intentionally fail from the unknown module, but currently there is no other way
-                 * to initiate the SSR dep optimizer.
-                 */
-                void server.ssrLoadModule('<deps-caller>').catch(() => { });
+            if (browserOptions.ssr && serverOptions.prebundle !== false) {
+                // Warm up the SSR request and begin optimizing dependencies.
+                // Without this, Vite will only start optimizing SSR modules when the first request is made.
+                void server.warmupRequest('./main.server.mjs', { ssr: true });
             }
             const urls = server.resolvedUrls;
             if (urls && (urls.local.length || urls.network.length)) {
@@ -338,10 +346,6 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
     const { normalizePath } = await (0, load_esm_1.loadEsmModule)('vite');
     // Path will not exist on disk and only used to provide separate path for Vite requests
     const virtualProjectRoot = normalizePath((0, node_path_1.join)(serverOptions.workspaceRoot, `.angular/vite-root`, serverOptions.buildTarget.project));
-    const serverExplicitExternal = [
-        ...(await Promise.resolve().then(() => __importStar(require('node:module')))).builtinModules,
-        ...externalMetadata.explicit,
-    ];
     const cacheDir = (0, node_path_1.join)(serverOptions.cacheOptions.path, 'vite');
     const configuration = {
         configFile: false,
@@ -402,22 +406,12 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
             // Note: `true` and `/.*/` have different sematics. When true, the `external` option is ignored.
             noExternal: /.*/,
             // Exclude any Node.js built in module and provided dependencies (currently build defined externals)
-            external: serverExplicitExternal,
+            external: externalMetadata.explicit,
             optimizeDeps: getDepOptimizationConfig({
-                /**
-                 * *********************************************
-                 * NOTE: Temporary disable 'optimizeDeps' for SSR.
-                 * *********************************************
-                 *
-                 * Currently this causes a number of issues.
-                 * - Deps are re-optimized everytime the server is started.
-                 * - Added deps after a rebuild are not optimized.
-                 * - Breaks RxJs (Unless it is added as external). See: https://github.com/angular/angular-cli/issues/26235
-                 */
                 // Only enable with caching since it causes prebundle dependencies to be cached
-                disabled: true, // serverOptions.prebundle === false,
+                disabled: serverOptions.prebundle === false,
                 // Exclude any explicitly defined dependencies (currently build defined externals and node.js built-ins)
-                exclude: serverExplicitExternal,
+                exclude: externalMetadata.explicit,
                 // Include all implict dependencies from the external packages internal option
                 include: externalMetadata.implicitServer,
                 ssr: true,
@@ -510,4 +504,13 @@ function getDepOptimizationConfig({ disabled, exclude, include, target, zoneless
             loader,
         },
     };
+}
+const nodeJsBuiltinModules = new Set(node_module_1.builtinModules);
+/** Remove any Node.js builtin modules to avoid Vite's prebundling from processing them as files. */
+function removeNodeJsBuiltinModules(value) {
+    return !nodeJsBuiltinModules.has(value);
+}
+/** Remove any absolute URLs (http://, https://, //) to avoid Vite's prebundling from processing them as files. */
+function removeAbsoluteUrls(value) {
+    return !/^(?:https?:)?\/\//.test(value);
 }

@@ -54,12 +54,7 @@ function setupBundlerContexts(options, browsers, codeBundleCache) {
     if (serverEntryPoint && (prerenderOptions || appShellOptions || ssrOptions)) {
         const nodeTargets = [...target, ...(0, utils_1.getSupportedNodeTargets)()];
         // Server application code
-        bundlerContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, !!options.watch, (0, application_code_bundle_1.createServerCodeBundleOptions)({
-            ...options,
-            // Disable external deps for server bundles.
-            // This is because it breaks Vite 'optimizeDeps' for SSR.
-            externalPackages: false,
-        }, nodeTargets, codeBundleCache)));
+        bundlerContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, !!options.watch, (0, application_code_bundle_1.createServerCodeBundleOptions)(options, nodeTargets, codeBundleCache)));
         // Server polyfills code
         const serverPolyfillBundleOptions = (0, application_code_bundle_1.createServerPolyfillBundleOptions)(options, nodeTargets, codeBundleCache);
         if (serverPolyfillBundleOptions) {
