@@ -169,6 +169,10 @@ async function compileString(data, filePath, syntax, options, resolveUrl) {
     catch (error) {
         if (isSassException(error)) {
             const fileWithError = error.span.url ? (0, node_url_1.fileURLToPath)(error.span.url) : undefined;
+            const watchFiles = [filePath, ...extractFilesFromStack(error.sassStack)];
+            if (fileWithError) {
+                watchFiles.push(fileWithError);
+            }
             return {
                 loader: 'css',
                 errors: [
@@ -177,7 +181,7 @@ async function compileString(data, filePath, syntax, options, resolveUrl) {
                     },
                 ],
                 warnings,
-                watchFiles: fileWithError ? [filePath, fileWithError] : [filePath],
+                watchFiles,
             };
         }
         throw error;
@@ -189,4 +193,26 @@ function sourceMapToUrlComment(sourceMap, root) {
     sourceMap.sources = sourceMap.sources.map((source) => (0, node_path_1.relative)(root, (0, node_url_1.fileURLToPath)(source)));
     const urlSourceMap = Buffer.from(JSON.stringify(sourceMap), 'utf-8').toString('base64');
     return `/*# sourceMappingURL=data:application/json;charset=utf-8;base64,${urlSourceMap} */`;
+}
+function* extractFilesFromStack(stack) {
+    const lines = stack.split('\n');
+    const cwd = process.cwd();
+    // Stack line has format of "<file> <location> <identifier>"
+    for (const line of lines) {
+        const segments = line.split(' ');
+        if (segments.length < 3) {
+            break;
+        }
+        // Extract path from stack line.
+        // Paths may contain spaces. All segments before location are part of the file path.
+        let path = '';
+        let index = 0;
+        while (!segments[index].match(/\d+:\d+/)) {
+            path += segments[index++];
+        }
+        if (path) {
+            // Stack paths from dart-sass are relative to the current working directory (not input file or workspace root)
+            yield (0, node_path_1.join)(cwd, path);
+        }
+    }
 }
