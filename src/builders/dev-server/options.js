@@ -48,6 +48,30 @@ async function normalizeOptions(context, projectName, options) {
             logger.warn('Prebundling has been configured but will not be used because scripts optimization is enabled.');
         }
     }
+    let inspect = false;
+    const inspectRaw = options.inspect;
+    if (inspectRaw === true || inspectRaw === '' || inspectRaw === 'true') {
+        inspect = {
+            host: undefined,
+            port: undefined,
+        };
+    }
+    else if (typeof inspectRaw === 'string' && inspectRaw !== 'false') {
+        const port = +inspectRaw;
+        if (isFinite(port)) {
+            inspect = {
+                host: undefined,
+                port,
+            };
+        }
+        else {
+            const [host, port] = inspectRaw.split(':');
+            inspect = {
+                host,
+                port: isNaN(+port) ? undefined : +port,
+            };
+        }
+    }
     // Initial options to keep
     const { host, port, poll, open, verbose, watch, liveReload, hmr, headers, proxyConfig, servePath, ssl, sslCert, sslKey, prebundle, } = options;
     // Return all the normalized options
@@ -72,5 +96,6 @@ async function normalizeOptions(context, projectName, options) {
         sslKey,
         // Prebundling defaults to true but requires caching to function
         prebundle: cacheOptions.enabled && !optimization.scripts && prebundle,
+        inspect,
     };
 }
