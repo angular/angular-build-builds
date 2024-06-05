@@ -133,8 +133,10 @@ class AotCompilation extends angular_compilation_1.AngularCompilation {
     }
     emitAffectedFiles() {
         (0, node_assert_1.default)(this.#state, 'Angular compilation must be initialized prior to emitting files.');
-        const { angularCompiler, compilerHost, typeScriptProgram, webWorkerTransform } = this.#state;
-        const buildInfoFilename = typeScriptProgram.getCompilerOptions().tsBuildInfoFile ?? '.tsbuildinfo';
+        const { affectedFiles, angularCompiler, compilerHost, typeScriptProgram, webWorkerTransform } = this.#state;
+        const compilerOptions = typeScriptProgram.getCompilerOptions();
+        const buildInfoFilename = compilerOptions.tsBuildInfoFile ?? '.tsbuildinfo';
+        const useTypeScriptTranspilation = !compilerOptions.isolatedModules || !!compilerOptions.sourceMap;
         const emittedFiles = new Map();
         const writeFileCallback = (filename, contents, _a, _b, sourceFiles) => {
             if (!sourceFiles?.length && filename.endsWith(buildInfoFilename)) {
@@ -154,9 +156,20 @@ class AotCompilation extends angular_compilation_1.AngularCompilation {
         transformers.before ??= [];
         transformers.before.push((0, jit_bootstrap_transformer_1.replaceBootstrap)(() => typeScriptProgram.getProgram().getTypeChecker()));
         transformers.before.push(webWorkerTransform);
-        // TypeScript will loop until there are no more affected files in the program
-        while (typeScriptProgram.emitNextAffectedFile(writeFileCallback, undefined, undefined, transformers)) {
-            /* empty */
+        // Emit is handled in write file callback when using TypeScript
+        if (useTypeScriptTranspilation) {
+            // TypeScript will loop until there are no more affected files in the program
+            while (typeScriptProgram.emitNextAffectedFile(writeFileCallback, undefined, undefined, transformers)) {
+                /* empty */
+            }
+        }
+        else if (compilerOptions.tsBuildInfoFile) {
+            // Manually get the builder state for the persistent cache
+            // The TypeScript API currently embeds this behavior inside the program emit
+            // via emitNextAffectedFile but that also applies all internal transforms.
+            const programWithGetState = typeScriptProgram.getProgram();
+            (0, node_assert_1.default)(typeof programWithGetState.emitBuildInfo === 'function', 'TypeScript program emitBuildInfo is missing.');
+            programWithGetState.emitBuildInfo();
         }
         // Angular may have files that must be emitted but TypeScript does not consider affected
         for (const sourceFile of typeScriptProgram.getSourceFiles()) {
@@ -166,10 +179,32 @@ class AotCompilation extends angular_compilation_1.AngularCompilation {
             if (sourceFile.isDeclarationFile) {
                 continue;
             }
-            if (angularCompiler.incrementalCompilation.safeToSkipEmit(sourceFile)) {
+            if (angularCompiler.incrementalCompilation.safeToSkipEmit(sourceFile) &&
+                !affectedFiles.has(sourceFile)) {
                 continue;
             }
-            typeScriptProgram.emit(sourceFile, writeFileCallback, undefined, undefined, transformers);
+            if (useTypeScriptTranspilation) {
+                typeScriptProgram.emit(sourceFile, writeFileCallback, undefined, undefined, transformers);
+                continue;
+            }
+            // When not using TypeScript transpilation, directly apply only Angular specific transformations
+            const transformResult = typescript_1.default.transform(sourceFile, [
+                ...(transformers.before ?? []),
+                ...(transformers.after ?? []),
+            ], compilerOptions);
+            (0, node_assert_1.default)(transformResult.transformed.length === 1, 'TypeScript transforms should not produce multiple outputs for ' + sourceFile.fileName);
+            let contents;
+            if (sourceFile === transformResult.transformed[0]) {
+                // Use original content if no changes were made
+                contents = sourceFile.text;
+            }
+            else {
+                // Otherwise, print the transformed source file
+                const printer = typescript_1.default.createPrinter(compilerOptions, transformResult);
+                contents = printer.printFile(transformResult.transformed[0]);
+            }
+            angularCompiler.incrementalCompilation.recordSuccessfulEmit(sourceFile);
+            emittedFiles.set(sourceFile, { filename: sourceFile.fileName, contents });
         }
         return emittedFiles.values();
     }

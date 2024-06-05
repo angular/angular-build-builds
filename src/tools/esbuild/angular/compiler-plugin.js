@@ -78,6 +78,8 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
             let hasCompilationErrors = true;
             // Determines if TypeScript should process JavaScript files based on tsconfig `allowJs` option
             let shouldTsIgnoreJs = true;
+            // Determines if transpilation should be handle by TypeScript or esbuild
+            let useTypeScriptTranspilation = true;
             // Track incremental component stylesheet builds
             const stylesheetBundler = new component_stylesheets_1.ComponentStylesheetBundler(styleOptions, pluginOptions.incremental);
             let sharedTSCompilationState;
@@ -180,6 +182,11 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
                 try {
                     const initializationResult = await compilation.initialize(pluginOptions.tsconfig, hostOptions, createCompilerOptionsTransformer(setupWarnings, pluginOptions, preserveSymlinks));
                     shouldTsIgnoreJs = !initializationResult.compilerOptions.allowJs;
+                    // Isolated modules option ensures safe non-TypeScript transpilation.
+                    // Typescript printing support for sourcemaps is not yet integrated.
+                    useTypeScriptTranspilation =
+                        !initializationResult.compilerOptions.isolatedModules ||
+                            !!initializationResult.compilerOptions.sourceMap;
                     referencedFiles = initializationResult.referencedFiles;
                 }
                 catch (error) {
@@ -250,8 +257,9 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
             });
             build.onLoad({ filter: /\.[cm]?[jt]sx?$/ }, async (args) => {
                 const request = path.normalize(pluginOptions.fileReplacements?.[path.normalize(args.path)] ?? args.path);
+                const isJS = /\.[cm]?js$/.test(request);
                 // Skip TS load attempt if JS TypeScript compilation not enabled and file is JS
-                if (shouldTsIgnoreJs && /\.[cm]?js$/.test(request)) {
+                if (shouldTsIgnoreJs && isJS) {
                     return undefined;
                 }
                 // The filename is currently used as a cache key. Since the cache is memory only,
@@ -267,7 +275,7 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
                     }
                     // No TS result indicates the file is not part of the TypeScript program.
                     // If allowJs is enabled and the file is JS then defer to the next load hook.
-                    if (!shouldTsIgnoreJs && /\.[cm]?js$/.test(request)) {
+                    if (!shouldTsIgnoreJs && isJS) {
                         return undefined;
                     }
                     // Otherwise return an error
@@ -277,8 +285,9 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
                         ],
                     };
                 }
-                else if (typeof contents === 'string') {
-                    // A string indicates untransformed output from the TS/NG compiler
+                else if (typeof contents === 'string' && (useTypeScriptTranspilation || isJS)) {
+                    // A string indicates untransformed output from the TS/NG compiler.
+                    // This step is unneeded when using esbuild transpilation.
                     const sideEffects = await hasSideEffects(request);
                     contents = await javascriptTransformer.transformData(request, contents, true /* skipLinker */, sideEffects);
                     // Store as the returned Uint8Array to allow caching the fully transformed code
@@ -286,7 +295,7 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
                 }
                 return {
                     contents,
-                    loader: 'js',
+                    loader: useTypeScriptTranspilation || isJS ? 'js' : 'ts',
                 };
             });
             build.onLoad({ filter: /\.[cm]?js$/ }, (0, load_result_cache_1.createCachedLoad)(pluginOptions.loadResultCache, async (args) => {

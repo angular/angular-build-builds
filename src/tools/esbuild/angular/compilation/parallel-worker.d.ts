@@ -22,6 +22,8 @@ export declare function initialize(request: InitRequest): Promise<{
     referencedFiles: readonly string[];
     compilerOptions: {
         allowJs: boolean | undefined;
+        isolatedModules: boolean | undefined;
+        sourceMap: boolean | undefined;
     };
 }>;
 export declare function diagnose(modes: DiagnosticModes): Promise<{

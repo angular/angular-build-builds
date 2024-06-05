@@ -70,8 +70,12 @@ async function initialize(request) {
     });
     return {
         referencedFiles,
-        // TODO: Expand? `allowJs` is the only field needed currently.
-        compilerOptions: { allowJs: compilerOptions.allowJs },
+        // TODO: Expand? `allowJs`, `isolatedModules`, `sourceMap` are the only fields needed currently.
+        compilerOptions: {
+            allowJs: compilerOptions.allowJs,
+            isolatedModules: compilerOptions.isolatedModules,
+            sourceMap: compilerOptions.sourceMap,
+        },
     };
 }
 async function diagnose(modes) {
