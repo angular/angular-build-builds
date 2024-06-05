@@ -35,7 +35,7 @@ export default function inlineLocale(request: InlineRequest): Promise<{
     code: string;
     map: string | undefined;
     messages: {
-        type: "error" | "warning";
+        type: "warning" | "error";
         message: string;
     }[];
 }>;

@@ -43,14 +43,14 @@ export default function renderSassStylesheet(request: RenderRequestMessage): Pro
     result: {
         loadedUrls: string[];
         css: string;
-        sourceMap?: import("source-map-js").RawSourceMap | undefined;
+        sourceMap?: import("source-map-js").RawSourceMap;
     };
     error?: undefined;
 } | {
     warnings: SerializableWarningMessage[] | undefined;
     error: {
         span: Omit<SourceSpan, "url"> & {
-            url?: string | undefined;
+            url?: string;
         };
         message: string;
         stack: string | undefined;
