@@ -74,7 +74,8 @@ async function augmentIndexHtml(params) {
         }
         scriptTags.push(`<script ${attrs.join(' ')}></script>`);
     }
-    let linkTags = [];
+    let headerLinkTags = [];
+    let bodyLinkTags = [];
     for (const src of stylesheets) {
         const attrs = [`rel="stylesheet"`, `href="${deployUrl}${src}"`];
         if (crossOrigin !== 'none') {
@@ -84,7 +85,7 @@ async function augmentIndexHtml(params) {
             const content = await loadOutputFile(src);
             attrs.push(generateSriAttributes(content));
         }
-        linkTags.push(`<link ${attrs.join(' ')}>`);
+        headerLinkTags.push(`<link ${attrs.join(' ')}>`);
     }
     if (params.hints?.length) {
         for (const hint of params.hints) {
@@ -113,7 +114,15 @@ async function augmentIndexHtml(params) {
                 const content = await loadOutputFile(hint.url);
                 attrs.push(generateSriAttributes(content));
             }
-            linkTags.push(`<link ${attrs.join(' ')}>`);
+            const tag = `<link ${attrs.join(' ')}>`;
+            if (hint.mode === 'modulepreload') {
+                // Module preloads should be placed by the inserted script elements in the body since
+                // they are only useful in combination with the scripts.
+                bodyLinkTags.push(tag);
+            }
+            else {
+                headerLinkTags.push(tag);
+            }
         }
     }
     const dir = lang ? await getLanguageDirection(lang, warnings) : undefined;
@@ -165,7 +174,7 @@ async function augmentIndexHtml(params) {
         .on('endTag', (tag) => {
         switch (tag.tagName) {
             case 'head':
-                for (const linkTag of linkTags) {
+                for (const linkTag of headerLinkTags) {
                     rewriter.emitRaw(linkTag);
                 }
                 if (imageDomains) {
@@ -175,9 +184,13 @@ async function augmentIndexHtml(params) {
                         }
                     }
                 }
-                linkTags = [];
+                headerLinkTags = [];
                 break;
             case 'body':
+                for (const linkTag of bodyLinkTags) {
+                    rewriter.emitRaw(linkTag);
+                }
+                bodyLinkTags = [];
                 // Add script tags
                 for (const scriptTag of scriptTags) {
                     rewriter.emitRaw(scriptTag);
@@ -189,9 +202,9 @@ async function augmentIndexHtml(params) {
     });
     const content = await transformedContent();
     return {
-        content: linkTags.length || scriptTags.length
+        content: headerLinkTags.length || scriptTags.length
             ? // In case no body/head tags are not present (dotnet partial templates)
-                linkTags.join('') + scriptTags.join('') + content
+                headerLinkTags.join('') + scriptTags.join('') + content
             : content,
         warnings,
         errors,
