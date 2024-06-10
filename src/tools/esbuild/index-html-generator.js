@@ -19,7 +19,7 @@ const bundler_context_1 = require("./bundler-context");
  * The maximum number of module preload link elements that should be added for
  * initial scripts.
  */
-const MODULE_PRELOAD_MAX = 3;
+const MODULE_PRELOAD_MAX = 10;
 async function generateIndexHtml(initialFiles, outputFiles, buildOptions, lang) {
     // Analyze metafile for initial link-based hints.
     // Skip if the internal externalPackages option is enabled since this option requires
@@ -28,19 +28,14 @@ async function generateIndexHtml(initialFiles, outputFiles, buildOptions, lang) 
     const { indexHtmlOptions, externalPackages, optimizationOptions, crossOrigin, subresourceIntegrity, baseHref, } = buildOptions;
     (0, node_assert_1.default)(indexHtmlOptions, 'indexHtmlOptions cannot be undefined.');
     if (!externalPackages && indexHtmlOptions.preloadInitial) {
-        let modulePreloadCount = 0;
+        const modulePreloads = [];
         for (const [key, value] of initialFiles) {
             if (value.entrypoint || value.serverFile) {
                 // Entry points are already referenced in the HTML
                 continue;
             }
-            // Only add shallow preloads
-            if (value.depth > 1) {
-                continue;
-            }
-            if (value.type === 'script' && modulePreloadCount < MODULE_PRELOAD_MAX) {
-                modulePreloadCount++;
-                hints.push({ url: key, mode: 'modulepreload' });
+            if (value.type === 'script') {
+                modulePreloads.push({ url: key, mode: 'modulepreload', depth: value.depth });
             }
             else if (value.type === 'style') {
                 // Provide an "as" value of "style" to ensure external URLs which may not have a
@@ -48,6 +43,9 @@ async function generateIndexHtml(initialFiles, outputFiles, buildOptions, lang) 
                 hints.push({ url: key, mode: 'preload', as: 'style' });
             }
         }
+        // Limit the number of module preloads with smallest depth given priority
+        modulePreloads.sort((a, b) => a.depth - b.depth);
+        hints.push(...modulePreloads.slice(0, MODULE_PRELOAD_MAX));
     }
     /** Virtual output path to support reading in-memory files. */
     const browserOutputFiles = outputFiles.filter(({ type }) => type === bundler_context_1.BuildOutputFileType.Browser);
