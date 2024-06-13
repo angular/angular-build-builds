@@ -60,7 +60,12 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
                 const { LmbdCacheStore } = await Promise.resolve().then(() => __importStar(require('../lmdb-cache-store')));
                 cacheStore = new LmbdCacheStore(path.join(pluginOptions.sourceFileCache.persistentCachePath, 'angular-compiler.db'));
             }
-            const javascriptTransformer = new javascript_transformer_1.JavaScriptTransformer(pluginOptions, environment_options_1.maxWorkers, cacheStore?.createCache('jstransformer'));
+            const javascriptTransformer = new javascript_transformer_1.JavaScriptTransformer({
+                sourcemap: !!pluginOptions.sourcemap,
+                thirdPartySourcemaps: pluginOptions.thirdPartySourcemaps,
+                advancedOptimizations: pluginOptions.advancedOptimizations,
+                jit: pluginOptions.jit,
+            }, environment_options_1.maxWorkers, cacheStore?.createCache('jstransformer'));
             // Setup defines based on the values used by the Angular compiler-cli
             build.initialOptions.define ??= {};
             build.initialOptions.define['ngI18nClosureMode'] ??= 'false';
@@ -395,8 +400,8 @@ function createCompilerOptionsTransformer(setupWarnings, pluginOptions, preserve
         return {
             ...compilerOptions,
             noEmitOnError: false,
-            inlineSources: pluginOptions.sourcemap,
-            inlineSourceMap: pluginOptions.sourcemap,
+            inlineSources: !!pluginOptions.sourcemap,
+            inlineSourceMap: !!pluginOptions.sourcemap,
             mapRoot: undefined,
             sourceRoot: undefined,
             preserveSymlinks,
