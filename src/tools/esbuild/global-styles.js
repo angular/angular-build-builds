@@ -34,7 +34,7 @@ function createGlobalStylesBundleOptions(options, target, initial) {
             workspaceRoot,
             optimization: !!optimizationOptions.styles.minify,
             inlineFonts: !!optimizationOptions.fonts.inline,
-            sourcemap: !!sourcemapOptions.styles,
+            sourcemap: !!sourcemapOptions.styles && (sourcemapOptions.hidden ? 'external' : true),
             preserveSymlinks,
             target,
             externalDependencies,

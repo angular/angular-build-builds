@@ -10,7 +10,7 @@ import { LoadResultCache } from '../load-result-cache';
 import { BundleStylesheetOptions } from '../stylesheets/bundle-options';
 import { SourceFileCache } from './source-file-cache';
 export interface CompilerPluginOptions {
-    sourcemap: boolean;
+    sourcemap: boolean | 'external';
     tsconfig: string;
     jit?: boolean;
     /** Skip TypeScript compilation setup. This is useful to re-use the TypeScript compilation from another plugin. */
