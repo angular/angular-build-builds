@@ -508,6 +508,7 @@ function getDepOptimizationConfig({ disabled, exclude, include, target, zoneless
             supported: (0, internal_1.getFeatureSupport)(target, zoneless),
             plugins,
             loader,
+            resolveExtensions: ['.mjs', '.js', '.cjs'],
         },
     };
 }
