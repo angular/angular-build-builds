@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "18.1.0-next.2+sha-2324d5a",
+  "version": "18.1.0-next.2+sha-a90a783",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -23,7 +23,7 @@
   "builders": "builders.json",
   "dependencies": {
     "@ampproject/remapping": "2.3.0",
-    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#2324d5a",
+    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#a90a783",
     "@babel/core": "7.24.7",
     "@babel/helper-annotate-as-pure": "7.24.7",
     "@babel/helper-split-export-declaration": "7.24.7",
@@ -78,7 +78,7 @@
       "optional": true
     }
   },
-  "packageManager": "yarn@4.2.2",
+  "packageManager": "yarn@4.3.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/angular/angular-cli.git"
