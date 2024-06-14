@@ -42,18 +42,14 @@ function createAngularMemoryPlugin(options) {
                 return (0, node_path_1.join)(virtualProjectRoot, source);
             }
         },
-        async load(id) {
+        load(id) {
             const [file] = id.split('?', 1);
             const relativeFile = '/' + normalizePath((0, node_path_1.relative)(virtualProjectRoot, file));
             const codeContents = outputFiles.get(relativeFile)?.contents;
             if (codeContents === undefined) {
-                if (relativeFile.endsWith('/node_modules/vite/dist/client/client.mjs')) {
-                    return {
-                        code: await loadViteClientCode(file),
-                        map: await (0, promises_1.readFile)(file + '.map', 'utf-8'),
-                    };
-                }
-                return;
+                return relativeFile.endsWith('/node_modules/vite/dist/client/client.mjs')
+                    ? loadViteClientCode(file)
+                    : undefined;
             }
             const code = Buffer.from(codeContents).toString('utf-8');
             const mapContents = outputFiles.get(relativeFile + '.map')?.contents;
@@ -231,9 +227,13 @@ function createAngularMemoryPlugin(options) {
  */
 async function loadViteClientCode(file) {
     const originalContents = await (0, promises_1.readFile)(file, 'utf-8');
-    const updatedContents = originalContents.replace(`h('br'), 'You can also disable this overlay by setting ', ` +
-        `h('code', { part: 'config-option-name' }, 'server.hmr.overlay'), '` +
-        ` to ', h('code', { part: 'config-option-value' }, 'false'), ' in ', h('code', { part: 'config-file-name' }, hmrConfigName), '.'`, '');
+    const updatedContents = originalContents.replace(`"You can also disable this overlay by setting ",
+      h("code", { part: "config-option-name" }, "server.hmr.overlay"),
+      " to ",
+      h("code", { part: "config-option-value" }, "false"),
+      " in ",
+      h("code", { part: "config-file-name" }, hmrConfigName),
+      "."`, '');
     (0, node_assert_1.default)(originalContents !== updatedContents, 'Failed to update Vite client error overlay text.');
     return updatedContents;
 }
