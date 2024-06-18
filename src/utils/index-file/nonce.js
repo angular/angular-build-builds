@@ -25,8 +25,7 @@ async function addNonce(html) {
     }
     const { rewriter, transformedContent } = await (0, html_rewriting_stream_1.htmlRewritingStream)(html);
     rewriter.on('startTag', (tag) => {
-        if ((tag.tagName === 'style' ||
-            (tag.tagName === 'script' && !tag.attrs.some((attr) => attr.name === 'src'))) &&
+        if ((tag.tagName === 'style' || tag.tagName === 'script') &&
             !tag.attrs.some((attr) => attr.name === 'nonce')) {
             tag.attrs.push({ name: 'nonce', value: nonce });
         }
