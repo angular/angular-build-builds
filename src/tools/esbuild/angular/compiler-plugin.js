@@ -57,8 +57,23 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
             // Webcontainers currently do not support this persistent cache store.
             let cacheStore;
             if (pluginOptions.sourceFileCache?.persistentCachePath && !process.versions.webcontainer) {
-                const { LmbdCacheStore } = await Promise.resolve().then(() => __importStar(require('../lmdb-cache-store')));
-                cacheStore = new LmbdCacheStore(path.join(pluginOptions.sourceFileCache.persistentCachePath, 'angular-compiler.db'));
+                try {
+                    const { LmbdCacheStore } = await Promise.resolve().then(() => __importStar(require('../lmdb-cache-store')));
+                    cacheStore = new LmbdCacheStore(path.join(pluginOptions.sourceFileCache.persistentCachePath, 'angular-compiler.db'));
+                }
+                catch (e) {
+                    setupWarnings.push({
+                        text: 'Unable to initialize JavaScript cache storage.',
+                        location: null,
+                        notes: [
+                            // Only show first line of lmdb load error which has platform support listed
+                            { text: e?.message.split('\n')[0] ?? `${e}` },
+                            {
+                                text: 'This will not affect the build output content but may result in slower builds.',
+                            },
+                        ],
+                    });
+                }
             }
             const javascriptTransformer = new javascript_transformer_1.JavaScriptTransformer({
                 sourcemap: !!pluginOptions.sourcemap,
