@@ -43,7 +43,7 @@ var sass_service_1 = require("./tools/sass/sass-service");
 Object.defineProperty(exports, "SassWorkerImplementation", { enumerable: true, get: function () { return sass_service_1.SassWorkerImplementation; } });
 var source_file_cache_1 = require("./tools/esbuild/angular/source-file-cache");
 Object.defineProperty(exports, "SourceFileCache", { enumerable: true, get: function () { return source_file_cache_1.SourceFileCache; } });
-var jit_resource_transformer_1 = require("./tools/esbuild/angular/jit-resource-transformer");
+var jit_resource_transformer_1 = require("./tools/angular/transformers/jit-resource-transformer");
 Object.defineProperty(exports, "createJitResourceTransformer", { enumerable: true, get: function () { return jit_resource_transformer_1.createJitResourceTransformer; } });
 var javascript_transformer_1 = require("./tools/esbuild/javascript-transformer");
 Object.defineProperty(exports, "JavaScriptTransformer", { enumerable: true, get: function () { return javascript_transformer_1.JavaScriptTransformer; } });

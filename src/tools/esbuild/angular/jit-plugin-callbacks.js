@@ -10,8 +10,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.setupJitPluginCallbacks = setupJitPluginCallbacks;
 const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
+const uri_1 = require("../../angular/uri");
 const load_result_cache_1 = require("../load-result-cache");
-const uri_1 = require("./uri");
 /**
  * Loads/extracts the contents from a load callback Angular JIT entry.
  * An Angular JIT entry represents either a file path for a component resource or base64

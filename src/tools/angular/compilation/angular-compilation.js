@@ -31,9 +31,9 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AngularCompilation = exports.DiagnosticModes = void 0;
-const load_esm_1 = require("../../../../utils/load-esm");
-const profiling_1 = require("../../profiling");
-const diagnostics_1 = require("../diagnostics");
+const load_esm_1 = require("../../../utils/load-esm");
+const diagnostics_1 = require("../../esbuild/angular/diagnostics");
+const profiling_1 = require("../../esbuild/profiling");
 var DiagnosticModes;
 (function (DiagnosticModes) {
     DiagnosticModes[DiagnosticModes["None"] = 0] = "None";

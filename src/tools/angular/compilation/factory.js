@@ -31,7 +31,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createAngularCompilation = createAngularCompilation;
-const environment_options_1 = require("../../../../utils/environment-options");
+const environment_options_1 = require("../../../utils/environment-options");
 /**
  * Creates an Angular compilation object that can be used to perform Angular application
  * compilation either for AOT or JIT mode. By default a parallel compilation is created

@@ -13,11 +13,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AotCompilation = void 0;
 const node_assert_1 = __importDefault(require("node:assert"));
 const typescript_1 = __importDefault(require("typescript"));
-const profiling_1 = require("../../profiling");
+const profiling_1 = require("../../esbuild/profiling");
 const angular_host_1 = require("../angular-host");
-const web_worker_transformer_1 = require("../web-worker-transformer");
+const jit_bootstrap_transformer_1 = require("../transformers/jit-bootstrap-transformer");
+const web_worker_transformer_1 = require("../transformers/web-worker-transformer");
 const angular_compilation_1 = require("./angular-compilation");
-const jit_bootstrap_transformer_1 = require("./jit-bootstrap-transformer");
 class AngularCompilationState {
     angularProgram;
     compilerHost;

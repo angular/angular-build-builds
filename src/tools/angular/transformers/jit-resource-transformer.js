@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createJitResourceTransformer = createJitResourceTransformer;
 const typescript_1 = __importDefault(require("typescript"));
-const uri_1 = require("./uri");
+const uri_1 = require("../uri");
 /**
  * Creates a TypeScript Transformer to transform Angular Component resource references into
  * static import statements. This transformer is used in Angular's JIT compilation mode to

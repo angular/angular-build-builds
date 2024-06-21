@@ -17,7 +17,7 @@ exports.update = update;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_crypto_1 = require("node:crypto");
 const node_worker_threads_1 = require("node:worker_threads");
-const source_file_cache_1 = require("../source-file-cache");
+const source_file_cache_1 = require("../../esbuild/angular/source-file-cache");
 const aot_compilation_1 = require("./aot-compilation");
 const jit_compilation_1 = require("./jit-compilation");
 let compilation;
