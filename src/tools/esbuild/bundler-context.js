@@ -64,9 +64,12 @@ class BundlerContext {
             }
             return context.bundle();
         }));
+        return BundlerContext.mergeResults(individualResults);
+    }
+    static mergeResults(results) {
         // Return directly if only one result
-        if (individualResults.length === 1) {
-            return individualResults[0];
+        if (results.length === 1) {
+            return results[0];
         }
         let errors;
         const warnings = [];
@@ -76,7 +79,7 @@ class BundlerContext {
         const externalImportsServer = new Set();
         const outputFiles = [];
         let externalConfiguration;
-        for (const result of individualResults) {
+        for (const result of results) {
             warnings.push(...result.warnings);
             if (result.errors) {
                 errors ??= [];
