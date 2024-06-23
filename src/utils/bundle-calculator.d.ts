@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 import { Budget as BudgetEntry, Type as BudgetType } from '../builders/application/schema';
-export { BudgetEntry, BudgetType };
+export { type BudgetEntry, BudgetType };
 export interface Threshold {
     limit: number;
     type: ThresholdType;

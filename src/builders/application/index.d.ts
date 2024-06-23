@@ -10,7 +10,7 @@ import type { Plugin } from 'esbuild';
 import { BuildOutputFile } from '../../tools/esbuild/bundler-context';
 import { ApplicationBuilderExtensions, ApplicationBuilderInternalOptions } from './options';
 import { Schema as ApplicationBuilderOptions } from './schema';
-export { ApplicationBuilderOptions };
+export type { ApplicationBuilderOptions };
 export declare function buildApplicationInternal(options: ApplicationBuilderInternalOptions, context: BuilderContext & {
     signal?: AbortSignal;
 }, infrastructureSettings?: {
