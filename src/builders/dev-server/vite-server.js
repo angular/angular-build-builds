@@ -491,9 +491,6 @@ function getDepOptimizationConfig({ disabled, exclude, include, target, zoneless
             },
         },
     ];
-    if (ssr) {
-        plugins.unshift((0, internal_1.createRxjsEsmResolutionPlugin)());
-    }
     return {
         // Exclude any explicitly defined dependencies (currently build defined externals)
         exclude,
