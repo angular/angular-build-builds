@@ -309,7 +309,6 @@ function analyzeClassStaticProperties(path) {
                 shouldWrap = false;
                 break;
             }
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         }
         else if (element.isStaticBlock()) {
             // Only need to analyze static blocks

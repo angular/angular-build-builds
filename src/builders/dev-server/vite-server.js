@@ -193,7 +193,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
             server.config.server.fs.allow = [
                 ...new Set([...server.config.server.fs.allow, ...assetFiles.values()]),
             ];
-            await handleUpdate(normalizePath, generatedFiles, server, serverOptions, context.logger);
+            handleUpdate(normalizePath, generatedFiles, server, serverOptions, context.logger);
             if (requiresServerRestart) {
                 // Restart the server to force SSR dep re-optimization when a dependency has been added.
                 // This is a workaround for: https://github.com/vitejs/vite/issues/14896
