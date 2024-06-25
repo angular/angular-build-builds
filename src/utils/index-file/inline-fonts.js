@@ -99,7 +99,7 @@ class InlineFontsProcessor {
                 }
             }
         });
-        initCollectorStream().catch(() => {
+        void initCollectorStream().catch(() => {
             // We don't really care about any errors here because it just initializes
             // the rewriting stream, as we are waiting for `finish` below.
         });
