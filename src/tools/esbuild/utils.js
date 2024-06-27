@@ -10,7 +10,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isZonelessApp = exports.logMessages = exports.createJsonBuildManifest = exports.getSupportedNodeTargets = exports.transformSupportedBrowsersToTargets = exports.convertOutputFile = exports.createOutputFileFromData = exports.createOutputFileFromText = exports.emitFilesToDisk = exports.writeResultFiles = exports.getFeatureSupport = exports.withNoProgress = exports.withSpinner = exports.calculateEstimatedTransferSizes = exports.logBuildStats = void 0;
+exports.getEntryPointName = exports.isZonelessApp = exports.logMessages = exports.createJsonBuildManifest = exports.getSupportedNodeTargets = exports.transformSupportedBrowsersToTargets = exports.convertOutputFile = exports.createOutputFileFromData = exports.createOutputFileFromText = exports.emitFilesToDisk = exports.writeResultFiles = exports.getFeatureSupport = exports.withNoProgress = exports.withSpinner = exports.calculateEstimatedTransferSizes = exports.logBuildStats = void 0;
 const esbuild_1 = require("esbuild");
 const node_crypto_1 = require("node:crypto");
 const node_fs_1 = require("node:fs");
@@ -49,9 +49,7 @@ function logBuildStats(metafile, initial, budgetFailures, colors, changedFiles, 
         }
         let name = initial.get(file)?.name;
         if (name === undefined && output.entryPoint) {
-            name = (0, node_path_1.basename)(output.entryPoint)
-                .replace(/\.[cm]?[jt]s$/, '')
-                .replace(/[\\/.]/g, '-');
+            name = getEntryPointName(output.entryPoint);
         }
         const stat = {
             initial: initial.has(file),
@@ -390,3 +388,10 @@ function isZonelessApp(polyfills) {
     return !polyfills?.some((p) => p === 'zone.js' || /\.[mc]?[jt]s$/.test(p));
 }
 exports.isZonelessApp = isZonelessApp;
+function getEntryPointName(entryPoint) {
+    return (0, node_path_1.basename)(entryPoint)
+        .replace(/(.*:)/, '') // global:bundle.css  -> bundle.css
+        .replace(/\.[cm]?[jt]s$/, '')
+        .replace(/[\\/.]/g, '-');
+}
+exports.getEntryPointName = getEntryPointName;
