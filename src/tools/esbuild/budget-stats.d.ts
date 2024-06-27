@@ -7,7 +7,7 @@
  */
 import type { Metafile } from 'esbuild';
 import type { BudgetStats } from '../../utils/bundle-calculator';
-import type { InitialFileRecord } from './bundler-context';
+import { type BuildOutputFile, type InitialFileRecord } from './bundler-context';
 /**
  * Generates a bundle budget calculator compatible stats object that provides
  * the necessary information for the Webpack-based bundle budget code to
@@ -16,4 +16,4 @@ import type { InitialFileRecord } from './bundler-context';
  * @param initialFiles The records of all initial files of a build.
  * @returns A bundle budget compatible stats object.
  */
-export declare function generateBudgetStats(metafile: Metafile, initialFiles: Map<string, InitialFileRecord>): BudgetStats;
+export declare function generateBudgetStats(metafile: Metafile, outputFiles: BuildOutputFile[], initialFiles: Map<string, InitialFileRecord>): BudgetStats;

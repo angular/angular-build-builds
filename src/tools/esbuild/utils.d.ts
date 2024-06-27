@@ -11,7 +11,8 @@ import { NormalizedApplicationBuildOptions, NormalizedOutputOptions } from '../.
 import { BudgetCalculatorResult } from '../../utils/bundle-calculator';
 import { BuildOutputFile, BuildOutputFileType, InitialFileRecord } from './bundler-context';
 import { BuildOutputAsset, ExecutionResult } from './bundler-execution-result';
-export declare function logBuildStats(metafile: Metafile, initial: Map<string, InitialFileRecord>, budgetFailures: BudgetCalculatorResult[] | undefined, colors: boolean, changedFiles?: Set<string>, estimatedTransferSizes?: Map<string, number>, ssrOutputEnabled?: boolean, verbose?: boolean): string;
+export declare function logBuildStats(metafile: Metafile, outputFiles: BuildOutputFile[], initial: Map<string, InitialFileRecord>, budgetFailures: BudgetCalculatorResult[] | undefined, colors: boolean, changedFiles?: Set<string>, estimatedTransferSizes?: Map<string, number>, ssrOutputEnabled?: boolean, verbose?: boolean): string;
+export declare function getChunkNameFromMetafile(metafile: Metafile, file: string): string | undefined;
 export declare function calculateEstimatedTransferSizes(outputFiles: OutputFile[]): Promise<Map<string, number>>;
 export declare function withSpinner<T>(text: string, action: () => T | Promise<T>): Promise<T>;
 export declare function withNoProgress<T>(text: string, action: () => T | Promise<T>): Promise<T>;

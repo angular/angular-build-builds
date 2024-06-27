@@ -11,6 +11,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.logBuildStats = logBuildStats;
+exports.getChunkNameFromMetafile = getChunkNameFromMetafile;
 exports.calculateEstimatedTransferSizes = calculateEstimatedTransferSizes;
 exports.withSpinner = withSpinner;
 exports.withNoProgress = withNoProgress;
@@ -36,18 +37,13 @@ const semver_1 = require("semver");
 const spinner_1 = require("../../utils/spinner");
 const stats_table_1 = require("../../utils/stats-table");
 const bundler_context_1 = require("./bundler-context");
-function logBuildStats(metafile, initial, budgetFailures, colors, changedFiles, estimatedTransferSizes, ssrOutputEnabled, verbose) {
+function logBuildStats(metafile, outputFiles, initial, budgetFailures, colors, changedFiles, estimatedTransferSizes, ssrOutputEnabled, verbose) {
     const browserStats = [];
     const serverStats = [];
     let unchangedCount = 0;
-    for (const [file, output] of Object.entries(metafile.outputs)) {
+    for (const { path: file, size, type } of outputFiles) {
         // Only display JavaScript and CSS files
         if (!/\.(?:css|m?js)$/.test(file)) {
-            continue;
-        }
-        // Skip internal component resources
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (output['ng-component']) {
             continue;
         }
         // Show only changed files if a changed list is provided
@@ -55,19 +51,15 @@ function logBuildStats(metafile, initial, budgetFailures, colors, changedFiles, 
             ++unchangedCount;
             continue;
         }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const isPlatformServer = output['ng-platform-server'];
+        const isPlatformServer = type === bundler_context_1.BuildOutputFileType.Server;
         if (isPlatformServer && !ssrOutputEnabled) {
             // Only log server build stats when SSR is enabled.
             continue;
         }
-        let name = initial.get(file)?.name;
-        if (name === undefined && output.entryPoint) {
-            name = getEntryPointName(output.entryPoint);
-        }
+        const name = initial.get(file)?.name ?? getChunkNameFromMetafile(metafile, file);
         const stat = {
             initial: initial.has(file),
-            stats: [file, name ?? '-', output.bytes, estimatedTransferSizes?.get(file) ?? '-'],
+            stats: [file, name ?? '-', size, estimatedTransferSizes?.get(file) ?? '-'],
         };
         if (isPlatformServer) {
             serverStats.push(stat);
@@ -87,6 +79,11 @@ function logBuildStats(metafile, initial, budgetFailures, colors, changedFiles, 
         return `Unchanged output files: ${unchangedCount}`;
     }
     return '';
+}
+function getChunkNameFromMetafile(metafile, file) {
+    if (metafile.outputs[file]?.entryPoint) {
+        return getEntryPointName(metafile.outputs[file].entryPoint);
+    }
 }
 async function calculateEstimatedTransferSizes(outputFiles) {
     const sizes = new Map();
