@@ -39,7 +39,7 @@ export declare class ExecutionResult {
     externalMetadata?: ExternalResultMetadata;
     extraWatchFiles: string[];
     constructor(rebuildContexts: BundlerContext[], codeBundleCache?: SourceFileCache | undefined);
-    addOutputFile(path: string, content: string, type: BuildOutputFileType): void;
+    addOutputFile(path: string, content: string | Uint8Array, type: BuildOutputFileType): void;
     addAssets(assets: BuildOutputAsset[]): void;
     addLog(value: string): void;
     addError(error: PartialMessage | string): void;

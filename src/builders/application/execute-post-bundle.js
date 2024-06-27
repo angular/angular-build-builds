@@ -48,10 +48,10 @@ async function executePostBundleSteps(options, outputFiles, assetFiles, initialF
         const { csrContent, ssrContent, errors, warnings } = await (0, index_html_generator_1.generateIndexHtml)(initialFiles, outputFiles, options, locale);
         allErrors.push(...errors);
         allWarnings.push(...warnings);
-        additionalHtmlOutputFiles.set(indexHtmlOptions.output, (0, utils_1.createOutputFileFromText)(indexHtmlOptions.output, csrContent, bundler_context_1.BuildOutputFileType.Browser));
+        additionalHtmlOutputFiles.set(indexHtmlOptions.output, (0, utils_1.createOutputFile)(indexHtmlOptions.output, csrContent, bundler_context_1.BuildOutputFileType.Browser));
         if (ssrContent) {
             const serverIndexHtmlFilename = 'index.server.html';
-            additionalHtmlOutputFiles.set(serverIndexHtmlFilename, (0, utils_1.createOutputFileFromText)(serverIndexHtmlFilename, ssrContent, bundler_context_1.BuildOutputFileType.Server));
+            additionalHtmlOutputFiles.set(serverIndexHtmlFilename, (0, utils_1.createOutputFile)(serverIndexHtmlFilename, ssrContent, bundler_context_1.BuildOutputFileType.Server));
             ssrIndexContent = ssrContent;
         }
     }
@@ -64,7 +64,7 @@ async function executePostBundleSteps(options, outputFiles, assetFiles, initialF
         allWarnings.push(...warnings);
         prerenderedRoutes.push(...Array.from(generatedRoutes));
         for (const [path, content] of Object.entries(output)) {
-            additionalHtmlOutputFiles.set(path, (0, utils_1.createOutputFileFromText)(path, content, bundler_context_1.BuildOutputFileType.Browser));
+            additionalHtmlOutputFiles.set(path, (0, utils_1.createOutputFile)(path, content, bundler_context_1.BuildOutputFileType.Browser));
         }
     }
     additionalOutputFiles.push(...additionalHtmlOutputFiles.values());
@@ -75,7 +75,7 @@ async function executePostBundleSteps(options, outputFiles, assetFiles, initialF
             const serviceWorkerResult = await (0, service_worker_1.augmentAppWithServiceWorkerEsbuild)(workspaceRoot, serviceWorker, options.baseHref || '/', options.indexHtmlOptions?.output, 
             // Ensure additional files recently added are used
             [...outputFiles, ...additionalOutputFiles], assetFiles);
-            additionalOutputFiles.push((0, utils_1.createOutputFileFromText)('ngsw.json', serviceWorkerResult.manifest, bundler_context_1.BuildOutputFileType.Browser));
+            additionalOutputFiles.push((0, utils_1.createOutputFile)('ngsw.json', serviceWorkerResult.manifest, bundler_context_1.BuildOutputFileType.Browser));
             additionalAssets.push(...serviceWorkerResult.assetFiles);
         }
         catch (error) {

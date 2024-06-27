@@ -25,8 +25,7 @@ export declare function withNoProgress<T>(text: string, action: () => T | Promis
 export declare function getFeatureSupport(target: string[], nativeAsyncAwait: boolean): BuildOptions['supported'];
 export declare function writeResultFiles(outputFiles: BuildOutputFile[], assetFiles: BuildOutputAsset[] | undefined, { base, browser, server }: NormalizedOutputOptions): Promise<void>;
 export declare function emitFilesToDisk<T = BuildOutputAsset | BuildOutputFile>(files: T[], writeFileCallback: (file: T) => Promise<void>): Promise<void>;
-export declare function createOutputFileFromText(path: string, text: string, type: BuildOutputFileType): BuildOutputFile;
-export declare function createOutputFileFromData(path: string, data: Uint8Array, type: BuildOutputFileType): BuildOutputFile;
+export declare function createOutputFile(path: string, data: string | Uint8Array, type: BuildOutputFileType): BuildOutputFile;
 export declare function convertOutputFile(file: OutputFile, type: BuildOutputFileType): BuildOutputFile;
 /**
  * Transform browserlists result to esbuild target.
