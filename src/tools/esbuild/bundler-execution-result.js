@@ -29,7 +29,7 @@ class ExecutionResult {
         this.codeBundleCache = codeBundleCache;
     }
     addOutputFile(path, content, type) {
-        this.outputFiles.push((0, utils_1.createOutputFileFromText)(path, content, type));
+        this.outputFiles.push((0, utils_1.createOutputFile)(path, content, type));
     }
     addAssets(assets) {
         this.assetFiles.push(...assets);

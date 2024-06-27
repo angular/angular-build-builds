@@ -17,8 +17,7 @@ exports.withNoProgress = withNoProgress;
 exports.getFeatureSupport = getFeatureSupport;
 exports.writeResultFiles = writeResultFiles;
 exports.emitFilesToDisk = emitFilesToDisk;
-exports.createOutputFileFromText = createOutputFileFromText;
-exports.createOutputFileFromData = createOutputFileFromData;
+exports.createOutputFile = createOutputFile;
 exports.convertOutputFile = convertOutputFile;
 exports.transformSupportedBrowsersToTargets = transformSupportedBrowsersToTargets;
 exports.getSupportedNodeTargets = getSupportedNodeTargets;
@@ -245,49 +244,91 @@ async function emitFilesToDisk(files, writeFileCallback) {
         await Promise.all(actions);
     }
 }
-function createOutputFileFromText(path, text, type) {
-    return {
-        path,
-        text,
-        type,
-        get hash() {
-            return (0, node_crypto_1.createHash)('sha256').update(this.text).digest('hex');
-        },
-        get contents() {
-            return Buffer.from(this.text, 'utf-8');
-        },
-        clone() {
-            return createOutputFileFromText(this.path, this.text, this.type);
-        },
-    };
-}
-function createOutputFileFromData(path, data, type) {
-    return {
-        path,
-        type,
-        get text() {
-            return Buffer.from(data.buffer, data.byteOffset, data.byteLength).toString('utf-8');
-        },
-        get hash() {
-            return (0, node_crypto_1.createHash)('sha256').update(this.text).digest('hex');
-        },
-        get contents() {
-            return data;
-        },
-        clone() {
-            return createOutputFileFromData(this.path, this.contents, this.type);
-        },
-    };
+function createOutputFile(path, data, type) {
+    if (typeof data === 'string') {
+        let cachedContents = null;
+        let cachedText = data;
+        let cachedHash = null;
+        return {
+            path,
+            type,
+            get contents() {
+                cachedContents ??= new TextEncoder().encode(data);
+                return cachedContents;
+            },
+            set contents(value) {
+                cachedContents = value;
+                cachedText = null;
+            },
+            get text() {
+                cachedText ??= new TextDecoder('utf-8').decode(this.contents);
+                return cachedText;
+            },
+            get size() {
+                return this.contents.byteLength;
+            },
+            get hash() {
+                cachedHash ??= (0, node_crypto_1.createHash)('sha256')
+                    .update(cachedText ?? this.contents)
+                    .digest('hex');
+                return cachedHash;
+            },
+            clone() {
+                return createOutputFile(this.path, cachedText ?? this.contents, this.type);
+            },
+        };
+    }
+    else {
+        let cachedContents = data;
+        let cachedText = null;
+        let cachedHash = null;
+        return {
+            get contents() {
+                return cachedContents;
+            },
+            set contents(value) {
+                cachedContents = value;
+                cachedText = null;
+            },
+            path,
+            type,
+            get size() {
+                return this.contents.byteLength;
+            },
+            get text() {
+                cachedText ??= new TextDecoder('utf-8').decode(this.contents);
+                return cachedText;
+            },
+            get hash() {
+                cachedHash ??= (0, node_crypto_1.createHash)('sha256').update(this.contents).digest('hex');
+                return cachedHash;
+            },
+            clone() {
+                return createOutputFile(this.path, this.contents, this.type);
+            },
+        };
+    }
 }
 function convertOutputFile(file, type) {
-    const { path, contents, hash } = file;
+    let { contents: cachedContents } = file;
+    let cachedText = null;
     return {
-        contents,
-        hash,
-        path,
+        get contents() {
+            return cachedContents;
+        },
+        set contents(value) {
+            cachedContents = value;
+            cachedText = null;
+        },
+        hash: file.hash,
+        path: file.path,
         type,
+        get size() {
+            return this.contents.byteLength;
+        },
         get text() {
-            return Buffer.from(this.contents.buffer, this.contents.byteOffset, this.contents.byteLength).toString('utf-8');
+            cachedText ??= new TextDecoder('utf-8').decode(this.contents);
+            return cachedText;
         },
         clone() {
             return convertOutputFile(this, this.type);

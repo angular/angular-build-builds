@@ -117,9 +117,9 @@ class I18nInliner {
             ...rawResults.flatMap(({ file, code, map, messages }) => {
                 const type = this.#fileToType.get(file);
                 (0, node_assert_1.default)(type !== undefined, 'localized file should always have a type' + file);
-                const resultFiles = [(0, utils_1.createOutputFileFromText)(file, code, type)];
+                const resultFiles = [(0, utils_1.createOutputFile)(file, code, type)];
                 if (map) {
-                    resultFiles.push((0, utils_1.createOutputFileFromText)(file + '.map', map, type));
+                    resultFiles.push((0, utils_1.createOutputFile)(file + '.map', map, type));
                 }
                 for (const message of messages) {
                     if (message.type === 'error') {
