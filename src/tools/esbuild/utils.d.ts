@@ -46,3 +46,4 @@ export declare function logMessages(logger: BuilderContext['logger'], executionR
  * @returns true, when the application is considered as zoneless.
  */
 export declare function isZonelessApp(polyfills: string[] | undefined): boolean;
+export declare function getEntryPointName(entryPoint: string): string;

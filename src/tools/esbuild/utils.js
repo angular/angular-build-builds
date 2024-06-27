@@ -24,6 +24,7 @@ exports.getSupportedNodeTargets = getSupportedNodeTargets;
 exports.createJsonBuildManifest = createJsonBuildManifest;
 exports.logMessages = logMessages;
 exports.isZonelessApp = isZonelessApp;
+exports.getEntryPointName = getEntryPointName;
 const esbuild_1 = require("esbuild");
 const node_crypto_1 = require("node:crypto");
 const node_fs_1 = require("node:fs");
@@ -62,9 +63,7 @@ function logBuildStats(metafile, initial, budgetFailures, colors, changedFiles, 
         }
         let name = initial.get(file)?.name;
         if (name === undefined && output.entryPoint) {
-            name = (0, node_path_1.basename)(output.entryPoint)
-                .replace(/\.[cm]?[jt]s$/, '')
-                .replace(/[\\/.]/g, '-');
+            name = getEntryPointName(output.entryPoint);
         }
         const stat = {
             initial: initial.has(file),
@@ -429,4 +428,10 @@ async function logMessages(logger, executionResult, color, jsonLogs) {
 function isZonelessApp(polyfills) {
     // TODO: Instead, we should rely on the presence of zone.js in the polyfills build metadata.
     return !polyfills?.some((p) => p === 'zone.js' || /\.[mc]?[jt]s$/.test(p));
+}
+function getEntryPointName(entryPoint) {
+    return (0, node_path_1.basename)(entryPoint)
+        .replace(/(.*:)/, '') // global:bundle.css  -> bundle.css
+        .replace(/\.[cm]?[jt]s$/, '')
+        .replace(/[\\/.]/g, '-');
 }

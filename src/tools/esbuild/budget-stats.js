@@ -8,7 +8,7 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateBudgetStats = generateBudgetStats;
-const node_path_1 = require("node:path");
+const utils_1 = require("./utils");
 /**
  * Generates a bundle budget calculator compatible stats object that provides
  * the necessary information for the Webpack-based bundle budget code to
@@ -35,9 +35,7 @@ function generateBudgetStats(metafile, initialFiles) {
         let name = initialRecord?.name;
         if (name === undefined && entry.entryPoint) {
             // For non-initial lazy modules, convert the entry point file into a Webpack compatible name
-            name = (0, node_path_1.basename)(entry.entryPoint)
-                .replace(/\.[cm]?[jt]s$/, '')
-                .replace(/[\\/.]/g, '-');
+            name = (0, utils_1.getEntryPointName)(entry.entryPoint);
         }
         stats.chunks.push({
             files: [file],

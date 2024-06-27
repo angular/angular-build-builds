@@ -31,7 +31,7 @@ function createAngularMemoryPlugin(options) {
                 // `/@id/${source}` but is currently closer to a raw external than a resolved file path.
                 return source;
             }
-            if (importer && source[0] === '.' && importer.startsWith(virtualProjectRoot)) {
+            if (importer && source[0] === '.' && normalizePath(importer).startsWith(virtualProjectRoot)) {
                 // Remove query if present
                 const [importerFile] = importer.split('?', 1);
                 source =
