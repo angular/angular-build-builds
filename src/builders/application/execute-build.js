@@ -63,7 +63,7 @@ async function executeBuild(options, context, rebuildState) {
     // Analyze files for bundle budget failures if present
     let budgetFailures;
     if (options.budgets) {
-        const compatStats = (0, budget_stats_1.generateBudgetStats)(metafile, initialFiles);
+        const compatStats = (0, budget_stats_1.generateBudgetStats)(metafile, outputFiles, initialFiles);
         budgetFailures = [...(0, bundle_calculator_1.checkBudgets)(options.budgets, compatStats, true)];
         for (const { message, severity } of budgetFailures) {
             if (severity === 'error') {
@@ -122,7 +122,7 @@ async function executeBuild(options, context, rebuildState) {
         executionResult.addOutputFile('stats.json', JSON.stringify(metafile, null, 2), bundler_context_1.BuildOutputFileType.Root);
     }
     if (!jsonLogs) {
-        executionResult.addLog((0, utils_1.logBuildStats)(metafile, initialFiles, budgetFailures, colors, changedFiles, estimatedTransferSizes, !!ssrOptions, verbose));
+        executionResult.addLog((0, utils_1.logBuildStats)(metafile, outputFiles, initialFiles, budgetFailures, colors, changedFiles, estimatedTransferSizes, !!ssrOptions, verbose));
     }
     return executionResult;
 }
