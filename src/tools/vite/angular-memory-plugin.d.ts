@@ -6,18 +6,15 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 import type { Connect, Plugin } from 'vite';
+import { AngularMemoryOutputFiles } from './utils';
 export interface AngularMemoryPluginOptions {
     workspaceRoot: string;
     virtualProjectRoot: string;
-    outputFiles: Map<string, {
-        contents: Uint8Array;
-        servable: boolean;
-    }>;
+    outputFiles: AngularMemoryOutputFiles;
     assets: Map<string, string>;
     ssr: boolean;
     external?: string[];
     extensionMiddleware?: Connect.NextHandleFunction[];
-    extraHeaders?: Record<string, string>;
     indexHtmlTransformer?: (content: string) => Promise<string>;
     normalizePath: (path: string) => string;
 }

@@ -12,14 +12,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createAngularMemoryPlugin = createAngularMemoryPlugin;
 const remapping_1 = __importDefault(require("@ampproject/remapping"));
-const mrmime_1 = require("mrmime");
 const node_assert_1 = __importDefault(require("node:assert"));
 const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
-const render_page_1 = require("../../utils/server-rendering/render-page");
-// eslint-disable-next-line max-lines-per-function
+const middlewares_1 = require("./middlewares");
 function createAngularMemoryPlugin(options) {
-    const { workspaceRoot, virtualProjectRoot, outputFiles, assets, external, ssr, extensionMiddleware, extraHeaders, indexHtmlTransformer, normalizePath, } = options;
+    const { workspaceRoot, virtualProjectRoot, outputFiles, assets, external, ssr, extensionMiddleware, indexHtmlTransformer, normalizePath, } = options;
     return {
         name: 'vite:angular-memory',
         // Ensures plugin hooks run before built-in Vite hooks
@@ -77,155 +75,19 @@ function createAngularMemoryPlugin(options) {
                 };
             };
             // Assets and resources get handled first
-            server.middlewares.use(function angularAssetsMiddleware(req, res, next) {
-                if (req.url === undefined || res.writableEnded) {
-                    return;
-                }
-                // Parse the incoming request.
-                // The base of the URL is unused but required to parse the URL.
-                const pathname = pathnameWithoutBasePath(req.url, server.config.base);
-                const extension = (0, node_path_1.extname)(pathname);
-                const pathnameHasTrailingSlash = pathname[pathname.length - 1] === '/';
-                // Rewrite all build assets to a vite raw fs URL
-                const assetSourcePath = assets.get(pathname);
-                if (assetSourcePath !== undefined) {
-                    // Workaround to disable Vite transformer middleware.
-                    // See: https://github.com/vitejs/vite/blob/746a1daab0395f98f0afbdee8f364cb6cf2f3b3f/packages/vite/src/node/server/middlewares/transform.ts#L201 and
-                    // https://github.com/vitejs/vite/blob/746a1daab0395f98f0afbdee8f364cb6cf2f3b3f/packages/vite/src/node/server/transformRequest.ts#L204-L206
-                    req.headers.accept = 'text/html';
-                    // The encoding needs to match what happens in the vite static middleware.
-                    // ref: https://github.com/vitejs/vite/blob/d4f13bd81468961c8c926438e815ab6b1c82735e/packages/vite/src/node/server/middlewares/static.ts#L163
-                    req.url = `${server.config.base}@fs/${encodeURI(assetSourcePath)}`;
-                    next();
-                    return;
-                }
-                // HTML fallbacking
-                // This matches what happens in the vite html fallback middleware.
-                // ref: https://github.com/vitejs/vite/blob/main/packages/vite/src/node/server/middlewares/htmlFallback.ts#L9
-                const htmlAssetSourcePath = pathnameHasTrailingSlash
-                    ? // Trailing slash check for `index.html`.
-                        assets.get(pathname + 'index.html')
-                    : // Non-trailing slash check for fallback `.html`
-                        assets.get(pathname + '.html');
-                if (htmlAssetSourcePath) {
-                    req.url = `${server.config.base}@fs/${encodeURI(htmlAssetSourcePath)}`;
-                    next();
-                    return;
-                }
-                // Resource files are handled directly.
-                // Global stylesheets (CSS files) are currently considered resources to workaround
-                // dev server sourcemap issues with stylesheets.
-                if (extension !== '.js' && extension !== '.html') {
-                    const outputFile = outputFiles.get(pathname);
-                    if (outputFile?.servable) {
-                        const mimeType = (0, mrmime_1.lookup)(extension);
-                        if (mimeType) {
-                            res.setHeader('Content-Type', mimeType);
-                        }
-                        res.setHeader('Cache-Control', 'no-cache');
-                        if (extraHeaders) {
-                            Object.entries(extraHeaders).forEach(([name, value]) => res.setHeader(name, value));
-                        }
-                        res.end(outputFile.contents);
-                        return;
-                    }
-                }
-                // If the path has no trailing slash and it matches a servable directory redirect to the same path with slash.
-                // This matches the default express static behaviour.
-                // See: https://github.com/expressjs/serve-static/blob/89fc94567fae632718a2157206c52654680e9d01/index.js#L182
-                if (!pathnameHasTrailingSlash) {
-                    for (const assetPath of assets.keys()) {
-                        if (pathname === assetPath.substring(0, assetPath.lastIndexOf('/'))) {
-                            redirect(res, req.url + '/');
-                            return;
-                        }
-                    }
-                }
-                next();
-            });
+            server.middlewares.use((0, middlewares_1.createAngularAssetsMiddleware)(server, assets, outputFiles));
             if (extensionMiddleware?.length) {
                 extensionMiddleware.forEach((middleware) => server.middlewares.use(middleware));
             }
             // Returning a function, installs middleware after the main transform middleware but
             // before the built-in HTML middleware
             return () => {
-                server.middlewares.use(angularHtmlFallbackMiddleware);
-                function angularSSRMiddleware(req, res, next) {
-                    const url = req.originalUrl;
-                    if (!req.url ||
-                        // Skip if path is not defined.
-                        !url ||
-                        // Skip if path is like a file.
-                        // NOTE: We use a mime type lookup to mitigate against matching requests like: /browse/pl.0ef59752c0cd457dbf1391f08cbd936f
-                        lookupMimeTypeFromRequest(url)) {
-                        next();
-                        return;
-                    }
-                    const rawHtml = outputFiles.get('/index.server.html')?.contents;
-                    if (!rawHtml) {
-                        next();
-                        return;
-                    }
-                    transformIndexHtmlAndAddHeaders(req.url, rawHtml, res, next, async (html) => {
-                        const resolvedUrls = server.resolvedUrls;
-                        const baseUrl = resolvedUrls?.local[0] ?? resolvedUrls?.network[0];
-                        const { content } = await (0, render_page_1.renderPage)({
-                            document: html,
-                            route: new URL(req.originalUrl ?? '/', baseUrl).toString(),
-                            serverContext: 'ssr',
-                            loadBundle: (uri) => 
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            server.ssrLoadModule(uri.slice(1)),
-                            // Files here are only needed for critical CSS inlining.
-                            outputFiles: {},
-                            // TODO: add support for critical css inlining.
-                            inlineCriticalCss: false,
-                        });
-                        return indexHtmlTransformer && content ? await indexHtmlTransformer(content) : content;
-                    });
-                }
+                server.middlewares.use(middlewares_1.angularHtmlFallbackMiddleware);
                 if (ssr) {
-                    server.middlewares.use(angularSSRMiddleware);
+                    server.middlewares.use((0, middlewares_1.createAngularSSRMiddleware)(server, outputFiles, indexHtmlTransformer));
                 }
-                server.middlewares.use(function angularIndexMiddleware(req, res, next) {
-                    if (!req.url) {
-                        next();
-                        return;
-                    }
-                    // Parse the incoming request.
-                    // The base of the URL is unused but required to parse the URL.
-                    const pathname = pathnameWithoutBasePath(req.url, server.config.base);
-                    if (pathname === '/' || pathname === `/index.html`) {
-                        const rawHtml = outputFiles.get('/index.html')?.contents;
-                        if (rawHtml) {
-                            transformIndexHtmlAndAddHeaders(req.url, rawHtml, res, next, indexHtmlTransformer);
-                            return;
-                        }
-                    }
-                    next();
-                });
+                server.middlewares.use((0, middlewares_1.createAngularIndexHtmlMiddleware)(server, outputFiles, indexHtmlTransformer));
             };
-            function transformIndexHtmlAndAddHeaders(url, rawHtml, res, next, additionalTransformer) {
-                server
-                    .transformIndexHtml(url, Buffer.from(rawHtml).toString('utf-8'))
-                    .then(async (processedHtml) => {
-                    if (additionalTransformer) {
-                        const content = await additionalTransformer(processedHtml);
-                        if (!content) {
-                            next();
-                            return;
-                        }
-                        processedHtml = content;
-                    }
-                    res.setHeader('Content-Type', 'text/html');
-                    res.setHeader('Cache-Control', 'no-cache');
-                    if (extraHeaders) {
-                        Object.entries(extraHeaders).forEach(([name, value]) => res.setHeader(name, value));
-                    }
-                    res.end(processedHtml);
-                })
-                    .catch((error) => next(error));
-            }
         },
     };
 }
@@ -248,48 +110,4 @@ async function loadViteClientCode(file) {
       "."`, '');
     (0, node_assert_1.default)(originalContents !== updatedContents, 'Failed to update Vite client error overlay text.');
     return updatedContents;
-}
-function pathnameWithoutBasePath(url, basePath) {
-    const parsedUrl = new URL(url, 'http://localhost');
-    const pathname = decodeURIComponent(parsedUrl.pathname);
-    // slice(basePath.length - 1) to retain the trailing slash
-    return basePath !== '/' && pathname.startsWith(basePath)
-        ? pathname.slice(basePath.length - 1)
-        : pathname;
-}
-function angularHtmlFallbackMiddleware(req, res, next) {
-    // Similar to how it is handled in vite
-    // https://github.com/vitejs/vite/blob/main/packages/vite/src/node/server/middlewares/htmlFallback.ts#L15C19-L15C45
-    if ((req.method === 'GET' || req.method === 'HEAD') &&
-        (!req.url || !lookupMimeTypeFromRequest(req.url)) &&
-        (!req.headers.accept ||
-            req.headers.accept.includes('text/html') ||
-            req.headers.accept.includes('text/*') ||
-            req.headers.accept.includes('*/*'))) {
-        req.url = '/index.html';
-    }
-    next();
-}
-function lookupMimeTypeFromRequest(url) {
-    const extension = (0, node_path_1.extname)(url.split('?')[0]);
-    if (extension === '.ico') {
-        return 'image/x-icon';
-    }
-    return extension && (0, mrmime_1.lookup)(extension);
-}
-function redirect(res, location) {
-    res.statusCode = 301;
-    res.setHeader('Content-Type', 'text/html');
-    res.setHeader('Location', location);
-    res.end(`
-  <!DOCTYPE html>
-  <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>Redirecting</title>
-  </head>
-  <body>
-    <pre>Redirecting to <a href="${location}">${location}</a></pre>
-  </body>
-  </html>`);
 }
