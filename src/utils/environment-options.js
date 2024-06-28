@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.useJSONBuildLogs = exports.useTypeChecking = exports.shouldWatchRoot = exports.debugPerformance = exports.useParallelTs = exports.maxWorkers = exports.allowMinify = exports.shouldBeautify = exports.allowMangle = void 0;
+exports.shouldOptimizeChunks = exports.useJSONBuildLogs = exports.useTypeChecking = exports.shouldWatchRoot = exports.debugPerformance = exports.useParallelTs = exports.maxWorkers = exports.allowMinify = exports.shouldBeautify = exports.allowMangle = void 0;
 const node_os_1 = require("node:os");
 function isDisabled(variable) {
     return variable === '0' || variable.toLowerCase() === 'false';
@@ -80,3 +80,5 @@ const typeCheckingVariable = process.env['NG_BUILD_TYPE_CHECK'];
 exports.useTypeChecking = !isPresent(typeCheckingVariable) || !isDisabled(typeCheckingVariable);
 const buildLogsJsonVariable = process.env['NG_BUILD_LOGS_JSON'];
 exports.useJSONBuildLogs = isPresent(buildLogsJsonVariable) && isEnabled(buildLogsJsonVariable);
+const optimizeChunksVariable = process.env['NG_BUILD_OPTIMIZE_CHUNKS'];
+exports.shouldOptimizeChunks = isPresent(optimizeChunksVariable) && isEnabled(optimizeChunksVariable);

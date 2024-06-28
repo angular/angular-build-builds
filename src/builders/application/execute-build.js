@@ -14,10 +14,13 @@ const bundler_context_1 = require("../../tools/esbuild/bundler-context");
 const bundler_execution_result_1 = require("../../tools/esbuild/bundler-execution-result");
 const commonjs_checker_1 = require("../../tools/esbuild/commonjs-checker");
 const license_extractor_1 = require("../../tools/esbuild/license-extractor");
+const profiling_1 = require("../../tools/esbuild/profiling");
 const utils_1 = require("../../tools/esbuild/utils");
 const bundle_calculator_1 = require("../../utils/bundle-calculator");
+const environment_options_1 = require("../../utils/environment-options");
 const resolve_assets_1 = require("../../utils/resolve-assets");
 const supported_browsers_1 = require("../../utils/supported-browsers");
+const chunk_optimizer_1 = require("./chunk-optimizer");
 const execute_post_bundle_1 = require("./execute-post-bundle");
 const i18n_1 = require("./i18n");
 const setup_bundling_1 = require("./setup-bundling");
@@ -37,7 +40,10 @@ async function executeBuild(options, context, rebuildState) {
     if (bundlerContexts === undefined) {
         bundlerContexts = (0, setup_bundling_1.setupBundlerContexts)(options, browsers, codeBundleCache);
     }
-    const bundlingResult = await bundler_context_1.BundlerContext.bundleAll(bundlerContexts, rebuildState?.fileChanges.all);
+    let bundlingResult = await bundler_context_1.BundlerContext.bundleAll(bundlerContexts, rebuildState?.fileChanges.all);
+    if (options.optimizationOptions.scripts && environment_options_1.shouldOptimizeChunks) {
+        bundlingResult = await (0, profiling_1.profileAsync)('OPTIMIZE_CHUNKS', () => (0, chunk_optimizer_1.optimizeChunks)(bundlingResult, options.sourcemapOptions.scripts ? !options.sourcemapOptions.hidden || 'hidden' : false));
+    }
     const executionResult = new bundler_execution_result_1.ExecutionResult(bundlerContexts, codeBundleCache);
     executionResult.addWarnings(bundlingResult.warnings);
     // Return if the bundling has errors
