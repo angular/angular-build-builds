@@ -244,8 +244,9 @@ function getEsBuildCommonOptions(options) {
     }
     return {
         absWorkingDir: workspaceRoot,
-        bundle: true,
         format: 'esm',
+        bundle: true,
+        packages: 'bundle',
         assetNames: outputNames.media,
         conditions: ['es2020', 'es2015', 'module'],
         resolveExtensions: ['.ts', '.tsx', '.mjs', '.js', '.cjs'],
