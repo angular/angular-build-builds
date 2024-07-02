@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "18.1.0-rc.0+sha-c6fc020",
+  "version": "18.1.0-rc.0+sha-3091956",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -23,10 +23,11 @@
   "builders": "builders.json",
   "dependencies": {
     "@ampproject/remapping": "2.3.0",
-    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#c6fc020",
+    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#3091956",
     "@babel/core": "7.24.7",
     "@babel/helper-annotate-as-pure": "7.24.7",
     "@babel/helper-split-export-declaration": "7.24.7",
+    "@babel/plugin-syntax-import-attributes": "7.24.7",
     "@inquirer/confirm": "3.1.11",
     "@vitejs/plugin-basic-ssl": "1.1.0",
     "ansi-colors": "4.1.3",
