@@ -27,9 +27,11 @@ const rxjs_esm_resolution_plugin_1 = require("./rxjs-esm-resolution-plugin");
 const sourcemap_ignorelist_plugin_1 = require("./sourcemap-ignorelist-plugin");
 const utils_1 = require("./utils");
 const virtual_module_plugin_1 = require("./virtual-module-plugin");
+const wasm_plugin_1 = require("./wasm-plugin");
 function createBrowserCodeBundleOptions(options, target, sourceFileCache) {
     const { entryPoints, outputNames, polyfills } = options;
     const { pluginOptions, styleOptions } = (0, compiler_plugin_options_1.createCompilerPluginOptions)(options, target, sourceFileCache);
+    const zoneless = (0, utils_1.isZonelessApp)(polyfills);
     const buildOptions = {
         ...getEsBuildCommonOptions(options),
         platform: 'browser',
@@ -41,8 +43,9 @@ function createBrowserCodeBundleOptions(options, target, sourceFileCache) {
         entryNames: outputNames.bundles,
         entryPoints,
         target,
-        supported: (0, utils_1.getFeatureSupport)(target, (0, utils_1.isZonelessApp)(polyfills)),
+        supported: (0, utils_1.getFeatureSupport)(target, zoneless),
         plugins: [
+            (0, wasm_plugin_1.createWasmPlugin)({ allowAsync: zoneless, cache: sourceFileCache?.loadResultCache }),
             (0, sourcemap_ignorelist_plugin_1.createSourcemapIgnorelistPlugin)(),
             (0, compiler_plugin_1.createCompilerPlugin)(
             // JS/TS options
@@ -124,6 +127,7 @@ function createServerCodeBundleOptions(options, target, sourceFileCache) {
     if (ssrEntryPoint) {
         entryPoints['server'] = ssrEntryPoint;
     }
+    const zoneless = (0, utils_1.isZonelessApp)(polyfills);
     const buildOptions = {
         ...getEsBuildCommonOptions(options),
         platform: 'node',
@@ -140,8 +144,9 @@ function createServerCodeBundleOptions(options, target, sourceFileCache) {
             js: `import './polyfills.server.mjs';`,
         },
         entryPoints,
-        supported: (0, utils_1.getFeatureSupport)(target, (0, utils_1.isZonelessApp)(polyfills)),
+        supported: (0, utils_1.getFeatureSupport)(target, zoneless),
         plugins: [
+            (0, wasm_plugin_1.createWasmPlugin)({ allowAsync: zoneless, cache: sourceFileCache?.loadResultCache }),
             (0, sourcemap_ignorelist_plugin_1.createSourcemapIgnorelistPlugin)(),
             (0, compiler_plugin_1.createCompilerPlugin)(
             // JS/TS options
