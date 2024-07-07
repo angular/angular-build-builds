@@ -136,9 +136,7 @@ class AotCompilation extends angular_compilation_1.AngularCompilation {
         const { affectedFiles, angularCompiler, compilerHost, typeScriptProgram, webWorkerTransform } = this.#state;
         const compilerOptions = typeScriptProgram.getCompilerOptions();
         const buildInfoFilename = compilerOptions.tsBuildInfoFile ?? '.tsbuildinfo';
-        const useTypeScriptTranspilation = !compilerOptions.isolatedModules ||
-            !!compilerOptions.sourceMap ||
-            !!compilerOptions.inlineSourceMap;
+        const useTypeScriptTranspilation = !compilerOptions.isolatedModules || !!compilerOptions.sourceMap;
         const emittedFiles = new Map();
         const writeFileCallback = (filename, contents, _a, _b, sourceFiles) => {
             if (!sourceFiles?.length && filename.endsWith(buildInfoFilename)) {
