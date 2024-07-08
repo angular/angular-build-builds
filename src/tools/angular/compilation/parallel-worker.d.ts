@@ -24,6 +24,7 @@ export declare function initialize(request: InitRequest): Promise<{
         allowJs: boolean | undefined;
         isolatedModules: boolean | undefined;
         sourceMap: boolean | undefined;
+        inlineSourceMap: boolean | undefined;
     };
 }>;
 export declare function diagnose(modes: DiagnosticModes): Promise<{

@@ -70,11 +70,12 @@ async function initialize(request) {
     });
     return {
         referencedFiles,
-        // TODO: Expand? `allowJs`, `isolatedModules`, `sourceMap` are the only fields needed currently.
+        // TODO: Expand? `allowJs`, `isolatedModules`, `sourceMap`, `inlineSourceMap` are the only fields needed currently.
         compilerOptions: {
             allowJs: compilerOptions.allowJs,
             isolatedModules: compilerOptions.isolatedModules,
             sourceMap: compilerOptions.sourceMap,
+            inlineSourceMap: compilerOptions.inlineSourceMap,
         },
     };
 }
