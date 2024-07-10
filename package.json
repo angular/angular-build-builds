@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "18.2.0-next.0+sha-845b253",
+  "version": "18.2.0-next.0+sha-01c1ec0",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -23,7 +23,7 @@
   "builders": "builders.json",
   "dependencies": {
     "@ampproject/remapping": "2.3.0",
-    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#845b253",
+    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#01c1ec0",
     "@babel/core": "7.24.7",
     "@babel/helper-annotate-as-pure": "7.24.7",
     "@babel/helper-split-export-declaration": "7.24.7",
@@ -50,10 +50,10 @@
     "watchpack": "2.4.1"
   },
   "peerDependencies": {
-    "@angular/compiler-cli": "^18.0.0 || ^18.1.0-next.0",
-    "@angular/localize": "^18.0.0 || ^18.1.0-next.0",
-    "@angular/platform-server": "^18.0.0 || ^18.1.0-next.0",
-    "@angular/service-worker": "^18.0.0 || ^18.1.0-next.0",
+    "@angular/compiler-cli": "^18.0.0 || ^18.2.0-next.0",
+    "@angular/localize": "^18.0.0 || ^18.2.0-next.0",
+    "@angular/platform-server": "^18.0.0 || ^18.2.0-next.0",
+    "@angular/service-worker": "^18.0.0 || ^18.2.0-next.0",
     "less": "^4.2.0",
     "postcss": "^8.4.0",
     "tailwindcss": "^2.0.0 || ^3.0.0",
