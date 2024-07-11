@@ -242,7 +242,7 @@ async function normalizeOptions(context, projectName, options, extensions) {
         plugins: extensions?.codePlugins?.length ? extensions?.codePlugins : undefined,
         loaderExtensions,
         jsonLogs: environment_options_1.useJSONBuildLogs,
-        colors: color_1.colors.enabled,
+        colors: (0, color_1.supportColor)(),
         clearScreen,
         define,
     };

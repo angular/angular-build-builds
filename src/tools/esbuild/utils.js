@@ -27,6 +27,7 @@ exports.logMessages = logMessages;
 exports.isZonelessApp = isZonelessApp;
 exports.getEntryPointName = getEntryPointName;
 const esbuild_1 = require("esbuild");
+const listr2_1 = require("listr2");
 const node_crypto_1 = require("node:crypto");
 const node_fs_1 = require("node:fs");
 const promises_1 = __importDefault(require("node:fs/promises"));
@@ -34,7 +35,6 @@ const node_path_1 = require("node:path");
 const node_url_1 = require("node:url");
 const node_zlib_1 = require("node:zlib");
 const semver_1 = require("semver");
-const spinner_1 = require("../../utils/spinner");
 const stats_table_1 = require("../../utils/stats-table");
 const bundler_context_1 = require("./bundler-context");
 function logBuildStats(metafile, outputFiles, initial, budgetFailures, colors, changedFiles, estimatedTransferSizes, ssrOutputEnabled, verbose) {
@@ -124,14 +124,17 @@ async function calculateEstimatedTransferSizes(outputFiles) {
     });
 }
 async function withSpinner(text, action) {
-    const spinner = new spinner_1.Spinner(text);
-    spinner.start();
-    try {
-        return await action();
-    }
-    finally {
-        spinner.stop();
-    }
+    let result;
+    const taskList = new listr2_1.Listr([
+        {
+            title: text,
+            async task() {
+                result = await action();
+            },
+        },
+    ], { rendererOptions: { clearOutput: true } });
+    await taskList.run();
+    return result;
 }
 async function withNoProgress(text, action) {
     return action();
