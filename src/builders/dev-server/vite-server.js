@@ -42,6 +42,7 @@ const node_module_1 = require("node:module");
 const node_path_1 = require("node:path");
 const angular_memory_plugin_1 = require("../../tools/vite/angular-memory-plugin");
 const i18n_locale_plugin_1 = require("../../tools/vite/i18n-locale-plugin");
+const id_prefix_plugin_1 = require("../../tools/vite/id-prefix-plugin");
 const utils_1 = require("../../utils");
 const load_esm_1 = require("../../utils/load-esm");
 const internal_1 = require("./internal");
@@ -441,6 +442,7 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
                 extensionMiddleware,
                 normalizePath,
             }),
+            (0, id_prefix_plugin_1.createRemoveIdPrefixPlugin)(externalMetadata.explicit),
         ],
         // Browser only optimizeDeps. (This does not run for SSR dependencies).
         optimizeDeps: getDepOptimizationConfig({
