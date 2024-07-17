@@ -35,7 +35,7 @@ function createWasmPlugin(options) {
     return {
         name: 'angular-wasm',
         setup(build) {
-            build.onResolve({ filter: /.wasm$/ }, async (args) => {
+            build.onResolve({ filter: /\.wasm$/ }, async (args) => {
                 // Skip if already resolving the WASM file to avoid infinite resolution
                 if (args.pluginData?.[WASM_RESOLVE_SYMBOL]) {
                     return;
@@ -75,7 +75,7 @@ function createWasmPlugin(options) {
                     namespace: WASM_INIT_NAMESPACE,
                 };
             });
-            build.onLoad({ filter: /.wasm$/, namespace: WASM_INIT_NAMESPACE }, (0, load_result_cache_1.createCachedLoad)(cache, async (args) => {
+            build.onLoad({ filter: /\.wasm$/, namespace: WASM_INIT_NAMESPACE }, (0, load_result_cache_1.createCachedLoad)(cache, async (args) => {
                 // Ensure async mode is supported
                 if (!allowAsync) {
                     return {
@@ -155,7 +155,7 @@ function createWasmPlugin(options) {
                     watchFiles: [args.path],
                 };
             }));
-            build.onLoad({ filter: /.wasm$/, namespace: WASM_CONTENTS_NAMESPACE }, async (args) => {
+            build.onLoad({ filter: /\.wasm$/, namespace: WASM_CONTENTS_NAMESPACE }, async (args) => {
                 const contents = args.pluginData.wasmContents ?? (await (0, promises_1.readFile)(args.path));
                 let loader = 'file';
                 if (args.with.loader) {
