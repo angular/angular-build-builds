@@ -45,6 +45,7 @@ const i18n_locale_plugin_1 = require("../../tools/vite/i18n-locale-plugin");
 const id_prefix_plugin_1 = require("../../tools/vite/id-prefix-plugin");
 const utils_1 = require("../../utils");
 const load_esm_1 = require("../../utils/load-esm");
+const results_1 = require("../application/results");
 const internal_1 = require("./internal");
 /**
  * Build options that are also present on the dev server but are only passed
@@ -77,12 +78,6 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
     }
     // Set all packages as external to support Vite's prebundle caching
     browserOptions.externalPackages = serverOptions.prebundle;
-    const baseHref = browserOptions.baseHref;
-    if (serverOptions.servePath === undefined && baseHref !== undefined) {
-        // Remove trailing slash
-        serverOptions.servePath =
-            baseHref !== './' && baseHref[baseHref.length - 1] === '/' ? baseHref.slice(0, -1) : baseHref;
-    }
     // The development server currently only supports a single locale when localizing.
     // This matches the behavior of the Webpack-based development server but could be expanded in the future.
     if (browserOptions.localize === true ||
@@ -101,15 +96,8 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
     // In a development environment the additional scope information does not
     // have a negative effect unlike production where final output size is relevant.
     { sourcemap: true, jit: true, thirdPartySourcemaps }, 1);
-    // Extract output index from options
-    // TODO: Provide this info from the build results
+    // The index HTML path will be updated from the build results if provided by the builder
     let htmlIndexPath = 'index.html';
-    if (browserOptions.index && typeof browserOptions.index !== 'boolean') {
-        htmlIndexPath =
-            typeof browserOptions.index === 'string'
-                ? (0, node_path_1.basename)(browserOptions.index)
-                : browserOptions.index.output || 'index.html';
-    }
     // dynamically import Vite for ESM compatibility
     const { createServer, normalizePath } = await (0, load_esm_1.loadEsmModule)('vite');
     let server;
@@ -131,24 +119,55 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
     });
     // TODO: Switch this to an architect schedule call when infrastructure settings are supported
     for await (const result of builderAction(browserOptions, context, extensions?.buildPlugins)) {
-        (0, node_assert_1.default)(result.outputFiles, 'Builder did not provide result files.');
-        // If build failed, nothing to serve
-        if (!result.success) {
-            // If server is active, send an error notification
-            if (result.errors?.length && server) {
-                hadError = true;
-                server.hot.send({
-                    type: 'error',
-                    err: {
-                        message: result.errors[0].text,
-                        stack: '',
-                        loc: result.errors[0].location,
-                    },
-                });
-            }
-            continue;
+        switch (result.kind) {
+            case results_1.ResultKind.Failure:
+                if (result.errors.length && server) {
+                    hadError = true;
+                    server.hot.send({
+                        type: 'error',
+                        err: {
+                            message: result.errors[0].text,
+                            stack: '',
+                            loc: result.errors[0].location ?? undefined,
+                        },
+                    });
+                }
+                continue;
+            case results_1.ResultKind.Full:
+                if (result.detail?.['htmlIndexPath']) {
+                    htmlIndexPath = result.detail['htmlIndexPath'];
+                }
+                if (serverOptions.servePath === undefined && result.detail?.['htmlBaseHref']) {
+                    const baseHref = result.detail['htmlBaseHref'];
+                    // Remove trailing slash
+                    serverOptions.servePath =
+                        baseHref !== './' && baseHref[baseHref.length - 1] === '/'
+                            ? baseHref.slice(0, -1)
+                            : baseHref;
+                }
+                assetFiles.clear();
+                for (const [outputPath, file] of Object.entries(result.files)) {
+                    if (file.origin === 'disk') {
+                        assetFiles.set('/' + normalizePath(outputPath), normalizePath(file.inputPath));
+                    }
+                }
+                // Analyze result files for changes
+                analyzeResultFiles(normalizePath, htmlIndexPath, result.files, generatedFiles);
+                break;
+            case results_1.ResultKind.Incremental:
+                (0, node_assert_1.default)(server, 'Builder must provide an initial full build before incremental results.');
+                // TODO: Implement support -- application builder currently does not use
+                break;
+            case results_1.ResultKind.ComponentUpdate:
+                (0, node_assert_1.default)(serverOptions.hmr, 'Component updates are only supported with HMR enabled.');
+                // TODO: Implement support -- application builder currently does not use
+                break;
+            default:
+                context.logger.warn(`Unknown result kind [${result.kind}] provided by build.`);
+                continue;
         }
-        else if (hadError && server) {
+        // Clear existing error overlay on successful result
+        if (hadError && server) {
             hadError = false;
             // Send an empty update to clear the error overlay
             server.hot.send({
@@ -156,18 +175,10 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                 updates: [],
             });
         }
-        // Analyze result files for changes
-        analyzeResultFiles(normalizePath, htmlIndexPath, result.outputFiles, generatedFiles);
-        assetFiles.clear();
-        if (result.assetFiles) {
-            for (const asset of result.assetFiles) {
-                assetFiles.set('/' + normalizePath(asset.destination), normalizePath(asset.source));
-            }
-        }
         // To avoid disconnecting the array objects from the option, these arrays need to be mutated instead of replaced.
         let requiresServerRestart = false;
-        if (result.externalMetadata) {
-            const { implicitBrowser, implicitServer, explicit } = result.externalMetadata;
+        if (result.detail?.['externalMetadata']) {
+            const { implicitBrowser, implicitServer, explicit } = result.detail['externalMetadata'];
             const implicitServerFiltered = implicitServer.filter((m) => removeNodeJsBuiltinModules(m) && removeAbsoluteUrls(m));
             const implicitBrowserFiltered = implicitBrowser.filter(removeAbsoluteUrls);
             if (browserOptions.ssr && serverOptions.prebundle !== false) {
@@ -302,22 +313,26 @@ function handleUpdate(normalizePath, generatedFiles, server, serverOptions, logg
 }
 function analyzeResultFiles(normalizePath, htmlIndexPath, resultFiles, generatedFiles) {
     const seen = new Set(['/index.html']);
-    for (const file of resultFiles) {
+    for (const [outputPath, file] of Object.entries(resultFiles)) {
+        if (file.origin === 'disk') {
+            continue;
+        }
         let filePath;
-        if (file.path === htmlIndexPath) {
+        if (outputPath === htmlIndexPath) {
             // Convert custom index output path to standard index path for dev-server usage.
             // This mimics the Webpack dev-server behavior.
             filePath = '/index.html';
         }
         else {
-            filePath = '/' + normalizePath(file.path);
+            filePath = '/' + normalizePath(outputPath);
         }
         seen.add(filePath);
+        const servable = file.type === internal_1.BuildOutputFileType.Browser || file.type === internal_1.BuildOutputFileType.Media;
         // Skip analysis of sourcemaps
         if (filePath.endsWith('.map')) {
             generatedFiles.set(filePath, {
                 contents: file.contents,
-                servable: file.type === internal_1.BuildOutputFileType.Browser || file.type === internal_1.BuildOutputFileType.Media,
+                servable,
                 size: file.contents.byteLength,
                 updated: false,
             });
@@ -337,7 +352,7 @@ function analyzeResultFiles(normalizePath, htmlIndexPath, resultFiles, generated
             size: file.contents.byteLength,
             hash: file.hash,
             updated: true,
-            servable: file.type === internal_1.BuildOutputFileType.Browser || file.type === internal_1.BuildOutputFileType.Media,
+            servable,
         });
     }
     // Clear stale output files

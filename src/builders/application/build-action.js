@@ -36,10 +36,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.runEsBuildBuildAction = runEsBuildBuildAction;
 const node_fs_1 = require("node:fs");
 const node_path_1 = __importDefault(require("node:path"));
+const bundler_context_1 = require("../../tools/esbuild/bundler-context");
 const sass_language_1 = require("../../tools/esbuild/stylesheets/sass-language");
 const utils_1 = require("../../tools/esbuild/utils");
 const delete_output_dir_1 = require("../../utils/delete-output-dir");
 const environment_options_1 = require("../../utils/environment-options");
+const results_1 = require("./results");
 // Watch workspace for package manager changes
 const packageWatchFiles = [
     // manifest can affect module resolution
@@ -167,18 +169,50 @@ async function* runEsBuildBuildAction(action, options) {
         (0, sass_language_1.shutdownSassWorkerPool)();
     }
 }
-async function writeAndEmitOutput(writeToFileSystem, { outputFiles, output, outputWithFiles, assetFiles }, outputOptions, writeToFileSystemFilter) {
+async function writeAndEmitOutput(writeToFileSystem, { outputFiles, outputWithFiles, assetFiles, externalMetadata, htmlIndexPath, htmlBaseHref, }, outputOptions, writeToFileSystemFilter) {
+    if (!outputWithFiles.success) {
+        return {
+            kind: results_1.ResultKind.Failure,
+            errors: outputWithFiles.errors,
+        };
+    }
     if (writeToFileSystem) {
         // Write output files
         const outputFilesToWrite = writeToFileSystemFilter
             ? outputFiles.filter(writeToFileSystemFilter)
             : outputFiles;
         await (0, utils_1.writeResultFiles)(outputFilesToWrite, assetFiles, outputOptions);
-        return output;
+        // Currently unused other than indicating success if writing to disk.
+        return {
+            kind: results_1.ResultKind.Full,
+            files: {},
+        };
     }
     else {
-        // Requires casting due to unneeded `JsonObject` requirement. Remove once fixed.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return outputWithFiles;
+        const result = {
+            kind: results_1.ResultKind.Full,
+            files: {},
+            detail: {
+                externalMetadata,
+                htmlIndexPath,
+                htmlBaseHref,
+            },
+        };
+        for (const file of outputWithFiles.assetFiles) {
+            result.files[file.destination] = {
+                type: bundler_context_1.BuildOutputFileType.Browser,
+                inputPath: file.source,
+                origin: 'disk',
+            };
+        }
+        for (const file of outputWithFiles.outputFiles) {
+            result.files[file.path] = {
+                type: file.type,
+                contents: file.contents,
+                origin: 'memory',
+                hash: file.hash,
+            };
+        }
+        return result;
     }
 }

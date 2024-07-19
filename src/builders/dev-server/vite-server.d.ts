@@ -8,7 +8,7 @@
 import type { BuilderContext } from '@angular-devkit/architect';
 import type { Plugin } from 'esbuild';
 import type { Connect, DepOptimizationConfig, InlineConfig } from 'vite';
-import { ApplicationBuilderOutput } from '../application';
+import { Result } from '../application/results';
 import { type ApplicationBuilderInternalOptions, type ExternalResultMetadata, JavaScriptTransformer } from './internal';
 import type { NormalizedDevServerOptions } from './options';
 import type { DevServerBuilderOutput } from './output';
@@ -19,7 +19,7 @@ interface OutputFileRecord {
     updated: boolean;
     servable: boolean;
 }
-export type BuilderAction = (options: ApplicationBuilderInternalOptions, context: BuilderContext, plugins?: Plugin[]) => AsyncIterable<ApplicationBuilderOutput>;
+export type BuilderAction = (options: ApplicationBuilderInternalOptions, context: BuilderContext, plugins?: Plugin[]) => AsyncIterable<Result>;
 export declare function serveWithVite(serverOptions: NormalizedDevServerOptions, builderName: string, builderAction: BuilderAction, context: BuilderContext, transformers?: {
     indexHtml?: (content: string) => Promise<string>;
 }, extensions?: {

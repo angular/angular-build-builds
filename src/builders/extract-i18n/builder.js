@@ -72,9 +72,8 @@ async function execute(options, context, extensions) {
     // Extract messages based on configured builder
     const { extractMessages } = await Promise.resolve().then(() => __importStar(require('./application-extraction')));
     const extractionResult = await extractMessages(normalizedOptions, builderName, context, localizeToolsModule.MessageExtractor, extensions);
-    // Return the builder result if it failed
-    if (!extractionResult.builderResult.success) {
-        return extractionResult.builderResult;
+    if (!extractionResult.success) {
+        return { success: false };
     }
     // Perform duplicate message checks
     const { checkDuplicateMessages } = localizeToolsModule;
