@@ -50,7 +50,7 @@ function* findUrls(contents) {
         if (pos > 0) {
             pos -= 2;
             next();
-            if (!isWhitespace(current) && current !== 0x0027 && current !== 0x003a) {
+            if (!isWhitespace(current) && current !== 0x002c && current !== 0x003a) {
                 // Skip - not a url token
                 pos += 3;
                 continue;

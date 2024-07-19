@@ -8,6 +8,7 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createAngularIndexHtmlMiddleware = createAngularIndexHtmlMiddleware;
+const node_path_1 = require("node:path");
 const utils_1 = require("../utils");
 function createAngularIndexHtmlMiddleware(server, outputFiles, indexHtmlTransformer) {
     return function (req, res, next) {
@@ -18,11 +19,12 @@ function createAngularIndexHtmlMiddleware(server, outputFiles, indexHtmlTransfor
         // Parse the incoming request.
         // The base of the URL is unused but required to parse the URL.
         const pathname = (0, utils_1.pathnameWithoutBasePath)(req.url, server.config.base);
-        if (pathname !== '/' && pathname !== '/index.html') {
+        const extension = (0, node_path_1.extname)(pathname);
+        if (extension !== '.html') {
             next();
             return;
         }
-        const rawHtml = outputFiles.get('/index.html')?.contents;
+        const rawHtml = outputFiles.get(pathname)?.contents;
         if (!rawHtml) {
             next();
             return;
