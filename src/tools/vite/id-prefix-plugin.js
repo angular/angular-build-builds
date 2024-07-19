@@ -10,7 +10,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createRemoveIdPrefixPlugin = void 0;
 // NOTE: the implementation for this Vite plugin is roughly based on:
 // https://github.com/MilanKovacic/vite-plugin-externalize-dependencies
-const VITE_ID_PREFIX = '/@id/';
+const VITE_ID_PREFIX = '@id/';
 const escapeRegexSpecialChars = (inputString) => {
     return inputString.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 };
@@ -23,7 +23,7 @@ const createRemoveIdPrefixPlugin = (externals) => ({
             return;
         }
         const escapedExternals = externals.map(escapeRegexSpecialChars);
-        const prefixedExternalRegex = new RegExp(`${VITE_ID_PREFIX}(${escapedExternals.join('|')})`, 'g');
+        const prefixedExternalRegex = new RegExp(`${resolvedConfig.base}${VITE_ID_PREFIX}(${escapedExternals.join('|')})`, 'g');
         // @ts-expect-error: Property 'push' does not exist on type 'readonly Plugin<any>[]'
         // Reasoning:
         //  since the /@id/ prefix is added by Vite's import-analysis plugin,
