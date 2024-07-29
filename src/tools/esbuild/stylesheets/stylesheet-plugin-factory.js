@@ -112,7 +112,7 @@ class StylesheetPluginFactory {
                     return processStylesheet(language, data, filename, format, options, build, postcssProcessor);
                 }));
                 // Add a load callback to support files from disk
-                build.onLoad({ filter: language.fileFilter }, (0, load_result_cache_1.createCachedLoad)(cache, async (args) => {
+                build.onLoad({ filter: language.fileFilter, namespace: 'file' }, (0, load_result_cache_1.createCachedLoad)(cache, async (args) => {
                     const data = await (0, promises_1.readFile)(args.path, 'utf-8');
                     return processStylesheet(language, data, args.path, (0, node_path_1.extname)(args.path).toLowerCase().slice(1), options, build, postcssProcessor);
                 }));
