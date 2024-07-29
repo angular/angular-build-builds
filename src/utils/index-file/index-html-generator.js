@@ -32,6 +32,7 @@ class IndexHtmlGenerator {
         if (options?.optimization?.styles?.inlineCritical) {
             this.csrPlugins.push(inlineCriticalCssPlugin(this));
         }
+        this.csrPlugins.push(addNoncePlugin());
         // SSR plugins
         if (options.generateDedicatedSSRContent) {
             this.ssrPlugins.push(addEventDispatchContractPlugin(), addNoncePlugin());
