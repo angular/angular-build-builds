@@ -35,7 +35,7 @@ function createStylesheetBundleOptions(options, cache, inlineComponentData) {
         (0, css_resource_plugin_1.createCssResourcePlugin)(cache),
     ];
     if (options.inlineFonts) {
-        plugins.push((0, css_inline_fonts_plugin_1.createCssInlineFontsPlugin)({ cache, cacheOptions: options.cacheOptions }));
+        plugins.unshift((0, css_inline_fonts_plugin_1.createCssInlineFontsPlugin)({ cache, cacheOptions: options.cacheOptions }));
     }
     return {
         absWorkingDir: options.workspaceRoot,
