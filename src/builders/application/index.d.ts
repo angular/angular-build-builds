@@ -14,8 +14,6 @@ import { Schema as ApplicationBuilderOptions } from './schema';
 export type { ApplicationBuilderOptions };
 export declare function buildApplicationInternal(options: ApplicationBuilderInternalOptions, context: BuilderContext & {
     signal?: AbortSignal;
-}, infrastructureSettings?: {
-    write?: boolean;
 }, extensions?: ApplicationBuilderExtensions): AsyncIterable<Result>;
 export interface ApplicationBuilderOutput extends BuilderOutput {
     outputFiles?: BuildOutputFile[];

@@ -6,9 +6,6 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.logBuildStats = logBuildStats;
 exports.getChunkNameFromMetafile = getChunkNameFromMetafile;
@@ -16,7 +13,6 @@ exports.calculateEstimatedTransferSizes = calculateEstimatedTransferSizes;
 exports.withSpinner = withSpinner;
 exports.withNoProgress = withNoProgress;
 exports.getFeatureSupport = getFeatureSupport;
-exports.writeResultFiles = writeResultFiles;
 exports.emitFilesToDisk = emitFilesToDisk;
 exports.createOutputFile = createOutputFile;
 exports.convertOutputFile = convertOutputFile;
@@ -29,8 +25,6 @@ exports.getEntryPointName = getEntryPointName;
 const esbuild_1 = require("esbuild");
 const listr2_1 = require("listr2");
 const node_crypto_1 = require("node:crypto");
-const node_fs_1 = require("node:fs");
-const promises_1 = __importDefault(require("node:fs/promises"));
 const node_path_1 = require("node:path");
 const node_url_1 = require("node:url");
 const node_zlib_1 = require("node:zlib");
@@ -186,48 +180,6 @@ function getFeatureSupport(target, nativeAsyncAwait) {
         supported['class-static-field'] = false;
     }
     return supported;
-}
-async function writeResultFiles(outputFiles, assetFiles, { base, browser, server }) {
-    const directoryExists = new Set();
-    const ensureDirectoryExists = async (destPath) => {
-        const basePath = (0, node_path_1.dirname)(destPath);
-        if (!directoryExists.has(basePath)) {
-            await promises_1.default.mkdir((0, node_path_1.join)(base, basePath), { recursive: true });
-            directoryExists.add(basePath);
-        }
-    };
-    // Writes the output file to disk and ensures the containing directories are present
-    await emitFilesToDisk(outputFiles, async (file) => {
-        let outputDir;
-        switch (file.type) {
-            case bundler_context_1.BuildOutputFileType.Browser:
-            case bundler_context_1.BuildOutputFileType.Media:
-                outputDir = browser;
-                break;
-            case bundler_context_1.BuildOutputFileType.Server:
-                outputDir = server;
-                break;
-            case bundler_context_1.BuildOutputFileType.Root:
-                outputDir = '';
-                break;
-            default:
-                throw new Error(`Unhandled write for file "${file.path}" with type "${bundler_context_1.BuildOutputFileType[file.type]}".`);
-        }
-        const destPath = (0, node_path_1.join)(outputDir, file.path);
-        // Ensure output subdirectories exist
-        await ensureDirectoryExists(destPath);
-        // Write file contents
-        await promises_1.default.writeFile((0, node_path_1.join)(base, destPath), file.contents);
-    });
-    if (assetFiles?.length) {
-        await emitFilesToDisk(assetFiles, async ({ source, destination }) => {
-            const destPath = (0, node_path_1.join)(browser, destination);
-            // Ensure output subdirectories exist
-            await ensureDirectoryExists(destPath);
-            // Copy file contents
-            await promises_1.default.copyFile(source, (0, node_path_1.join)(base, destPath), node_fs_1.constants.COPYFILE_FICLONE);
-        });
-    }
 }
 const MAX_CONCURRENT_WRITES = 64;
 async function emitFilesToDisk(files, writeFileCallback) {

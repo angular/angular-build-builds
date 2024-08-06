@@ -28,7 +28,7 @@ async function extractMessages(options, builderName, context, extractorConstruct
     buildOptions.appShell = false;
     buildOptions.prerender = false;
     // Build the application with the build options
-    const builderResult = await first((0, application_1.buildApplicationInternal)(buildOptions, context, { write: false }, extensions));
+    const builderResult = await first((0, application_1.buildApplicationInternal)(buildOptions, context, extensions));
     let success = false;
     if (!builderResult || builderResult.kind === results_1.ResultKind.Failure) {
         context.logger.error('Application build failed.');

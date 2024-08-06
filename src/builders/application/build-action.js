@@ -39,7 +39,6 @@ const node_path_1 = __importDefault(require("node:path"));
 const bundler_context_1 = require("../../tools/esbuild/bundler-context");
 const sass_language_1 = require("../../tools/esbuild/stylesheets/sass-language");
 const utils_1 = require("../../tools/esbuild/utils");
-const delete_output_dir_1 = require("../../utils/delete-output-dir");
 const environment_options_1 = require("../../utils/environment-options");
 const results_1 = require("./results");
 // Watch workspace for package manager changes
@@ -56,13 +55,7 @@ const packageWatchFiles = [
     '.pnp.data.json',
 ];
 async function* runEsBuildBuildAction(action, options) {
-    const { writeToFileSystemFilter, writeToFileSystem, watch, poll, clearScreen, logger, deleteOutputPath, cacheOptions, outputOptions, verbose, projectRoot, workspaceRoot, progress, preserveSymlinks, colors, jsonLogs, } = options;
-    if (deleteOutputPath && writeToFileSystem) {
-        await (0, delete_output_dir_1.deleteOutputDir)(workspaceRoot, outputOptions.base, [
-            outputOptions.browser,
-            outputOptions.server,
-        ]);
-    }
+    const { watch, poll, clearScreen, logger, cacheOptions, outputOptions, verbose, projectRoot, workspaceRoot, progress, preserveSymlinks, colors, jsonLogs, } = options;
     const withProgress = progress ? utils_1.withSpinner : utils_1.withNoProgress;
     // Initial build
     let result;
@@ -119,7 +112,7 @@ async function* runEsBuildBuildAction(action, options) {
     // Output the first build results after setting up the watcher to ensure that any code executed
     // higher in the iterator call stack will trigger the watcher. This is particularly relevant for
     // unit tests which execute the builder and modify the file system programmatically.
-    yield await writeAndEmitOutput(writeToFileSystem, result, outputOptions, writeToFileSystemFilter);
+    yield await emitOutputResult(result, outputOptions);
     // Finish if watch mode is not enabled
     if (!watcher) {
         return;
@@ -160,7 +153,7 @@ async function* runEsBuildBuildAction(action, options) {
             if (staleWatchFiles?.size) {
                 watcher.remove([...staleWatchFiles]);
             }
-            yield await writeAndEmitOutput(writeToFileSystem, result, outputOptions, writeToFileSystemFilter);
+            yield await emitOutputResult(result, outputOptions);
         }
     }
     finally {
@@ -169,50 +162,42 @@ async function* runEsBuildBuildAction(action, options) {
         (0, sass_language_1.shutdownSassWorkerPool)();
     }
 }
-async function writeAndEmitOutput(writeToFileSystem, { outputFiles, outputWithFiles, assetFiles, externalMetadata, htmlIndexPath, htmlBaseHref, }, outputOptions, writeToFileSystemFilter) {
-    if (!outputWithFiles.success) {
+async function emitOutputResult({ outputFiles, assetFiles, errors, warnings, externalMetadata, htmlIndexPath, htmlBaseHref, }, outputOptions) {
+    if (errors.length > 0) {
         return {
             kind: results_1.ResultKind.Failure,
-            errors: outputWithFiles.errors,
-        };
-    }
-    if (writeToFileSystem) {
-        // Write output files
-        const outputFilesToWrite = writeToFileSystemFilter
-            ? outputFiles.filter(writeToFileSystemFilter)
-            : outputFiles;
-        await (0, utils_1.writeResultFiles)(outputFilesToWrite, assetFiles, outputOptions);
-        // Currently unused other than indicating success if writing to disk.
-        return {
-            kind: results_1.ResultKind.Full,
-            files: {},
-        };
-    }
-    else {
-        const result = {
-            kind: results_1.ResultKind.Full,
-            files: {},
+            errors: errors,
+            warnings: warnings,
             detail: {
-                externalMetadata,
-                htmlIndexPath,
-                htmlBaseHref,
+                outputOptions,
             },
         };
-        for (const file of outputWithFiles.assetFiles) {
-            result.files[file.destination] = {
-                type: bundler_context_1.BuildOutputFileType.Browser,
-                inputPath: file.source,
-                origin: 'disk',
-            };
-        }
-        for (const file of outputWithFiles.outputFiles) {
-            result.files[file.path] = {
-                type: file.type,
-                contents: file.contents,
-                origin: 'memory',
-                hash: file.hash,
-            };
-        }
-        return result;
     }
+    const result = {
+        kind: results_1.ResultKind.Full,
+        warnings: warnings,
+        files: {},
+        detail: {
+            externalMetadata,
+            htmlIndexPath,
+            htmlBaseHref,
+            outputOptions,
+        },
+    };
+    for (const file of assetFiles) {
+        result.files[file.destination] = {
+            type: bundler_context_1.BuildOutputFileType.Browser,
+            inputPath: file.source,
+            origin: 'disk',
+        };
+    }
+    for (const file of outputFiles) {
+        result.files[file.path] = {
+            type: file.type,
+            contents: file.contents,
+            origin: 'memory',
+            hash: file.hash,
+        };
+    }
+    return result;
 }
