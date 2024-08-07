@@ -37,7 +37,6 @@ exports.serveWithVite = serveWithVite;
 exports.setupServer = setupServer;
 const node_assert_1 = __importDefault(require("node:assert"));
 const promises_1 = require("node:fs/promises");
-const node_inspector_1 = __importDefault(require("node:inspector"));
 const node_module_1 = require("node:module");
 const node_path_1 = require("node:path");
 const angular_memory_plugin_1 = require("../../tools/vite/angular-memory-plugin");
@@ -220,8 +219,9 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
             context.logger.info('NOTE: Raw file sizes do not reflect development server per-request transformations.');
             if (browserOptions.ssr && serverOptions.inspect) {
                 const { host, port } = serverOptions.inspect;
-                node_inspector_1.default.open(port, host, true);
-                context.addTeardown(() => node_inspector_1.default.close());
+                const { default: inspector } = await Promise.resolve().then(() => __importStar(require('node:inspector')));
+                inspector.open(port, host, true);
+                context.addTeardown(() => inspector.close());
             }
             const { root = '' } = await context.getProjectMetadata(projectName);
             const projectRoot = (0, node_path_1.join)(context.workspaceRoot, root);
