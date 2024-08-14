@@ -7,7 +7,7 @@
  */
 import type { ApplicationRef, Type, ɵConsole } from '@angular/core';
 import type { renderApplication, renderModule, ɵSERVER_CONTEXT } from '@angular/platform-server';
-import type { extractRoutes } from '../routes-extractor/extractor';
+import type { ɵgetRoutesFromAngularRouterConfig } from '@angular/ssr';
 export interface MainServerBundleExports {
     /** Standalone application bootstrapping function. */
     default: (() => Promise<ApplicationRef>) | Type<unknown>;
@@ -20,7 +20,7 @@ export interface RenderUtilsServerBundleExports {
     /** Method to render a standalone application. */
     renderApplication: typeof renderApplication;
     /** Method to extract routes from the router config. */
-    extractRoutes: typeof extractRoutes;
+    ɵgetRoutesFromAngularRouterConfig: typeof ɵgetRoutesFromAngularRouterConfig;
     ɵresetCompiledComponents?: () => void;
     /** Angular Console token/class. */
     ɵConsole: typeof ɵConsole;

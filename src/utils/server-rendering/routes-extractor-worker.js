@@ -16,21 +16,21 @@ const load_esm_from_memory_1 = require("./load-esm-from-memory");
 const { document, verbose } = node_worker_threads_1.workerData;
 /** Renders an application based on a provided options. */
 async function extractRoutes() {
-    const { extractRoutes } = await (0, load_esm_from_memory_1.loadEsmModuleFromMemory)('./render-utils.server.mjs');
+    const { ɵgetRoutesFromAngularRouterConfig: getRoutesFromAngularRouterConfig } = await (0, load_esm_from_memory_1.loadEsmModuleFromMemory)('./render-utils.server.mjs');
     const { default: bootstrapAppFnOrModule } = await (0, load_esm_from_memory_1.loadEsmModuleFromMemory)('./main.server.mjs');
     const skippedRedirects = [];
     const skippedOthers = [];
     const routes = [];
-    for await (const { route, success, redirect } of extractRoutes(bootstrapAppFnOrModule, document)) {
-        if (success) {
-            routes.push(route);
-            continue;
-        }
-        if (redirect) {
+    const { routes: extractRoutes } = await getRoutesFromAngularRouterConfig(bootstrapAppFnOrModule, document, new URL('http://localhost'));
+    for (const { route, redirectTo } of extractRoutes) {
+        if (redirectTo !== undefined) {
             skippedRedirects.push(route);
         }
-        else {
+        else if (/[:*]/.test(route)) {
             skippedOthers.push(route);
+        }
+        else {
+            routes.push(route);
         }
     }
     if (!verbose) {

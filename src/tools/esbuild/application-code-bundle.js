@@ -16,7 +16,6 @@ exports.createServerCodeBundleOptions = createServerCodeBundleOptions;
 exports.createServerPolyfillBundleOptions = createServerPolyfillBundleOptions;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_crypto_1 = require("node:crypto");
-const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
 const environment_options_1 = require("../../utils/environment-options");
 const compiler_plugin_1 = require("./angular/compiler-plugin");
@@ -177,10 +176,7 @@ function createServerCodeBundleOptions(options, target, sourceFileCache) {
                 contents.push(`export { ɵresetCompiledComponents } from '@angular/core';`);
             }
             if (prerenderOptions?.discoverRoutes) {
-                // We do not import it directly so that node.js modules are resolved using the correct context.
-                const routesExtractorCode = await (0, promises_1.readFile)((0, node_path_1.join)(__dirname, '../../utils/routes-extractor/extractor.js'), 'utf-8');
-                // Remove source map URL comments from the code if a sourcemap is present as this will not match the file.
-                contents.push(routesExtractorCode.replace(/^\/\/# sourceMappingURL=[^\r\n]*/gm, ''));
+                contents.push(`export { ɵgetRoutesFromAngularRouterConfig } from '@angular/ssr';`);
             }
             return {
                 contents: contents.join('\n'),
