@@ -11,6 +11,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.extractMessages = extractMessages;
+const node_fs_1 = require("node:fs");
 const node_path_1 = __importDefault(require("node:path"));
 const application_1 = require("../application");
 const results_1 = require("../application/results");
@@ -71,6 +72,9 @@ function setupLocalizeExtractor(extractorConstructor, files, context) {
             let content;
             if (file?.origin === 'memory') {
                 content = textDecoder.decode(file.contents);
+            }
+            else if (file?.origin === 'disk') {
+                content = (0, node_fs_1.readFileSync)(file.inputPath, 'utf-8');
             }
             if (content === undefined) {
                 throw new Error('Unknown file requested: ' + requestedPath);
