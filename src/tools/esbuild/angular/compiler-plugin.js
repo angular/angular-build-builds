@@ -145,7 +145,9 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
                             stylesheetResult = await stylesheetBundler.bundleFile(stylesheetFile);
                         }
                         else {
-                            stylesheetResult = await stylesheetBundler.bundleInline(data, containingFile, styleOptions.inlineStyleLanguage);
+                            stylesheetResult = await stylesheetBundler.bundleInline(data, containingFile, 
+                            // Inline stylesheets from a template style element are always CSS
+                            containingFile.endsWith('.html') ? 'css' : styleOptions.inlineStyleLanguage);
                         }
                         const { contents, outputFiles, metafile, referencedFiles, errors, warnings } = stylesheetResult;
                         if (errors) {
