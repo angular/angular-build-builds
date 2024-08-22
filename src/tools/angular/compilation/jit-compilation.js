@@ -13,6 +13,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.JitCompilation = void 0;
 const node_assert_1 = __importDefault(require("node:assert"));
 const typescript_1 = __importDefault(require("typescript"));
+const load_esm_1 = require("../../../utils/load-esm");
 const profiling_1 = require("../../esbuild/profiling");
 const angular_host_1 = require("../angular-host");
 const jit_resource_transformer_1 = require("../transformers/jit-resource-transformer");
@@ -36,7 +37,7 @@ class JitCompilation extends angular_compilation_1.AngularCompilation {
     #state;
     async initialize(tsconfig, hostOptions, compilerOptionsTransformer) {
         // Dynamically load the Angular compiler CLI package
-        const { constructorParametersDownlevelTransform } = await angular_compilation_1.AngularCompilation.loadCompilerCli();
+        const { constructorParametersDownlevelTransform } = await (0, load_esm_1.loadEsmModule)('@angular/compiler-cli/private/tooling');
         // Load the compiler configuration and transform as needed
         const { options: originalCompilerOptions, rootNames, errors: configurationDiagnostics, } = await this.loadConfiguration(tsconfig);
         const compilerOptions = compilerOptionsTransformer?.(originalCompilerOptions) ?? originalCompilerOptions;
