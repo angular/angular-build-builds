@@ -138,6 +138,7 @@ class BundlerContext {
         }
         return result;
     }
+    // eslint-disable-next-line max-lines-per-function
     async #performBundle() {
         // Create esbuild options if not present
         if (this.#esbuildOptions === undefined) {
@@ -164,12 +165,6 @@ class BundlerContext {
             else {
                 // For non-incremental builds, perform a single build
                 result = await (0, esbuild_1.build)(this.#esbuildOptions);
-            }
-            if (this.#platformIsServer) {
-                for (const entry of Object.values(result.metafile.outputs)) {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    entry['ng-platform-server'] = true;
-                }
             }
         }
         catch (failure) {
@@ -280,6 +275,7 @@ class BundlerContext {
         for (const { imports } of Object.values(result.metafile.outputs)) {
             for (const importData of imports) {
                 if (!importData.external ||
+                    utils_1.SERVER_GENERATED_EXTERNALS.has(importData.path) ||
                     (importData.kind !== 'import-statement' &&
                         importData.kind !== 'dynamic-import' &&
                         importData.kind !== 'require-call')) {
@@ -295,13 +291,21 @@ class BundlerContext {
             if (!/\.([cm]?js|css|wasm)(\.map)?$/i.test(file.path)) {
                 fileType = BuildOutputFileType.Media;
             }
+            else if (this.#platformIsServer) {
+                fileType = BuildOutputFileType.Server;
+            }
             else {
-                fileType = this.#platformIsServer
-                    ? BuildOutputFileType.Server
-                    : BuildOutputFileType.Browser;
+                fileType = BuildOutputFileType.Browser;
             }
             return (0, utils_1.convertOutputFile)(file, fileType);
         });
+        let externalConfiguration = this.#esbuildOptions.external;
+        if (this.#platformIsServer && externalConfiguration) {
+            externalConfiguration = externalConfiguration.filter((dep) => !utils_1.SERVER_GENERATED_EXTERNALS.has(dep));
+            if (!externalConfiguration.length) {
+                externalConfiguration = undefined;
+            }
+        }
         // Return the successful build results
         return {
             ...result,
@@ -310,7 +314,7 @@ class BundlerContext {
             externalImports: {
                 [this.#platformIsServer ? 'server' : 'browser']: externalImports,
             },
-            externalConfiguration: this.#esbuildOptions.external,
+            externalConfiguration,
             errors: undefined,
         };
     }

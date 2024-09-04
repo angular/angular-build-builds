@@ -16,19 +16,21 @@ const node_path_1 = require("node:path");
 const node_url_1 = require("node:url");
 const piscina_1 = __importDefault(require("piscina"));
 const bundler_context_1 = require("../../tools/esbuild/bundler-context");
-async function prerenderPages(workspaceRoot, appShellOptions = {}, prerenderOptions = {}, outputFiles, assets, document, sourcemap = false, inlineCriticalCss = false, maxThreads = 1, verbose = false) {
+const url_1 = require("../url");
+async function prerenderPages(workspaceRoot, baseHref, appShellOptions = {}, prerenderOptions = {}, outputFiles, assets, sourcemap = false, maxThreads = 1, verbose = false) {
     const outputFilesForWorker = {};
     const serverBundlesSourceMaps = new Map();
     const warnings = [];
     const errors = [];
     for (const { text, path, type } of outputFiles) {
-        const fileExt = (0, node_path_1.extname)(path);
-        if (type === bundler_context_1.BuildOutputFileType.Server && fileExt === '.map') {
+        if (type !== bundler_context_1.BuildOutputFileType.Server) {
+            continue;
+        }
+        // Contains the server runnable application code
+        if ((0, node_path_1.extname)(path) === '.map') {
             serverBundlesSourceMaps.set(path.slice(0, -4), text);
         }
-        else if (type === bundler_context_1.BuildOutputFileType.Server || // Contains the server runnable application code
-            (type === bundler_context_1.BuildOutputFileType.Browser && fileExt === '.css') // Global styles for critical CSS inlining.
-        ) {
+        else {
             outputFilesForWorker[path] = text;
         }
     }
@@ -49,7 +51,7 @@ async function prerenderPages(workspaceRoot, appShellOptions = {}, prerenderOpti
         assetsReversed[addLeadingSlash(destination.replace(/\\/g, node_path_1.posix.sep))] = source;
     }
     // Get routes to prerender
-    const { routes: allRoutes, warnings: routesWarnings, errors: routesErrors, } = await getAllRoutes(workspaceRoot, outputFilesForWorker, assetsReversed, document, appShellOptions, prerenderOptions, sourcemap, verbose);
+    const { routes: allRoutes, warnings: routesWarnings, errors: routesErrors, serializableRouteTreeNode, } = await getAllRoutes(workspaceRoot, baseHref, outputFilesForWorker, assetsReversed, appShellOptions, prerenderOptions, sourcemap, verbose);
     if (routesErrors?.length) {
         errors.push(...routesErrors);
     }
@@ -61,17 +63,18 @@ async function prerenderPages(workspaceRoot, appShellOptions = {}, prerenderOpti
             errors,
             warnings,
             output: {},
+            serializableRouteTreeNode,
             prerenderedRoutes: allRoutes,
         };
     }
     // Render routes
-    const { warnings: renderingWarnings, errors: renderingErrors, output, } = await renderPages(sourcemap, allRoutes, maxThreads, workspaceRoot, outputFilesForWorker, assetsReversed, inlineCriticalCss, document, appShellOptions);
+    const { errors: renderingErrors, output } = await renderPages(baseHref, sourcemap, allRoutes, maxThreads, workspaceRoot, outputFilesForWorker, assetsReversed, appShellOptions);
     errors.push(...renderingErrors);
-    warnings.push(...renderingWarnings);
     return {
         errors,
         warnings,
         output,
+        serializableRouteTreeNode,
         prerenderedRoutes: allRoutes,
     };
 }
@@ -80,9 +83,8 @@ class RoutesSet extends Set {
         return super.add(addLeadingSlash(value));
     }
 }
-async function renderPages(sourcemap, allRoutes, maxThreads, workspaceRoot, outputFilesForWorker, assetFilesForWorker, inlineCriticalCss, document, appShellOptions) {
+async function renderPages(baseHref, sourcemap, allRoutes, maxThreads, workspaceRoot, outputFilesForWorker, assetFilesForWorker, appShellOptions) {
     const output = {};
-    const warnings = [];
     const errors = [];
     const workerExecArgv = [
         '--import',
@@ -99,8 +101,6 @@ async function renderPages(sourcemap, allRoutes, maxThreads, workspaceRoot, outp
             workspaceRoot,
             outputFiles: outputFilesForWorker,
             assetFiles: assetFilesForWorker,
-            inlineCriticalCss,
-            document,
         },
         execArgv: workerExecArgv,
         recordTiming: false,
@@ -108,27 +108,21 @@ async function renderPages(sourcemap, allRoutes, maxThreads, workspaceRoot, outp
     try {
         const renderingPromises = [];
         const appShellRoute = appShellOptions.route && addLeadingSlash(appShellOptions.route);
+        const baseHrefWithLeadingSlash = addLeadingSlash(baseHref);
         for (const route of allRoutes) {
-            const isAppShellRoute = appShellRoute === route;
-            const serverContext = isAppShellRoute ? 'app-shell' : 'ssg';
-            const render = renderWorker.run({ route, serverContext });
+            // Remove base href from file output path.
+            const routeWithoutBaseHref = addLeadingSlash(route.slice(baseHrefWithLeadingSlash.length - 1));
+            const isAppShellRoute = appShellRoute === routeWithoutBaseHref;
+            const render = renderWorker.run({ url: route, isAppShellRoute });
             const renderResult = render
-                .then(({ content, warnings, errors }) => {
-                if (content !== undefined) {
-                    const outPath = isAppShellRoute
-                        ? 'index.html'
-                        : node_path_1.posix.join(removeLeadingSlash(route), 'index.html');
-                    output[outPath] = content;
-                }
-                if (warnings) {
-                    warnings.push(...warnings);
-                }
-                if (errors) {
-                    errors.push(...errors);
+                .then((content) => {
+                if (content !== null) {
+                    const outPath = node_path_1.posix.join(removeLeadingSlash(routeWithoutBaseHref), 'index.html');
+                    output[outPath] = { content, appShellRoute: isAppShellRoute };
                 }
             })
                 .catch((err) => {
-                errors.push(`An error occurred while prerendering route '${route}'.\n\n${err.stack}`);
+                errors.push(`An error occurred while prerendering route '${route}'.\n\n${err.stack ?? err.message ?? err.code ?? err}`);
                 void renderWorker.destroy();
             });
             renderingPromises.push(renderResult);
@@ -140,25 +134,24 @@ async function renderPages(sourcemap, allRoutes, maxThreads, workspaceRoot, outp
     }
     return {
         errors,
-        warnings,
         output,
     };
 }
-async function getAllRoutes(workspaceRoot, outputFilesForWorker, assetFilesForWorker, document, appShellOptions, prerenderOptions, sourcemap, verbose) {
+async function getAllRoutes(workspaceRoot, baseHref, outputFilesForWorker, assetFilesForWorker, appShellOptions, prerenderOptions, sourcemap, verbose) {
     const { routesFile, discoverRoutes } = prerenderOptions;
     const routes = new RoutesSet();
     const { route: appShellRoute } = appShellOptions;
     if (appShellRoute !== undefined) {
-        routes.add(appShellRoute);
+        routes.add((0, url_1.urlJoin)(baseHref, appShellRoute));
     }
     if (routesFile) {
         const routesFromFile = (await (0, promises_1.readFile)(routesFile, 'utf8')).split(/\r?\n/);
         for (const route of routesFromFile) {
-            routes.add(route.trim());
+            routes.add((0, url_1.urlJoin)(baseHref, route.trim()));
         }
     }
     if (!discoverRoutes) {
-        return { routes };
+        return { routes, serializableRouteTreeNode: [] };
     }
     const workerExecArgv = [
         '--import',
@@ -175,14 +168,12 @@ async function getAllRoutes(workspaceRoot, outputFilesForWorker, assetFilesForWo
             workspaceRoot,
             outputFiles: outputFilesForWorker,
             assetFiles: assetFilesForWorker,
-            document,
-            verbose,
         },
         execArgv: workerExecArgv,
         recordTiming: false,
     });
     const errors = [];
-    const { routes: extractedRoutes, warnings } = await renderWorker
+    const serializableRouteTreeNode = await renderWorker
         .run({})
         .catch((err) => {
         errors.push(`An error occurred while extracting routes.\n\n${err.stack}`);
@@ -190,10 +181,30 @@ async function getAllRoutes(workspaceRoot, outputFilesForWorker, assetFilesForWo
         .finally(() => {
         void renderWorker.destroy();
     });
-    for (const route of extractedRoutes) {
-        routes.add(route);
+    const skippedRedirects = [];
+    const skippedOthers = [];
+    for (const { route, redirectTo } of serializableRouteTreeNode) {
+        if (redirectTo) {
+            skippedRedirects.push(route);
+        }
+        else if (route.includes('*')) {
+            skippedOthers.push(route);
+        }
+        else {
+            routes.add(route);
+        }
     }
-    return { routes, warnings, errors };
+    let warnings;
+    if (verbose) {
+        if (skippedOthers.length) {
+            (warnings ??= []).push('The following routes were skipped from prerendering because they contain routes with dynamic parameters:\n' +
+                skippedOthers.join('\n'));
+        }
+        if (skippedRedirects.length) {
+            (warnings ??= []).push('The following routes were skipped from prerendering because they contain redirects:\n', skippedRedirects.join('\n'));
+        }
+    }
+    return { routes, serializableRouteTreeNode, warnings };
 }
 function addLeadingSlash(value) {
     return value.charAt(0) === '/' ? value : '/' + value;

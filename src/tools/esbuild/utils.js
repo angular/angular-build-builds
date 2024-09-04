@@ -7,6 +7,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.SERVER_GENERATED_EXTERNALS = void 0;
 exports.logBuildStats = logBuildStats;
 exports.getChunkNameFromMetafile = getChunkNameFromMetafile;
 exports.calculateEstimatedTransferSizes = calculateEstimatedTransferSizes;
@@ -29,6 +30,7 @@ const node_path_1 = require("node:path");
 const node_url_1 = require("node:url");
 const node_zlib_1 = require("node:zlib");
 const semver_1 = require("semver");
+const manifest_1 = require("../../utils/server-rendering/manifest");
 const stats_table_1 = require("../../utils/stats-table");
 const bundler_context_1 = require("./bundler-context");
 function logBuildStats(metafile, outputFiles, initial, budgetFailures, colors, changedFiles, estimatedTransferSizes, ssrOutputEnabled, verbose) {
@@ -385,3 +387,15 @@ function getEntryPointName(entryPoint) {
         .replace(/\.[cm]?[jt]s$/, '')
         .replace(/[\\/.]/g, '-');
 }
+/**
+ * A set of server-generated dependencies that are treated as external.
+ *
+ * These dependencies are marked as external because they are produced by a
+ * separate bundling process and are not included in the primary bundle. This
+ * ensures that these generated files are resolved from an external source rather
+ * than being part of the main bundle.
+ */
+exports.SERVER_GENERATED_EXTERNALS = new Set([
+    './polyfills.server.mjs',
+    './' + manifest_1.SERVER_APP_MANIFEST_FILENAME,
+]);

@@ -7,24 +7,21 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-const node_worker_threads_1 = require("node:worker_threads");
 const fetch_patch_1 = require("./fetch-patch");
-const render_page_1 = require("./render-page");
+const load_esm_from_memory_1 = require("./load-esm-from-memory");
 /**
- * This is passed as workerData when setting up the worker via the `piscina` package.
+ * Renders each route in routes and writes them to <outputPath>/<route>/index.html.
  */
-const { outputFiles, document, inlineCriticalCss } = node_worker_threads_1.workerData;
-/** Renders an application based on a provided options. */
-function render(options) {
-    return (0, render_page_1.renderPage)({
-        ...options,
-        outputFiles,
-        document,
-        inlineCriticalCss,
-    });
+async function renderPage({ url, isAppShellRoute }) {
+    const { ɵgetOrCreateAngularServerApp: getOrCreateAngularServerApp, ɵServerRenderContext: ServerRenderContext, } = await (0, load_esm_from_memory_1.loadEsmModuleFromMemory)('./main.server.mjs');
+    const angularServerApp = getOrCreateAngularServerApp();
+    const response = await angularServerApp.render(new Request(new URL(url, 'http://local-angular-prerender'), {
+        signal: AbortSignal.timeout(30_000),
+    }), undefined, isAppShellRoute ? ServerRenderContext.AppShell : ServerRenderContext.SSG);
+    return response ? response.text() : null;
 }
 function initialize() {
     (0, fetch_patch_1.patchFetchToLoadInMemoryAssets)();
-    return render;
+    return renderPage;
 }
 exports.default = initialize();

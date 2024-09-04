@@ -10,7 +10,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.INDEX_HTML_SERVER = exports.INDEX_HTML_CSR = void 0;
 exports.normalizeOptions = normalizeOptions;
+exports.getLocaleBaseHref = getLocaleBaseHref;
 const node_fs_1 = require("node:fs");
 const promises_1 = require("node:fs/promises");
 const node_module_1 = require("node:module");
@@ -21,7 +23,18 @@ const environment_options_1 = require("../../utils/environment-options");
 const i18n_options_1 = require("../../utils/i18n-options");
 const normalize_cache_1 = require("../../utils/normalize-cache");
 const postcss_configuration_1 = require("../../utils/postcss-configuration");
+const url_1 = require("../../utils/url");
 const schema_1 = require("./schema");
+/**
+ * The filename for the client-side rendered HTML template.
+ * This template is used for client-side rendering (CSR) in a web application.
+ */
+exports.INDEX_HTML_CSR = 'index.csr.html';
+/**
+ * The filename for the server-side rendered HTML template.
+ * This template is used for server-side rendering (SSR) in a web application.
+ */
+exports.INDEX_HTML_SERVER = 'index.server.html';
 /**
  * Normalize the user provided options by creating full paths for all path based options
  * and converting multi-form options into a single form that can be directly used
@@ -164,7 +177,7 @@ async function normalizeOptions(context, projectName, options, extensions) {
              * For instance, accessing `foo.com/` would lead to `foo.com/index.html` being served instead of hitting the server.
              */
             const indexBaseName = node_path_1.default.basename(options.index);
-            indexOutput = ssrOptions && indexBaseName === 'index.html' ? 'index.csr.html' : indexBaseName;
+            indexOutput = ssrOptions && indexBaseName === 'index.html' ? exports.INDEX_HTML_CSR : indexBaseName;
         }
         else {
             indexOutput = options.index.output || 'index.html';
@@ -368,4 +381,13 @@ function normalizeGlobalEntries(rawEntries, defaultName) {
         existing.files.push(input);
     }
     return [...bundles.values()];
+}
+function getLocaleBaseHref(baseHref, i18n, locale) {
+    if (i18n.flatOutput) {
+        return undefined;
+    }
+    if (i18n.locales[locale] && i18n.locales[locale].baseHref !== '') {
+        return (0, url_1.urlJoin)(baseHref || '', i18n.locales[locale].baseHref ?? `/${locale}/`);
+    }
+    return undefined;
 }

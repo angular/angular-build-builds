@@ -6,17 +6,16 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 import type { ESMInMemoryFileLoaderWorkerData } from './esm-in-memory-loader/loader-hooks';
-import { RenderResult, ServerContext } from './render-page';
 export interface RenderWorkerData extends ESMInMemoryFileLoaderWorkerData {
-    document: string;
-    inlineCriticalCss?: boolean;
     assetFiles: Record</** Destination */ string, /** Source */ string>;
 }
 export interface RenderOptions {
-    route: string;
-    serverContext: ServerContext;
+    url: string;
+    isAppShellRoute: boolean;
 }
-/** Renders an application based on a provided options. */
-declare function render(options: RenderOptions): Promise<RenderResult>;
-declare const _default: typeof render;
+/**
+ * Renders each route in routes and writes them to <outputPath>/<route>/index.html.
+ */
+declare function renderPage({ url, isAppShellRoute }: RenderOptions): Promise<string | null>;
+declare const _default: typeof renderPage;
 export default _default;

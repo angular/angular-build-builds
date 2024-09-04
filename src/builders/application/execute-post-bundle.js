@@ -16,8 +16,10 @@ const bundler_context_1 = require("../../tools/esbuild/bundler-context");
 const index_html_generator_1 = require("../../tools/esbuild/index-html-generator");
 const utils_1 = require("../../tools/esbuild/utils");
 const environment_options_1 = require("../../utils/environment-options");
+const manifest_1 = require("../../utils/server-rendering/manifest");
 const prerender_1 = require("../../utils/server-rendering/prerender");
 const service_worker_1 = require("../../utils/service-worker");
+const options_1 = require("./options");
 /**
  * Run additional builds steps including SSG, AppShell, Index HTML file and Service worker generation.
  * @param options The normalized application builder options used to create the build.
@@ -32,15 +34,11 @@ async function executePostBundleSteps(options, outputFiles, assetFiles, initialF
     const allErrors = [];
     const allWarnings = [];
     const prerenderedRoutes = [];
-    const { serviceWorker, indexHtmlOptions, optimizationOptions, sourcemapOptions, prerenderOptions, appShellOptions, workspaceRoot, verbose, } = options;
-    /**
-     * Index HTML content without CSS inlining to be used for server rendering (AppShell, SSG and SSR).
-     *
-     * NOTE: we don't perform critical CSS inlining as this will be done during server rendering.
-     */
-    let ssrIndexContent;
-    // When using prerender/app-shell the index HTML file can be regenerated.
-    // Thus, we use a Map so that we do not generate 2 files with the same filename.
+    const { baseHref = '/', serviceWorker, indexHtmlOptions, optimizationOptions, sourcemapOptions, ssrOptions, prerenderOptions, appShellOptions, workspaceRoot, verbose, } = options;
+    // Index HTML content without CSS inlining to be used for server rendering (AppShell, SSG and SSR).
+    // NOTE: Critical CSS inlining is deliberately omitted here, as it will be handled during server rendering.
+    // Additionally, when using prerendering or AppShell, the index HTML file may be regenerated.
+    // To prevent generating duplicate files with the same filename, a `Map` is used to store and manage the files.
     const additionalHtmlOutputFiles = new Map();
     // Generate index HTML file
     // If localization is enabled, index generation is handled in the inlining process.
@@ -50,21 +48,34 @@ async function executePostBundleSteps(options, outputFiles, assetFiles, initialF
         allWarnings.push(...warnings);
         additionalHtmlOutputFiles.set(indexHtmlOptions.output, (0, utils_1.createOutputFile)(indexHtmlOptions.output, csrContent, bundler_context_1.BuildOutputFileType.Browser));
         if (ssrContent) {
-            const serverIndexHtmlFilename = 'index.server.html';
-            additionalHtmlOutputFiles.set(serverIndexHtmlFilename, (0, utils_1.createOutputFile)(serverIndexHtmlFilename, ssrContent, bundler_context_1.BuildOutputFileType.Server));
-            ssrIndexContent = ssrContent;
+            additionalHtmlOutputFiles.set(options_1.INDEX_HTML_SERVER, (0, utils_1.createOutputFile)(options_1.INDEX_HTML_SERVER, ssrContent, bundler_context_1.BuildOutputFileType.Server));
         }
+    }
+    // Create server manifest
+    if (prerenderOptions || appShellOptions || ssrOptions) {
+        additionalOutputFiles.push((0, utils_1.createOutputFile)(manifest_1.SERVER_APP_MANIFEST_FILENAME, (0, manifest_1.generateAngularServerAppManifest)(additionalHtmlOutputFiles, outputFiles, optimizationOptions.styles.inlineCritical ?? false, undefined), bundler_context_1.BuildOutputFileType.Server));
     }
     // Pre-render (SSG) and App-shell
     // If localization is enabled, prerendering is handled in the inlining process.
-    if (prerenderOptions || appShellOptions) {
-        (0, node_assert_1.default)(ssrIndexContent, 'The "index" option is required when using the "ssg" or "appShell" options.');
-        const { output, warnings, errors, prerenderedRoutes: generatedRoutes, } = await (0, prerender_1.prerenderPages)(workspaceRoot, appShellOptions, prerenderOptions, outputFiles, assetFiles, ssrIndexContent, sourcemapOptions.scripts, optimizationOptions.styles.inlineCritical, environment_options_1.maxWorkers, verbose);
+    if ((prerenderOptions || appShellOptions) && !allErrors.length) {
+        (0, node_assert_1.default)(indexHtmlOptions, 'The "index" option is required when using the "ssg" or "appShell" options.');
+        const { output, warnings, errors, prerenderedRoutes: generatedRoutes, serializableRouteTreeNode, } = await (0, prerender_1.prerenderPages)(workspaceRoot, baseHref, appShellOptions, prerenderOptions, [...outputFiles, ...additionalOutputFiles], assetFiles, sourcemapOptions.scripts, environment_options_1.maxWorkers, verbose);
         allErrors.push(...errors);
         allWarnings.push(...warnings);
         prerenderedRoutes.push(...Array.from(generatedRoutes));
-        for (const [path, content] of Object.entries(output)) {
-            additionalHtmlOutputFiles.set(path, (0, utils_1.createOutputFile)(path, content, bundler_context_1.BuildOutputFileType.Browser));
+        const indexHasBeenPrerendered = generatedRoutes.has(indexHtmlOptions.output);
+        for (const [path, { content, appShellRoute }] of Object.entries(output)) {
+            // Update the index contents with the app shell under these conditions:
+            // - Replace 'index.html' with the app shell only if it hasn't been prerendered yet.
+            // - Always replace 'index.csr.html' with the app shell.
+            const filePath = appShellRoute && !indexHasBeenPrerendered ? indexHtmlOptions.output : path;
+            additionalHtmlOutputFiles.set(filePath, (0, utils_1.createOutputFile)(filePath, content, bundler_context_1.BuildOutputFileType.Browser));
+        }
+        if (ssrOptions) {
+            // Regenerate the manifest to append route tree. This is only needed if SSR is enabled.
+            const manifest = additionalOutputFiles.find((f) => f.path === manifest_1.SERVER_APP_MANIFEST_FILENAME);
+            (0, node_assert_1.default)(manifest, `${manifest_1.SERVER_APP_MANIFEST_FILENAME} was not found in output files.`);
+            manifest.contents = new TextEncoder().encode((0, manifest_1.generateAngularServerAppManifest)(additionalHtmlOutputFiles, outputFiles, optimizationOptions.styles.inlineCritical ?? false, serializableRouteTreeNode));
         }
     }
     additionalOutputFiles.push(...additionalHtmlOutputFiles.values());
@@ -72,7 +83,7 @@ async function executePostBundleSteps(options, outputFiles, assetFiles, initialF
     // If localization is enabled, service worker is handled in the inlining process.
     if (serviceWorker) {
         try {
-            const serviceWorkerResult = await (0, service_worker_1.augmentAppWithServiceWorkerEsbuild)(workspaceRoot, serviceWorker, options.baseHref || '/', options.indexHtmlOptions?.output, 
+            const serviceWorkerResult = await (0, service_worker_1.augmentAppWithServiceWorkerEsbuild)(workspaceRoot, serviceWorker, baseHref, options.indexHtmlOptions?.output, 
             // Ensure additional files recently added are used
             [...outputFiles, ...additionalOutputFiles], assetFiles);
             additionalOutputFiles.push((0, utils_1.createOutputFile)('ngsw.json', serviceWorkerResult.manifest, bundler_context_1.BuildOutputFileType.Browser));

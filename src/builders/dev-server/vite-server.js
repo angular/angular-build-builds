@@ -204,11 +204,13 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
             server.config.server.fs.allow = [
                 ...new Set([...server.config.server.fs.allow, ...assetFiles.values()]),
             ];
-            handleUpdate(normalizePath, generatedFiles, server, serverOptions, context.logger);
             if (requiresServerRestart) {
                 // Restart the server to force SSR dep re-optimization when a dependency has been added.
                 // This is a workaround for: https://github.com/vitejs/vite/issues/14896
                 await server.restart();
+            }
+            else {
+                await handleUpdate(normalizePath, generatedFiles, server, serverOptions, context.logger);
             }
         }
         else {
@@ -271,18 +273,25 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
     }
     await new Promise((resolve) => (deferred = resolve));
 }
-function handleUpdate(normalizePath, generatedFiles, server, serverOptions, logger) {
+async function handleUpdate(normalizePath, generatedFiles, server, serverOptions, logger) {
     const updatedFiles = [];
+    let isServerFileUpdated = false;
     // Invalidate any updated files
     for (const [file, record] of generatedFiles) {
         if (record.updated) {
             updatedFiles.push(file);
+            isServerFileUpdated ||= record.type === internal_1.BuildOutputFileType.Server;
             const updatedModules = server.moduleGraph.getModulesByFile(normalizePath((0, node_path_1.join)(server.config.root, file)));
             updatedModules?.forEach((m) => server?.moduleGraph.invalidateModule(m));
         }
     }
     if (!updatedFiles.length) {
         return;
+    }
+    // clean server apps cache
+    if (isServerFileUpdated) {
+        const { ɵdestroyAngularServerApp } = (await server.ssrLoadModule('/main.server.mjs'));
+        ɵdestroyAngularServerApp();
     }
     if (serverOptions.liveReload || serverOptions.hmr) {
         if (updatedFiles.every((f) => f.endsWith('.css'))) {
@@ -334,6 +343,7 @@ function analyzeResultFiles(normalizePath, htmlIndexPath, resultFiles, generated
                 contents: file.contents,
                 servable,
                 size: file.contents.byteLength,
+                type: file.type,
                 updated: false,
             });
             continue;
@@ -352,6 +362,7 @@ function analyzeResultFiles(normalizePath, htmlIndexPath, resultFiles, generated
             size: file.contents.byteLength,
             hash: file.hash,
             updated: true,
+            type: file.type,
             servable,
         });
     }

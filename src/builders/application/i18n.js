@@ -15,8 +15,8 @@ const i18n_inliner_1 = require("../../tools/esbuild/i18n-inliner");
 const environment_options_1 = require("../../utils/environment-options");
 const i18n_options_1 = require("../../utils/i18n-options");
 const load_translations_1 = require("../../utils/load-translations");
-const url_1 = require("../../utils/url");
 const execute_post_bundle_1 = require("./execute-post-bundle");
+const options_1 = require("./options");
 /**
  * Inlines all active locales as specified by the application build options into all
  * application JavaScript files created during the build.
@@ -46,7 +46,7 @@ async function inlineI18n(options, executionResult, initialFiles) {
             const localeOutputFiles = localeInlineResult.outputFiles;
             inlineResult.errors.push(...localeInlineResult.errors);
             inlineResult.warnings.push(...localeInlineResult.warnings);
-            const baseHref = getLocaleBaseHref(options.baseHref, options.i18nOptions, locale) ?? options.baseHref;
+            const baseHref = (0, options_1.getLocaleBaseHref)(options.baseHref, options.i18nOptions, locale) ?? options.baseHref;
             const { errors, warnings, additionalAssets, additionalOutputFiles, prerenderedRoutes: generatedRoutes, } = await (0, execute_post_bundle_1.executePostBundleSteps)({
                 ...options,
                 baseHref,
@@ -89,15 +89,6 @@ async function inlineI18n(options, executionResult, initialFiles) {
         executionResult.assetFiles = updatedAssetFiles;
     }
     return inlineResult;
-}
-function getLocaleBaseHref(baseHref, i18n, locale) {
-    if (i18n.flatOutput) {
-        return undefined;
-    }
-    if (i18n.locales[locale] && i18n.locales[locale].baseHref !== '') {
-        return (0, url_1.urlJoin)(baseHref || '', i18n.locales[locale].baseHref ?? `/${locale}/`);
-    }
-    return undefined;
 }
 /**
  * Loads all active translations using the translation loaders from the `@angular/localize` package.

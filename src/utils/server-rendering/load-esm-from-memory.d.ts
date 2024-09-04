@@ -5,6 +5,16 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-import { MainServerBundleExports, RenderUtilsServerBundleExports } from './main-bundle-exports';
+import type { ApplicationRef, Type } from '@angular/core';
+import type { ɵServerRenderContext, ɵextractRoutesAndCreateRouteTree, ɵgetOrCreateAngularServerApp } from '@angular/ssr';
+/**
+ * Represents the exports available from the main server bundle.
+ */
+interface MainServerBundleExports {
+    default: (() => Promise<ApplicationRef>) | Type<unknown>;
+    ɵServerRenderContext: typeof ɵServerRenderContext;
+    ɵextractRoutesAndCreateRouteTree: typeof ɵextractRoutesAndCreateRouteTree;
+    ɵgetOrCreateAngularServerApp: typeof ɵgetOrCreateAngularServerApp;
+}
 export declare function loadEsmModuleFromMemory(path: './main.server.mjs'): Promise<MainServerBundleExports>;
-export declare function loadEsmModuleFromMemory(path: './render-utils.server.mjs'): Promise<RenderUtilsServerBundleExports>;
+export {};

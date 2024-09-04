@@ -10,6 +10,16 @@ import type { Plugin } from 'esbuild';
 import { I18nOptions } from '../../utils/i18n-options';
 import { IndexHtmlTransform } from '../../utils/index-file/index-html-generator';
 import { Schema as ApplicationBuilderOptions, I18NTranslation, OutputPathClass } from './schema';
+/**
+ * The filename for the client-side rendered HTML template.
+ * This template is used for client-side rendering (CSR) in a web application.
+ */
+export declare const INDEX_HTML_CSR = "index.csr.html";
+/**
+ * The filename for the server-side rendered HTML template.
+ * This template is used for server-side rendering (SSR) in a web application.
+ */
+export declare const INDEX_HTML_SERVER = "index.server.html";
 export type NormalizedOutputOptions = Required<OutputPathClass> & {
     clean: boolean;
     ignoreServer: boolean;
@@ -148,4 +158,5 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
         [key: string]: string;
     } | undefined;
 }>;
+export declare function getLocaleBaseHref(baseHref: string | undefined, i18n: NormalizedApplicationBuildOptions['i18nOptions'], locale: string): string | undefined;
 export {};
