@@ -64,6 +64,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SassWorkerImplementation = void 0;
 const node_assert_1 = __importDefault(require("node:assert"));
+const node_module_1 = require("node:module");
 const node_url_1 = require("node:url");
 const node_worker_threads_1 = require("node:worker_threads");
 const piscina_1 = require("piscina");
@@ -100,6 +101,11 @@ class SassWorkerImplementation {
             // Shutdown idle threads after 1 second of inactivity
             idleTimeout: 1000,
             recordTiming: false,
+            env: {
+                ...process.env,
+                // Enable compile code caching if enabled for the main process (only exists on Node.js v22.8+)
+                'NODE_COMPILE_CACHE': (0, node_module_1.getCompileCacheDir)?.(),
+            },
         });
         return this.#workerPool;
     }

@@ -40,6 +40,11 @@ class ParallelCompilation extends angular_compilation_1.AngularCompilation {
             useAtomics: !process.versions.webcontainer,
             filename: localRequire.resolve('./parallel-worker'),
             recordTiming: false,
+            env: {
+                ...process.env,
+                // Enable compile code caching if enabled for the main process (only exists on Node.js v22.8+)
+                'NODE_COMPILE_CACHE': (0, node_module_1.getCompileCacheDir)?.(),
+            },
         });
     }
     initialize(tsconfig, hostOptions, compilerOptionsTransformer) {
