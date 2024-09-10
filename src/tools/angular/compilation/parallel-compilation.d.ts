@@ -22,7 +22,7 @@ export declare class ParallelCompilation extends AngularCompilation {
     #private;
     readonly jit: boolean;
     constructor(jit: boolean);
-    initialize(tsconfig: string, hostOptions: AngularHostOptions, compilerOptionsTransformer?: ((compilerOptions: CompilerOptions) => CompilerOptions) | undefined): Promise<{
+    initialize(tsconfig: string, hostOptions: AngularHostOptions, compilerOptionsTransformer?: (compilerOptions: CompilerOptions) => CompilerOptions): Promise<{
         affectedFiles: ReadonlySet<SourceFile>;
         compilerOptions: CompilerOptions;
         referencedFiles: readonly string[];
