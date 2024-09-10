@@ -43,7 +43,7 @@ export default function renderSassStylesheet(request: RenderRequestMessage): Pro
     result: {
         loadedUrls: string[];
         css: string;
-        sourceMap?: import("source-map-js").RawSourceMap;
+        sourceMap?: import("source-map-js/source-map").RawSourceMap;
     };
     error?: undefined;
 } | {
