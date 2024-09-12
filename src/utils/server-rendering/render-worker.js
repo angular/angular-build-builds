@@ -12,12 +12,10 @@ const load_esm_from_memory_1 = require("./load-esm-from-memory");
 /**
  * Renders each route in routes and writes them to <outputPath>/<route>/index.html.
  */
-async function renderPage({ url, isAppShellRoute }) {
-    const { ɵgetOrCreateAngularServerApp: getOrCreateAngularServerApp, ɵServerRenderContext: ServerRenderContext, } = await (0, load_esm_from_memory_1.loadEsmModuleFromMemory)('./main.server.mjs');
+async function renderPage({ url }) {
+    const { ɵgetOrCreateAngularServerApp: getOrCreateAngularServerApp } = await (0, load_esm_from_memory_1.loadEsmModuleFromMemory)('./main.server.mjs');
     const angularServerApp = getOrCreateAngularServerApp();
-    const response = await angularServerApp.render(new Request(new URL(url, 'http://local-angular-prerender'), {
-        signal: AbortSignal.timeout(30_000),
-    }), undefined, isAppShellRoute ? ServerRenderContext.AppShell : ServerRenderContext.SSG);
+    const response = await angularServerApp.renderStatic(new URL(url, 'http://local-angular-prerender'), AbortSignal.timeout(30_000));
     return response ? response.text() : null;
 }
 function initialize() {

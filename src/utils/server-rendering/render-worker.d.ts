@@ -11,11 +11,10 @@ export interface RenderWorkerData extends ESMInMemoryFileLoaderWorkerData {
 }
 export interface RenderOptions {
     url: string;
-    isAppShellRoute: boolean;
 }
 /**
  * Renders each route in routes and writes them to <outputPath>/<route>/index.html.
  */
-declare function renderPage({ url, isAppShellRoute }: RenderOptions): Promise<string | null>;
+declare function renderPage({ url }: RenderOptions): Promise<string | null>;
 declare const _default: typeof renderPage;
 export default _default;

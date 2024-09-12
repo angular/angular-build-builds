@@ -6,13 +6,12 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 import type { ApplicationRef, Type } from '@angular/core';
-import type { ɵServerRenderContext, ɵextractRoutesAndCreateRouteTree, ɵgetOrCreateAngularServerApp } from '@angular/ssr';
+import type { ɵextractRoutesAndCreateRouteTree, ɵgetOrCreateAngularServerApp } from '@angular/ssr';
 /**
  * Represents the exports available from the main server bundle.
  */
 interface MainServerBundleExports {
     default: (() => Promise<ApplicationRef>) | Type<unknown>;
-    ɵServerRenderContext: typeof ɵServerRenderContext;
     ɵextractRoutesAndCreateRouteTree: typeof ɵextractRoutesAndCreateRouteTree;
     ɵgetOrCreateAngularServerApp: typeof ɵgetOrCreateAngularServerApp;
 }

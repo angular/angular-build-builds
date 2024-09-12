@@ -232,7 +232,6 @@ function createServerMainCodeBundleOptions(options, target, sourceFileCache) {
                 `export * from '${mainServerEntryPointJsImport}';`,
                 // Add @angular/ssr exports
                 `export {
-            ɵServerRenderContext,
             ɵdestroyAngularServerApp,
             ɵextractRoutesAndCreateRouteTree,
             ɵgetOrCreateAngularServerApp,

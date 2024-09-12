@@ -112,12 +112,12 @@ async function renderPages(baseHref, sourcemap, allRoutes, maxThreads, workspace
         for (const route of allRoutes) {
             // Remove base href from file output path.
             const routeWithoutBaseHref = addLeadingSlash(route.slice(baseHrefWithLeadingSlash.length - 1));
-            const isAppShellRoute = appShellRoute === routeWithoutBaseHref;
-            const render = renderWorker.run({ url: route, isAppShellRoute });
+            const render = renderWorker.run({ url: route });
             const renderResult = render
                 .then((content) => {
                 if (content !== null) {
                     const outPath = node_path_1.posix.join(removeLeadingSlash(routeWithoutBaseHref), 'index.html');
+                    const isAppShellRoute = appShellRoute === routeWithoutBaseHref;
                     output[outPath] = { content, appShellRoute: isAppShellRoute };
                 }
             })
