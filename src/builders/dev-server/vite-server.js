@@ -110,6 +110,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
         explicitBrowser: [],
         explicitServer: [],
     };
+    const usedComponentStyles = new Map();
     // Add cleanup logic via a builder teardown.
     let deferred;
     context.addTeardown(async () => {
@@ -214,7 +215,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                 await server.restart();
             }
             else {
-                await handleUpdate(normalizePath, generatedFiles, server, serverOptions, context.logger);
+                await handleUpdate(normalizePath, generatedFiles, server, serverOptions, context.logger, usedComponentStyles);
             }
         }
         else {
@@ -238,7 +239,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                 ? browserOptions.polyfills
                 : [browserOptions.polyfills];
             // Setup server and start listening
-            const serverConfiguration = await setupServer(serverOptions, generatedFiles, assetFiles, browserOptions.preserveSymlinks, externalMetadata, !!browserOptions.ssr, prebundleTransformer, target, (0, internal_1.isZonelessApp)(polyfills), browserOptions.loader, extensions?.middleware, transformers?.indexHtml, thirdPartySourcemaps);
+            const serverConfiguration = await setupServer(serverOptions, generatedFiles, assetFiles, browserOptions.preserveSymlinks, externalMetadata, !!browserOptions.ssr, prebundleTransformer, target, (0, internal_1.isZonelessApp)(polyfills), usedComponentStyles, browserOptions.loader, extensions?.middleware, transformers?.indexHtml, thirdPartySourcemaps);
             server = await createServer(serverConfiguration);
             await server.listen();
             if (browserOptions.ssr && serverOptions.prebundle !== false) {
@@ -277,7 +278,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
     }
     await new Promise((resolve) => (deferred = resolve));
 }
-async function handleUpdate(normalizePath, generatedFiles, server, serverOptions, logger) {
+async function handleUpdate(normalizePath, generatedFiles, server, serverOptions, logger, usedComponentStyles) {
     const updatedFiles = [];
     let isServerFileUpdated = false;
     // Invalidate any updated files
@@ -302,7 +303,21 @@ async function handleUpdate(normalizePath, generatedFiles, server, serverOptions
             const timestamp = Date.now();
             server.hot.send({
                 type: 'update',
-                updates: updatedFiles.map((filePath) => {
+                updates: updatedFiles.flatMap((filePath) => {
+                    // For component styles, an HMR update must be sent for each one with the corresponding
+                    // component identifier search parameter (`ngcomp`). The Vite client code will not keep
+                    // the existing search parameters when it performs an update and each one must be
+                    // specified explicitly. Typically, there is only one each though as specific style files
+                    // are not typically reused across components.
+                    const componentIds = usedComponentStyles.get(filePath);
+                    if (componentIds) {
+                        return componentIds.map((id) => ({
+                            type: 'css-update',
+                            timestamp,
+                            path: `${filePath}?ngcomp` + (id ? `=${id}` : ''),
+                            acceptedPath: filePath,
+                        }));
+                    }
                     return {
                         type: 'css-update',
                         timestamp,
@@ -377,7 +392,7 @@ function analyzeResultFiles(normalizePath, htmlIndexPath, resultFiles, generated
         }
     }
 }
-async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks, externalMetadata, ssr, prebundleTransformer, target, zoneless, prebundleLoaderExtensions, extensionMiddleware, indexHtmlTransformer, thirdPartySourcemaps = false) {
+async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks, externalMetadata, ssr, prebundleTransformer, target, zoneless, usedComponentStyles, prebundleLoaderExtensions, extensionMiddleware, indexHtmlTransformer, thirdPartySourcemaps = false) {
     const proxy = await (0, utils_1.loadProxyConfiguration)(serverOptions.workspaceRoot, serverOptions.proxyConfig);
     // dynamically import Vite for ESM compatibility
     const { normalizePath } = await (0, load_esm_1.loadEsmModule)('vite');
@@ -471,6 +486,7 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
                 indexHtmlTransformer,
                 extensionMiddleware,
                 normalizePath,
+                usedComponentStyles,
             }),
             (0, id_prefix_plugin_1.createRemoveIdPrefixPlugin)(externalMetadata.explicitBrowser),
         ],

@@ -17,5 +17,6 @@ export interface AngularMemoryPluginOptions {
     extensionMiddleware?: Connect.NextHandleFunction[];
     indexHtmlTransformer?: (content: string) => Promise<string>;
     normalizePath: (path: string) => string;
+    usedComponentStyles: Map<string, string[]>;
 }
 export declare function createAngularMemoryPlugin(options: AngularMemoryPluginOptions): Plugin;

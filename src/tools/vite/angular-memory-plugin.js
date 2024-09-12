@@ -17,7 +17,7 @@ const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
 const middlewares_1 = require("./middlewares");
 function createAngularMemoryPlugin(options) {
-    const { workspaceRoot, virtualProjectRoot, outputFiles, assets, external, ssr, extensionMiddleware, indexHtmlTransformer, normalizePath, } = options;
+    const { workspaceRoot, virtualProjectRoot, outputFiles, assets, external, ssr, extensionMiddleware, indexHtmlTransformer, normalizePath, usedComponentStyles, } = options;
     return {
         name: 'vite:angular-memory',
         // Ensures plugin hooks run before built-in Vite hooks
@@ -75,7 +75,7 @@ function createAngularMemoryPlugin(options) {
                 };
             };
             // Assets and resources get handled first
-            server.middlewares.use((0, middlewares_1.createAngularAssetsMiddleware)(server, assets, outputFiles));
+            server.middlewares.use((0, middlewares_1.createAngularAssetsMiddleware)(server, assets, outputFiles, usedComponentStyles));
             if (extensionMiddleware?.length) {
                 extensionMiddleware.forEach((middleware) => server.middlewares.use(middleware));
             }
