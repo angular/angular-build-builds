@@ -13,7 +13,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.JavaScriptTransformer = void 0;
 const node_crypto_1 = require("node:crypto");
 const promises_1 = require("node:fs/promises");
-const node_module_1 = require("node:module");
 const piscina_1 = __importDefault(require("piscina"));
 /**
  * A class that performs transformation of JavaScript files and raw data.
@@ -49,11 +48,6 @@ class JavaScriptTransformer {
             // Shutdown idle threads after 1 second of inactivity
             idleTimeout: 1000,
             recordTiming: false,
-            env: {
-                ...process.env,
-                // Enable compile code caching if enabled for the main process (only exists on Node.js v22.8+)
-                'NODE_COMPILE_CACHE': (0, node_module_1.getCompileCacheDir)?.(),
-            },
         });
         return this.#workerPool;
     }
