@@ -74,6 +74,7 @@ function createAngularMemoryPlugin(options) {
                     map: remappedMap,
                 };
             };
+            server.middlewares.use((0, middlewares_1.createAngularHeadersMiddleware)(server));
             // Assets and resources get handled first
             server.middlewares.use((0, middlewares_1.createAngularAssetsMiddleware)(server, assets, outputFiles, usedComponentStyles));
             if (extensionMiddleware?.length) {

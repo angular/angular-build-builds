@@ -8,10 +8,9 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createAngularSSRMiddleware = createAngularSSRMiddleware;
-const utils_1 = require("../utils");
 function createAngularSSRMiddleware(server, indexHtmlTransformer) {
     let cachedAngularServerApp;
-    return function (req, res, next) {
+    return function angularSSRMiddleware(req, res, next) {
         if (req.url === undefined) {
             return next();
         }
@@ -36,7 +35,6 @@ function createAngularSSRMiddleware(server, indexHtmlTransformer) {
             if (typeof content !== 'string') {
                 return next();
             }
-            (0, utils_1.appendServerConfiguredHeaders)(server, res);
             res.end(content);
         })
             .catch((error) => next(error));

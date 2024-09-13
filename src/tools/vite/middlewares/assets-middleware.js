@@ -14,7 +14,7 @@ const load_esm_1 = require("../../../utils/load-esm");
 const utils_1 = require("../utils");
 const COMPONENT_REGEX = /%COMP%/g;
 function createAngularAssetsMiddleware(server, assets, outputFiles, usedComponentStyles) {
-    return function (req, res, next) {
+    return function angularAssetsMiddleware(req, res, next) {
         if (req.url === undefined || res.writableEnded) {
             return;
         }
@@ -79,7 +79,6 @@ function createAngularAssetsMiddleware(server, assets, outputFiles, usedComponen
                                         .replaceAll(COMPONENT_REGEX, componentId);
                                     res.setHeader('Content-Type', 'text/css');
                                     res.setHeader('Cache-Control', 'no-cache');
-                                    (0, utils_1.appendServerConfiguredHeaders)(server, res);
                                     res.end(encapsulatedData);
                                 })
                                     .catch((e) => next(e));
@@ -97,7 +96,6 @@ function createAngularAssetsMiddleware(server, assets, outputFiles, usedComponen
                     res.setHeader('Content-Type', mimeType);
                 }
                 res.setHeader('Cache-Control', 'no-cache');
-                (0, utils_1.appendServerConfiguredHeaders)(server, res);
                 res.end(data);
                 return;
             }

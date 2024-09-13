@@ -11,7 +11,7 @@ exports.createAngularIndexHtmlMiddleware = createAngularIndexHtmlMiddleware;
 const node_path_1 = require("node:path");
 const utils_1 = require("../utils");
 function createAngularIndexHtmlMiddleware(server, outputFiles, indexHtmlTransformer) {
-    return function (req, res, next) {
+    return function angularIndexHtmlMiddleware(req, res, next) {
         if (!req.url) {
             next();
             return;
@@ -37,7 +37,6 @@ function createAngularIndexHtmlMiddleware(server, outputFiles, indexHtmlTransfor
             }
             res.setHeader('Content-Type', 'text/html');
             res.setHeader('Cache-Control', 'no-cache');
-            (0, utils_1.appendServerConfiguredHeaders)(server, res);
             res.end(processedHtml);
         })
             .catch((error) => next(error));

@@ -9,7 +9,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.pathnameWithoutBasePath = pathnameWithoutBasePath;
 exports.lookupMimeTypeFromRequest = lookupMimeTypeFromRequest;
-exports.appendServerConfiguredHeaders = appendServerConfiguredHeaders;
 const mrmime_1 = require("mrmime");
 const node_path_1 = require("node:path");
 function pathnameWithoutBasePath(url, basePath) {
@@ -26,15 +25,4 @@ function lookupMimeTypeFromRequest(url) {
         return 'image/x-icon';
     }
     return extension && (0, mrmime_1.lookup)(extension);
-}
-function appendServerConfiguredHeaders(server, res) {
-    const headers = server.config.server.headers;
-    if (!headers) {
-        return;
-    }
-    for (const [name, value] of Object.entries(headers)) {
-        if (value !== undefined) {
-            res.setHeader(name, value);
-        }
-    }
 }
