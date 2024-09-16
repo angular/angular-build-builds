@@ -12,10 +12,13 @@ const load_esm_from_memory_1 = require("./load-esm-from-memory");
 /** Renders an application based on a provided options. */
 async function extractRoutes() {
     const { ɵextractRoutesAndCreateRouteTree: extractRoutesAndCreateRouteTree } = await (0, load_esm_from_memory_1.loadEsmModuleFromMemory)('./main.server.mjs');
-    const routeTree = await extractRoutesAndCreateRouteTree(new URL('http://local-angular-prerender/'), 
+    const { routeTree, errors } = await extractRoutesAndCreateRouteTree(new URL('http://local-angular-prerender/'), 
     /** manifest */ undefined, 
     /** invokeGetPrerenderParams */ true);
-    return routeTree.toObject();
+    return {
+        errors,
+        serializedRouteTree: routeTree.toObject(),
+    };
 }
 function initialize() {
     (0, fetch_patch_1.patchFetchToLoadInMemoryAssets)();

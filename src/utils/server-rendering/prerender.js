@@ -173,7 +173,7 @@ async function getAllRoutes(workspaceRoot, baseHref, outputFilesForWorker, asset
         recordTiming: false,
     });
     const errors = [];
-    const serializableRouteTreeNode = await renderWorker
+    const { serializedRouteTree: serializableRouteTreeNode } = await renderWorker
         .run({})
         .catch((err) => {
         errors.push(`An error occurred while extracting routes.\n\n${err.stack}`);

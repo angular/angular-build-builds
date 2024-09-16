@@ -7,7 +7,7 @@
  */
 import { BuildOutputFile } from '../../tools/esbuild/bundler-context';
 import { BuildOutputAsset } from '../../tools/esbuild/bundler-execution-result';
-import type { RoutersExtractorWorkerResult as SerializableRouteTreeNode } from './routes-extractor-worker';
+import type { SerializableRouteTreeNode } from './routes-extractor-worker';
 interface PrerenderOptions {
     routesFile?: string;
     discoverRoutes?: boolean;

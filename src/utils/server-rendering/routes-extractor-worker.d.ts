@@ -10,7 +10,11 @@ import type { ESMInMemoryFileLoaderWorkerData } from './esm-in-memory-loader/loa
 export interface RoutesExtractorWorkerData extends ESMInMemoryFileLoaderWorkerData {
     assetFiles: Record</** Destination */ string, /** Source */ string>;
 }
-export type RoutersExtractorWorkerResult = ReturnType<Awaited<ReturnType<typeof ɵextractRoutesAndCreateRouteTree>>['toObject']>;
+export type SerializableRouteTreeNode = ReturnType<Awaited<ReturnType<typeof ɵextractRoutesAndCreateRouteTree>>['routeTree']['toObject']>;
+export interface RoutersExtractorWorkerResult {
+    serializedRouteTree: SerializableRouteTreeNode;
+    errors: string[];
+}
 /** Renders an application based on a provided options. */
 declare function extractRoutes(): Promise<RoutersExtractorWorkerResult>;
 declare const _default: typeof extractRoutes;
