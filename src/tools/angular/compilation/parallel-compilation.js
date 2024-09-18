@@ -6,14 +6,11 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ParallelCompilation = void 0;
 const node_module_1 = require("node:module");
 const node_worker_threads_1 = require("node:worker_threads");
-const piscina_1 = __importDefault(require("piscina"));
+const worker_pool_1 = require("../../../utils/worker-pool");
 const angular_compilation_1 = require("./angular-compilation");
 /**
  * An Angular compilation which uses a Node.js Worker thread to load and execute
@@ -31,15 +28,10 @@ class ParallelCompilation extends angular_compilation_1.AngularCompilation {
         this.jit = jit;
         // TODO: Convert to import.meta usage during ESM transition
         const localRequire = (0, node_module_1.createRequire)(__filename);
-        this.#worker = new piscina_1.default({
-            minThreads: 1,
+        this.#worker = new worker_pool_1.WorkerPool({
             maxThreads: 1,
             idleTimeout: Infinity,
-            // Web containers do not support transferable objects with receiveOnMessagePort which
-            // is used when the Atomics based wait loop is enable.
-            useAtomics: !process.versions.webcontainer,
             filename: localRequire.resolve('./parallel-worker'),
-            recordTiming: false,
         });
     }
     initialize(tsconfig, hostOptions, compilerOptionsTransformer) {

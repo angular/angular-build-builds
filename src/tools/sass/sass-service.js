@@ -66,8 +66,8 @@ exports.SassWorkerImplementation = void 0;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_url_1 = require("node:url");
 const node_worker_threads_1 = require("node:worker_threads");
-const piscina_1 = require("piscina");
 const environment_options_1 = require("../../utils/environment-options");
+const worker_pool_1 = require("../../utils/worker-pool");
 // Polyfill Symbol.dispose if not present
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 Symbol.dispose ??= Symbol('Symbol Dispose');
@@ -90,16 +90,9 @@ class SassWorkerImplementation {
         this.maxThreads = maxThreads;
     }
     #ensureWorkerPool() {
-        this.#workerPool ??= new piscina_1.Piscina({
+        this.#workerPool ??= new worker_pool_1.WorkerPool({
             filename: require.resolve('./worker'),
-            minThreads: 1,
             maxThreads: this.maxThreads,
-            // Web containers do not support transferable objects with receiveOnMessagePort which
-            // is used when the Atomics based wait loop is enable.
-            useAtomics: !process.versions.webcontainer,
-            // Shutdown idle threads after 1 second of inactivity
-            idleTimeout: 1000,
-            recordTiming: false,
         });
         return this.#workerPool;
     }

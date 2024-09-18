@@ -6,17 +6,14 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.prerenderPages = prerenderPages;
 const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
 const node_url_1 = require("node:url");
-const piscina_1 = __importDefault(require("piscina"));
 const bundler_context_1 = require("../../tools/esbuild/bundler-context");
 const url_1 = require("../url");
+const worker_pool_1 = require("../worker-pool");
 async function prerenderPages(workspaceRoot, baseHref, appShellOptions = {}, prerenderOptions = {}, outputFiles, assets, sourcemap = false, maxThreads = 1, verbose = false) {
     const outputFilesForWorker = {};
     const serverBundlesSourceMaps = new Map();
@@ -94,7 +91,7 @@ async function renderPages(baseHref, sourcemap, allRoutes, maxThreads, workspace
     if (sourcemap) {
         workerExecArgv.push('--enable-source-maps');
     }
-    const renderWorker = new piscina_1.default({
+    const renderWorker = new worker_pool_1.WorkerPool({
         filename: require.resolve('./render-worker'),
         maxThreads: Math.min(allRoutes.size, maxThreads),
         workerData: {
@@ -103,7 +100,6 @@ async function renderPages(baseHref, sourcemap, allRoutes, maxThreads, workspace
             assetFiles: assetFilesForWorker,
         },
         execArgv: workerExecArgv,
-        recordTiming: false,
     });
     try {
         const renderingPromises = [];
@@ -161,7 +157,7 @@ async function getAllRoutes(workspaceRoot, baseHref, outputFilesForWorker, asset
     if (sourcemap) {
         workerExecArgv.push('--enable-source-maps');
     }
-    const renderWorker = new piscina_1.default({
+    const renderWorker = new worker_pool_1.WorkerPool({
         filename: require.resolve('./routes-extractor-worker'),
         maxThreads: 1,
         workerData: {
@@ -170,7 +166,6 @@ async function getAllRoutes(workspaceRoot, baseHref, outputFilesForWorker, asset
             assetFiles: assetFilesForWorker,
         },
         execArgv: workerExecArgv,
-        recordTiming: false,
     });
     const errors = [];
     const { serializedRouteTree: serializableRouteTreeNode } = await renderWorker

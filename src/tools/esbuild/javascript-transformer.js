@@ -6,14 +6,11 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.JavaScriptTransformer = void 0;
 const node_crypto_1 = require("node:crypto");
 const promises_1 = require("node:fs/promises");
-const piscina_1 = __importDefault(require("piscina"));
+const worker_pool_1 = require("../../utils/worker-pool");
 /**
  * A class that performs transformation of JavaScript files and raw data.
  * A worker pool is used to distribute the transformation actions and allow
@@ -41,13 +38,9 @@ class JavaScriptTransformer {
         this.#fileCacheKeyBase = Buffer.from(JSON.stringify(this.#commonOptions), 'utf-8');
     }
     #ensureWorkerPool() {
-        this.#workerPool ??= new piscina_1.default({
+        this.#workerPool ??= new worker_pool_1.WorkerPool({
             filename: require.resolve('./javascript-transformer-worker'),
-            minThreads: 1,
             maxThreads: this.maxThreads,
-            // Shutdown idle threads after 1 second of inactivity
-            idleTimeout: 1000,
-            recordTiming: false,
         });
         return this.#workerPool;
     }
