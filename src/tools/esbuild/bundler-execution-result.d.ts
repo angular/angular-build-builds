@@ -24,6 +24,9 @@ export interface ExternalResultMetadata {
     implicitServer: string[];
     explicit: string[];
 }
+export type PrerenderedRoutesRecord = Record<string, {
+    headers?: Record<string, string>;
+}>;
 /**
  * Represents the result of a single builder execute call.
  */
@@ -33,7 +36,7 @@ export declare class ExecutionResult {
     outputFiles: BuildOutputFile[];
     assetFiles: BuildOutputAsset[];
     errors: (Message | PartialMessage)[];
-    prerenderedRoutes: string[];
+    prerenderedRoutes: PrerenderedRoutesRecord;
     warnings: (Message | PartialMessage)[];
     logs: string[];
     externalMetadata?: ExternalResultMetadata;
@@ -46,7 +49,7 @@ export declare class ExecutionResult {
     addLog(value: string): void;
     addError(error: PartialMessage | string): void;
     addErrors(errors: (PartialMessage | string)[]): void;
-    addPrerenderedRoutes(routes: string[]): void;
+    addPrerenderedRoutes(routes: PrerenderedRoutesRecord): void;
     addWarning(error: PartialMessage | string): void;
     addWarnings(errors: (PartialMessage | string)[]): void;
     /**

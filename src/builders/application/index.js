@@ -65,15 +65,15 @@ context, extensions) {
         context.addTeardown(() => controller.abort('builder-teardown'));
     }
     yield* (0, build_action_1.runEsBuildBuildAction)(async (rebuildState) => {
-        const { prerenderOptions, jsonLogs } = normalizedOptions;
+        const { serverEntryPoint, jsonLogs } = normalizedOptions;
         const startTime = process.hrtime.bigint();
         const result = await (0, execute_build_1.executeBuild)(normalizedOptions, context, rebuildState);
         if (jsonLogs) {
             result.addLog(await (0, utils_1.createJsonBuildManifest)(result, normalizedOptions));
         }
         else {
-            if (prerenderOptions) {
-                const prerenderedRoutesLength = result.prerenderedRoutes.length;
+            if (serverEntryPoint) {
+                const prerenderedRoutesLength = Object.keys(result.prerenderedRoutes).length;
                 let prerenderMsg = `Prerendered ${prerenderedRoutesLength} static route`;
                 prerenderMsg += prerenderedRoutesLength !== 1 ? 's.' : '.';
                 result.addLog(color_1.colors.magenta(prerenderMsg));
@@ -137,7 +137,9 @@ async function* buildApplication(options, context, pluginsOrExtensions) {
         // Writes the output files to disk and ensures the containing directories are present
         const directoryExists = new Set();
         await (0, utils_1.emitFilesToDisk)(Object.entries(result.files), async ([filePath, file]) => {
-            if (outputOptions.ignoreServer && file.type === bundler_context_1.BuildOutputFileType.Server) {
+            if (outputOptions.ignoreServer &&
+                (file.type === bundler_context_1.BuildOutputFileType.ServerApplication ||
+                    file.type === bundler_context_1.BuildOutputFileType.ServerRoot)) {
                 return;
             }
             let typeDirectory;
@@ -146,7 +148,8 @@ async function* buildApplication(options, context, pluginsOrExtensions) {
                 case bundler_context_1.BuildOutputFileType.Media:
                     typeDirectory = outputOptions.browser;
                     break;
-                case bundler_context_1.BuildOutputFileType.Server:
+                case bundler_context_1.BuildOutputFileType.ServerApplication:
+                case bundler_context_1.BuildOutputFileType.ServerRoot:
                     typeDirectory = outputOptions.server;
                     break;
                 case bundler_context_1.BuildOutputFileType.Root:

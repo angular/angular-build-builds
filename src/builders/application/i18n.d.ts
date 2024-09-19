@@ -7,7 +7,7 @@
  */
 import { BuilderContext } from '@angular-devkit/architect';
 import { InitialFileRecord } from '../../tools/esbuild/bundler-context';
-import { ExecutionResult } from '../../tools/esbuild/bundler-execution-result';
+import { ExecutionResult, PrerenderedRoutesRecord } from '../../tools/esbuild/bundler-execution-result';
 import { NormalizedApplicationBuildOptions } from './options';
 /**
  * Inlines all active locales as specified by the application build options into all
@@ -19,7 +19,7 @@ import { NormalizedApplicationBuildOptions } from './options';
 export declare function inlineI18n(options: NormalizedApplicationBuildOptions, executionResult: ExecutionResult, initialFiles: Map<string, InitialFileRecord>): Promise<{
     errors: string[];
     warnings: string[];
-    prerenderedRoutes: string[];
+    prerenderedRoutes: PrerenderedRoutesRecord;
 }>;
 /**
  * Loads all active translations using the translation loaders from the `@angular/localize` package.

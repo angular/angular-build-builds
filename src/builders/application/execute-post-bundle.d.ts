@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 import { BuildOutputFile, InitialFileRecord } from '../../tools/esbuild/bundler-context';
-import { BuildOutputAsset } from '../../tools/esbuild/bundler-execution-result';
+import { BuildOutputAsset, PrerenderedRoutesRecord } from '../../tools/esbuild/bundler-execution-result';
 import { NormalizedApplicationBuildOptions } from './options';
 /**
  * Run additional builds steps including SSG, AppShell, Index HTML file and Service worker generation.
@@ -21,5 +21,5 @@ export declare function executePostBundleSteps(options: NormalizedApplicationBui
     warnings: string[];
     additionalOutputFiles: BuildOutputFile[];
     additionalAssets: BuildOutputAsset[];
-    prerenderedRoutes: string[];
+    prerenderedRoutes: PrerenderedRoutesRecord;
 }>;

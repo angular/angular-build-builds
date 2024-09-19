@@ -36,7 +36,8 @@ class I18nInliner {
         const files = new Map();
         const pendingMaps = [];
         for (const file of options.outputFiles) {
-            if (file.type === bundler_context_1.BuildOutputFileType.Root) {
+            if (file.type === bundler_context_1.BuildOutputFileType.Root || file.type === bundler_context_1.BuildOutputFileType.ServerRoot) {
+                // Skip also the server entry-point.
                 // Skip stats and similar files.
                 continue;
             }

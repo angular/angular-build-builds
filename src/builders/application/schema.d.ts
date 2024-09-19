@@ -118,6 +118,12 @@ export interface Schema {
      */
     outputHashing?: OutputHashing;
     /**
+     * Defines the build output target. 'static': Generates a static site for deployment on any
+     * static hosting service. 'server': Produces an application designed for deployment on a
+     * server that supports server-side rendering (SSR).
+     */
+    outputMode?: OutputMode;
+    /**
      * Specify the output path relative to workspace root.
      */
     outputPath: OutputPathUnion;
@@ -392,6 +398,15 @@ export declare enum OutputHashing {
     Bundles = "bundles",
     Media = "media",
     None = "none"
+}
+/**
+ * Defines the build output target. 'static': Generates a static site for deployment on any
+ * static hosting service. 'server': Produces an application designed for deployment on a
+ * server that supports server-side rendering (SSR).
+ */
+export declare enum OutputMode {
+    Server = "server",
+    Static = "static"
 }
 /**
  * Specify the output path relative to workspace root.

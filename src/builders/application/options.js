@@ -103,6 +103,29 @@ async function normalizeOptions(context, projectName, options, extensions) {
             loaderExtensions[extension] = value;
         }
     }
+    // Validate prerender and ssr options when using the outputMode
+    if (options.outputMode === schema_1.OutputMode.Server) {
+        if (!options.server) {
+            throw new Error('The "server" option is required when "outputMode" is set to "server".');
+        }
+        if (typeof options.ssr === 'boolean' || !options.ssr?.entry) {
+            throw new Error('The "ssr.entry" option is required when "outputMode" is set to "server".');
+        }
+    }
+    if (options.outputMode) {
+        if (!options.server) {
+            options.ssr = false;
+        }
+        if (options.prerender) {
+            context.logger.warn('The "prerender" option is no longer needed when "outputMode" is specified.');
+        }
+        else {
+            options.prerender = !!options.server;
+        }
+        if (options.appShell) {
+            context.logger.warn('The "appShell" option is no longer needed when "outputMode" is specified.');
+        }
+    }
     // A configuration file can exist in the project or workspace root
     const searchDirectories = await (0, postcss_configuration_1.generateSearchDirectories)([projectRoot, workspaceRoot]);
     const postcssConfiguration = await (0, postcss_configuration_1.loadPostcssConfiguration)(searchDirectories);
@@ -151,7 +174,9 @@ async function normalizeOptions(context, projectName, options, extensions) {
         clean: options.deleteOutputPath ?? true,
         // For app-shell and SSG server files are not required by users.
         // Omit these when SSR is not enabled.
-        ignoreServer: ssrOptions === undefined || serverEntryPoint === undefined,
+        ignoreServer: ((ssrOptions === undefined || serverEntryPoint === undefined) &&
+            options.outputMode === undefined) ||
+            options.outputMode === schema_1.OutputMode.Static,
     };
     const outputNames = {
         bundles: options.outputHashing === schema_1.OutputHashing.All || options.outputHashing === schema_1.OutputHashing.Bundles
@@ -206,7 +231,7 @@ async function normalizeOptions(context, projectName, options, extensions) {
         }
     }
     // Initial options to keep
-    const { allowedCommonJsDependencies, aot, baseHref, crossOrigin, externalDependencies, extractLicenses, inlineStyleLanguage = 'css', outExtension, serviceWorker, poll, polyfills, statsJson, stylePreprocessorOptions, subresourceIntegrity, verbose, watch, progress = true, externalPackages, namedChunks, budgets, deployUrl, clearScreen, define, } = options;
+    const { allowedCommonJsDependencies, aot, baseHref, crossOrigin, externalDependencies, extractLicenses, inlineStyleLanguage = 'css', outExtension, serviceWorker, poll, polyfills, statsJson, outputMode, stylePreprocessorOptions, subresourceIntegrity, verbose, watch, progress = true, externalPackages, namedChunks, budgets, deployUrl, clearScreen, define, disableFullServerManifestGeneration = false, } = options;
     // Return all the normalized options
     return {
         advancedOptimizations: !!aot && optimizationOptions.scripts,
@@ -229,6 +254,7 @@ async function normalizeOptions(context, projectName, options, extensions) {
         serverEntryPoint,
         prerenderOptions,
         appShellOptions,
+        outputMode,
         ssrOptions,
         verbose,
         watch,
@@ -261,6 +287,7 @@ async function normalizeOptions(context, projectName, options, extensions) {
         colors: (0, color_1.supportColor)(),
         clearScreen,
         define,
+        disableFullServerManifestGeneration,
     };
 }
 async function getTailwindConfig(searchDirectories, workspaceRoot, context) {

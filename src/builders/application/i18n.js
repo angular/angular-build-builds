@@ -34,7 +34,7 @@ async function inlineI18n(options, executionResult, initialFiles) {
     const inlineResult = {
         errors: [],
         warnings: [],
-        prerenderedRoutes: [],
+        prerenderedRoutes: {},
     };
     // For each active locale, use the inliner to process the output files of the build.
     const updatedOutputFiles = [];
@@ -65,12 +65,11 @@ async function inlineI18n(options, executionResult, initialFiles) {
                         destination: (0, node_path_1.join)(locale, assetFile.destination),
                     });
                 }
-                inlineResult.prerenderedRoutes.push(...generatedRoutes.map((route) => node_path_1.posix.join('/', locale, route)));
             }
             else {
-                inlineResult.prerenderedRoutes.push(...generatedRoutes);
                 executionResult.assetFiles.push(...additionalAssets);
             }
+            inlineResult.prerenderedRoutes = { ...inlineResult.prerenderedRoutes, ...generatedRoutes };
             updatedOutputFiles.push(...localeOutputFiles);
         }
     }
@@ -79,8 +78,8 @@ async function inlineI18n(options, executionResult, initialFiles) {
     }
     // Update the result with all localized files.
     executionResult.outputFiles = [
-        // Root files are not modified.
-        ...executionResult.outputFiles.filter(({ type }) => type === bundler_context_1.BuildOutputFileType.Root),
+        // Root and SSR entry files are not modified.
+        ...executionResult.outputFiles.filter(({ type }) => type === bundler_context_1.BuildOutputFileType.Root || type === bundler_context_1.BuildOutputFileType.ServerRoot),
         // Updated files for each locale.
         ...updatedOutputFiles,
     ];

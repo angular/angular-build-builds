@@ -7,7 +7,9 @@
  */
 import { NormalizedApplicationBuildOptions } from '../../builders/application/options';
 import type { BuildOutputFile } from '../../tools/esbuild/bundler-context';
+import { PrerenderedRoutesRecord } from '../../tools/esbuild/bundler-execution-result';
 export declare const SERVER_APP_MANIFEST_FILENAME = "angular-app-manifest.mjs";
+export declare const SERVER_APP_ENGINE_MANIFEST_FILENAME = "angular-app-engine-manifest.mjs";
 /**
  * Generates the server manifest for the App Engine environment.
  *
@@ -19,9 +21,10 @@ export declare const SERVER_APP_MANIFEST_FILENAME = "angular-app-manifest.mjs";
  * includes settings for inlining locales and determining the output structure.
  * @param baseHref - The base HREF for the application. This is used to set the base URL
  * for all relative URLs in the application.
+ * @param perenderedRoutes - A record mapping static paths to their associated data.
  * @returns A string representing the content of the SSR server manifest for App Engine.
  */
-export declare function generateAngularServerAppEngineManifest(i18nOptions: NormalizedApplicationBuildOptions['i18nOptions'], baseHref: string | undefined): string;
+export declare function generateAngularServerAppEngineManifest(i18nOptions: NormalizedApplicationBuildOptions['i18nOptions'], baseHref: string | undefined, perenderedRoutes?: PrerenderedRoutesRecord | undefined): string;
 /**
  * Generates the server manifest for the standard Node.js environment.
  *
@@ -38,7 +41,10 @@ export declare function generateAngularServerAppEngineManifest(i18nOptions: Norm
  * in the server-side rendered pages.
  * @param routes - An optional array of route definitions for the application, used for
  * server-side rendering and routing.
+ * @param locale - An optional string representing the locale or language code to be used for
+ * the application, helping with localization and rendering content specific to the locale.
+ *
  * @returns A string representing the content of the SSR server manifest for the Node.js
  * environment.
  */
-export declare function generateAngularServerAppManifest(additionalHtmlOutputFiles: Map<string, BuildOutputFile>, outputFiles: BuildOutputFile[], inlineCriticalCss: boolean, routes: readonly unknown[] | undefined): string;
+export declare function generateAngularServerAppManifest(additionalHtmlOutputFiles: Map<string, BuildOutputFile>, outputFiles: BuildOutputFile[], inlineCriticalCss: boolean, routes: readonly unknown[] | undefined, locale: string | undefined): string;

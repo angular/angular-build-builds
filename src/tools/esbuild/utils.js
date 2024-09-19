@@ -30,6 +30,7 @@ const node_path_1 = require("node:path");
 const node_url_1 = require("node:url");
 const node_zlib_1 = require("node:zlib");
 const semver_1 = require("semver");
+const schema_1 = require("../../builders/application/schema");
 const manifest_1 = require("../../utils/server-rendering/manifest");
 const stats_table_1 = require("../../utils/stats-table");
 const bundler_context_1 = require("./bundler-context");
@@ -47,7 +48,7 @@ function logBuildStats(metafile, outputFiles, initial, budgetFailures, colors, c
             ++unchangedCount;
             continue;
         }
-        const isPlatformServer = type === bundler_context_1.BuildOutputFileType.Server;
+        const isPlatformServer = type === bundler_context_1.BuildOutputFileType.ServerApplication || type === bundler_context_1.BuildOutputFileType.ServerRoot;
         if (isPlatformServer && !ssrOutputEnabled) {
             // Only log server build stats when SSR is enabled.
             continue;
@@ -342,7 +343,7 @@ function getSupportedNodeTargets() {
     return SUPPORTED_NODE_VERSIONS.split('||').map((v) => 'node' + (0, semver_1.coerce)(v)?.version);
 }
 async function createJsonBuildManifest(result, normalizedOptions) {
-    const { colors: color, outputOptions: { base, server, browser }, ssrOptions, } = normalizedOptions;
+    const { colors: color, outputOptions: { base, server, browser }, ssrOptions, outputMode, } = normalizedOptions;
     const { warnings, errors, prerenderedRoutes } = result;
     const manifest = {
         errors: errors.length ? await (0, esbuild_1.formatMessages)(errors, { kind: 'error', color }) : [],
@@ -350,7 +351,9 @@ async function createJsonBuildManifest(result, normalizedOptions) {
         outputPaths: {
             root: (0, node_url_1.pathToFileURL)(base),
             browser: (0, node_url_1.pathToFileURL)((0, node_path_1.join)(base, browser)),
-            server: ssrOptions ? (0, node_url_1.pathToFileURL)((0, node_path_1.join)(base, server)) : undefined,
+            server: outputMode !== schema_1.OutputMode.Static && ssrOptions
+                ? (0, node_url_1.pathToFileURL)((0, node_path_1.join)(base, server))
+                : undefined,
         },
         prerenderedRoutes,
     };
@@ -398,4 +401,5 @@ function getEntryPointName(entryPoint) {
 exports.SERVER_GENERATED_EXTERNALS = new Set([
     './polyfills.server.mjs',
     './' + manifest_1.SERVER_APP_MANIFEST_FILENAME,
+    './' + manifest_1.SERVER_APP_ENGINE_MANIFEST_FILENAME,
 ]);

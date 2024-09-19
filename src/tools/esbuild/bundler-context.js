@@ -18,9 +18,10 @@ const load_result_cache_1 = require("./load-result-cache");
 const utils_1 = require("./utils");
 var BuildOutputFileType;
 (function (BuildOutputFileType) {
-    BuildOutputFileType[BuildOutputFileType["Browser"] = 1] = "Browser";
-    BuildOutputFileType[BuildOutputFileType["Media"] = 2] = "Media";
-    BuildOutputFileType[BuildOutputFileType["Server"] = 3] = "Server";
+    BuildOutputFileType[BuildOutputFileType["Browser"] = 0] = "Browser";
+    BuildOutputFileType[BuildOutputFileType["Media"] = 1] = "Media";
+    BuildOutputFileType[BuildOutputFileType["ServerApplication"] = 2] = "ServerApplication";
+    BuildOutputFileType[BuildOutputFileType["ServerRoot"] = 3] = "ServerRoot";
     BuildOutputFileType[BuildOutputFileType["Root"] = 4] = "Root";
 })(BuildOutputFileType || (exports.BuildOutputFileType = BuildOutputFileType = {}));
 /**
@@ -292,7 +293,10 @@ class BundlerContext {
                 fileType = BuildOutputFileType.Media;
             }
             else if (this.#platformIsServer) {
-                fileType = BuildOutputFileType.Server;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                fileType = result.metafile['ng-ssr-entry-bundle']
+                    ? BuildOutputFileType.ServerRoot
+                    : BuildOutputFileType.ServerApplication;
             }
             else {
                 fileType = BuildOutputFileType.Browser;

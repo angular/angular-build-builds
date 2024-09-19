@@ -6,8 +6,12 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.executeBuild = executeBuild;
+const node_assert_1 = __importDefault(require("node:assert"));
 const source_file_cache_1 = require("../../tools/esbuild/angular/source-file-cache");
 const budget_stats_1 = require("../../tools/esbuild/budget-stats");
 const bundler_context_1 = require("../../tools/esbuild/bundler-context");
@@ -19,13 +23,16 @@ const utils_1 = require("../../tools/esbuild/utils");
 const bundle_calculator_1 = require("../../utils/bundle-calculator");
 const environment_options_1 = require("../../utils/environment-options");
 const resolve_assets_1 = require("../../utils/resolve-assets");
+const manifest_1 = require("../../utils/server-rendering/manifest");
 const supported_browsers_1 = require("../../utils/supported-browsers");
 const chunk_optimizer_1 = require("./chunk-optimizer");
 const execute_post_bundle_1 = require("./execute-post-bundle");
 const i18n_1 = require("./i18n");
+const schema_1 = require("./schema");
 const setup_bundling_1 = require("./setup-bundling");
+// eslint-disable-next-line max-lines-per-function
 async function executeBuild(options, context, rebuildState) {
-    const { projectRoot, workspaceRoot, i18nOptions, optimizationOptions, assets, cacheOptions, prerenderOptions, ssrOptions, verbose, colors, jsonLogs, } = options;
+    const { projectRoot, workspaceRoot, i18nOptions, optimizationOptions, assets, outputMode, cacheOptions, serverEntryPoint, baseHref, ssrOptions, verbose, colors, jsonLogs, } = options;
     // TODO: Consider integrating into watch mode. Would require full rebuild on target changes.
     const browsers = (0, supported_browsers_1.getSupportedBrowsers)(projectRoot, context.logger);
     // Load active translations if inlining
@@ -104,6 +111,10 @@ async function executeBuild(options, context, rebuildState) {
         executionResult.htmlIndexPath = options.indexHtmlOptions.output;
         executionResult.htmlBaseHref = options.baseHref;
     }
+    // Create server app engine manifest
+    if (serverEntryPoint) {
+        executionResult.addOutputFile(manifest_1.SERVER_APP_ENGINE_MANIFEST_FILENAME, (0, manifest_1.generateAngularServerAppEngineManifest)(i18nOptions, baseHref, undefined), bundler_context_1.BuildOutputFileType.ServerRoot);
+    }
     // Perform i18n translation inlining if enabled
     if (i18nOptions.shouldInline) {
         const result = await (0, i18n_1.inlineI18n)(options, executionResult, initialFiles);
@@ -121,8 +132,14 @@ async function executeBuild(options, context, rebuildState) {
         executionResult.outputFiles.push(...result.additionalOutputFiles);
         executionResult.assetFiles.push(...result.additionalAssets);
     }
-    if (prerenderOptions) {
+    if (serverEntryPoint) {
         const prerenderedRoutes = executionResult.prerenderedRoutes;
+        // Regenerate the manifest to append prerendered routes data. This is only needed if SSR is enabled.
+        if (outputMode === schema_1.OutputMode.Server && Object.keys(prerenderedRoutes).length) {
+            const manifest = executionResult.outputFiles.find((f) => f.path === manifest_1.SERVER_APP_ENGINE_MANIFEST_FILENAME);
+            (0, node_assert_1.default)(manifest, `${manifest_1.SERVER_APP_ENGINE_MANIFEST_FILENAME} was not found in output files.`);
+            manifest.contents = new TextEncoder().encode((0, manifest_1.generateAngularServerAppEngineManifest)(i18nOptions, baseHref, prerenderedRoutes));
+        }
         executionResult.addOutputFile('prerendered-routes.json', JSON.stringify({ routes: prerenderedRoutes }, null, 2), bundler_context_1.BuildOutputFileType.Root);
     }
     // Write metafile if stats option is enabled

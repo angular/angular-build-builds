@@ -13,3 +13,4 @@ export declare function createBrowserCodeBundleOptions(options: NormalizedApplic
 export declare function createBrowserPolyfillBundleOptions(options: NormalizedApplicationBuildOptions, target: string[], sourceFileCache?: SourceFileCache): BuildOptions | BundlerOptionsFactory | undefined;
 export declare function createServerPolyfillBundleOptions(options: NormalizedApplicationBuildOptions, target: string[], sourceFileCache?: SourceFileCache): BundlerOptionsFactory | undefined;
 export declare function createServerMainCodeBundleOptions(options: NormalizedApplicationBuildOptions, target: string[], sourceFileCache: SourceFileCache): BuildOptions;
+export declare function createSsrEntryCodeBundleOptions(options: NormalizedApplicationBuildOptions, target: string[], sourceFileCache: SourceFileCache): BuildOptions;

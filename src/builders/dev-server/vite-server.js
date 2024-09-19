@@ -66,17 +66,16 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
     }
     // TODO: Adjust architect to not force a JsonObject derived return type
     const browserOptions = (await context.validateOptions(rawBrowserOptions, builderName));
-    if (browserOptions.prerender || browserOptions.ssr) {
+    if (browserOptions.prerender) {
         // Disable prerendering if enabled and force SSR.
         // This is so instead of prerendering all the routes for every change, the page is "prerendered" when it is requested.
         browserOptions.prerender = false;
-        // Avoid bundling and processing the ssr entry-point as this is not used by the dev-server.
-        browserOptions.ssr = true;
-        // https://nodejs.org/api/process.html#processsetsourcemapsenabledval
-        process.setSourceMapsEnabled(true);
     }
     // Set all packages as external to support Vite's prebundle caching
     browserOptions.externalPackages = serverOptions.prebundle;
+    // Disable generating a full manifest with routes.
+    // This is done during runtime when using the dev-server.
+    browserOptions.disableFullServerManifestGeneration = true;
     // The development server currently only supports a single locale when localizing.
     // This matches the behavior of the Webpack-based development server but could be expanded in the future.
     if (browserOptions.localize === true ||
@@ -88,7 +87,11 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
         // When localization is enabled with a single locale, force a flat path to maintain behavior with the existing Webpack-based dev server.
         browserOptions.forceI18nFlatOutput = true;
     }
-    const { vendor: thirdPartySourcemaps } = (0, utils_1.normalizeSourceMaps)(browserOptions.sourceMap ?? false);
+    const { vendor: thirdPartySourcemaps, scripts: scriptsSourcemaps } = (0, utils_1.normalizeSourceMaps)(browserOptions.sourceMap ?? false);
+    if (scriptsSourcemaps && browserOptions.server) {
+        // https://nodejs.org/api/process.html#processsetsourcemapsenabledval
+        process.setSourceMapsEnabled(true);
+    }
     // Setup the prebundling transformer that will be shared across Vite prebundling requests
     const prebundleTransformer = new internal_1.JavaScriptTransformer(
     // Always enable JIT linking to support applications built with and without AOT.
@@ -180,8 +183,8 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
         let requiresServerRestart = false;
         if (result.detail?.['externalMetadata']) {
             const { implicitBrowser, implicitServer, explicit } = result.detail['externalMetadata'];
-            const implicitServerFiltered = implicitServer.filter((m) => removeNodeJsBuiltinModules(m) && removeAbsoluteUrls(m));
-            const implicitBrowserFiltered = implicitBrowser.filter(removeAbsoluteUrls);
+            const implicitServerFiltered = implicitServer.filter((m) => !(0, node_module_1.isBuiltin)(m) && !isAbsoluteUrl(m));
+            const implicitBrowserFiltered = implicitBrowser.filter((m) => !isAbsoluteUrl(m));
             if (browserOptions.ssr && serverOptions.prebundle !== false) {
                 const previousImplicitServer = new Set(externalMetadata.implicitServer);
                 // Restart the server to force SSR dep re-optimization when a dependency has been added.
@@ -194,7 +197,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
             externalMetadata.implicitServer.length = 0;
             externalMetadata.implicitBrowser.length = 0;
             externalMetadata.explicitBrowser.push(...explicit);
-            externalMetadata.explicitServer.push(...explicit, ...nodeJsBuiltinModules);
+            externalMetadata.explicitServer.push(...explicit, ...node_module_1.builtinModules);
             externalMetadata.implicitServer.push(...implicitServerFiltered);
             externalMetadata.implicitBrowser.push(...implicitBrowserFiltered);
             // The below needs to be sorted as Vite uses these options are part of the hashing invalidation algorithm.
@@ -285,7 +288,7 @@ async function handleUpdate(normalizePath, generatedFiles, server, serverOptions
     for (const [file, record] of generatedFiles) {
         if (record.updated) {
             updatedFiles.push(file);
-            isServerFileUpdated ||= record.type === internal_1.BuildOutputFileType.Server;
+            isServerFileUpdated ||= record.type === internal_1.BuildOutputFileType.ServerApplication;
             const updatedModules = server.moduleGraph.getModulesByFile(normalizePath((0, node_path_1.join)(server.config.root, file)));
             updatedModules?.forEach((m) => server?.moduleGraph.invalidateModule(m));
         }
@@ -556,12 +559,14 @@ function getDepOptimizationConfig({ disabled, exclude, include, target, zoneless
         },
     };
 }
-const nodeJsBuiltinModules = new Set(node_module_1.builtinModules);
-/** Remove any Node.js builtin modules to avoid Vite's prebundling from processing them as files. */
-function removeNodeJsBuiltinModules(value) {
-    return !nodeJsBuiltinModules.has(value);
-}
-/** Remove any absolute URLs (http://, https://, //) to avoid Vite's prebundling from processing them as files. */
-function removeAbsoluteUrls(value) {
-    return !/^(?:https?:)?\/\//.test(value);
+/**
+ * Checks if the given value is an absolute URL.
+ *
+ * This function helps in avoiding Vite's prebundling from processing absolute URLs (http://, https://, //) as files.
+ *
+ * @param value - The URL or path to check.
+ * @returns `true` if the value is not an absolute URL; otherwise, `false`.
+ */
+function isAbsoluteUrl(value) {
+    return /^(?:https?:)?\/\//.test(value);
 }

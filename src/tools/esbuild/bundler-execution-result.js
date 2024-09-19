@@ -19,7 +19,7 @@ class ExecutionResult {
     outputFiles = [];
     assetFiles = [];
     errors = [];
-    prerenderedRoutes = [];
+    prerenderedRoutes = {};
     warnings = [];
     logs = [];
     externalMetadata;
@@ -53,9 +53,13 @@ class ExecutionResult {
         }
     }
     addPrerenderedRoutes(routes) {
-        this.prerenderedRoutes.push(...routes);
+        Object.assign(this.prerenderedRoutes, routes);
         // Sort the prerendered routes.
-        this.prerenderedRoutes.sort((a, b) => a.localeCompare(b));
+        const sortedObj = {};
+        for (const key of Object.keys(this.prerenderedRoutes).sort()) {
+            sortedObj[key] = this.prerenderedRoutes[key];
+        }
+        this.prerenderedRoutes = sortedObj;
     }
     addWarning(error) {
         if (typeof error === 'string') {

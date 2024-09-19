@@ -9,7 +9,7 @@ import type { BuilderContext } from '@angular-devkit/architect';
 import type { Plugin } from 'esbuild';
 import { I18nOptions } from '../../utils/i18n-options';
 import { IndexHtmlTransform } from '../../utils/index-file/index-html-generator';
-import { Schema as ApplicationBuilderOptions, I18NTranslation, OutputPathClass } from './schema';
+import { Schema as ApplicationBuilderOptions, I18NTranslation, OutputMode, OutputPathClass } from './schema';
 /**
  * The filename for the client-side rendered HTML template.
  * This template is used for client-side rendering (CSR) in a web application.
@@ -52,6 +52,15 @@ interface InternalOptions {
      * This is only used by the development server which currently only supports a single locale per build.
      */
     forceI18nFlatOutput?: boolean;
+    /**
+     * When set to `true`, disables the generation of a full manifest with routes.
+     *
+     * This option is primarily used during development to improve performance,
+     * as the full manifest is generated at runtime when using the development server.
+     *
+     * @default false
+     */
+    disableFullServerManifestGeneration?: boolean;
 }
 /** Full set of options for `application` builder. */
 export type ApplicationBuilderInternalOptions = Omit<ApplicationBuilderOptions & InternalOptions, 'browser'> & {
@@ -96,6 +105,7 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     appShellOptions: {
         route: string;
     } | undefined;
+    outputMode: OutputMode | undefined;
     ssrOptions: {
         entry?: undefined;
     } | {
@@ -157,6 +167,7 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     define: {
         [key: string]: string;
     } | undefined;
+    disableFullServerManifestGeneration: boolean;
 }>;
 export declare function getLocaleBaseHref(baseHref: string | undefined, i18n: NormalizedApplicationBuildOptions['i18nOptions'], locale: string): string | undefined;
 export {};

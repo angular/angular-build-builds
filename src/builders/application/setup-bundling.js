@@ -22,7 +22,7 @@ const utils_1 = require("../../tools/esbuild/utils");
  * @returns An array of BundlerContext objects.
  */
 function setupBundlerContexts(options, browsers, codeBundleCache) {
-    const { appShellOptions, prerenderOptions, serverEntryPoint, ssrOptions, workspaceRoot, watch = false, } = options;
+    const { outputMode, serverEntryPoint, appShellOptions, prerenderOptions, ssrOptions, workspaceRoot, watch = false, } = options;
     const target = (0, utils_1.transformSupportedBrowsersToTargets)(browsers);
     const bundlerContexts = [];
     // Browser application code
@@ -51,10 +51,13 @@ function setupBundlerContexts(options, browsers, codeBundleCache) {
         }
     }
     // Skip server build when none of the features are enabled.
-    if (serverEntryPoint && (prerenderOptions || appShellOptions || ssrOptions)) {
+    if (serverEntryPoint && (outputMode || prerenderOptions || appShellOptions || ssrOptions)) {
         const nodeTargets = [...target, ...(0, utils_1.getSupportedNodeTargets)()];
-        // Server application code
         bundlerContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, watch, (0, application_code_bundle_1.createServerMainCodeBundleOptions)(options, nodeTargets, codeBundleCache)));
+        if (outputMode && ssrOptions?.entry) {
+            // New behavior introduced: 'server.ts' is now bundled separately from 'main.server.ts'.
+            bundlerContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, watch, (0, application_code_bundle_1.createSsrEntryCodeBundleOptions)(options, nodeTargets, codeBundleCache)));
+        }
         // Server polyfills code
         const serverPolyfillBundleOptions = (0, application_code_bundle_1.createServerPolyfillBundleOptions)(options, nodeTargets, codeBundleCache);
         if (serverPolyfillBundleOptions) {

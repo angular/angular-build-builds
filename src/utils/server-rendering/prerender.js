@@ -11,16 +11,19 @@ exports.prerenderPages = prerenderPages;
 const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
 const node_url_1 = require("node:url");
+const schema_1 = require("../../builders/application/schema");
 const bundler_context_1 = require("../../tools/esbuild/bundler-context");
+const error_1 = require("../error");
 const url_1 = require("../url");
 const worker_pool_1 = require("../worker-pool");
-async function prerenderPages(workspaceRoot, baseHref, appShellOptions = {}, prerenderOptions = {}, outputFiles, assets, sourcemap = false, maxThreads = 1, verbose = false) {
+const models_1 = require("./models");
+async function prerenderPages(workspaceRoot, baseHref, appShellOptions, prerenderOptions, outputFiles, assets, outputMode, sourcemap = false, maxThreads = 1) {
     const outputFilesForWorker = {};
     const serverBundlesSourceMaps = new Map();
     const warnings = [];
     const errors = [];
     for (const { text, path, type } of outputFiles) {
-        if (type !== bundler_context_1.BuildOutputFileType.Server) {
+        if (type !== bundler_context_1.BuildOutputFileType.ServerApplication && type !== bundler_context_1.BuildOutputFileType.ServerRoot) {
             continue;
         }
         // Contains the server runnable application code
@@ -48,39 +51,52 @@ async function prerenderPages(workspaceRoot, baseHref, appShellOptions = {}, pre
         assetsReversed[addLeadingSlash(destination.replace(/\\/g, node_path_1.posix.sep))] = source;
     }
     // Get routes to prerender
-    const { routes: allRoutes, warnings: routesWarnings, errors: routesErrors, serializableRouteTreeNode, } = await getAllRoutes(workspaceRoot, baseHref, outputFilesForWorker, assetsReversed, appShellOptions, prerenderOptions, sourcemap, verbose);
-    if (routesErrors?.length) {
-        errors.push(...routesErrors);
+    const { errors: extractionErrors, serializedRouteTree: serializableRouteTreeNode } = await getAllRoutes(workspaceRoot, baseHref, outputFilesForWorker, assetsReversed, appShellOptions, prerenderOptions, sourcemap, outputMode).catch((err) => {
+        return {
+            errors: [
+                `An error occurred while extracting routes.\n\n${err.stack ?? err.message ?? err}`,
+            ],
+            serializedRouteTree: [],
+        };
+    });
+    errors.push(...extractionErrors);
+    const serializableRouteTreeNodeForPrerender = [];
+    for (const metadata of serializableRouteTreeNode) {
+        if (outputMode !== schema_1.OutputMode.Static && metadata.redirectTo) {
+            continue;
+        }
+        switch (metadata.renderMode) {
+            case undefined: /* Legacy building mode */
+            case models_1.RouteRenderMode.Prerender:
+            case models_1.RouteRenderMode.AppShell:
+                serializableRouteTreeNodeForPrerender.push(metadata);
+                break;
+            case models_1.RouteRenderMode.Server:
+                if (outputMode === schema_1.OutputMode.Static) {
+                    errors.push(`Route '${metadata.route}' is configured with server render mode, but the build 'outputMode' is set to 'static'.`);
+                }
+                break;
+        }
     }
-    if (routesWarnings?.length) {
-        warnings.push(...routesWarnings);
-    }
-    if (allRoutes.size < 1 || errors.length > 0) {
+    if (!serializableRouteTreeNodeForPrerender.length || errors.length > 0) {
         return {
             errors,
             warnings,
             output: {},
             serializableRouteTreeNode,
-            prerenderedRoutes: allRoutes,
         };
     }
     // Render routes
-    const { errors: renderingErrors, output } = await renderPages(baseHref, sourcemap, allRoutes, maxThreads, workspaceRoot, outputFilesForWorker, assetsReversed, appShellOptions);
+    const { errors: renderingErrors, output } = await renderPages(baseHref, sourcemap, serializableRouteTreeNodeForPrerender, maxThreads, workspaceRoot, outputFilesForWorker, assetsReversed, appShellOptions);
     errors.push(...renderingErrors);
     return {
         errors,
         warnings,
         output,
         serializableRouteTreeNode,
-        prerenderedRoutes: allRoutes,
     };
 }
-class RoutesSet extends Set {
-    add(value) {
-        return super.add(addLeadingSlash(value));
-    }
-}
-async function renderPages(baseHref, sourcemap, allRoutes, maxThreads, workspaceRoot, outputFilesForWorker, assetFilesForWorker, appShellOptions) {
+async function renderPages(baseHref, sourcemap, serializableRouteTreeNode, maxThreads, workspaceRoot, outputFilesForWorker, assetFilesForWorker, appShellOptions) {
     const output = {};
     const errors = [];
     const workerExecArgv = [
@@ -93,7 +109,7 @@ async function renderPages(baseHref, sourcemap, allRoutes, maxThreads, workspace
     }
     const renderWorker = new worker_pool_1.WorkerPool({
         filename: require.resolve('./render-worker'),
-        maxThreads: Math.min(allRoutes.size, maxThreads),
+        maxThreads: Math.min(serializableRouteTreeNode.length, maxThreads),
         workerData: {
             workspaceRoot,
             outputFiles: outputFilesForWorker,
@@ -103,17 +119,23 @@ async function renderPages(baseHref, sourcemap, allRoutes, maxThreads, workspace
     });
     try {
         const renderingPromises = [];
-        const appShellRoute = appShellOptions.route && addLeadingSlash(appShellOptions.route);
+        const appShellRoute = appShellOptions && addLeadingSlash(appShellOptions.route);
         const baseHrefWithLeadingSlash = addLeadingSlash(baseHref);
-        for (const route of allRoutes) {
+        for (const { route, redirectTo, renderMode } of serializableRouteTreeNode) {
             // Remove base href from file output path.
             const routeWithoutBaseHref = addLeadingSlash(route.slice(baseHrefWithLeadingSlash.length - 1));
-            const render = renderWorker.run({ url: route });
+            const outPath = node_path_1.posix.join(removeLeadingSlash(routeWithoutBaseHref), 'index.html');
+            if (typeof redirectTo === 'string') {
+                output[outPath] = { content: generateRedirectStaticPage(redirectTo), appShellRoute: false };
+                continue;
+            }
+            const isAppShellRoute = renderMode === models_1.RouteRenderMode.AppShell ||
+                // Legacy handling
+                (renderMode === undefined && appShellRoute === routeWithoutBaseHref);
+            const render = renderWorker.run({ url: route, isAppShellRoute });
             const renderResult = render
                 .then((content) => {
                 if (content !== null) {
-                    const outPath = node_path_1.posix.join(removeLeadingSlash(routeWithoutBaseHref), 'index.html');
-                    const isAppShellRoute = appShellRoute === routeWithoutBaseHref;
                     output[outPath] = { content, appShellRoute: isAppShellRoute };
                 }
             })
@@ -133,21 +155,24 @@ async function renderPages(baseHref, sourcemap, allRoutes, maxThreads, workspace
         output,
     };
 }
-async function getAllRoutes(workspaceRoot, baseHref, outputFilesForWorker, assetFilesForWorker, appShellOptions, prerenderOptions, sourcemap, verbose) {
-    const { routesFile, discoverRoutes } = prerenderOptions;
-    const routes = new RoutesSet();
-    const { route: appShellRoute } = appShellOptions;
-    if (appShellRoute !== undefined) {
-        routes.add((0, url_1.urlJoin)(baseHref, appShellRoute));
+async function getAllRoutes(workspaceRoot, baseHref, outputFilesForWorker, assetFilesForWorker, appShellOptions, prerenderOptions, sourcemap, outputMode) {
+    const { routesFile, discoverRoutes } = prerenderOptions ?? {};
+    const routes = [];
+    if (appShellOptions) {
+        routes.push({
+            route: (0, url_1.urlJoin)(baseHref, appShellOptions.route),
+        });
     }
     if (routesFile) {
         const routesFromFile = (await (0, promises_1.readFile)(routesFile, 'utf8')).split(/\r?\n/);
         for (const route of routesFromFile) {
-            routes.add((0, url_1.urlJoin)(baseHref, route.trim()));
+            routes.push({
+                route: (0, url_1.urlJoin)(baseHref, route.trim()),
+            });
         }
     }
     if (!discoverRoutes) {
-        return { routes, serializableRouteTreeNode: [] };
+        return { errors: [], serializedRouteTree: routes };
     }
     const workerExecArgv = [
         '--import',
@@ -167,43 +192,50 @@ async function getAllRoutes(workspaceRoot, baseHref, outputFilesForWorker, asset
         },
         execArgv: workerExecArgv,
     });
-    const errors = [];
-    const { serializedRouteTree: serializableRouteTreeNode } = await renderWorker
-        .run({})
-        .catch((err) => {
-        errors.push(`An error occurred while extracting routes.\n\n${err.stack}`);
-    })
-        .finally(() => {
+    try {
+        const { serializedRouteTree, errors } = await renderWorker.run({
+            outputMode,
+        });
+        return { errors, serializedRouteTree: [...routes, ...serializedRouteTree] };
+    }
+    catch (err) {
+        (0, error_1.assertIsError)(err);
+        return {
+            errors: [`An error occurred while extracting routes.\n\n${err.stack}`],
+            serializedRouteTree: [],
+        };
+    }
+    finally {
         void renderWorker.destroy();
-    });
-    const skippedRedirects = [];
-    const skippedOthers = [];
-    for (const { route, redirectTo } of serializableRouteTreeNode) {
-        if (redirectTo) {
-            skippedRedirects.push(route);
-        }
-        else if (route.includes('*')) {
-            skippedOthers.push(route);
-        }
-        else {
-            routes.add(route);
-        }
     }
-    let warnings;
-    if (verbose) {
-        if (skippedOthers.length) {
-            (warnings ??= []).push('The following routes were skipped from prerendering because they contain routes with dynamic parameters:\n' +
-                skippedOthers.join('\n'));
-        }
-        if (skippedRedirects.length) {
-            (warnings ??= []).push('The following routes were skipped from prerendering because they contain redirects:\n', skippedRedirects.join('\n'));
-        }
-    }
-    return { routes, serializableRouteTreeNode, warnings };
 }
 function addLeadingSlash(value) {
     return value.charAt(0) === '/' ? value : '/' + value;
 }
 function removeLeadingSlash(value) {
     return value.charAt(0) === '/' ? value.slice(1) : value;
+}
+/**
+ * Generates a static HTML page with a meta refresh tag to redirect the user to a specified URL.
+ *
+ * This function creates a simple HTML page that performs a redirect using a meta tag.
+ * It includes a fallback link in case the meta-refresh doesn't work.
+ *
+ * @param url - The URL to which the page should redirect.
+ * @returns The HTML content of the static redirect page.
+ */
+function generateRedirectStaticPage(url) {
+    return `
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Redirecting</title>
+    <meta http-equiv="refresh" content="0; url=${url}">
+  </head>
+  <body>
+    <pre>Redirecting to <a href="${url}">${url}</a></pre>
+  </body>
+</html>
+`.trim();
 }

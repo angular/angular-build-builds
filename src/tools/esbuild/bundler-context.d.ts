@@ -31,9 +31,10 @@ export interface InitialFileRecord {
     depth: number;
 }
 export declare enum BuildOutputFileType {
-    Browser = 1,
-    Media = 2,
-    Server = 3,
+    Browser = 0,
+    Media = 1,
+    ServerApplication = 2,
+    ServerRoot = 3,
     Root = 4
 }
 export interface BuildOutputFile extends OutputFile {
