@@ -8,6 +8,7 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createAngularSSRMiddleware = createAngularSSRMiddleware;
+const load_esm_1 = require("../../../utils/load-esm");
 function createAngularSSRMiddleware(server, indexHtmlTransformer) {
     let cachedAngularServerApp;
     return function angularSSRMiddleware(req, res, next) {
@@ -18,6 +19,7 @@ function createAngularSSRMiddleware(server, indexHtmlTransformer) {
         const baseUrl = resolvedUrls?.local[0] ?? resolvedUrls?.network[0];
         const url = new URL(req.url, baseUrl);
         (async () => {
+            const { writeResponseToNodeResponse, createWebRequestFromNodeRequest } = await (0, load_esm_1.loadEsmModule)('@angular/ssr/node');
             const { ɵgetOrCreateAngularServerApp } = (await server.ssrLoadModule('/main.server.mjs'));
             const angularServerApp = ɵgetOrCreateAngularServerApp();
             // Only Add the transform hook only if it's a different instance.
@@ -28,15 +30,14 @@ function createAngularSSRMiddleware(server, indexHtmlTransformer) {
                 });
                 cachedAngularServerApp = angularServerApp;
             }
-            const response = await angularServerApp.render(new Request(url, { signal: AbortSignal.timeout(30_000) }), undefined);
-            return response?.text();
-        })()
-            .then((content) => {
-            if (typeof content !== 'string') {
+            const webReq = new Request(createWebRequestFromNodeRequest(req), {
+                signal: AbortSignal.timeout(30_000),
+            });
+            const webRes = await angularServerApp.render(webReq);
+            if (!webRes) {
                 return next();
             }
-            res.end(content);
-        })
-            .catch((error) => next(error));
+            return writeResponseToNodeResponse(webRes, res);
+        })().catch(next);
     };
 }
