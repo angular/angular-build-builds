@@ -39,9 +39,7 @@ const node_assert_1 = __importDefault(require("node:assert"));
 const promises_1 = require("node:fs/promises");
 const node_module_1 = require("node:module");
 const node_path_1 = require("node:path");
-const angular_memory_plugin_1 = require("../../tools/vite/angular-memory-plugin");
-const i18n_locale_plugin_1 = require("../../tools/vite/i18n-locale-plugin");
-const id_prefix_plugin_1 = require("../../tools/vite/id-prefix-plugin");
+const plugins_1 = require("../../tools/vite/plugins");
 const utils_1 = require("../../utils");
 const load_esm_1 = require("../../utils/load-esm");
 const results_1 = require("../application/results");
@@ -241,15 +239,19 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
             const polyfills = Array.isArray((browserOptions.polyfills ??= []))
                 ? browserOptions.polyfills
                 : [browserOptions.polyfills];
+            let ssrMode = plugins_1.ServerSsrMode.NoSsr;
+            if (browserOptions.outputMode &&
+                typeof browserOptions.ssr === 'object' &&
+                browserOptions.ssr.entry) {
+                ssrMode = plugins_1.ServerSsrMode.ExternalSsrMiddleware;
+            }
+            else if (browserOptions.server) {
+                ssrMode = plugins_1.ServerSsrMode.InternalSsrMiddleware;
+            }
             // Setup server and start listening
-            const serverConfiguration = await setupServer(serverOptions, generatedFiles, assetFiles, browserOptions.preserveSymlinks, externalMetadata, !!browserOptions.ssr, prebundleTransformer, target, (0, internal_1.isZonelessApp)(polyfills), usedComponentStyles, browserOptions.loader, extensions?.middleware, transformers?.indexHtml, thirdPartySourcemaps);
+            const serverConfiguration = await setupServer(serverOptions, generatedFiles, assetFiles, browserOptions.preserveSymlinks, externalMetadata, ssrMode, prebundleTransformer, target, (0, internal_1.isZonelessApp)(polyfills), usedComponentStyles, browserOptions.loader, extensions?.middleware, transformers?.indexHtml, thirdPartySourcemaps);
             server = await createServer(serverConfiguration);
             await server.listen();
-            if (browserOptions.ssr && serverOptions.prebundle !== false) {
-                // Warm up the SSR request and begin optimizing dependencies.
-                // Without this, Vite will only start optimizing SSR modules when the first request is made.
-                void server.warmupRequest('./main.server.mjs', { ssr: true });
-            }
             const urls = server.resolvedUrls;
             if (urls && (urls.local.length || urls.network.length)) {
                 serverUrl = new URL(urls.local[0] ?? urls.network[0]);
@@ -283,23 +285,25 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
 }
 async function handleUpdate(normalizePath, generatedFiles, server, serverOptions, logger, usedComponentStyles) {
     const updatedFiles = [];
-    let isServerFileUpdated = false;
+    let destroyAngularServerAppCalled = false;
     // Invalidate any updated files
-    for (const [file, record] of generatedFiles) {
-        if (record.updated) {
-            updatedFiles.push(file);
-            isServerFileUpdated ||= record.type === internal_1.BuildOutputFileType.ServerApplication;
-            const updatedModules = server.moduleGraph.getModulesByFile(normalizePath((0, node_path_1.join)(server.config.root, file)));
-            updatedModules?.forEach((m) => server?.moduleGraph.invalidateModule(m));
+    for (const [file, { updated, type }] of generatedFiles) {
+        if (!updated) {
+            continue;
         }
+        if (type === internal_1.BuildOutputFileType.ServerApplication && !destroyAngularServerAppCalled) {
+            // Clear the server app cache
+            // This must be done before module invalidation.
+            const { ɵdestroyAngularServerApp } = (await server.ssrLoadModule('/main.server.mjs'));
+            ɵdestroyAngularServerApp();
+            destroyAngularServerAppCalled = true;
+        }
+        updatedFiles.push(file);
+        const updatedModules = server.moduleGraph.getModulesByFile(normalizePath((0, node_path_1.join)(server.config.root, file)));
+        updatedModules?.forEach((m) => server.moduleGraph.invalidateModule(m));
     }
     if (!updatedFiles.length) {
         return;
-    }
-    // clean server apps cache
-    if (isServerFileUpdated) {
-        const { ɵdestroyAngularServerApp } = (await server.ssrLoadModule('/main.server.mjs'));
-        ɵdestroyAngularServerApp();
     }
     if (serverOptions.liveReload || serverOptions.hmr) {
         if (updatedFiles.every((f) => f.endsWith('.css'))) {
@@ -395,7 +399,7 @@ function analyzeResultFiles(normalizePath, htmlIndexPath, resultFiles, generated
         }
     }
 }
-async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks, externalMetadata, ssr, prebundleTransformer, target, zoneless, usedComponentStyles, prebundleLoaderExtensions, extensionMiddleware, indexHtmlTransformer, thirdPartySourcemaps = false) {
+async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks, externalMetadata, ssrMode, prebundleTransformer, target, zoneless, usedComponentStyles, prebundleLoaderExtensions, extensionMiddleware, indexHtmlTransformer, thirdPartySourcemaps = false) {
     const proxy = await (0, utils_1.loadProxyConfiguration)(serverOptions.workspaceRoot, serverOptions.proxyConfig);
     // dynamically import Vite for ESM compatibility
     const { normalizePath } = await (0, load_esm_1.loadEsmModule)('vite');
@@ -430,6 +434,9 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
             preserveSymlinks,
         },
         server: {
+            warmup: {
+                ssrFiles: ['./main.server.mjs', './server.mjs'],
+            },
             port: serverOptions.port,
             strictPort: true,
             host: serverOptions.host,
@@ -478,20 +485,22 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
             }),
         },
         plugins: [
-            (0, i18n_locale_plugin_1.createAngularLocaleDataPlugin)(),
-            (0, angular_memory_plugin_1.createAngularMemoryPlugin)({
-                workspaceRoot: serverOptions.workspaceRoot,
-                virtualProjectRoot,
+            (0, plugins_1.createAngularLocaleDataPlugin)(),
+            (0, plugins_1.createAngularSetupMiddlewaresPlugin)({
                 outputFiles,
                 assets,
-                ssr,
-                external: externalMetadata.explicitBrowser,
                 indexHtmlTransformer,
                 extensionMiddleware,
-                normalizePath,
                 usedComponentStyles,
+                ssrMode,
             }),
-            (0, id_prefix_plugin_1.createRemoveIdPrefixPlugin)(externalMetadata.explicitBrowser),
+            (0, plugins_1.createRemoveIdPrefixPlugin)(externalMetadata.explicitBrowser),
+            await (0, plugins_1.createAngularSsrTransformPlugin)(serverOptions.workspaceRoot),
+            await (0, plugins_1.createAngularMemoryPlugin)({
+                virtualProjectRoot,
+                outputFiles,
+                external: externalMetadata.explicitBrowser,
+            }),
         ],
         // Browser only optimizeDeps. (This does not run for SSR dependencies).
         optimizeDeps: getDepOptimizationConfig({

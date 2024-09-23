@@ -65,14 +65,14 @@ context, extensions) {
         context.addTeardown(() => controller.abort('builder-teardown'));
     }
     yield* (0, build_action_1.runEsBuildBuildAction)(async (rebuildState) => {
-        const { serverEntryPoint, jsonLogs } = normalizedOptions;
+        const { serverEntryPoint, jsonLogs, disableFullServerManifestGeneration } = normalizedOptions;
         const startTime = process.hrtime.bigint();
         const result = await (0, execute_build_1.executeBuild)(normalizedOptions, context, rebuildState);
         if (jsonLogs) {
             result.addLog(await (0, utils_1.createJsonBuildManifest)(result, normalizedOptions));
         }
         else {
-            if (serverEntryPoint) {
+            if (serverEntryPoint && !disableFullServerManifestGeneration) {
                 const prerenderedRoutesLength = Object.keys(result.prerenderedRoutes).length;
                 let prerenderMsg = `Prerendered ${prerenderedRoutesLength} static route`;
                 prerenderMsg += prerenderedRoutesLength !== 1 ? 's.' : '.';

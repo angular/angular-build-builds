@@ -8,5 +8,5 @@
 export { createAngularAssetsMiddleware } from './assets-middleware';
 export { angularHtmlFallbackMiddleware } from './html-fallback-middleware';
 export { createAngularIndexHtmlMiddleware } from './index-html-middleware';
-export { createAngularSSRMiddleware } from './ssr-middleware';
+export { createAngularSsrExternalMiddleware, createAngularSsrInternalMiddleware, } from './ssr-middleware';
 export { createAngularHeadersMiddleware } from './headers-middleware';

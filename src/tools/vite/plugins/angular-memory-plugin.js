@@ -11,13 +11,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createAngularMemoryPlugin = createAngularMemoryPlugin;
-const remapping_1 = __importDefault(require("@ampproject/remapping"));
 const node_assert_1 = __importDefault(require("node:assert"));
 const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
-const middlewares_1 = require("./middlewares");
-function createAngularMemoryPlugin(options) {
-    const { workspaceRoot, virtualProjectRoot, outputFiles, assets, external, ssr, extensionMiddleware, indexHtmlTransformer, normalizePath, usedComponentStyles, } = options;
+const load_esm_1 = require("../../../utils/load-esm");
+async function createAngularMemoryPlugin(options) {
+    const { virtualProjectRoot, outputFiles, external } = options;
+    const { normalizePath } = await (0, load_esm_1.loadEsmModule)('vite');
+    // See: https://github.com/vitejs/vite/blob/a34a73a3ad8feeacc98632c0f4c643b6820bbfda/packages/vite/src/node/server/pluginContainer.ts#L331-L334
+    const defaultImporter = (0, node_path_1.join)(virtualProjectRoot, 'index.html');
     return {
         name: 'vite:angular-memory',
         // Ensures plugin hooks run before built-in Vite hooks
@@ -29,11 +31,19 @@ function createAngularMemoryPlugin(options) {
                 // `/@id/${source}` but is currently closer to a raw external than a resolved file path.
                 return source;
             }
-            if (importer && source[0] === '.' && normalizePath(importer).startsWith(virtualProjectRoot)) {
-                // Remove query if present
-                const [importerFile] = importer.split('?', 1);
-                source =
-                    '/' + normalizePath((0, node_path_1.join)((0, node_path_1.dirname)((0, node_path_1.relative)(virtualProjectRoot, importerFile)), source));
+            if (importer) {
+                let normalizedSource;
+                if (source[0] === '.' && normalizePath(importer).startsWith(virtualProjectRoot)) {
+                    // Remove query if present
+                    const [importerFile] = importer.split('?', 1);
+                    normalizedSource = (0, node_path_1.join)((0, node_path_1.dirname)((0, node_path_1.relative)(virtualProjectRoot, importerFile)), source);
+                }
+                else if (source[0] === '/' && importer === defaultImporter) {
+                    normalizedSource = (0, node_path_1.basename)(source);
+                }
+                if (normalizedSource) {
+                    source = '/' + normalizePath(normalizedSource);
+                }
             }
             const [file] = source.split('?', 1);
             if (outputFiles.has(file)) {
@@ -56,38 +66,6 @@ function createAngularMemoryPlugin(options) {
                 // Vite will inline and add an additional sourcemap URL for the sourcemap.
                 code: mapContents ? code.replace(/^\/\/# sourceMappingURL=[^\r\n]*/gm, '') : code,
                 map: mapContents && Buffer.from(mapContents).toString('utf-8'),
-            };
-        },
-        // eslint-disable-next-line max-lines-per-function
-        configureServer(server) {
-            const originalssrTransform = server.ssrTransform;
-            server.ssrTransform = async (code, map, url, originalCode) => {
-                const result = await originalssrTransform(code, null, url, originalCode);
-                if (!result || !result.map || !map) {
-                    return result;
-                }
-                const remappedMap = (0, remapping_1.default)([result.map, map], () => null);
-                // Set the sourcemap root to the workspace root. This is needed since we set a virtual path as root.
-                remappedMap.sourceRoot = normalizePath(workspaceRoot) + '/';
-                return {
-                    ...result,
-                    map: remappedMap,
-                };
-            };
-            server.middlewares.use((0, middlewares_1.createAngularHeadersMiddleware)(server));
-            // Assets and resources get handled first
-            server.middlewares.use((0, middlewares_1.createAngularAssetsMiddleware)(server, assets, outputFiles, usedComponentStyles));
-            if (extensionMiddleware?.length) {
-                extensionMiddleware.forEach((middleware) => server.middlewares.use(middleware));
-            }
-            // Returning a function, installs middleware after the main transform middleware but
-            // before the built-in HTML middleware
-            return () => {
-                if (ssr) {
-                    server.middlewares.use((0, middlewares_1.createAngularSSRMiddleware)(server, indexHtmlTransformer));
-                }
-                server.middlewares.use(middlewares_1.angularHtmlFallbackMiddleware);
-                server.middlewares.use((0, middlewares_1.createAngularIndexHtmlMiddleware)(server, outputFiles, indexHtmlTransformer));
             };
         },
     };

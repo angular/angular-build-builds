@@ -7,24 +7,22 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createAngularSSRMiddleware = createAngularSSRMiddleware;
+exports.createAngularSsrInternalMiddleware = createAngularSsrInternalMiddleware;
+exports.createAngularSsrExternalMiddleware = createAngularSsrExternalMiddleware;
 const load_esm_1 = require("../../../utils/load-esm");
-function createAngularSSRMiddleware(server, indexHtmlTransformer) {
+function createAngularSsrInternalMiddleware(server, indexHtmlTransformer) {
     let cachedAngularServerApp;
-    return function angularSSRMiddleware(req, res, next) {
+    return function angularSsrMiddleware(req, res, next) {
         if (req.url === undefined) {
             return next();
         }
-        const resolvedUrls = server.resolvedUrls;
-        const baseUrl = resolvedUrls?.local[0] ?? resolvedUrls?.network[0];
-        const url = new URL(req.url, baseUrl);
         (async () => {
             const { writeResponseToNodeResponse, createWebRequestFromNodeRequest } = await (0, load_esm_1.loadEsmModule)('@angular/ssr/node');
             const { ɵgetOrCreateAngularServerApp } = (await server.ssrLoadModule('/main.server.mjs'));
             const angularServerApp = ɵgetOrCreateAngularServerApp();
             // Only Add the transform hook only if it's a different instance.
             if (cachedAngularServerApp !== angularServerApp) {
-                angularServerApp.hooks.on('html:transform:pre', async ({ html }) => {
+                angularServerApp.hooks.on('html:transform:pre', async ({ html, url }) => {
                     const processedHtml = await server.transformIndexHtml(url.pathname, html);
                     return indexHtmlTransformer?.(processedHtml) ?? processedHtml;
                 });
@@ -40,4 +38,51 @@ function createAngularSSRMiddleware(server, indexHtmlTransformer) {
             return writeResponseToNodeResponse(webRes, res);
         })().catch(next);
     };
+}
+async function createAngularSsrExternalMiddleware(server, indexHtmlTransformer) {
+    let fallbackWarningShown = false;
+    let cachedAngularAppEngine;
+    let angularSsrInternalMiddleware;
+    const { createWebRequestFromNodeRequest, writeResponseToNodeResponse } = await (0, load_esm_1.loadEsmModule)('@angular/ssr/node');
+    return function angularSsrExternalMiddleware(req, res, next) {
+        (async () => {
+            const { default: handler, AngularAppEngine } = (await server.ssrLoadModule('./server.mjs'));
+            if (!isSsrNodeRequestHandler(handler) && !isSsrRequestHandler(handler)) {
+                if (!fallbackWarningShown) {
+                    // eslint-disable-next-line no-console
+                    console.warn(`The default export in 'server.ts' does not provide a Node.js request handler. ` +
+                        'Using the internal SSR middleware instead.');
+                    fallbackWarningShown = true;
+                }
+                angularSsrInternalMiddleware ??= createAngularSsrInternalMiddleware(server, indexHtmlTransformer);
+                angularSsrInternalMiddleware(req, res, next);
+                return;
+            }
+            if (cachedAngularAppEngine !== AngularAppEngine) {
+                AngularAppEngine.ɵhooks.on('html:transform:pre', async ({ html, url }) => {
+                    const processedHtml = await server.transformIndexHtml(url.pathname, html);
+                    return indexHtmlTransformer?.(processedHtml) ?? processedHtml;
+                });
+                cachedAngularAppEngine = AngularAppEngine;
+            }
+            // Forward the request to the middleware in server.ts
+            if (isSsrNodeRequestHandler(handler)) {
+                await handler(req, res, next);
+            }
+            else {
+                const webRes = await handler(createWebRequestFromNodeRequest(req));
+                if (!webRes) {
+                    next();
+                    return;
+                }
+                await writeResponseToNodeResponse(webRes, res);
+            }
+        })().catch(next);
+    };
+}
+function isSsrNodeRequestHandler(value) {
+    return typeof value === 'function' && '__ng_node_request_handler__' in value;
+}
+function isSsrRequestHandler(value) {
+    return typeof value === 'function' && '__ng_request_handler__' in value;
 }

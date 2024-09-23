@@ -7,12 +7,11 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.LOCALE_DATA_BASE_MODULE = void 0;
 exports.createAngularLocaleDataPlugin = createAngularLocaleDataPlugin;
 /**
  * The base module location used to search for locale specific data.
  */
-exports.LOCALE_DATA_BASE_MODULE = '@angular/common/locales/global';
+const LOCALE_DATA_BASE_MODULE = '@angular/common/locales/global';
 /**
  * Creates a Vite plugin that resolves Angular locale data files from `@angular/common`.
  *
@@ -32,7 +31,7 @@ function createAngularLocaleDataPlugin() {
             let partialLocale = originalLocale.replace(/-x(-[a-zA-Z0-9]{1,8})+$/, '');
             let exact = true;
             while (partialLocale) {
-                const potentialPath = `${exports.LOCALE_DATA_BASE_MODULE}/${partialLocale}`;
+                const potentialPath = `${LOCALE_DATA_BASE_MODULE}/${partialLocale}`;
                 const result = await this.resolve(potentialPath);
                 if (result) {
                     if (!exact) {
