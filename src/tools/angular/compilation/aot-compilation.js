@@ -47,6 +47,9 @@ class AotCompilation extends angular_compilation_1.AngularCompilation {
         // Load the compiler configuration and transform as needed
         const { options: originalCompilerOptions, rootNames, errors: configurationDiagnostics, } = await this.loadConfiguration(tsconfig);
         const compilerOptions = compilerOptionsTransformer?.(originalCompilerOptions) ?? originalCompilerOptions;
+        if (compilerOptions.externalRuntimeStyles) {
+            hostOptions.externalStylesheets ??= new Map();
+        }
         // Create Angular compiler host
         const host = (0, angular_host_1.createAngularCompilerHost)(typescript_1.default, compilerOptions, hostOptions);
         // Create the Angular specific program that contains the Angular compiler
@@ -82,7 +85,12 @@ class AotCompilation extends angular_compilation_1.AngularCompilation {
             return [sourceFile.fileName, ...resourceDependencies];
         });
         this.#state = new AngularCompilationState(angularProgram, host, typeScriptProgram, affectedFiles, affectedFiles.size === 1 ? OptimizeFor.SingleFile : OptimizeFor.WholeProgram, (0, web_worker_transformer_1.createWorkerTransformer)(hostOptions.processWebWorker.bind(hostOptions)), this.#state?.diagnosticCache);
-        return { affectedFiles, compilerOptions, referencedFiles };
+        return {
+            affectedFiles,
+            compilerOptions,
+            referencedFiles,
+            externalStylesheets: hostOptions.externalStylesheets,
+        };
     }
     *collectDiagnostics(modes) {
         (0, node_assert_1.default)(this.#state, 'Angular compilation must be initialized prior to collecting diagnostics.');

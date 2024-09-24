@@ -9,7 +9,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createCompilerPluginOptions = createCompilerPluginOptions;
 function createCompilerPluginOptions(options, target, sourceFileCache) {
-    const { workspaceRoot, optimizationOptions, sourcemapOptions, tsconfig, outputNames, fileReplacements, externalDependencies, preserveSymlinks, stylePreprocessorOptions, advancedOptimizations, inlineStyleLanguage, jit, cacheOptions, tailwindConfiguration, postcssConfiguration, publicPath, } = options;
+    const { workspaceRoot, optimizationOptions, sourcemapOptions, tsconfig, outputNames, fileReplacements, externalDependencies, preserveSymlinks, stylePreprocessorOptions, advancedOptimizations, inlineStyleLanguage, jit, cacheOptions, tailwindConfiguration, postcssConfiguration, publicPath, externalRuntimeStyles, } = options;
     return {
         // JS/TS options
         pluginOptions: {
@@ -22,6 +22,7 @@ function createCompilerPluginOptions(options, target, sourceFileCache) {
             sourceFileCache,
             loadResultCache: sourceFileCache?.loadResultCache,
             incremental: !!options.watch,
+            externalRuntimeStyles,
         },
         // Component stylesheet options
         styleOptions: {

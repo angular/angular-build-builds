@@ -61,6 +61,13 @@ interface InternalOptions {
      * @default false
      */
     disableFullServerManifestGeneration?: boolean;
+    /**
+     * Enables the use of AOT compiler emitted external runtime styles.
+     * External runtime styles use `link` elements instead of embedded style content in the output JavaScript.
+     * This option is only intended to be used with a development server that can process and serve component
+     * styles.
+     */
+    externalRuntimeStyles?: boolean;
 }
 /** Full set of options for `application` builder. */
 export type ApplicationBuilderInternalOptions = Omit<ApplicationBuilderOptions & InternalOptions, 'browser'> & {
@@ -168,6 +175,7 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
         [key: string]: string;
     } | undefined;
     disableFullServerManifestGeneration: boolean;
+    externalRuntimeStyles: boolean | undefined;
 }>;
 export declare function getLocaleBaseHref(baseHref: string | undefined, i18n: NormalizedApplicationBuildOptions['i18nOptions'], locale: string): string | undefined;
 export {};

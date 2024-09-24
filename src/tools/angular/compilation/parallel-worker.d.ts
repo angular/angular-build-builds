@@ -19,6 +19,7 @@ export interface InitRequest {
     webWorkerSignal: Int32Array;
 }
 export declare function initialize(request: InitRequest): Promise<{
+    externalStylesheets: ReadonlyMap<string, string> | undefined;
     referencedFiles: readonly string[];
     compilerOptions: {
         allowJs: boolean | undefined;

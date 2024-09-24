@@ -22,7 +22,7 @@ export declare class ComponentStylesheetBundler {
      * @param cache A load result cache to use when bundling.
      */
     constructor(options: BundleStylesheetOptions, incremental: boolean);
-    bundleFile(entry: string): Promise<{
+    bundleFile(entry: string, externalId?: string | boolean): Promise<{
         errors: import("esbuild").Message[] | undefined;
         warnings: import("esbuild").Message[];
         contents: string;
@@ -30,7 +30,7 @@ export declare class ComponentStylesheetBundler {
         metafile: import("esbuild").Metafile | undefined;
         referencedFiles: Set<string> | undefined;
     }>;
-    bundleInline(data: string, filename: string, language: string): Promise<{
+    bundleInline(data: string, filename: string, language: string, externalId?: string): Promise<{
         errors: import("esbuild").Message[] | undefined;
         warnings: import("esbuild").Message[];
         contents: string;
@@ -38,7 +38,12 @@ export declare class ComponentStylesheetBundler {
         metafile: import("esbuild").Metafile | undefined;
         referencedFiles: Set<string> | undefined;
     }>;
-    invalidate(files: Iterable<string>): void;
+    /**
+     * Invalidates both file and inline based component style bundling state for a set of modified files.
+     * @param files The group of files that have been modified
+     * @returns An array of file based stylesheet entries if any were invalidated; otherwise, undefined.
+     */
+    invalidate(files: Iterable<string>): string[] | undefined;
     dispose(): Promise<void>;
     private extractResult;
 }

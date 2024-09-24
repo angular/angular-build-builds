@@ -41,6 +41,7 @@ const node_module_1 = require("node:module");
 const node_path_1 = require("node:path");
 const plugins_1 = require("../../tools/vite/plugins");
 const utils_1 = require("../../utils");
+const environment_options_1 = require("../../utils/environment-options");
 const load_esm_1 = require("../../utils/load-esm");
 const results_1 = require("../application/results");
 const internal_1 = require("./internal");
@@ -90,6 +91,8 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
         // https://nodejs.org/api/process.html#processsetsourcemapsenabledval
         process.setSourceMapsEnabled(true);
     }
+    // TODO: Enable by default once full support across CLI and FW is integrated
+    browserOptions.externalRuntimeStyles = environment_options_1.useComponentStyleHmr;
     // Setup the prebundling transformer that will be shared across Vite prebundling requests
     const prebundleTransformer = new internal_1.JavaScriptTransformer(
     // Always enable JIT linking to support applications built with and without AOT.

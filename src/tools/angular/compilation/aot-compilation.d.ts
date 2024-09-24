@@ -15,6 +15,7 @@ export declare class AotCompilation extends AngularCompilation {
         affectedFiles: ReadonlySet<ts.SourceFile>;
         compilerOptions: ng.CompilerOptions;
         referencedFiles: readonly string[];
+        externalStylesheets?: ReadonlyMap<string, string>;
     }>;
     collectDiagnostics(modes: DiagnosticModes): Iterable<ts.Diagnostic>;
     emitAffectedFiles(): Iterable<EmitFileResult>;

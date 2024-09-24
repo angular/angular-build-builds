@@ -13,7 +13,8 @@ export interface AngularHostOptions {
     fileReplacements?: Record<string, string>;
     sourceFileCache?: Map<string, ts.SourceFile>;
     modifiedFiles?: Set<string>;
-    transformStylesheet(data: string, containingFile: string, stylesheetFile?: string): Promise<string | null>;
+    externalStylesheets?: Map<string, string>;
+    transformStylesheet(data: string, containingFile: string, stylesheetFile?: string, order?: number): Promise<string | null>;
     processWebWorker(workerFile: string, containingFile: string): string;
 }
 /**

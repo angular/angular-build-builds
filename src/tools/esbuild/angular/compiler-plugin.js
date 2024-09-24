@@ -35,6 +35,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createCompilerPlugin = createCompilerPlugin;
 const node_assert_1 = __importDefault(require("node:assert"));
+const node_crypto_1 = require("node:crypto");
 const path = __importStar(require("node:path"));
 const environment_options_1 = require("../../../utils/environment-options");
 const compilation_1 = require("../../angular/compilation");
@@ -120,13 +121,14 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
                 // Angular compiler which does not have direct knowledge of transitive resource
                 // dependencies or web worker processing.
                 let modifiedFiles;
+                let invalidatedStylesheetEntries;
                 if (pluginOptions.sourceFileCache?.modifiedFiles.size &&
                     referencedFileTracker &&
                     !pluginOptions.noopTypeScriptCompilation) {
                     // TODO: Differentiate between changed input files and stale output files
                     modifiedFiles = referencedFileTracker.update(pluginOptions.sourceFileCache.modifiedFiles);
                     pluginOptions.sourceFileCache.invalidate(modifiedFiles);
-                    stylesheetBundler.invalidate(modifiedFiles);
+                    invalidatedStylesheetEntries = stylesheetBundler.invalidate(modifiedFiles);
                 }
                 if (!pluginOptions.noopTypeScriptCompilation &&
                     compilation.update &&
@@ -138,7 +140,7 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
                     fileReplacements: pluginOptions.fileReplacements,
                     modifiedFiles,
                     sourceFileCache: pluginOptions.sourceFileCache,
-                    async transformStylesheet(data, containingFile, stylesheetFile) {
+                    async transformStylesheet(data, containingFile, stylesheetFile, order) {
                         let stylesheetResult;
                         // Stylesheet file only exists for external stylesheets
                         if (stylesheetFile) {
@@ -147,7 +149,17 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
                         else {
                             stylesheetResult = await stylesheetBundler.bundleInline(data, containingFile, 
                             // Inline stylesheets from a template style element are always CSS
-                            containingFile.endsWith('.html') ? 'css' : styleOptions.inlineStyleLanguage);
+                            containingFile.endsWith('.html') ? 'css' : styleOptions.inlineStyleLanguage, 
+                            // When external runtime styles are enabled, an identifier for the style that does not change
+                            // based on the content is required to avoid emitted JS code changes. Any JS code changes will
+                            // invalid the output and force a full page reload for HMR cases. The containing file and order
+                            // of the style within the containing file is used.
+                            pluginOptions.externalRuntimeStyles
+                                ? (0, node_crypto_1.createHash)('sha-256')
+                                    .update(containingFile)
+                                    .update((order ?? 0).toString())
+                                    .digest('hex')
+                                : undefined);
                         }
                         const { contents, outputFiles, metafile, referencedFiles, errors, warnings } = stylesheetResult;
                         if (errors) {
@@ -201,6 +213,7 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
                 // Initialize the Angular compilation for the current build.
                 // In watch mode, previous build state will be reused.
                 let referencedFiles;
+                let externalStylesheets;
                 try {
                     const initializationResult = await compilation.initialize(pluginOptions.tsconfig, hostOptions, createCompilerOptionsTransformer(setupWarnings, pluginOptions, preserveSymlinks));
                     shouldTsIgnoreJs = !initializationResult.compilerOptions.allowJs;
@@ -211,6 +224,7 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
                             !!initializationResult.compilerOptions.sourceMap ||
                             !!initializationResult.compilerOptions.inlineSourceMap;
                     referencedFiles = initializationResult.referencedFiles;
+                    externalStylesheets = initializationResult.externalStylesheets;
                 }
                 catch (error) {
                     (result.errors ??= []).push({
@@ -230,6 +244,19 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
                 if (compilation instanceof compilation_1.NoopCompilation) {
                     hasCompilationErrors = await sharedTSCompilationState.waitUntilReady;
                     return result;
+                }
+                if (externalStylesheets) {
+                    // Process any new external stylesheets
+                    for (const [stylesheetFile, externalId] of externalStylesheets) {
+                        await bundleExternalStylesheet(stylesheetBundler, stylesheetFile, externalId, result, additionalResults);
+                    }
+                    // Process any updated stylesheets
+                    if (invalidatedStylesheetEntries) {
+                        for (const stylesheetFile of invalidatedStylesheetEntries) {
+                            // externalId is already linked in the bundler context so only enabling is required here
+                            await bundleExternalStylesheet(stylesheetBundler, stylesheetFile, true, result, additionalResults);
+                        }
+                    }
                 }
                 // Update TypeScript file output cache for all affected files
                 try {
@@ -376,6 +403,17 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
         },
     };
 }
+async function bundleExternalStylesheet(stylesheetBundler, stylesheetFile, externalId, result, additionalResults) {
+    const { outputFiles, metafile, errors, warnings } = await stylesheetBundler.bundleFile(stylesheetFile, externalId);
+    if (errors) {
+        (result.errors ??= []).push(...errors);
+    }
+    (result.warnings ??= []).push(...warnings);
+    additionalResults.set(stylesheetFile, {
+        outputFiles,
+        metafile,
+    });
+}
 function createCompilerOptionsTransformer(setupWarnings, pluginOptions, preserveSymlinks) {
     return (compilerOptions) => {
         // target of 9 is ES2022 (using the number avoids an expensive import of typescript just for an enum)
@@ -433,6 +471,7 @@ function createCompilerOptionsTransformer(setupWarnings, pluginOptions, preserve
             mapRoot: undefined,
             sourceRoot: undefined,
             preserveSymlinks,
+            externalRuntimeStyles: pluginOptions.externalRuntimeStyles,
         };
     };
 }

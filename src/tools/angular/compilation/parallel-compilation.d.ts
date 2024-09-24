@@ -26,6 +26,7 @@ export declare class ParallelCompilation extends AngularCompilation {
         affectedFiles: ReadonlySet<SourceFile>;
         compilerOptions: CompilerOptions;
         referencedFiles: readonly string[];
+        externalStylesheets?: ReadonlyMap<string, string>;
     }>;
     /**
      * This is not needed with this compilation type since the worker will already send a response
