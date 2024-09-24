@@ -63,6 +63,11 @@ async function prerenderPages(workspaceRoot, baseHref, appShellOptions, prerende
     const serializableRouteTreeNodeForPrerender = [];
     for (const metadata of serializableRouteTreeNode) {
         if (outputMode !== schema_1.OutputMode.Static && metadata.redirectTo) {
+            // Skip redirects if output mode is not static.
+            continue;
+        }
+        if (metadata.route.includes('*')) {
+            // Skip catch all routes from prerender.
             continue;
         }
         switch (metadata.renderMode) {
