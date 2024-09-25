@@ -231,7 +231,7 @@ async function normalizeOptions(context, projectName, options, extensions) {
         }
     }
     // Initial options to keep
-    const { allowedCommonJsDependencies, aot, baseHref, crossOrigin, externalDependencies, extractLicenses, inlineStyleLanguage = 'css', outExtension, serviceWorker, poll, polyfills, statsJson, outputMode, stylePreprocessorOptions, subresourceIntegrity, verbose, watch, progress = true, externalPackages, namedChunks, budgets, deployUrl, clearScreen, define, disableFullServerManifestGeneration = false, externalRuntimeStyles, } = options;
+    const { allowedCommonJsDependencies, aot, baseHref, crossOrigin, externalDependencies, extractLicenses, inlineStyleLanguage = 'css', outExtension, serviceWorker, poll, polyfills, statsJson, outputMode, stylePreprocessorOptions, subresourceIntegrity, verbose, watch, progress = true, externalPackages, namedChunks, budgets, deployUrl, clearScreen, define, partialSSRBuild = false, externalRuntimeStyles, } = options;
     // Return all the normalized options
     return {
         advancedOptimizations: !!aot && optimizationOptions.scripts,
@@ -287,7 +287,7 @@ async function normalizeOptions(context, projectName, options, extensions) {
         colors: (0, color_1.supportColor)(),
         clearScreen,
         define,
-        disableFullServerManifestGeneration,
+        partialSSRBuild: environment_options_1.usePartialSsrBuild || partialSSRBuild,
         externalRuntimeStyles,
     };
 }

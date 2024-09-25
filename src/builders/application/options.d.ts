@@ -53,14 +53,12 @@ interface InternalOptions {
      */
     forceI18nFlatOutput?: boolean;
     /**
-     * When set to `true`, disables the generation of a full manifest with routes.
+     * When set to `true`, enables fast SSR in development mode by disabling the full manifest generation and prerendering.
      *
-     * This option is primarily used during development to improve performance,
-     * as the full manifest is generated at runtime when using the development server.
-     *
+     * This option is intended to optimize performance during development by skipping prerendering and route extraction when not required.
      * @default false
      */
-    disableFullServerManifestGeneration?: boolean;
+    partialSSRBuild?: boolean;
     /**
      * Enables the use of AOT compiler emitted external runtime styles.
      * External runtime styles use `link` elements instead of embedded style content in the output JavaScript.
@@ -174,7 +172,7 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     define: {
         [key: string]: string;
     } | undefined;
-    disableFullServerManifestGeneration: boolean;
+    partialSSRBuild: boolean;
     externalRuntimeStyles: boolean | undefined;
 }>;
 export declare function getLocaleBaseHref(baseHref: string | undefined, i18n: NormalizedApplicationBuildOptions['i18nOptions'], locale: string): string | undefined;

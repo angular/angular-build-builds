@@ -36,7 +36,7 @@ async function executePostBundleSteps(options, outputFiles, assetFiles, initialF
     const allErrors = [];
     const allWarnings = [];
     const prerenderedRoutes = {};
-    const { baseHref = '/', serviceWorker, indexHtmlOptions, optimizationOptions, sourcemapOptions, outputMode, serverEntryPoint, prerenderOptions, appShellOptions, workspaceRoot, disableFullServerManifestGeneration, } = options;
+    const { baseHref = '/', serviceWorker, indexHtmlOptions, optimizationOptions, sourcemapOptions, outputMode, serverEntryPoint, prerenderOptions, appShellOptions, workspaceRoot, partialSSRBuild, } = options;
     // Index HTML content without CSS inlining to be used for server rendering (AppShell, SSG and SSR).
     // NOTE: Critical CSS inlining is deliberately omitted here, as it will be handled during server rendering.
     // Additionally, when using prerendering or AppShell, the index HTML file may be regenerated.
@@ -59,7 +59,7 @@ async function executePostBundleSteps(options, outputFiles, assetFiles, initialF
     }
     // Pre-render (SSG) and App-shell
     // If localization is enabled, prerendering is handled in the inlining process.
-    if (!disableFullServerManifestGeneration &&
+    if (!partialSSRBuild &&
         (prerenderOptions || appShellOptions || (outputMode && serverEntryPoint)) &&
         !allErrors.length) {
         (0, node_assert_1.default)(indexHtmlOptions, 'The "index" option is required when using the "ssg" or "appShell" options.');
