@@ -12,7 +12,6 @@ const mrmime_1 = require("mrmime");
 const node_path_1 = require("node:path");
 const load_esm_1 = require("../../../utils/load-esm");
 const utils_1 = require("../utils");
-const COMPONENT_REGEX = /%COMP%/g;
 function createAngularAssetsMiddleware(server, assets, outputFiles, usedComponentStyles) {
     return function angularAssetsMiddleware(req, res, next) {
         if (req.url === undefined || res.writableEnded) {
@@ -76,12 +75,10 @@ function createAngularAssetsMiddleware(server, assets, outputFiles, usedComponen
                         // Shim the stylesheet if a component ID is provided
                         if (componentId.length > 0) {
                             // Validate component ID
-                            if (/[_.-A-Za-z0-9]+-c\d{9}$/.test(componentId)) {
+                            if (/^[_.\-\p{Letter}\d]+-c\d{9}$/u.test(componentId)) {
                                 (0, load_esm_1.loadEsmModule)('@angular/compiler')
                                     .then((compilerModule) => {
-                                    const encapsulatedData = compilerModule
-                                        .encapsulateStyle(new TextDecoder().decode(data))
-                                        .replaceAll(COMPONENT_REGEX, componentId);
+                                    const encapsulatedData = compilerModule.encapsulateStyle(new TextDecoder().decode(data), componentId);
                                     res.setHeader('Content-Type', 'text/css');
                                     res.setHeader('Cache-Control', 'no-cache');
                                     res.end(encapsulatedData);
