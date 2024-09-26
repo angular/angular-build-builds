@@ -25,6 +25,7 @@ exports.VALID_SELF_CLOSING_TAGS = new Set([
     'track',
     'wbr',
     /** SVG tags */
+    'animate',
     'circle',
     'ellipse',
     'line',
