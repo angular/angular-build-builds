@@ -15,6 +15,33 @@ exports.SERVER_APP_MANIFEST_FILENAME = 'angular-app-manifest.mjs';
 exports.SERVER_APP_ENGINE_MANIFEST_FILENAME = 'angular-app-engine-manifest.mjs';
 const MAIN_SERVER_OUTPUT_FILENAME = 'main.server.mjs';
 /**
+ * A mapping of unsafe characters to their escaped Unicode equivalents.
+ */
+const UNSAFE_CHAR_MAP = {
+    '<': '\\u003C',
+    '>': '\\u003E',
+    '/': '\\u002F',
+    '\\': '\\\\',
+    '\b': '\\b',
+    '\f': '\\f',
+    '\n': '\\n',
+    '\r': '\\r',
+    '\t': '\\t',
+    '\0': '\\0',
+    '\u2028': '\\u2028',
+    '\u2029': '\\u2029',
+};
+/**
+ * Escapes unsafe characters in a given string by replacing them with
+ * their Unicode escape sequences.
+ *
+ * @param str - The string to be escaped.
+ * @returns The escaped string where unsafe characters are replaced.
+ */
+function escapeUnsafeChars(str) {
+    return str.replace(/[<>\b\f\n\r\t\0\u2028\u2029]/g, (c) => UNSAFE_CHAR_MAP[c]);
+}
+/**
  * Generates the server manifest for the App Engine environment.
  *
  * This manifest is used to configure the server-side rendering (SSR) setup for the
@@ -92,7 +119,7 @@ function generateAngularServerAppManifest(additionalHtmlOutputFiles, outputFiles
         if (file.path === options_1.INDEX_HTML_SERVER ||
             file.path === options_1.INDEX_HTML_CSR ||
             (inlineCriticalCss && file.path.endsWith('.css'))) {
-            serverAssetsContent.push(`['${file.path}', async () => ${JSON.stringify(file.text)}]`);
+            serverAssetsContent.push(`['${file.path}', async () => ${escapeUnsafeChars(JSON.stringify(file.text))}]`);
         }
     }
     const manifestContent = `
