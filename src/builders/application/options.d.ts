@@ -66,6 +66,12 @@ interface InternalOptions {
      * styles.
      */
     externalRuntimeStyles?: boolean;
+    /**
+     * Enables instrumentation to collect code coverage data for specific files.
+     *
+     * Used exclusively for tests and shouldn't be used for other kinds of builds.
+     */
+    instrumentForCoverage?: (filename: string) => boolean;
 }
 /** Full set of options for `application` builder. */
 export type ApplicationBuilderInternalOptions = Omit<ApplicationBuilderOptions & InternalOptions, 'browser'> & {
@@ -174,6 +180,7 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     } | undefined;
     partialSSRBuild: boolean;
     externalRuntimeStyles: boolean | undefined;
+    instrumentForCoverage: ((filename: string) => boolean) | undefined;
 }>;
 export declare function getLocaleBaseHref(baseHref: string | undefined, i18n: NormalizedApplicationBuildOptions['i18nOptions'], locale: string): string | undefined;
 export {};

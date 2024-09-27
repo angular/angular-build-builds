@@ -22,6 +22,7 @@ export interface CompilerPluginOptions {
     loadResultCache?: LoadResultCache;
     incremental: boolean;
     externalRuntimeStyles?: boolean;
+    instrumentForCoverage?: (request: string) => boolean;
 }
 export declare function createCompilerPlugin(pluginOptions: CompilerPluginOptions, styleOptions: BundleStylesheetOptions & {
     inlineStyleLanguage: string;

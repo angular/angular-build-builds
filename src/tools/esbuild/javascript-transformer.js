@@ -52,7 +52,7 @@ class JavaScriptTransformer {
      * @param sideEffects If false, and `advancedOptimizations` is enabled tslib decorators are wrapped.
      * @returns A promise that resolves to a UTF-8 encoded Uint8Array containing the result.
      */
-    async transformFile(filename, skipLinker, sideEffects) {
+    async transformFile(filename, skipLinker, sideEffects, instrumentForCoverage) {
         const data = await (0, promises_1.readFile)(filename);
         let result;
         let cacheKey;
@@ -79,6 +79,7 @@ class JavaScriptTransformer {
                 data,
                 skipLinker,
                 sideEffects,
+                instrumentForCoverage,
                 ...this.#commonOptions,
             }, {
                 // The below is disable as with Yarn PNP this causes build failures with the below message
@@ -106,10 +107,10 @@ class JavaScriptTransformer {
      * @param sideEffects If false, and `advancedOptimizations` is enabled tslib decorators are wrapped.
      * @returns A promise that resolves to a UTF-8 encoded Uint8Array containing the result.
      */
-    async transformData(filename, data, skipLinker, sideEffects) {
+    async transformData(filename, data, skipLinker, sideEffects, instrumentForCoverage) {
         // Perform a quick test to determine if the data needs any transformations.
         // This allows directly returning the data without the worker communication overhead.
-        if (skipLinker && !this.#commonOptions.advancedOptimizations) {
+        if (skipLinker && !this.#commonOptions.advancedOptimizations && !instrumentForCoverage) {
             const keepSourcemap = this.#commonOptions.sourcemap &&
                 (!!this.#commonOptions.thirdPartySourcemaps || !/[\\/]node_modules[\\/]/.test(filename));
             return Buffer.from(keepSourcemap ? data : data.replace(/^\/\/# sourceMappingURL=[^\r\n]*/gm, ''), 'utf-8');
@@ -119,6 +120,7 @@ class JavaScriptTransformer {
             data,
             skipLinker,
             sideEffects,
+            instrumentForCoverage,
             ...this.#commonOptions,
         });
     }

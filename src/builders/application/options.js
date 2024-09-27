@@ -231,7 +231,7 @@ async function normalizeOptions(context, projectName, options, extensions) {
         }
     }
     // Initial options to keep
-    const { allowedCommonJsDependencies, aot, baseHref, crossOrigin, externalDependencies, extractLicenses, inlineStyleLanguage = 'css', outExtension, serviceWorker, poll, polyfills, statsJson, outputMode, stylePreprocessorOptions, subresourceIntegrity, verbose, watch, progress = true, externalPackages, namedChunks, budgets, deployUrl, clearScreen, define, partialSSRBuild = false, externalRuntimeStyles, } = options;
+    const { allowedCommonJsDependencies, aot, baseHref, crossOrigin, externalDependencies, extractLicenses, inlineStyleLanguage = 'css', outExtension, serviceWorker, poll, polyfills, statsJson, outputMode, stylePreprocessorOptions, subresourceIntegrity, verbose, watch, progress = true, externalPackages, namedChunks, budgets, deployUrl, clearScreen, define, partialSSRBuild = false, externalRuntimeStyles, instrumentForCoverage, } = options;
     // Return all the normalized options
     return {
         advancedOptimizations: !!aot && optimizationOptions.scripts,
@@ -289,6 +289,7 @@ async function normalizeOptions(context, projectName, options, extensions) {
         define,
         partialSSRBuild: environment_options_1.usePartialSsrBuild || partialSSRBuild,
         externalRuntimeStyles,
+        instrumentForCoverage,
     };
 }
 async function getTailwindConfig(searchDirectories, workspaceRoot, context) {

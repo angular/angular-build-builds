@@ -339,7 +339,8 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
                     // A string indicates untransformed output from the TS/NG compiler.
                     // This step is unneeded when using esbuild transpilation.
                     const sideEffects = await hasSideEffects(request);
-                    contents = await javascriptTransformer.transformData(request, contents, true /* skipLinker */, sideEffects);
+                    const instrumentForCoverage = pluginOptions.instrumentForCoverage?.(request);
+                    contents = await javascriptTransformer.transformData(request, contents, true /* skipLinker */, sideEffects, instrumentForCoverage);
                     // Store as the returned Uint8Array to allow caching the fully transformed code
                     typeScriptFileCache.set(request, contents);
                 }
