@@ -20,6 +20,7 @@ const MAIN_SERVER_OUTPUT_FILENAME = 'main.server.mjs';
 const UNSAFE_CHAR_MAP = {
     '`': '\\`',
     '$': '\\$',
+    '\\': '\\\\',
 };
 /**
  * Escapes unsafe characters in a given string by replacing them with
@@ -29,7 +30,7 @@ const UNSAFE_CHAR_MAP = {
  * @returns The escaped string where unsafe characters are replaced.
  */
 function escapeUnsafeChars(str) {
-    return str.replace(/[$`]/g, (c) => UNSAFE_CHAR_MAP[c]);
+    return str.replace(/[$`\\]/g, (c) => UNSAFE_CHAR_MAP[c]);
 }
 /**
  * Generates the server manifest for the App Engine environment.
