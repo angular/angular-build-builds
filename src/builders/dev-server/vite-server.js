@@ -372,7 +372,7 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
     const { normalizePath } = await (0, load_esm_1.loadEsmModule)('vite');
     // Path will not exist on disk and only used to provide separate path for Vite requests
     const virtualProjectRoot = normalizePath((0, node_path_1.join)(serverOptions.workspaceRoot, `.angular/vite-root`, serverOptions.buildTarget.project));
-    const cacheDir = (0, node_path_1.join)(serverOptions.cacheOptions.path, 'vite');
+    const cacheDir = (0, node_path_1.join)(serverOptions.cacheOptions.path, serverOptions.buildTarget.project, 'vite');
     const configuration = {
         configFile: false,
         envFile: false,
