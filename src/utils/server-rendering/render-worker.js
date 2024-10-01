@@ -7,19 +7,29 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+const worker_threads_1 = require("worker_threads");
 const fetch_patch_1 = require("./fetch-patch");
+const launch_server_1 = require("./launch-server");
 const load_esm_from_memory_1 = require("./load-esm-from-memory");
+/**
+ * This is passed as workerData when setting up the worker via the `piscina` package.
+ */
+const { outputMode, hasSsrEntry } = worker_threads_1.workerData;
+let serverURL = launch_server_1.DEFAULT_URL;
 /**
  * Renders each route in routes and writes them to <outputPath>/<route>/index.html.
  */
 async function renderPage({ url }) {
     const { ɵgetOrCreateAngularServerApp: getOrCreateAngularServerApp } = await (0, load_esm_from_memory_1.loadEsmModuleFromMemory)('./main.server.mjs');
     const angularServerApp = getOrCreateAngularServerApp();
-    const response = await angularServerApp.renderStatic(new URL(url, 'http://local-angular-prerender'), AbortSignal.timeout(30_000));
+    const response = await angularServerApp.renderStatic(new URL(url, serverURL), AbortSignal.timeout(30_000));
     return response ? response.text() : null;
 }
-function initialize() {
-    (0, fetch_patch_1.patchFetchToLoadInMemoryAssets)();
+async function initialize() {
+    if (outputMode !== undefined && hasSsrEntry) {
+        serverURL = await (0, launch_server_1.launchServer)();
+    }
+    (0, fetch_patch_1.patchFetchToLoadInMemoryAssets)(serverURL);
     return renderPage;
 }
 exports.default = initialize();

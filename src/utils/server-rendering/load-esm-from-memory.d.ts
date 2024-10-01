@@ -15,5 +15,12 @@ interface MainServerBundleExports {
     ɵextractRoutesAndCreateRouteTree: typeof ɵextractRoutesAndCreateRouteTree;
     ɵgetOrCreateAngularServerApp: typeof ɵgetOrCreateAngularServerApp;
 }
+/**
+ * Represents the exports available from the server bundle.
+ */
+interface ServerBundleExports {
+    default: unknown;
+}
 export declare function loadEsmModuleFromMemory(path: './main.server.mjs'): Promise<MainServerBundleExports>;
+export declare function loadEsmModuleFromMemory(path: './server.mjs'): Promise<ServerBundleExports>;
 export {};

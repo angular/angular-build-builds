@@ -17,7 +17,7 @@ const node_worker_threads_1 = require("node:worker_threads");
  */
 const { assetFiles } = node_worker_threads_1.workerData;
 const assetsCache = new Map();
-function patchFetchToLoadInMemoryAssets() {
+function patchFetchToLoadInMemoryAssets(baseURL) {
     const originalFetch = globalThis.fetch;
     const patchedFetch = async (input, init) => {
         let url;
@@ -35,7 +35,7 @@ function patchFetchToLoadInMemoryAssets() {
         }
         const { hostname } = url;
         const pathname = decodeURIComponent(url.pathname);
-        if (hostname !== 'local-angular-prerender' || !assetFiles[pathname]) {
+        if (hostname !== baseURL.hostname || !assetFiles[pathname]) {
             // Only handle relative requests or files that are in assets.
             return originalFetch(input, init);
         }

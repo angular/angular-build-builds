@@ -10,6 +10,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createAngularSsrInternalMiddleware = createAngularSsrInternalMiddleware;
 exports.createAngularSsrExternalMiddleware = createAngularSsrExternalMiddleware;
 const load_esm_1 = require("../../../utils/load-esm");
+const utils_1 = require("../../../utils/server-rendering/utils");
 function createAngularSsrInternalMiddleware(server, indexHtmlTransformer) {
     let cachedAngularServerApp;
     return function angularSsrMiddleware(req, res, next) {
@@ -47,7 +48,7 @@ async function createAngularSsrExternalMiddleware(server, indexHtmlTransformer) 
     return function angularSsrExternalMiddleware(req, res, next) {
         (async () => {
             const { default: handler, AngularAppEngine } = (await server.ssrLoadModule('./server.mjs'));
-            if (!isSsrNodeRequestHandler(handler) && !isSsrRequestHandler(handler)) {
+            if (!(0, utils_1.isSsrNodeRequestHandler)(handler) && !(0, utils_1.isSsrRequestHandler)(handler)) {
                 if (!fallbackWarningShown) {
                     // eslint-disable-next-line no-console
                     console.warn(`The default export in 'server.ts' does not provide a Node.js request handler. ` +
@@ -66,7 +67,7 @@ async function createAngularSsrExternalMiddleware(server, indexHtmlTransformer) 
                 cachedAngularAppEngine = AngularAppEngine;
             }
             // Forward the request to the middleware in server.ts
-            if (isSsrNodeRequestHandler(handler)) {
+            if ((0, utils_1.isSsrNodeRequestHandler)(handler)) {
                 await handler(req, res, next);
             }
             else {
@@ -79,10 +80,4 @@ async function createAngularSsrExternalMiddleware(server, indexHtmlTransformer) 
             }
         })().catch(next);
     };
-}
-function isSsrNodeRequestHandler(value) {
-    return typeof value === 'function' && '__ng_node_request_handler__' in value;
-}
-function isSsrRequestHandler(value) {
-    return typeof value === 'function' && '__ng_request_handler__' in value;
 }

@@ -92,7 +92,7 @@ async function prerenderPages(workspaceRoot, baseHref, appShellOptions, prerende
         };
     }
     // Render routes
-    const { errors: renderingErrors, output } = await renderPages(baseHref, sourcemap, serializableRouteTreeNodeForPrerender, maxThreads, workspaceRoot, outputFilesForWorker, assetsReversed, appShellOptions);
+    const { errors: renderingErrors, output } = await renderPages(baseHref, sourcemap, serializableRouteTreeNodeForPrerender, maxThreads, workspaceRoot, outputFilesForWorker, assetsReversed, appShellOptions, outputMode);
     errors.push(...renderingErrors);
     return {
         errors,
@@ -101,7 +101,7 @@ async function prerenderPages(workspaceRoot, baseHref, appShellOptions, prerende
         serializableRouteTreeNode,
     };
 }
-async function renderPages(baseHref, sourcemap, serializableRouteTreeNode, maxThreads, workspaceRoot, outputFilesForWorker, assetFilesForWorker, appShellOptions) {
+async function renderPages(baseHref, sourcemap, serializableRouteTreeNode, maxThreads, workspaceRoot, outputFilesForWorker, assetFilesForWorker, appShellOptions, outputMode) {
     const output = {};
     const errors = [];
     const workerExecArgv = [
@@ -119,6 +119,8 @@ async function renderPages(baseHref, sourcemap, serializableRouteTreeNode, maxTh
             workspaceRoot,
             outputFiles: outputFilesForWorker,
             assetFiles: assetFilesForWorker,
+            outputMode,
+            hasSsrEntry: !!outputFilesForWorker['/server.mjs'],
         },
         execArgv: workerExecArgv,
     });
@@ -194,13 +196,13 @@ async function getAllRoutes(workspaceRoot, baseHref, outputFilesForWorker, asset
             workspaceRoot,
             outputFiles: outputFilesForWorker,
             assetFiles: assetFilesForWorker,
+            outputMode,
+            hasSsrEntry: !!outputFilesForWorker['/server.mjs'],
         },
         execArgv: workerExecArgv,
     });
     try {
-        const { serializedRouteTree, errors } = await renderWorker.run({
-            outputMode,
-        });
+        const { serializedRouteTree, errors } = await renderWorker.run({});
         return { errors, serializedRouteTree: [...routes, ...serializedRouteTree] };
     }
     catch (err) {

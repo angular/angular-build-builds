@@ -6,11 +6,12 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 import { OutputMode } from '../../builders/application/schema';
+import { ESMInMemoryFileLoaderWorkerData } from './esm-in-memory-loader/loader-hooks';
 import { RoutersExtractorWorkerResult } from './models';
-export interface ExtractRoutesOptions {
-    outputMode?: OutputMode;
+export interface ExtractRoutesWorkerData extends ESMInMemoryFileLoaderWorkerData {
+    outputMode: OutputMode | undefined;
 }
 /** Renders an application based on a provided options. */
-declare function extractRoutes({ outputMode, }: ExtractRoutesOptions): Promise<RoutersExtractorWorkerResult>;
-declare const _default: typeof extractRoutes;
+declare function extractRoutes(): Promise<RoutersExtractorWorkerResult>;
+declare const _default: Promise<typeof extractRoutes>;
 export default _default;
