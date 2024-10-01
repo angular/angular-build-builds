@@ -128,7 +128,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
             case results_1.ResultKind.Failure:
                 if (result.errors.length && server) {
                     hadError = true;
-                    server.hot.send({
+                    server.ws.send({
                         type: 'error',
                         err: {
                             message: result.errors[0].text,
@@ -175,7 +175,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
         if (hadError && server) {
             hadError = false;
             // Send an empty update to clear the error overlay
-            server.hot.send({
+            server.ws.send({
                 'type': 'update',
                 updates: [],
             });
@@ -268,7 +268,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                         key: 'r',
                         description: 'force reload browser',
                         action(server) {
-                            server.hot.send({
+                            server.ws.send({
                                 type: 'full-reload',
                                 path: '*',
                             });
@@ -311,7 +311,7 @@ async function handleUpdate(normalizePath, generatedFiles, server, serverOptions
     if (serverOptions.liveReload || serverOptions.hmr) {
         if (updatedFiles.every((f) => f.endsWith('.css'))) {
             const timestamp = Date.now();
-            server.hot.send({
+            server.ws.send({
                 type: 'update',
                 updates: updatedFiles.flatMap((filePath) => {
                     // For component styles, an HMR update must be sent for each one with the corresponding
@@ -342,7 +342,7 @@ async function handleUpdate(normalizePath, generatedFiles, server, serverOptions
     }
     // Send reload command to clients
     if (serverOptions.liveReload) {
-        server.hot.send({
+        server.ws.send({
             type: 'full-reload',
             path: '*',
         });
