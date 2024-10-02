@@ -14,6 +14,7 @@ const add_event_dispatch_contract_1 = require("./add-event-dispatch-contract");
 const augment_index_html_1 = require("./augment-index-html");
 const inline_critical_css_1 = require("./inline-critical-css");
 const inline_fonts_1 = require("./inline-fonts");
+const ngcm_attribute_1 = require("./ngcm-attribute");
 const nonce_1 = require("./nonce");
 class IndexHtmlGenerator {
     options;
@@ -35,6 +36,7 @@ class IndexHtmlGenerator {
         this.csrPlugins.push(addNoncePlugin());
         // SSR plugins
         if (options.generateDedicatedSSRContent) {
+            this.csrPlugins.push(addNgcmAttributePlugin());
             this.ssrPlugins.push(addEventDispatchContractPlugin(), addNoncePlugin());
         }
     }
@@ -133,4 +135,7 @@ function postTransformPlugin({ options }) {
 }
 function addEventDispatchContractPlugin() {
     return (html) => (0, add_event_dispatch_contract_1.addEventDispatchContract)(html);
+}
+function addNgcmAttributePlugin() {
+    return (html) => (0, ngcm_attribute_1.addNgcmAttribute)(html);
 }

@@ -18,6 +18,9 @@ function createAngularSsrInternalMiddleware(server, indexHtmlTransformer) {
             return next();
         }
         (async () => {
+            // Load the compiler because `@angular/ssr/node` depends on `@angular/` packages,
+            // which must be processed by the runtime linker, even if they are not used.
+            await (0, load_esm_1.loadEsmModule)('@angular/compiler');
             const { writeResponseToNodeResponse, createWebRequestFromNodeRequest } = await (0, load_esm_1.loadEsmModule)('@angular/ssr/node');
             const { ɵgetOrCreateAngularServerApp } = (await server.ssrLoadModule('/main.server.mjs'));
             const angularServerApp = ɵgetOrCreateAngularServerApp();
@@ -44,6 +47,9 @@ async function createAngularSsrExternalMiddleware(server, indexHtmlTransformer) 
     let fallbackWarningShown = false;
     let cachedAngularAppEngine;
     let angularSsrInternalMiddleware;
+    // Load the compiler because `@angular/ssr/node` depends on `@angular/` packages,
+    // which must be processed by the runtime linker, even if they are not used.
+    await (0, load_esm_1.loadEsmModule)('@angular/compiler');
     const { createWebRequestFromNodeRequest, writeResponseToNodeResponse } = await (0, load_esm_1.loadEsmModule)('@angular/ssr/node');
     return function angularSsrExternalMiddleware(req, res, next) {
         (async () => {
