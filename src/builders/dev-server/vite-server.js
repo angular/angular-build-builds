@@ -65,7 +65,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
     }
     // TODO: Adjust architect to not force a JsonObject derived return type
     const browserOptions = (await context.validateOptions(rawBrowserOptions, builderName));
-    if (browserOptions.prerender) {
+    if (browserOptions.prerender || (browserOptions.outputMode && browserOptions.server)) {
         // Disable prerendering if enabled and force SSR.
         // This is so instead of prerendering all the routes for every change, the page is "prerendered" when it is requested.
         browserOptions.prerender = false;
@@ -249,7 +249,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                 browserOptions.ssr.entry) {
                 ssrMode = plugins_1.ServerSsrMode.ExternalSsrMiddleware;
             }
-            else if (browserOptions.server) {
+            else if (browserOptions.ssr) {
                 ssrMode = plugins_1.ServerSsrMode.InternalSsrMiddleware;
             }
             // Setup server and start listening
