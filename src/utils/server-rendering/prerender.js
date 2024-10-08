@@ -208,7 +208,9 @@ async function getAllRoutes(workspaceRoot, baseHref, outputFilesForWorker, asset
     catch (err) {
         (0, error_1.assertIsError)(err);
         return {
-            errors: [`An error occurred while extracting routes.\n\n${err.stack}`],
+            errors: [
+                `An error occurred while extracting routes.\n\n${err.stack ?? err.message ?? err.code ?? err}`,
+            ],
             serializedRouteTree: [],
         };
     }
