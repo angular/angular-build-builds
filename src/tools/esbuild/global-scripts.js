@@ -72,7 +72,7 @@ function createGlobalScriptsBundleOptions(options, target, initial) {
             entryNames: initial ? outputNames.bundles : '[name]',
             assetNames: outputNames.media,
             mainFields: ['script', 'browser', 'main'],
-            conditions: ['script'],
+            conditions: ['script', optimizationOptions.scripts ? 'production' : 'development'],
             resolveExtensions: ['.mjs', '.js', '.cjs'],
             logLevel: options.verbose && !jsonLogs ? 'debug' : 'silent',
             metafile: true,

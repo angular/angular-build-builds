@@ -53,7 +53,7 @@ function createStylesheetBundleOptions(options, cache, inlineComponentData) {
         preserveSymlinks: options.preserveSymlinks,
         external: options.externalDependencies,
         publicPath: options.publicPath,
-        conditions: ['style', 'sass', 'less'],
+        conditions: ['style', 'sass', 'less', options.optimization ? 'production' : 'development'],
         mainFields: ['style', 'sass'],
         // Unlike JS, CSS does not have implicit file extensions in the general case.
         // Preprocessor specific behavior is handled in each stylesheet language plugin.

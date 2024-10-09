@@ -403,7 +403,12 @@ function getEsBuildCommonOptions(options) {
         bundle: true,
         packages: 'bundle',
         assetNames: outputNames.media,
-        conditions: ['es2020', 'es2015', 'module'],
+        conditions: [
+            'es2020',
+            'es2015',
+            'module',
+            optimizationOptions.scripts ? 'production' : 'development',
+        ],
         resolveExtensions: ['.ts', '.tsx', '.mjs', '.js', '.cjs'],
         metafile: true,
         legalComments: options.extractLicenses ? 'none' : 'eof',
