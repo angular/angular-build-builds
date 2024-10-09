@@ -74,6 +74,12 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
         browserOptions.ssr = true;
         // https://nodejs.org/api/process.html#processsetsourcemapsenabledval
         process.setSourceMapsEnabled(true);
+        if (browserOptions.progress !== false) {
+            // This is a workaround for https://github.com/angular/angular-cli/issues/28336, which is caused by the interaction between `zone.js` and `listr2`.
+            process.once('SIGINT', () => {
+                process.kill(process.pid);
+            });
+        }
     }
     // Set all packages as external to support Vite's prebundle caching
     browserOptions.externalPackages = serverOptions.prebundle;
