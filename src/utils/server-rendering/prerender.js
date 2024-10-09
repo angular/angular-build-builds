@@ -120,7 +120,7 @@ async function renderPages(baseHref, sourcemap, serializableRouteTreeNode, maxTh
             outputFiles: outputFilesForWorker,
             assetFiles: assetFilesForWorker,
             outputMode,
-            hasSsrEntry: !!outputFilesForWorker['/server.mjs'],
+            hasSsrEntry: !!outputFilesForWorker['server.mjs'],
         },
         execArgv: workerExecArgv,
     });
@@ -197,7 +197,7 @@ async function getAllRoutes(workspaceRoot, baseHref, outputFilesForWorker, asset
             outputFiles: outputFilesForWorker,
             assetFiles: assetFilesForWorker,
             outputMode,
-            hasSsrEntry: !!outputFilesForWorker['/server.mjs'],
+            hasSsrEntry: !!outputFilesForWorker['server.mjs'],
         },
         execArgv: workerExecArgv,
     });

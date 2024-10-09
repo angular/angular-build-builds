@@ -71,7 +71,15 @@ async function executePostBundleSteps(options, outputFiles, assetFiles, initialF
             // Update the index contents with the app shell under these conditions:
             // - Replace 'index.html' with the app shell only if it hasn't been prerendered yet.
             // - Always replace 'index.csr.html' with the app shell.
-            const filePath = appShellRoute && !indexHasBeenPrerendered ? indexHtmlOptions.output : path;
+            let filePath = path;
+            if (appShellRoute && !indexHasBeenPrerendered) {
+                if (outputMode !== schema_1.OutputMode.Server && indexHtmlOptions.output === options_1.INDEX_HTML_CSR) {
+                    filePath = 'index.html';
+                }
+                else {
+                    filePath = indexHtmlOptions.output;
+                }
+            }
             additionalHtmlOutputFiles.set(filePath, (0, utils_1.createOutputFile)(filePath, content, bundler_context_1.BuildOutputFileType.Browser));
         }
         const serializableRouteTreeNodeForManifest = [];
