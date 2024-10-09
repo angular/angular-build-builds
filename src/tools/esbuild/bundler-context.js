@@ -211,6 +211,7 @@ class BundlerContext {
                 warnings: result.warnings,
             };
         }
+        const { 'ng-platform-server': isPlatformServer = false, 'ng-ssr-entry-bundle': isSsrEntryBundle = false, } = result.metafile;
         // Find all initial files
         const initialFiles = new Map();
         for (const outputFile of result.outputFiles) {
@@ -231,7 +232,7 @@ class BundlerContext {
                         name,
                         type,
                         entrypoint: true,
-                        serverFile: this.#platformIsServer,
+                        serverFile: isPlatformServer,
                         depth: 0,
                     };
                     if (!this.initialFilter || this.initialFilter(record)) {
@@ -259,7 +260,7 @@ class BundlerContext {
                         type: initialImport.kind === 'import-rule' ? 'style' : 'script',
                         entrypoint: false,
                         external: initialImport.external,
-                        serverFile: this.#platformIsServer,
+                        serverFile: isPlatformServer,
                         depth: entryRecord.depth + 1,
                     };
                     if (!this.initialFilter || this.initialFilter(record)) {
@@ -292,9 +293,8 @@ class BundlerContext {
             if (!/\.([cm]?js|css|wasm)(\.map)?$/i.test(file.path)) {
                 fileType = BuildOutputFileType.Media;
             }
-            else if (this.#platformIsServer) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                fileType = result.metafile['ng-ssr-entry-bundle']
+            else if (isPlatformServer) {
+                fileType = isSsrEntryBundle
                     ? BuildOutputFileType.ServerRoot
                     : BuildOutputFileType.ServerApplication;
             }
@@ -304,7 +304,7 @@ class BundlerContext {
             return (0, utils_1.convertOutputFile)(file, fileType);
         });
         let externalConfiguration = this.#esbuildOptions.external;
-        if (this.#platformIsServer && externalConfiguration) {
+        if (isPlatformServer && externalConfiguration) {
             externalConfiguration = externalConfiguration.filter((dep) => !utils_1.SERVER_GENERATED_EXTERNALS.has(dep));
             if (!externalConfiguration.length) {
                 externalConfiguration = undefined;
@@ -316,7 +316,7 @@ class BundlerContext {
             outputFiles,
             initialFiles,
             externalImports: {
-                [this.#platformIsServer ? 'server' : 'browser']: externalImports,
+                [isPlatformServer ? 'server' : 'browser']: externalImports,
             },
             externalConfiguration,
             errors: undefined,
@@ -335,9 +335,6 @@ class BundlerContext {
                 }
             }
         }
-    }
-    get #platformIsServer() {
-        return this.#esbuildOptions?.platform === 'node';
     }
     /**
      * Invalidate a stored bundler result based on the previous watch files

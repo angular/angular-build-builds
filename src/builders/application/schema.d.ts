@@ -500,6 +500,37 @@ export interface SsrClass {
      * The server entry-point that when executed will spawn the web server.
      */
     entry?: string;
+    /**
+     * Specifies the platform for which the server bundle is generated. This affects the APIs
+     * and modules available in the server-side code.
+     *
+     * - `node`:  (Default) Generates a bundle optimized for Node.js environments.
+     * - `neutral`: Generates a platform-neutral bundle suitable for environments like edge
+     * workers, and other serverless platforms. This option avoids using Node.js-specific APIs,
+     * making the bundle more portable.
+     *
+     * Please note that this feature does not provide polyfills for Node.js modules.
+     * Additionally, it is experimental, and the schematics may undergo changes in future
+     * versions.
+     */
+    experimentalPlatform?: ExperimentalPlatform;
+}
+/**
+ * Specifies the platform for which the server bundle is generated. This affects the APIs
+ * and modules available in the server-side code.
+ *
+ * - `node`:  (Default) Generates a bundle optimized for Node.js environments.
+ * - `neutral`: Generates a platform-neutral bundle suitable for environments like edge
+ * workers, and other serverless platforms. This option avoids using Node.js-specific APIs,
+ * making the bundle more portable.
+ *
+ * Please note that this feature does not provide polyfills for Node.js modules.
+ * Additionally, it is experimental, and the schematics may undergo changes in future
+ * versions.
+ */
+export declare enum ExperimentalPlatform {
+    Neutral = "neutral",
+    Node = "node"
 }
 /**
  * Options to pass to style preprocessors.

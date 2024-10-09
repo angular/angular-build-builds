@@ -9,7 +9,7 @@ import type { BuilderContext } from '@angular-devkit/architect';
 import type { Plugin } from 'esbuild';
 import { I18nOptions } from '../../utils/i18n-options';
 import { IndexHtmlTransform } from '../../utils/index-file/index-html-generator';
-import { Schema as ApplicationBuilderOptions, I18NTranslation, OutputMode, OutputPathClass } from './schema';
+import { Schema as ApplicationBuilderOptions, ExperimentalPlatform, I18NTranslation, OutputMode, OutputPathClass } from './schema';
 /**
  * The filename for the client-side rendered HTML template.
  * This template is used for client-side rendering (CSR) in a web application.
@@ -119,8 +119,10 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     outputMode: OutputMode | undefined;
     ssrOptions: {
         entry?: undefined;
+        platform?: undefined;
     } | {
         entry: string | undefined;
+        platform: ExperimentalPlatform;
     } | undefined;
     verbose: boolean | undefined;
     watch: boolean | undefined;
