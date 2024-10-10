@@ -53,11 +53,11 @@ async function createAngularSsrExternalMiddleware(server, indexHtmlTransformer) 
     const { createWebRequestFromNodeRequest, writeResponseToNodeResponse } = await (0, load_esm_1.loadEsmModule)('@angular/ssr/node');
     return function angularSsrExternalMiddleware(req, res, next) {
         (async () => {
-            const { default: handler, AngularAppEngine } = (await server.ssrLoadModule('./server.mjs'));
-            if (!(0, utils_1.isSsrNodeRequestHandler)(handler) && !(0, utils_1.isSsrRequestHandler)(handler)) {
+            const { reqHandler, AngularAppEngine } = (await server.ssrLoadModule('./server.mjs'));
+            if (!(0, utils_1.isSsrNodeRequestHandler)(reqHandler) && !(0, utils_1.isSsrRequestHandler)(reqHandler)) {
                 if (!fallbackWarningShown) {
                     // eslint-disable-next-line no-console
-                    console.warn(`The default export in 'server.ts' does not provide a Node.js request handler. ` +
+                    console.warn(`The 'reqHandler' export in 'server.ts' is either undefined or does not provide a recognized request handler. ` +
                         'Using the internal SSR middleware instead.');
                     fallbackWarningShown = true;
                 }
@@ -73,11 +73,11 @@ async function createAngularSsrExternalMiddleware(server, indexHtmlTransformer) 
                 cachedAngularAppEngine = AngularAppEngine;
             }
             // Forward the request to the middleware in server.ts
-            if ((0, utils_1.isSsrNodeRequestHandler)(handler)) {
-                await handler(req, res, next);
+            if ((0, utils_1.isSsrNodeRequestHandler)(reqHandler)) {
+                await reqHandler(req, res, next);
             }
             else {
-                const webRes = await handler(createWebRequestFromNodeRequest(req));
+                const webRes = await reqHandler(createWebRequestFromNodeRequest(req));
                 if (!webRes) {
                     next();
                     return;

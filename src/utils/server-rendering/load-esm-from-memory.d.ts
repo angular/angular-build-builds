@@ -19,7 +19,7 @@ interface MainServerBundleExports {
  * Represents the exports available from the server bundle.
  */
 interface ServerBundleExports {
-    default: unknown;
+    reqHandler?: unknown;
 }
 export declare function loadEsmModuleFromMemory(path: './main.server.mjs'): Promise<MainServerBundleExports>;
 export declare function loadEsmModuleFromMemory(path: './server.mjs'): Promise<ServerBundleExports>;
