@@ -102,7 +102,7 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
             // Determines if transpilation should be handle by TypeScript or esbuild
             let useTypeScriptTranspilation = true;
             // Track incremental component stylesheet builds
-            const stylesheetBundler = new component_stylesheets_1.ComponentStylesheetBundler(styleOptions, pluginOptions.incremental);
+            const stylesheetBundler = new component_stylesheets_1.ComponentStylesheetBundler(styleOptions, styleOptions.inlineStyleLanguage, pluginOptions.incremental);
             let sharedTSCompilationState;
             // To fully invalidate files, track resource referenced files and their referencing source
             const referencedFileTracker = new file_reference_tracker_1.FileReferenceTracker();
@@ -148,8 +148,8 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
                         }
                         else {
                             stylesheetResult = await stylesheetBundler.bundleInline(data, containingFile, 
-                            // Inline stylesheets from a template style element are always CSS
-                            containingFile.endsWith('.html') ? 'css' : styleOptions.inlineStyleLanguage, 
+                            // Inline stylesheets from a template style element are always CSS; Otherwise, use default.
+                            containingFile.endsWith('.html') ? 'css' : undefined, 
                             // When external runtime styles are enabled, an identifier for the style that does not change
                             // based on the content is required to avoid emitted JS code changes. Any JS code changes will
                             // invalid the output and force a full page reload for HMR cases. The containing file and order
@@ -361,7 +361,7 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
             }));
             // Setup bundling of component templates and stylesheets when in JIT mode
             if (pluginOptions.jit) {
-                (0, jit_plugin_callbacks_1.setupJitPluginCallbacks)(build, stylesheetBundler, additionalResults, styleOptions.inlineStyleLanguage, pluginOptions.loadResultCache);
+                (0, jit_plugin_callbacks_1.setupJitPluginCallbacks)(build, stylesheetBundler, additionalResults, pluginOptions.loadResultCache);
             }
             build.onEnd((result) => {
                 // Ensure other compilations are unblocked if the main compilation throws during start

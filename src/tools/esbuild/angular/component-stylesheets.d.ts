@@ -15,13 +15,14 @@ import { BundleStylesheetOptions } from '../stylesheets/bundle-options';
 export declare class ComponentStylesheetBundler {
     #private;
     private readonly options;
+    private readonly defaultInlineLanguage;
     private readonly incremental;
     /**
      *
      * @param options An object containing the stylesheet bundling options.
      * @param cache A load result cache to use when bundling.
      */
-    constructor(options: BundleStylesheetOptions, incremental: boolean);
+    constructor(options: BundleStylesheetOptions, defaultInlineLanguage: string, incremental: boolean);
     bundleFile(entry: string, externalId?: string | boolean): Promise<{
         errors: import("esbuild").Message[] | undefined;
         warnings: import("esbuild").Message[];
@@ -30,7 +31,7 @@ export declare class ComponentStylesheetBundler {
         metafile: import("esbuild").Metafile | undefined;
         referencedFiles: Set<string> | undefined;
     }>;
-    bundleInline(data: string, filename: string, language: string, externalId?: string): Promise<{
+    bundleInline(data: string, filename: string, language?: string, externalId?: string): Promise<{
         errors: import("esbuild").Message[] | undefined;
         warnings: import("esbuild").Message[];
         contents: string;

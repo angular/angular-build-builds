@@ -51,7 +51,7 @@ async function loadEntry(entry, root, skipRead) {
  * @param styleOptions The options to use when bundling stylesheets.
  * @param additionalResultFiles A Map where stylesheet resources will be added.
  */
-function setupJitPluginCallbacks(build, stylesheetBundler, additionalResultFiles, inlineStyleLanguage, loadCache) {
+function setupJitPluginCallbacks(build, stylesheetBundler, additionalResultFiles, loadCache) {
     const root = build.initialOptions.absWorkingDir ?? '';
     // Add a resolve callback to capture and parse any JIT URIs that were added by the
     // JIT resource TypeScript transformer.
@@ -90,7 +90,7 @@ function setupJitPluginCallbacks(build, stylesheetBundler, additionalResultFiles
             stylesheetResult = await stylesheetBundler.bundleFile(entry.path);
         }
         else {
-            stylesheetResult = await stylesheetBundler.bundleInline(entry.contents, entry.path, inlineStyleLanguage);
+            stylesheetResult = await stylesheetBundler.bundleInline(entry.contents, entry.path);
         }
         const { contents, outputFiles, errors, warnings, metafile, referencedFiles } = stylesheetResult;
         additionalResultFiles.set(entry.path, { outputFiles, metafile });

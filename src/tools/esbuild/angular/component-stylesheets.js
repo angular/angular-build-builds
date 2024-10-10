@@ -24,6 +24,7 @@ const bundle_options_1 = require("../stylesheets/bundle-options");
  */
 class ComponentStylesheetBundler {
     options;
+    defaultInlineLanguage;
     incremental;
     #fileContexts = new cache_1.MemoryCache();
     #inlineContexts = new cache_1.MemoryCache();
@@ -32,8 +33,9 @@ class ComponentStylesheetBundler {
      * @param options An object containing the stylesheet bundling options.
      * @param cache A load result cache to use when bundling.
      */
-    constructor(options, incremental) {
+    constructor(options, defaultInlineLanguage, incremental) {
         this.options = options;
+        this.defaultInlineLanguage = defaultInlineLanguage;
         this.incremental = incremental;
     }
     async bundleFile(entry, externalId) {
@@ -53,7 +55,7 @@ class ComponentStylesheetBundler {
         });
         return this.extractResult(await bundlerContext.bundle(), bundlerContext.watchFiles, !!externalId);
     }
-    async bundleInline(data, filename, language, externalId) {
+    async bundleInline(data, filename, language = this.defaultInlineLanguage, externalId) {
         // Use a hash of the inline stylesheet content to ensure a consistent identifier. External stylesheets will resolve
         // to the actual stylesheet file path.
         // TODO: Consider xxhash instead for hashing
