@@ -10,3 +10,4 @@ export { angularHtmlFallbackMiddleware } from './html-fallback-middleware';
 export { createAngularIndexHtmlMiddleware } from './index-html-middleware';
 export { createAngularSsrExternalMiddleware, createAngularSsrInternalMiddleware, } from './ssr-middleware';
 export { createAngularHeadersMiddleware } from './headers-middleware';
+export { createAngularComponentMiddleware } from './component-middleware';

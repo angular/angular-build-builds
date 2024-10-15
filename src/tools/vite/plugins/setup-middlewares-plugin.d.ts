@@ -35,6 +35,7 @@ interface AngularSetupMiddlewaresPluginOptions {
     extensionMiddleware?: Connect.NextHandleFunction[];
     indexHtmlTransformer?: (content: string) => Promise<string>;
     usedComponentStyles: Map<string, string[]>;
+    templateUpdates: Map<string, string>;
     ssrMode: ServerSsrMode;
 }
 export declare function createAngularSetupMiddlewaresPlugin(options: AngularSetupMiddlewaresPluginOptions): Plugin;

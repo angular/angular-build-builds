@@ -38,9 +38,10 @@ function createAngularSetupMiddlewaresPlugin(options) {
         name: 'vite:angular-setup-middlewares',
         enforce: 'pre',
         configureServer(server) {
-            const { indexHtmlTransformer, outputFiles, extensionMiddleware, assets, usedComponentStyles, ssrMode, } = options;
+            const { indexHtmlTransformer, outputFiles, extensionMiddleware, assets, usedComponentStyles, templateUpdates, ssrMode, } = options;
             // Headers, assets and resources get handled first
             server.middlewares.use((0, middlewares_1.createAngularHeadersMiddleware)(server));
+            server.middlewares.use((0, middlewares_1.createAngularComponentMiddleware)(templateUpdates));
             server.middlewares.use((0, middlewares_1.createAngularAssetsMiddleware)(server, assets, outputFiles, usedComponentStyles));
             extensionMiddleware?.forEach((middleware) => server.middlewares.use(middleware));
             // Returning a function, installs middleware after the main transform middleware but

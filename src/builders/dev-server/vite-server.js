@@ -116,6 +116,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
         explicitServer: [],
     };
     const usedComponentStyles = new Map();
+    const templateUpdates = new Map();
     // Add cleanup logic via a builder teardown.
     let deferred;
     context.addTeardown(async () => {
@@ -157,6 +158,8 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                         assetFiles.set('/' + normalizePath(outputPath), normalizePath(file.inputPath));
                     }
                 }
+                // Clear stale template updates on a code rebuilds
+                templateUpdates.clear();
                 // Analyze result files for changes
                 analyzeResultFiles(normalizePath, htmlIndexPath, result.files, generatedFiles);
                 break;
@@ -166,8 +169,18 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                 break;
             case results_1.ResultKind.ComponentUpdate:
                 (0, node_assert_1.default)(serverOptions.hmr, 'Component updates are only supported with HMR enabled.');
-                // TODO: Implement support -- application builder currently does not use
-                break;
+                (0, node_assert_1.default)(server, 'Builder must provide an initial full build before component update results.');
+                for (const componentUpdate of result.updates) {
+                    if (componentUpdate.type === 'template') {
+                        templateUpdates.set(componentUpdate.id, componentUpdate.content);
+                        server.ws.send('angular:component-update', {
+                            id: componentUpdate.id,
+                            timestamp: Date.now(),
+                        });
+                    }
+                }
+                context.logger.info('Component update sent to client(s).');
+                continue;
             default:
                 context.logger.warn(`Unknown result kind [${result.kind}] provided by build.`);
                 continue;
@@ -259,7 +272,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                 });
             }
             // Setup server and start listening
-            const serverConfiguration = await setupServer(serverOptions, generatedFiles, assetFiles, browserOptions.preserveSymlinks, externalMetadata, ssrMode, prebundleTransformer, target, (0, internal_1.isZonelessApp)(polyfills), usedComponentStyles, browserOptions.loader, extensions?.middleware, transformers?.indexHtml, thirdPartySourcemaps);
+            const serverConfiguration = await setupServer(serverOptions, generatedFiles, assetFiles, browserOptions.preserveSymlinks, externalMetadata, ssrMode, prebundleTransformer, target, (0, internal_1.isZonelessApp)(polyfills), usedComponentStyles, templateUpdates, browserOptions.loader, extensions?.middleware, transformers?.indexHtml, thirdPartySourcemaps);
             server = await createServer(serverConfiguration);
             await server.listen();
             const urls = server.resolvedUrls;
@@ -409,7 +422,7 @@ function analyzeResultFiles(normalizePath, htmlIndexPath, resultFiles, generated
         }
     }
 }
-async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks, externalMetadata, ssrMode, prebundleTransformer, target, zoneless, usedComponentStyles, prebundleLoaderExtensions, extensionMiddleware, indexHtmlTransformer, thirdPartySourcemaps = false) {
+async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks, externalMetadata, ssrMode, prebundleTransformer, target, zoneless, usedComponentStyles, templateUpdates, prebundleLoaderExtensions, extensionMiddleware, indexHtmlTransformer, thirdPartySourcemaps = false) {
     const proxy = await (0, utils_1.loadProxyConfiguration)(serverOptions.workspaceRoot, serverOptions.proxyConfig);
     // dynamically import Vite for ESM compatibility
     const { normalizePath } = await (0, load_esm_1.loadEsmModule)('vite');
@@ -502,6 +515,7 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
                 indexHtmlTransformer,
                 extensionMiddleware,
                 usedComponentStyles,
+                templateUpdates,
                 ssrMode,
             }),
             (0, plugins_1.createRemoveIdPrefixPlugin)(externalMetadata.explicitBrowser),
