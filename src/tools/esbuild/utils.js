@@ -38,6 +38,7 @@ function logBuildStats(metafile, outputFiles, initial, budgetFailures, colors, c
     const browserStats = [];
     const serverStats = [];
     let unchangedCount = 0;
+    let componentStyleChange = false;
     for (const { path: file, size, type } of outputFiles) {
         // Only display JavaScript and CSS files
         if (!/\.(?:css|m?js)$/.test(file)) {
@@ -51,6 +52,11 @@ function logBuildStats(metafile, outputFiles, initial, budgetFailures, colors, c
         const isPlatformServer = type === bundler_context_1.BuildOutputFileType.ServerApplication || type === bundler_context_1.BuildOutputFileType.ServerRoot;
         if (isPlatformServer && !ssrOutputEnabled) {
             // Only log server build stats when SSR is enabled.
+            continue;
+        }
+        // Skip logging external component stylesheets used for HMR
+        if (metafile.outputs[file] && 'ng-component' in metafile.outputs[file]) {
+            componentStyleChange = true;
             continue;
         }
         const name = initial.get(file)?.name ?? getChunkNameFromMetafile(metafile, file);
@@ -70,7 +76,12 @@ function logBuildStats(metafile, outputFiles, initial, budgetFailures, colors, c
         return tableText + '\n';
     }
     else if (changedFiles !== undefined) {
-        return '\nNo output file changes.\n';
+        if (componentStyleChange) {
+            return '\nComponent stylesheet(s) changed.\n';
+        }
+        else {
+            return '\nNo output file changes.\n';
+        }
     }
     if (unchangedCount > 0) {
         return `Unchanged output files: ${unchangedCount}`;

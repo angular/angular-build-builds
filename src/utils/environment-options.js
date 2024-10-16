@@ -83,6 +83,6 @@ exports.useJSONBuildLogs = isPresent(buildLogsJsonVariable) && isEnabled(buildLo
 const optimizeChunksVariable = process.env['NG_BUILD_OPTIMIZE_CHUNKS'];
 exports.shouldOptimizeChunks = isPresent(optimizeChunksVariable) && isEnabled(optimizeChunksVariable);
 const hmrComponentStylesVariable = process.env['NG_HMR_CSTYLES'];
-exports.useComponentStyleHmr = isPresent(hmrComponentStylesVariable) && isEnabled(hmrComponentStylesVariable);
+exports.useComponentStyleHmr = !isPresent(hmrComponentStylesVariable) || !isDisabled(hmrComponentStylesVariable);
 const partialSsrBuildVariable = process.env['NG_BUILD_PARTIAL_SSR'];
 exports.usePartialSsrBuild = isPresent(partialSsrBuildVariable) && isEnabled(partialSsrBuildVariable);

@@ -7,4 +7,4 @@
  */
 import type { Connect, ViteDevServer } from 'vite';
 import { AngularMemoryOutputFiles } from '../utils';
-export declare function createAngularAssetsMiddleware(server: ViteDevServer, assets: Map<string, string>, outputFiles: AngularMemoryOutputFiles, usedComponentStyles: Map<string, string[]>): Connect.NextHandleFunction;
+export declare function createAngularAssetsMiddleware(server: ViteDevServer, assets: Map<string, string>, outputFiles: AngularMemoryOutputFiles, usedComponentStyles: Map<string, Set<string>>): Connect.NextHandleFunction;

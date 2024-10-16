@@ -14,7 +14,7 @@ export interface AngularHostOptions {
     sourceFileCache?: Map<string, ts.SourceFile>;
     modifiedFiles?: Set<string>;
     externalStylesheets?: Map<string, string>;
-    transformStylesheet(data: string, containingFile: string, stylesheetFile?: string, order?: number): Promise<string | null>;
+    transformStylesheet(data: string, containingFile: string, stylesheetFile?: string, order?: number, className?: string): Promise<string | null>;
     processWebWorker(workerFile: string, containingFile: string): string;
 }
 /**

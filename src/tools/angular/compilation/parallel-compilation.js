@@ -37,9 +37,9 @@ class ParallelCompilation extends angular_compilation_1.AngularCompilation {
     initialize(tsconfig, hostOptions, compilerOptionsTransformer) {
         const stylesheetChannel = new node_worker_threads_1.MessageChannel();
         // The request identifier is required because Angular can issue multiple concurrent requests
-        stylesheetChannel.port1.on('message', ({ requestId, data, containingFile, stylesheetFile }) => {
+        stylesheetChannel.port1.on('message', ({ requestId, data, containingFile, stylesheetFile, order, className }) => {
             hostOptions
-                .transformStylesheet(data, containingFile, stylesheetFile)
+                .transformStylesheet(data, containingFile, stylesheetFile, order, className)
                 .then((value) => stylesheetChannel.port1.postMessage({ requestId, value }))
                 .catch((error) => stylesheetChannel.port1.postMessage({ requestId, error }));
         });

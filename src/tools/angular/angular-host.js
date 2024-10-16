@@ -113,10 +113,7 @@ function createAngularCompilerHost(typescript, compilerOptions, hostOptions) {
         if (data.trim().length === 0) {
             return { content: '' };
         }
-        const result = await hostOptions.transformStylesheet(data, context.containingFile, context.resourceFile ?? undefined, 
-        // TODO: Remove once available in compiler-cli types
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        context.order);
+        const result = await hostOptions.transformStylesheet(data, context.containingFile, context.resourceFile ?? undefined, context.order, context.className);
         return typeof result === 'string' ? { content: result } : null;
     };
     host.resourceNameToFileName = function (resourceName, containingFile) {

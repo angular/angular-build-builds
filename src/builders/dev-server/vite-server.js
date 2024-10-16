@@ -92,8 +92,13 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
         // https://nodejs.org/api/process.html#processsetsourcemapsenabledval
         process.setSourceMapsEnabled(true);
     }
-    // TODO: Enable by default once full support across CLI and FW is integrated
-    browserOptions.externalRuntimeStyles = environment_options_1.useComponentStyleHmr;
+    // Enable to support component style hot reloading (`NG_HMR_CSTYLES=0` can be used to disable)
+    browserOptions.externalRuntimeStyles = !!serverOptions.liveReload && environment_options_1.useComponentStyleHmr;
+    if (browserOptions.externalRuntimeStyles) {
+        // Preload the @angular/compiler package to avoid first stylesheet request delays.
+        // Once @angular/build is native ESM, this should be re-evaluated.
+        void (0, load_esm_1.loadEsmModule)('@angular/compiler');
+    }
     // Setup the prebundling transformer that will be shared across Vite prebundling requests
     const prebundleTransformer = new internal_1.JavaScriptTransformer(
     // Always enable JIT linking to support applications built with and without AOT.
@@ -341,7 +346,7 @@ async function handleUpdate(normalizePath, generatedFiles, server, serverOptions
                     // are not typically reused across components.
                     const componentIds = usedComponentStyles.get(filePath);
                     if (componentIds) {
-                        return componentIds.map((id) => ({
+                        return Array.from(componentIds).map((id) => ({
                             type: 'css-update',
                             timestamp,
                             path: `${filePath}?ngcomp` + (id ? `=${id}` : ''),

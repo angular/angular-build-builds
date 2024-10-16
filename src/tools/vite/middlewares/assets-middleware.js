@@ -67,10 +67,10 @@ function createAngularAssetsMiddleware(server, assets, outputFiles, usedComponen
                         // Record the component style usage for HMR updates
                         const usedIds = usedComponentStyles.get(pathname);
                         if (usedIds === undefined) {
-                            usedComponentStyles.set(pathname, [componentId]);
+                            usedComponentStyles.set(pathname, new Set([componentId]));
                         }
                         else {
-                            usedIds.push(componentId);
+                            usedIds.add(componentId);
                         }
                         // Shim the stylesheet if a component ID is provided
                         if (componentId.length > 0) {
