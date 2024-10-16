@@ -99,6 +99,7 @@ async function compileString(data, filePath, syntax, options, resolveUrl) {
     const resolutionCache = new cache_1.MemoryCache();
     const packageRootCache = new cache_1.MemoryCache();
     const warnings = [];
+    const { silenceDeprecations, futureDeprecations, fatalDeprecations } = options.sass ?? {};
     try {
         const { css, sourceMap, loadedUrls } = await sassWorkerPool.compileStringAsync(data, {
             url: (0, node_url_1.pathToFileURL)(filePath),
@@ -107,6 +108,9 @@ async function compileString(data, filePath, syntax, options, resolveUrl) {
             loadPaths: options.includePaths,
             sourceMap: options.sourcemap,
             sourceMapIncludeSources: options.sourcemap,
+            silenceDeprecations,
+            fatalDeprecations,
+            futureDeprecations,
             quietDeps: true,
             importers: [
                 {

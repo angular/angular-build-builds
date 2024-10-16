@@ -27,6 +27,7 @@ function createStylesheetBundleOptions(options, cache, inlineComponentData) {
         inlineComponentData,
         tailwindConfiguration: options.tailwindConfiguration,
         postcssConfiguration: options.postcssConfiguration,
+        sass: options.sass,
     }, cache);
     const plugins = [
         pluginFactory.create(sass_language_1.SassStylesheetLanguage),

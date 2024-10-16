@@ -37,6 +37,9 @@ function createCompilerPluginOptions(options, target, sourceFileCache) {
             sourcemapOptions.styles && !sourcemapOptions.hidden ? 'linked' : false,
             outputNames,
             includePaths: stylePreprocessorOptions?.includePaths,
+            // string[] | undefined' is not assignable to type '(Version | DeprecationOrId)[] | undefined'.
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            sass: stylePreprocessorOptions?.sass,
             externalDependencies,
             target,
             inlineStyleLanguage,
