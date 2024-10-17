@@ -75,7 +75,7 @@ function createAngularAssetsMiddleware(server, assets, outputFiles, usedComponen
                         // Shim the stylesheet if a component ID is provided
                         if (componentId.length > 0) {
                             // Validate component ID
-                            if (/^[_.\-\p{Letter}\d]+-c\d{9}$/u.test(componentId)) {
+                            if (/^[_.\-\p{Letter}\d]+-c\d+$/u.test(componentId)) {
                                 (0, load_esm_1.loadEsmModule)('@angular/compiler')
                                     .then((compilerModule) => {
                                     const encapsulatedData = compilerModule.encapsulateStyle(new TextDecoder().decode(data), componentId);
