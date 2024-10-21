@@ -7,6 +7,7 @@
  */
 import type { Message, PartialMessage } from 'esbuild';
 import type { ChangedFiles } from '../../tools/esbuild/watcher';
+import type { ComponentStylesheetBundler } from './angular/component-stylesheets';
 import type { SourceFileCache } from './angular/source-file-cache';
 import type { BuildOutputFile, BuildOutputFileType, BundlerContext } from './bundler-context';
 export interface BuildOutputAsset {
@@ -15,6 +16,7 @@ export interface BuildOutputAsset {
 }
 export interface RebuildState {
     rebuildContexts: BundlerContext[];
+    componentStyleBundler: ComponentStylesheetBundler;
     codeBundleCache?: SourceFileCache;
     fileChanges: ChangedFiles;
     previousOutputHashes: Map<string, string>;
@@ -32,6 +34,7 @@ export type PrerenderedRoutesRecord = Record<string, {
  */
 export declare class ExecutionResult {
     private rebuildContexts;
+    private componentStyleBundler;
     private codeBundleCache?;
     outputFiles: BuildOutputFile[];
     assetFiles: BuildOutputAsset[];
@@ -43,7 +46,7 @@ export declare class ExecutionResult {
     extraWatchFiles: string[];
     htmlIndexPath?: string;
     htmlBaseHref?: string;
-    constructor(rebuildContexts: BundlerContext[], codeBundleCache?: SourceFileCache | undefined);
+    constructor(rebuildContexts: BundlerContext[], componentStyleBundler: ComponentStylesheetBundler, codeBundleCache?: SourceFileCache | undefined);
     addOutputFile(path: string, content: string | Uint8Array, type: BuildOutputFileType): void;
     addAssets(assets: BuildOutputAsset[]): void;
     addLog(value: string): void;
@@ -67,7 +70,7 @@ export declare class ExecutionResult {
         success: boolean;
         outputFiles: BuildOutputFile[];
         assetFiles: BuildOutputAsset[];
-        errors: (Message | PartialMessage)[];
+        errors: (PartialMessage | Message)[];
         externalMetadata: ExternalResultMetadata | undefined;
     };
     get watchFiles(): string[];

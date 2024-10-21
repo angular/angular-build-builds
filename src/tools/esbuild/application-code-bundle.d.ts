@@ -7,10 +7,11 @@
  */
 import type { BuildOptions } from 'esbuild';
 import type { NormalizedApplicationBuildOptions } from '../../builders/application/options';
+import { ComponentStylesheetBundler } from './angular/component-stylesheets';
 import { SourceFileCache } from './angular/source-file-cache';
 import { BundlerOptionsFactory } from './bundler-context';
-export declare function createBrowserCodeBundleOptions(options: NormalizedApplicationBuildOptions, target: string[], sourceFileCache?: SourceFileCache): BuildOptions;
-export declare function createBrowserPolyfillBundleOptions(options: NormalizedApplicationBuildOptions, target: string[], sourceFileCache?: SourceFileCache): BuildOptions | BundlerOptionsFactory | undefined;
+export declare function createBrowserCodeBundleOptions(options: NormalizedApplicationBuildOptions, target: string[], sourceFileCache: SourceFileCache, stylesheetBundler: ComponentStylesheetBundler): BuildOptions;
+export declare function createBrowserPolyfillBundleOptions(options: NormalizedApplicationBuildOptions, target: string[], sourceFileCache: SourceFileCache, stylesheetBundler: ComponentStylesheetBundler): BuildOptions | BundlerOptionsFactory | undefined;
 export declare function createServerPolyfillBundleOptions(options: NormalizedApplicationBuildOptions, target: string[], sourceFileCache?: SourceFileCache): BundlerOptionsFactory | undefined;
-export declare function createServerMainCodeBundleOptions(options: NormalizedApplicationBuildOptions, target: string[], sourceFileCache: SourceFileCache): BuildOptions;
-export declare function createSsrEntryCodeBundleOptions(options: NormalizedApplicationBuildOptions, target: string[], sourceFileCache: SourceFileCache): BuildOptions;
+export declare function createServerMainCodeBundleOptions(options: NormalizedApplicationBuildOptions, target: string[], sourceFileCache: SourceFileCache, stylesheetBundler: ComponentStylesheetBundler): BuildOptions;
+export declare function createSsrEntryCodeBundleOptions(options: NormalizedApplicationBuildOptions, target: string[], sourceFileCache: SourceFileCache, stylesheetBundler: ComponentStylesheetBundler): BuildOptions;

@@ -7,7 +7,7 @@
  */
 import type { Plugin } from 'esbuild';
 import { LoadResultCache } from '../load-result-cache';
-import { BundleStylesheetOptions } from '../stylesheets/bundle-options';
+import { ComponentStylesheetBundler } from './component-stylesheets';
 import { SourceFileCache } from './source-file-cache';
 export interface CompilerPluginOptions {
     sourcemap: boolean | 'external';
@@ -24,6 +24,4 @@ export interface CompilerPluginOptions {
     externalRuntimeStyles?: boolean;
     instrumentForCoverage?: (request: string) => boolean;
 }
-export declare function createCompilerPlugin(pluginOptions: CompilerPluginOptions, styleOptions: BundleStylesheetOptions & {
-    inlineStyleLanguage: string;
-}): Plugin;
+export declare function createCompilerPlugin(pluginOptions: CompilerPluginOptions, stylesheetBundler: ComponentStylesheetBundler): Plugin;

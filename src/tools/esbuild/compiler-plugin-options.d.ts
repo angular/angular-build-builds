@@ -9,8 +9,5 @@ import { NormalizedApplicationBuildOptions } from '../../builders/application/op
 import type { createCompilerPlugin } from './angular/compiler-plugin';
 import type { SourceFileCache } from './angular/source-file-cache';
 type CreateCompilerPluginParameters = Parameters<typeof createCompilerPlugin>;
-export declare function createCompilerPluginOptions(options: NormalizedApplicationBuildOptions, target: string[], sourceFileCache?: SourceFileCache): {
-    pluginOptions: CreateCompilerPluginParameters[0];
-    styleOptions: CreateCompilerPluginParameters[1];
-};
+export declare function createCompilerPluginOptions(options: NormalizedApplicationBuildOptions, sourceFileCache?: SourceFileCache): CreateCompilerPluginParameters[0];
 export {};

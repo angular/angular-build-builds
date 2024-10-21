@@ -32,9 +32,9 @@ const sourcemap_ignorelist_plugin_1 = require("./sourcemap-ignorelist-plugin");
 const utils_1 = require("./utils");
 const virtual_module_plugin_1 = require("./virtual-module-plugin");
 const wasm_plugin_1 = require("./wasm-plugin");
-function createBrowserCodeBundleOptions(options, target, sourceFileCache) {
+function createBrowserCodeBundleOptions(options, target, sourceFileCache, stylesheetBundler) {
     const { entryPoints, outputNames, polyfills } = options;
-    const { pluginOptions, styleOptions } = (0, compiler_plugin_options_1.createCompilerPluginOptions)(options, target, sourceFileCache);
+    const pluginOptions = (0, compiler_plugin_options_1.createCompilerPluginOptions)(options, sourceFileCache);
     const zoneless = (0, utils_1.isZonelessApp)(polyfills);
     const buildOptions = {
         ...getEsBuildCommonOptions(options),
@@ -55,8 +55,8 @@ function createBrowserCodeBundleOptions(options, target, sourceFileCache) {
             (0, compiler_plugin_1.createCompilerPlugin)(
             // JS/TS options
             pluginOptions, 
-            // Component stylesheet options
-            styleOptions),
+            // Component stylesheet bundler
+            stylesheetBundler),
         ],
     };
     if (options.plugins) {
@@ -77,7 +77,7 @@ function createBrowserCodeBundleOptions(options, target, sourceFileCache) {
     }
     return buildOptions;
 }
-function createBrowserPolyfillBundleOptions(options, target, sourceFileCache) {
+function createBrowserPolyfillBundleOptions(options, target, sourceFileCache, stylesheetBundler) {
     const namespace = 'angular:polyfills';
     const polyfillBundleOptions = getEsBuildCommonPolyfillsOptions(options, namespace, true, sourceFileCache);
     if (!polyfillBundleOptions) {
@@ -102,12 +102,12 @@ function createBrowserPolyfillBundleOptions(options, target, sourceFileCache) {
     // Only add the Angular TypeScript compiler if TypeScript files are provided in the polyfills
     if (hasTypeScriptEntries) {
         buildOptions.plugins ??= [];
-        const { pluginOptions, styleOptions } = (0, compiler_plugin_options_1.createCompilerPluginOptions)(options, target, sourceFileCache);
+        const pluginOptions = (0, compiler_plugin_options_1.createCompilerPluginOptions)(options, sourceFileCache);
         buildOptions.plugins.push((0, compiler_plugin_1.createCompilerPlugin)(
         // JS/TS options
         { ...pluginOptions, noopTypeScriptCompilation: true }, 
         // Component stylesheet options are unused for polyfills but required by the plugin
-        styleOptions));
+        stylesheetBundler));
     }
     // Use an options factory to allow fully incremental bundling when no TypeScript files are present.
     // The TypeScript compilation is not currently integrated into the bundler invalidation so
@@ -163,10 +163,10 @@ function createServerPolyfillBundleOptions(options, target, sourceFileCache) {
     buildOptions.plugins.push((0, server_bundle_metadata_plugin_1.createServerBundleMetadata)());
     return () => buildOptions;
 }
-function createServerMainCodeBundleOptions(options, target, sourceFileCache) {
+function createServerMainCodeBundleOptions(options, target, sourceFileCache, stylesheetBundler) {
     const { serverEntryPoint: mainServerEntryPoint, workspaceRoot, outputMode, externalPackages, ssrOptions, polyfills, } = options;
     (0, node_assert_1.default)(mainServerEntryPoint, 'createServerCodeBundleOptions should not be called without a defined serverEntryPoint.');
-    const { pluginOptions, styleOptions } = (0, compiler_plugin_options_1.createCompilerPluginOptions)(options, target, sourceFileCache);
+    const pluginOptions = (0, compiler_plugin_options_1.createCompilerPluginOptions)(options, sourceFileCache);
     const mainServerNamespace = 'angular:main-server';
     const mainServerInjectPolyfillsNamespace = 'angular:main-server-inject-polyfills';
     const mainServerInjectManifestNamespace = 'angular:main-server-inject-manifest';
@@ -193,8 +193,8 @@ function createServerMainCodeBundleOptions(options, target, sourceFileCache) {
             (0, compiler_plugin_1.createCompilerPlugin)(
             // JS/TS options
             { ...pluginOptions, noopTypeScriptCompilation: true }, 
-            // Component stylesheet options
-            styleOptions),
+            // Component stylesheet bundler
+            stylesheetBundler),
         ],
     };
     buildOptions.plugins ??= [];
@@ -265,11 +265,11 @@ function createServerMainCodeBundleOptions(options, target, sourceFileCache) {
     }
     return buildOptions;
 }
-function createSsrEntryCodeBundleOptions(options, target, sourceFileCache) {
+function createSsrEntryCodeBundleOptions(options, target, sourceFileCache, stylesheetBundler) {
     const { workspaceRoot, ssrOptions, externalPackages } = options;
     const serverEntryPoint = ssrOptions?.entry;
     (0, node_assert_1.default)(serverEntryPoint, 'createSsrEntryCodeBundleOptions should not be called without a defined serverEntryPoint.');
-    const { pluginOptions, styleOptions } = (0, compiler_plugin_options_1.createCompilerPluginOptions)(options, target, sourceFileCache);
+    const pluginOptions = (0, compiler_plugin_options_1.createCompilerPluginOptions)(options, sourceFileCache);
     const ssrEntryNamespace = 'angular:ssr-entry';
     const ssrInjectManifestNamespace = 'angular:ssr-entry-inject-manifest';
     const ssrInjectRequireNamespace = 'angular:ssr-entry-inject-require';
@@ -291,8 +291,8 @@ function createSsrEntryCodeBundleOptions(options, target, sourceFileCache) {
             (0, compiler_plugin_1.createCompilerPlugin)(
             // JS/TS options
             { ...pluginOptions, noopTypeScriptCompilation: true }, 
-            // Component stylesheet options
-            styleOptions),
+            // Component stylesheet bundler
+            stylesheetBundler),
         ],
         inject,
     };

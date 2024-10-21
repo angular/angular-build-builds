@@ -15,6 +15,7 @@ const utils_1 = require("./utils");
  */
 class ExecutionResult {
     rebuildContexts;
+    componentStyleBundler;
     codeBundleCache;
     outputFiles = [];
     assetFiles = [];
@@ -26,8 +27,9 @@ class ExecutionResult {
     extraWatchFiles = [];
     htmlIndexPath;
     htmlBaseHref;
-    constructor(rebuildContexts, codeBundleCache) {
+    constructor(rebuildContexts, componentStyleBundler, codeBundleCache) {
         this.rebuildContexts = rebuildContexts;
+        this.componentStyleBundler = componentStyleBundler;
         this.codeBundleCache = codeBundleCache;
     }
     addOutputFile(path, content, type) {
@@ -117,6 +119,7 @@ class ExecutionResult {
         return {
             rebuildContexts: this.rebuildContexts,
             codeBundleCache: this.codeBundleCache,
+            componentStyleBundler: this.componentStyleBundler,
             fileChanges,
             previousOutputHashes: new Map(this.outputFiles.map((file) => [file.path, file.hash])),
         };
@@ -133,6 +136,7 @@ class ExecutionResult {
     }
     async dispose() {
         await Promise.allSettled(this.rebuildContexts.map((context) => context.dispose()));
+        await this.componentStyleBundler.dispose();
     }
 }
 exports.ExecutionResult = ExecutionResult;

@@ -43,11 +43,10 @@ const javascript_transformer_1 = require("../javascript-transformer");
 const load_result_cache_1 = require("../load-result-cache");
 const profiling_1 = require("../profiling");
 const compilation_state_1 = require("./compilation-state");
-const component_stylesheets_1 = require("./component-stylesheets");
 const file_reference_tracker_1 = require("./file-reference-tracker");
 const jit_plugin_callbacks_1 = require("./jit-plugin-callbacks");
 // eslint-disable-next-line max-lines-per-function
-function createCompilerPlugin(pluginOptions, styleOptions) {
+function createCompilerPlugin(pluginOptions, stylesheetBundler) {
     return {
         name: 'angular-compiler',
         // eslint-disable-next-line max-lines-per-function
@@ -101,8 +100,6 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
             let shouldTsIgnoreJs = true;
             // Determines if transpilation should be handle by TypeScript or esbuild
             let useTypeScriptTranspilation = true;
-            // Track incremental component stylesheet builds
-            const stylesheetBundler = new component_stylesheets_1.ComponentStylesheetBundler(styleOptions, styleOptions.inlineStyleLanguage, pluginOptions.incremental);
             let sharedTSCompilationState;
             // To fully invalidate files, track resource referenced files and their referencing source
             const referencedFileTracker = new file_reference_tracker_1.FileReferenceTracker();
@@ -398,7 +395,6 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
             });
             build.onDispose(() => {
                 sharedTSCompilationState?.dispose();
-                void stylesheetBundler.dispose();
                 void compilation.close?.();
                 void cacheStore?.close();
             });

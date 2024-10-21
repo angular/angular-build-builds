@@ -41,17 +41,25 @@ async function executeBuild(options, context, rebuildState) {
         await (0, i18n_1.loadActiveTranslations)(context, i18nOptions);
     }
     // Reuse rebuild state or create new bundle contexts for code and global stylesheets
-    let bundlerContexts = rebuildState?.rebuildContexts;
-    const codeBundleCache = rebuildState?.codeBundleCache ??
-        new source_file_cache_1.SourceFileCache(cacheOptions.enabled ? cacheOptions.path : undefined);
-    if (bundlerContexts === undefined) {
-        bundlerContexts = (0, setup_bundling_1.setupBundlerContexts)(options, browsers, codeBundleCache);
+    let bundlerContexts;
+    let componentStyleBundler;
+    let codeBundleCache;
+    if (rebuildState) {
+        bundlerContexts = rebuildState.rebuildContexts;
+        componentStyleBundler = rebuildState.componentStyleBundler;
+        codeBundleCache = rebuildState.codeBundleCache;
+    }
+    else {
+        const target = (0, utils_1.transformSupportedBrowsersToTargets)(browsers);
+        codeBundleCache = new source_file_cache_1.SourceFileCache(cacheOptions.enabled ? cacheOptions.path : undefined);
+        componentStyleBundler = (0, setup_bundling_1.createComponentStyleBundler)(options, target);
+        bundlerContexts = (0, setup_bundling_1.setupBundlerContexts)(options, target, codeBundleCache, componentStyleBundler);
     }
     let bundlingResult = await bundler_context_1.BundlerContext.bundleAll(bundlerContexts, rebuildState?.fileChanges.all);
     if (options.optimizationOptions.scripts && environment_options_1.shouldOptimizeChunks) {
         bundlingResult = await (0, profiling_1.profileAsync)('OPTIMIZE_CHUNKS', () => (0, chunk_optimizer_1.optimizeChunks)(bundlingResult, options.sourcemapOptions.scripts ? !options.sourcemapOptions.hidden || 'hidden' : false));
     }
-    const executionResult = new bundler_execution_result_1.ExecutionResult(bundlerContexts, codeBundleCache);
+    const executionResult = new bundler_execution_result_1.ExecutionResult(bundlerContexts, componentStyleBundler, codeBundleCache);
     executionResult.addWarnings(bundlingResult.warnings);
     // Return if the bundling has errors
     if (bundlingResult.errors) {

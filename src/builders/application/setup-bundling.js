@@ -8,6 +8,8 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.setupBundlerContexts = setupBundlerContexts;
+exports.createComponentStyleBundler = createComponentStyleBundler;
+const component_stylesheets_1 = require("../../tools/esbuild/angular/component-stylesheets");
 const application_code_bundle_1 = require("../../tools/esbuild/application-code-bundle");
 const bundler_context_1 = require("../../tools/esbuild/bundler-context");
 const global_scripts_1 = require("../../tools/esbuild/global-scripts");
@@ -21,14 +23,13 @@ const utils_1 = require("../../tools/esbuild/utils");
  * @param codeBundleCache An instance of the TypeScript source file cache.
  * @returns An array of BundlerContext objects.
  */
-function setupBundlerContexts(options, browsers, codeBundleCache) {
+function setupBundlerContexts(options, target, codeBundleCache, stylesheetBundler) {
     const { outputMode, serverEntryPoint, appShellOptions, prerenderOptions, ssrOptions, workspaceRoot, watch = false, } = options;
-    const target = (0, utils_1.transformSupportedBrowsersToTargets)(browsers);
     const bundlerContexts = [];
     // Browser application code
-    bundlerContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, watch, (0, application_code_bundle_1.createBrowserCodeBundleOptions)(options, target, codeBundleCache)));
+    bundlerContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, watch, (0, application_code_bundle_1.createBrowserCodeBundleOptions)(options, target, codeBundleCache, stylesheetBundler)));
     // Browser polyfills code
-    const browserPolyfillBundleOptions = (0, application_code_bundle_1.createBrowserPolyfillBundleOptions)(options, target, codeBundleCache);
+    const browserPolyfillBundleOptions = (0, application_code_bundle_1.createBrowserPolyfillBundleOptions)(options, target, codeBundleCache, stylesheetBundler);
     if (browserPolyfillBundleOptions) {
         bundlerContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, watch, browserPolyfillBundleOptions));
     }
@@ -53,10 +54,10 @@ function setupBundlerContexts(options, browsers, codeBundleCache) {
     // Skip server build when none of the features are enabled.
     if (serverEntryPoint && (outputMode || prerenderOptions || appShellOptions || ssrOptions)) {
         const nodeTargets = [...target, ...(0, utils_1.getSupportedNodeTargets)()];
-        bundlerContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, watch, (0, application_code_bundle_1.createServerMainCodeBundleOptions)(options, nodeTargets, codeBundleCache)));
+        bundlerContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, watch, (0, application_code_bundle_1.createServerMainCodeBundleOptions)(options, nodeTargets, codeBundleCache, stylesheetBundler)));
         if (outputMode && ssrOptions?.entry) {
             // New behavior introduced: 'server.ts' is now bundled separately from 'main.server.ts'.
-            bundlerContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, watch, (0, application_code_bundle_1.createSsrEntryCodeBundleOptions)(options, nodeTargets, codeBundleCache)));
+            bundlerContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, watch, (0, application_code_bundle_1.createSsrEntryCodeBundleOptions)(options, nodeTargets, codeBundleCache, stylesheetBundler)));
         }
         // Server polyfills code
         const serverPolyfillBundleOptions = (0, application_code_bundle_1.createServerPolyfillBundleOptions)(options, nodeTargets, codeBundleCache);
@@ -65,4 +66,30 @@ function setupBundlerContexts(options, browsers, codeBundleCache) {
         }
     }
     return bundlerContexts;
+}
+function createComponentStyleBundler(options, target) {
+    const { workspaceRoot, optimizationOptions, sourcemapOptions, outputNames, externalDependencies, preserveSymlinks, stylePreprocessorOptions, inlineStyleLanguage, cacheOptions, tailwindConfiguration, postcssConfiguration, publicPath, } = options;
+    const incremental = !!options.watch;
+    return new component_stylesheets_1.ComponentStylesheetBundler({
+        workspaceRoot,
+        inlineFonts: !!optimizationOptions.fonts.inline,
+        optimization: !!optimizationOptions.styles.minify,
+        sourcemap: 
+        // Hidden component stylesheet sourcemaps are inaccessible which is effectively
+        // the same as being disabled. Disabling has the advantage of avoiding the overhead
+        // of sourcemap processing.
+        sourcemapOptions.styles && !sourcemapOptions.hidden ? 'linked' : false,
+        outputNames,
+        includePaths: stylePreprocessorOptions?.includePaths,
+        // string[] | undefined' is not assignable to type '(Version | DeprecationOrId)[] | undefined'.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        sass: stylePreprocessorOptions?.sass,
+        externalDependencies,
+        target,
+        preserveSymlinks,
+        tailwindConfiguration,
+        postcssConfiguration,
+        cacheOptions,
+        publicPath,
+    }, inlineStyleLanguage, incremental);
 }
