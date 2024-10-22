@@ -183,6 +183,7 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     partialSSRBuild: boolean;
     externalRuntimeStyles: boolean | undefined;
     instrumentForCoverage: ((filename: string) => boolean) | undefined;
+    security: import("./schema").Security | undefined;
 }>;
 export declare function getLocaleBaseHref(baseHref: string | undefined, i18n: NormalizedApplicationBuildOptions['i18nOptions'], locale: string): string | undefined;
 export {};

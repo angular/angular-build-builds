@@ -154,6 +154,10 @@ export interface Schema {
      */
     scripts?: ScriptElement[];
     /**
+     * Security features to protect against XSS and other common attacks
+     */
+    security?: Security;
+    /**
      * The full path for the server entry point to the application, relative to the current
      * workspace.
      */
@@ -463,6 +467,31 @@ export interface ScriptClass {
      * The file to include.
      */
     input: string;
+}
+/**
+ * Security features to protect against XSS and other common attacks
+ */
+export interface Security {
+    /**
+     * Enables automatic generation of a hash-based Strict Content Security Policy
+     * (https://web.dev/articles/strict-csp#choose-hash) based on scripts in index.html. Will
+     * default to true once we are out of experimental/preview phases.
+     */
+    autoCsp?: AutoCspUnion;
+}
+/**
+ * Enables automatic generation of a hash-based Strict Content Security Policy
+ * (https://web.dev/articles/strict-csp#choose-hash) based on scripts in index.html. Will
+ * default to true once we are out of experimental/preview phases.
+ */
+export type AutoCspUnion = boolean | AutoCspClass;
+export interface AutoCspClass {
+    /**
+     * Include the `unsafe-eval` directive (https://web.dev/articles/strict-csp#remove-eval) in
+     * the auto-CSP. Please only enable this if you are absolutely sure that you need to, as
+     * allowing calls to eval will weaken the XSS defenses provided by the auto-CSP.
+     */
+    unsafeEval?: boolean;
 }
 /**
  * Generates a service worker configuration.

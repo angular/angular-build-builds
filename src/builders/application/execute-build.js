@@ -123,6 +123,10 @@ async function executeBuild(options, context, rebuildState) {
     if (serverEntryPoint) {
         executionResult.addOutputFile(manifest_1.SERVER_APP_ENGINE_MANIFEST_FILENAME, (0, manifest_1.generateAngularServerAppEngineManifest)(i18nOptions, baseHref, undefined), bundler_context_1.BuildOutputFileType.ServerRoot);
     }
+    // Override auto-CSP settings if we are serving through Vite middleware.
+    if (context.builder.builderName === 'dev-server' && options.security) {
+        options.security.autoCsp = false;
+    }
     // Perform i18n translation inlining if enabled
     if (i18nOptions.shouldInline) {
         const result = await (0, i18n_1.inlineI18n)(options, executionResult, initialFiles);

@@ -20,4 +20,4 @@ export declare function hashTextContent(scriptText: string): string;
  * @param html Markup that should be processed.
  * @returns The transformed HTML that contains the `<meta>` tag CSP and dynamic loader scripts.
  */
-export declare function autoCsp(html: string): Promise<string>;
+export declare function autoCsp(html: string, unsafeEval?: boolean): Promise<string>;
