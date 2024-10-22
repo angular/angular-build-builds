@@ -12,6 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AotCompilation = void 0;
 const node_assert_1 = __importDefault(require("node:assert"));
+const node_path_1 = require("node:path");
 const typescript_1 = __importDefault(require("typescript"));
 const profiling_1 = require("../../esbuild/profiling");
 const angular_host_1 = require("../angular-host");
@@ -65,6 +66,33 @@ class AotCompilation extends angular_compilation_1.AngularCompilation {
         }
         const typeScriptProgram = typescript_1.default.createEmitAndSemanticDiagnosticsBuilderProgram(angularTypeScriptProgram, host, oldProgram, configurationDiagnostics);
         await (0, profiling_1.profileAsync)('NG_ANALYZE_PROGRAM', () => angularCompiler.analyzeAsync());
+        let templateUpdates;
+        if (compilerOptions['_enableHmr'] &&
+            hostOptions.modifiedFiles &&
+            hasOnlyTemplates(hostOptions.modifiedFiles)) {
+            const componentNodes = [...hostOptions.modifiedFiles].flatMap((file) => [
+                ...angularCompiler.getComponentsWithTemplateFile(file),
+            ]);
+            for (const node of componentNodes) {
+                if (!typescript_1.default.isClassDeclaration(node)) {
+                    continue;
+                }
+                const componentFilename = node.getSourceFile().fileName;
+                let relativePath = (0, node_path_1.relative)(host.getCurrentDirectory(), componentFilename);
+                if (relativePath.startsWith('..')) {
+                    relativePath = componentFilename;
+                }
+                const updateId = encodeURIComponent(`${host.getCanonicalFileName(relativePath)}@${node.name?.text}`);
+                const updateText = angularCompiler.emitHmrUpdateModule(node);
+                if (updateText === null) {
+                    // Build is needed if a template cannot be updated
+                    templateUpdates = undefined;
+                    break;
+                }
+                templateUpdates ??= new Map();
+                templateUpdates.set(updateId, updateText);
+            }
+        }
         const affectedFiles = (0, profiling_1.profileSync)('NG_FIND_AFFECTED', () => findAffectedFiles(typeScriptProgram, angularCompiler, usingBuildInfo));
         // Get all files referenced in the TypeScript/Angular program including component resources
         const referencedFiles = typeScriptProgram
@@ -90,6 +118,7 @@ class AotCompilation extends angular_compilation_1.AngularCompilation {
             compilerOptions,
             referencedFiles,
             externalStylesheets: hostOptions.externalStylesheets,
+            templateUpdates,
         };
     }
     *collectDiagnostics(modes) {
@@ -266,4 +295,14 @@ function findAffectedFiles(builder, { ignoreForDiagnostics }, includeTTC) {
         }
     }
     return affectedFiles;
+}
+function hasOnlyTemplates(modifiedFiles) {
+    for (const file of modifiedFiles) {
+        const lowerFile = file.toLowerCase();
+        if (lowerFile.endsWith('.html') || lowerFile.endsWith('.svg')) {
+            continue;
+        }
+        return false;
+    }
+    return true;
 }

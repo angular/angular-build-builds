@@ -20,6 +20,7 @@ export interface InitRequest {
 }
 export declare function initialize(request: InitRequest): Promise<{
     externalStylesheets: ReadonlyMap<string, string> | undefined;
+    templateUpdates: ReadonlyMap<string, string> | undefined;
     referencedFiles: readonly string[];
     compilerOptions: {
         allowJs: boolean | undefined;
