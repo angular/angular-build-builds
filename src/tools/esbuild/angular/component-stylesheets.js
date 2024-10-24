@@ -45,6 +45,7 @@ class ComponentStylesheetBundler {
                 if (externalId) {
                     (0, node_assert_1.default)(typeof externalId === 'string', 'Initial external component stylesheets must have a string identifier');
                     buildOptions.entryPoints = { [externalId]: entry };
+                    buildOptions.entryNames = '[name]';
                     delete buildOptions.publicPath;
                 }
                 else {
@@ -72,6 +73,7 @@ class ComponentStylesheetBundler {
                 });
                 if (externalId) {
                     buildOptions.entryPoints = { [externalId]: `${namespace};${entry}` };
+                    buildOptions.entryNames = '[name]';
                     delete buildOptions.publicPath;
                 }
                 else {
