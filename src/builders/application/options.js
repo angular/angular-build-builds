@@ -116,14 +116,12 @@ async function normalizeOptions(context, projectName, options, extensions) {
         if (!options.server) {
             options.ssr = false;
         }
-        if (options.prerender) {
-            context.logger.warn('The "prerender" option is no longer needed when "outputMode" is specified.');
+        if (options.prerender !== undefined) {
+            context.logger.warn('The "prerender" option is not considered when "outputMode" is specified.');
         }
-        else {
-            options.prerender = !!options.server;
-        }
-        if (options.appShell) {
-            context.logger.warn('The "appShell" option is no longer needed when "outputMode" is specified.');
+        options.prerender = !!options.server;
+        if (options.appShell !== undefined) {
+            context.logger.warn('The "appShell" option is not considered when "outputMode" is specified.');
         }
     }
     // A configuration file can exist in the project or workspace root
