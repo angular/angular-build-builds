@@ -16,7 +16,7 @@ import type { DevServerBuilderOutput } from './output';
 interface OutputFileRecord {
     contents: Uint8Array;
     size: number;
-    hash?: string;
+    hash: string;
     updated: boolean;
     servable: boolean;
     type: BuildOutputFileType;

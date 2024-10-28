@@ -7,6 +7,7 @@
  */
 export type AngularMemoryOutputFiles = Map<string, {
     contents: Uint8Array;
+    hash: string;
     servable: boolean;
 }>;
 export declare function pathnameWithoutBasePath(url: string, basePath: string): string;
