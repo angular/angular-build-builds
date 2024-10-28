@@ -397,6 +397,7 @@ function analyzeResultFiles(normalizePath, htmlIndexPath, resultFiles, generated
                 contents: file.contents,
                 servable,
                 size: file.contents.byteLength,
+                hash: file.hash,
                 type: file.type,
                 updated: false,
             });
