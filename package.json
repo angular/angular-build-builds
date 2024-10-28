@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "19.0.0-next.13+sha-e42d841",
+  "version": "19.0.0-next.13+sha-dfa3d4c",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -23,15 +23,15 @@
   "builders": "builders.json",
   "dependencies": {
     "@ampproject/remapping": "2.3.0",
-    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#e42d841",
+    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#dfa3d4c",
     "@babel/core": "7.25.9",
     "@babel/helper-annotate-as-pure": "7.25.9",
     "@babel/helper-split-export-declaration": "7.24.7",
     "@babel/plugin-syntax-import-attributes": "7.25.9",
     "@inquirer/confirm": "5.0.0",
     "@vitejs/plugin-basic-ssl": "1.1.0",
+    "beasties": "0.1.0",
     "browserslist": "^4.23.0",
-    "critters": "0.0.25",
     "esbuild": "0.24.0",
     "fast-glob": "3.3.2",
     "https-proxy-agent": "7.0.5",
@@ -57,7 +57,7 @@
     "@angular/localize": "^19.0.0-next.9",
     "@angular/platform-server": "^19.0.0-next.9",
     "@angular/service-worker": "^19.0.0-next.9",
-    "@angular/ssr": "github:angular/angular-ssr-builds#e42d841",
+    "@angular/ssr": "github:angular/angular-ssr-builds#dfa3d4c",
     "less": "^4.2.0",
     "postcss": "^8.4.0",
     "tailwindcss": "^2.0.0 || ^3.0.0",
@@ -73,7 +73,7 @@
     "@angular/service-worker": {
       "optional": true
     },
-    "@angular/ssr": "github:angular/angular-ssr-builds#e42d841",
+    "@angular/ssr": "github:angular/angular-ssr-builds#dfa3d4c",
     "less": {
       "optional": true
     },

@@ -53,7 +53,7 @@ function createGlobalStylesBundleOptions(options, target, initial) {
             cacheOptions,
         }, loadCache);
         // Keep special CSS comments `/*! comment */` in place when `removeSpecialComments` is disabled.
-        // These comments are special for a number of CSS tools such as Critters and PurgeCSS.
+        // These comments are special for a number of CSS tools such as Beasties and PurgeCSS.
         buildOptions.legalComments = optimizationOptions.styles?.removeSpecialComments
             ? 'none'
             : 'inline';

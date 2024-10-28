@@ -11,14 +11,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InlineCriticalCssProcessor = void 0;
-const critters_1 = __importDefault(require("critters"));
+const beasties_1 = __importDefault(require("beasties"));
 const promises_1 = require("node:fs/promises");
 /**
- * Pattern used to extract the media query set by Critters in an `onload` handler.
+ * Pattern used to extract the media query set by Beasties in an `onload` handler.
  */
 const MEDIA_SET_HANDLER_PATTERN = /^this\.media=["'](.*)["'];?$/;
 /**
- * Name of the attribute used to save the Critters media query so it can be re-assigned on load.
+ * Name of the attribute used to save the Beasties media query so it can be re-assigned on load.
  */
 const CSP_MEDIA_ATTR = 'ngCspMedia';
 /**
@@ -60,12 +60,11 @@ const LINK_LOAD_SCRIPT_CONTENT = `
   };
 
   documentElement.addEventListener('load', listener, true);
-})();
-`.trim();
-class CrittersBase extends critters_1.default {
+})();`;
+class BeastiesBase extends beasties_1.default {
 }
 /* eslint-enable @typescript-eslint/no-unsafe-declaration-merging */
-class CrittersExtended extends CrittersBase {
+class BeastiesExtended extends BeastiesBase {
     optionsExtended;
     warnings = [];
     errors = [];
@@ -98,7 +97,7 @@ class CrittersExtended extends CrittersBase {
         return readAsset ? readAsset(path) : (0, promises_1.readFile)(path, 'utf-8');
     }
     /**
-     * Override of the Critters `embedLinkedStylesheet` method
+     * Override of the Beasties `embedLinkedStylesheet` method
      * that makes it work with Angular's CSP APIs.
      */
     async embedLinkedStylesheet(link, document) {
@@ -115,17 +114,17 @@ class CrittersExtended extends CrittersBase {
         const returnValue = await super.embedLinkedStylesheet(link, document);
         const cspNonce = this.findCspNonce(document);
         if (cspNonce) {
-            const crittersMedia = link.getAttribute('onload')?.match(MEDIA_SET_HANDLER_PATTERN);
-            if (crittersMedia) {
-                // If there's a Critters-generated `onload` handler and the file has an Angular CSP nonce,
+            const beastiesMedia = link.getAttribute('onload')?.match(MEDIA_SET_HANDLER_PATTERN);
+            if (beastiesMedia) {
+                // If there's a Beasties-generated `onload` handler and the file has an Angular CSP nonce,
                 // we have to remove the handler, because it's incompatible with CSP. We save the value
                 // in a different attribute and we generate a script tag with the nonce that uses
                 // `addEventListener` to apply the media query instead.
                 link.removeAttribute('onload');
-                link.setAttribute(CSP_MEDIA_ATTR, crittersMedia[1]);
+                link.setAttribute(CSP_MEDIA_ATTR, beastiesMedia[1]);
                 this.conditionallyInsertCspLoadingScript(document, cspNonce, link);
             }
-            // Ideally we would hook in at the time Critters inserts the `style` tags, but there isn't
+            // Ideally we would hook in at the time Beasties inserts the `style` tags, but there isn't
             // a way of doing that at the moment so we fall back to doing it any time a `link` tag is
             // inserted. We mitigate it by only iterating the direct children of the `<head>` which
             // should be pretty shallow.
@@ -145,7 +144,7 @@ class CrittersExtended extends CrittersBase {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             return this.documentNonces.get(document);
         }
-        // HTML attribute are case-insensitive, but the parser used by Critters is case-sensitive.
+        // HTML attribute are case-insensitive, but the parser used by Beasties is case-sensitive.
         const nonceElement = document.querySelector('[ngCspNonce], [ngcspnonce]');
         const cspNonce = nonceElement?.getAttribute('ngCspNonce') || nonceElement?.getAttribute('ngcspnonce') || null;
         this.documentNonces.set(document, cspNonce);
@@ -174,15 +173,15 @@ class InlineCriticalCssProcessor {
         this.options = options;
     }
     async process(html, options) {
-        const critters = new CrittersExtended({ ...this.options, ...options });
-        const content = await critters.process(html);
+        const beasties = new BeastiesExtended({ ...this.options, ...options });
+        const content = await beasties.process(html);
         return {
             // Clean up value from value less attributes.
             // This is caused because parse5 always requires attributes to have a string value.
             // nomodule="" defer="" -> nomodule defer.
             content: content.replace(/(\s(?:defer|nomodule))=""/g, '$1'),
-            errors: critters.errors,
-            warnings: critters.warnings,
+            errors: beasties.errors,
+            warnings: beasties.warnings,
         };
     }
 }
