@@ -373,8 +373,11 @@ function createSsrEntryCodeBundleOptions(options, target, sourceFileCache, style
 }
 function getEsBuildServerCommonOptions(options) {
     const isNodePlatform = options.ssrOptions?.platform !== schema_1.ExperimentalPlatform.Neutral;
+    const commonOptons = getEsBuildCommonOptions(options);
+    commonOptons.define ??= {};
+    commonOptons.define['ngServerMode'] = 'true';
     return {
-        ...getEsBuildCommonOptions(options),
+        ...commonOptons,
         platform: isNodePlatform ? 'node' : 'neutral',
         outExtension: { '.js': '.mjs' },
         // Note: `es2015` is needed for RxJS v6. If not specified, `module` would
@@ -433,6 +436,7 @@ function getEsBuildCommonOptions(options) {
             // which a constant true value would break.
             ...(optimizationOptions.scripts ? { 'ngDevMode': 'false' } : undefined),
             'ngJitMode': jit ? 'true' : 'false',
+            'ngServerMode': 'false',
         },
         loader: loaderExtensions,
         footer,
