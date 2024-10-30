@@ -100,16 +100,21 @@ context, extensions) {
         signal,
     });
 }
-async function* buildApplication(options, context, pluginsOrExtensions) {
-    let extensions;
-    if (pluginsOrExtensions && Array.isArray(pluginsOrExtensions)) {
-        extensions = {
-            codePlugins: pluginsOrExtensions,
-        };
-    }
-    else {
-        extensions = pluginsOrExtensions;
-    }
+/**
+ * Builds an application using the `application` builder with the provided
+ * options.
+ *
+ * Usage of the `extensions` parameter is NOT supported and may cause unexpected
+ * build output or build failures.
+ *
+ * @experimental Direct usage of this function is considered experimental.
+ *
+ * @param options The options defined by the builder's schema to use.
+ * @param context An Architect builder context instance.
+ * @param extensions An object contain extension points for the build.
+ * @returns The build output results of the build.
+ */
+async function* buildApplication(options, context, extensions) {
     let initial = true;
     for await (const result of buildApplicationInternal(options, context, extensions)) {
         const outputOptions = result.detail?.['outputOptions'];
