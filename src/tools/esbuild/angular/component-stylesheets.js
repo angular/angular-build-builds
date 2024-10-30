@@ -153,7 +153,7 @@ class ComponentStylesheetBundler {
         const outputFiles = [];
         const { errors, warnings } = result;
         if (errors) {
-            return { errors, warnings, referencedFiles };
+            return { errors, warnings, referencedFiles, contents: '' };
         }
         for (const outputFile of result.outputFiles) {
             const filename = node_path_1.default.basename(outputFile.path);

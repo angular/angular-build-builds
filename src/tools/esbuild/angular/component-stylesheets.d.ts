@@ -5,8 +5,12 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-import { BuildOutputFile } from '../bundler-context';
+import { BundleContextResult } from '../bundler-context';
 import { BundleStylesheetOptions } from '../stylesheets/bundle-options';
+export type ComponentStylesheetResult = BundleContextResult & {
+    contents: string;
+    referencedFiles: Set<string> | undefined;
+};
 /**
  * Bundles component stylesheets. A stylesheet can be either an inline stylesheet that
  * is contained within the Component's metadata definition or an external file referenced
@@ -30,50 +34,8 @@ export declare class ComponentStylesheetBundler {
      * @param direct If true, the output will be used directly by the builder; false if used inside the compiler plugin.
      * @returns A component bundle result object.
      */
-    bundleFile(entry: string, externalId?: string | boolean, direct?: boolean): Promise<{
-        errors: import("esbuild-wasm/lib/main").Message[];
-        warnings: import("esbuild-wasm/lib/main").Message[];
-        referencedFiles: Set<string> | undefined;
-        contents?: undefined;
-        outputFiles?: undefined;
-        metafile?: undefined;
-        externalImports?: undefined;
-        initialFiles?: undefined;
-    } | {
-        errors: undefined;
-        warnings: import("esbuild-wasm/lib/main").Message[];
-        contents: string;
-        outputFiles: BuildOutputFile[];
-        metafile: import("esbuild-wasm/lib/main").Metafile;
-        referencedFiles: Set<string> | undefined;
-        externalImports: {
-            server?: Set<string>;
-            browser?: Set<string>;
-        };
-        initialFiles: Map<any, any>;
-    }>;
-    bundleInline(data: string, filename: string, language?: string, externalId?: string): Promise<{
-        errors: import("esbuild-wasm/lib/main").Message[];
-        warnings: import("esbuild-wasm/lib/main").Message[];
-        referencedFiles: Set<string> | undefined;
-        contents?: undefined;
-        outputFiles?: undefined;
-        metafile?: undefined;
-        externalImports?: undefined;
-        initialFiles?: undefined;
-    } | {
-        errors: undefined;
-        warnings: import("esbuild-wasm/lib/main").Message[];
-        contents: string;
-        outputFiles: BuildOutputFile[];
-        metafile: import("esbuild-wasm/lib/main").Metafile;
-        referencedFiles: Set<string> | undefined;
-        externalImports: {
-            server?: Set<string>;
-            browser?: Set<string>;
-        };
-        initialFiles: Map<any, any>;
-    }>;
+    bundleFile(entry: string, externalId?: string | boolean, direct?: boolean): Promise<ComponentStylesheetResult>;
+    bundleInline(data: string, filename: string, language?: string, externalId?: string): Promise<ComponentStylesheetResult>;
     /**
      * Invalidates both file and inline based component style bundling state for a set of modified files.
      * @param files The group of files that have been modified
