@@ -56,11 +56,27 @@ async function executeBuild(options, context, rebuildState) {
         bundlerContexts = (0, setup_bundling_1.setupBundlerContexts)(options, target, codeBundleCache, componentStyleBundler);
     }
     let bundlingResult = await bundler_context_1.BundlerContext.bundleAll(bundlerContexts, rebuildState?.fileChanges.all);
+    if (rebuildState && options.externalRuntimeStyles) {
+        const invalidatedStylesheetEntries = componentStyleBundler.invalidate(rebuildState.fileChanges.all);
+        if (invalidatedStylesheetEntries?.length) {
+            const componentResults = [];
+            for (const stylesheetFile of invalidatedStylesheetEntries) {
+                // externalId is already linked in the bundler context so only enabling is required here
+                const result = await componentStyleBundler.bundleFile(stylesheetFile, true, true);
+                componentResults.push(result);
+            }
+            bundlingResult = bundler_context_1.BundlerContext.mergeResults([bundlingResult, ...componentResults]);
+        }
+    }
     if (options.optimizationOptions.scripts && environment_options_1.shouldOptimizeChunks) {
         bundlingResult = await (0, profiling_1.profileAsync)('OPTIMIZE_CHUNKS', () => (0, chunk_optimizer_1.optimizeChunks)(bundlingResult, options.sourcemapOptions.scripts ? !options.sourcemapOptions.hidden || 'hidden' : false));
     }
     const executionResult = new bundler_execution_result_1.ExecutionResult(bundlerContexts, componentStyleBundler, codeBundleCache);
     executionResult.addWarnings(bundlingResult.warnings);
+    // Add used external component style referenced files to be watched
+    if (options.externalRuntimeStyles) {
+        executionResult.extraWatchFiles.push(...componentStyleBundler.collectReferencedFiles());
+    }
     // Return if the bundling has errors
     if (bundlingResult.errors) {
         executionResult.addErrors(bundlingResult.errors);
