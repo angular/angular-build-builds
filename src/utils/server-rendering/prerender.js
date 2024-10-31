@@ -10,12 +10,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.prerenderPages = prerenderPages;
 const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
-const node_url_1 = require("node:url");
 const schema_1 = require("../../builders/application/schema");
 const bundler_context_1 = require("../../tools/esbuild/bundler-context");
 const error_1 = require("../error");
 const url_1 = require("../url");
 const worker_pool_1 = require("../worker-pool");
+const utils_1 = require("./esm-in-memory-loader/utils");
 const models_1 = require("./models");
 async function prerenderPages(workspaceRoot, baseHref, appShellOptions, prerenderOptions, outputFiles, assets, outputMode, sourcemap = false, maxThreads = 1) {
     const outputFilesForWorker = {};
@@ -104,11 +104,7 @@ async function prerenderPages(workspaceRoot, baseHref, appShellOptions, prerende
 async function renderPages(baseHref, sourcemap, serializableRouteTreeNode, maxThreads, workspaceRoot, outputFilesForWorker, assetFilesForWorker, appShellOptions, outputMode) {
     const output = {};
     const errors = [];
-    const workerExecArgv = [
-        '--import',
-        // Loader cannot be an absolute path on Windows.
-        (0, node_url_1.pathToFileURL)((0, node_path_1.join)(__dirname, 'esm-in-memory-loader/register-hooks.js')).href,
-    ];
+    const workerExecArgv = [utils_1.IMPORT_EXEC_ARGV];
     if (sourcemap) {
         workerExecArgv.push('--enable-source-maps');
     }
@@ -181,11 +177,7 @@ async function getAllRoutes(workspaceRoot, baseHref, outputFilesForWorker, asset
     if (!discoverRoutes) {
         return { errors: [], serializedRouteTree: routes };
     }
-    const workerExecArgv = [
-        '--import',
-        // Loader cannot be an absolute path on Windows.
-        (0, node_url_1.pathToFileURL)((0, node_path_1.join)(__dirname, 'esm-in-memory-loader/register-hooks.js')).href,
-    ];
+    const workerExecArgv = [utils_1.IMPORT_EXEC_ARGV];
     if (sourcemap) {
         workerExecArgv.push('--enable-source-maps');
     }

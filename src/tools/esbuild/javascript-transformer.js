@@ -10,6 +10,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.JavaScriptTransformer = void 0;
 const node_crypto_1 = require("node:crypto");
 const promises_1 = require("node:fs/promises");
+const utils_1 = require("../../utils/server-rendering/esm-in-memory-loader/utils");
 const worker_pool_1 = require("../../utils/worker-pool");
 /**
  * A class that performs transformation of JavaScript files and raw data.
@@ -42,7 +43,7 @@ class JavaScriptTransformer {
             filename: require.resolve('./javascript-transformer-worker'),
             maxThreads: this.maxThreads,
             // Prevent passing `--import` (loader-hooks) from parent to child worker.
-            execArgv: [],
+            execArgv: process.execArgv.filter((v) => v !== utils_1.IMPORT_EXEC_ARGV),
         });
         return this.#workerPool;
     }
