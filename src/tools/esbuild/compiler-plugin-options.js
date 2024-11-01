@@ -8,7 +8,7 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createCompilerPluginOptions = createCompilerPluginOptions;
-function createCompilerPluginOptions(options, sourceFileCache) {
+function createCompilerPluginOptions(options, sourceFileCache, loadResultCache) {
     const { sourcemapOptions, tsconfig, fileReplacements, advancedOptimizations, jit, externalRuntimeStyles, instrumentForCoverage, templateUpdates, } = options;
     const incremental = !!options.watch;
     return {
@@ -19,7 +19,7 @@ function createCompilerPluginOptions(options, sourceFileCache) {
         advancedOptimizations,
         fileReplacements,
         sourceFileCache,
-        loadResultCache: sourceFileCache?.loadResultCache,
+        loadResultCache,
         incremental,
         externalRuntimeStyles,
         instrumentForCoverage,

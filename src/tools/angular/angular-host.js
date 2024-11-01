@@ -118,8 +118,9 @@ function createAngularCompilerHost(typescript, compilerOptions, hostOptions) {
     };
     host.resourceNameToFileName = function (resourceName, containingFile) {
         const resolvedPath = node_path_1.default.join(node_path_1.default.dirname(containingFile), resourceName);
-        // All resource names that have HTML file extensions are assumed to be templates
-        if (resourceName.endsWith('.html') || !hostOptions.externalStylesheets) {
+        // All resource names that have template file extensions are assumed to be templates
+        // TODO: Update compiler to provide the resource type to avoid extension matching here.
+        if (!hostOptions.externalStylesheets || hasTemplateExtension(resolvedPath)) {
             return resolvedPath;
         }
         // For external stylesheets, create a unique identifier and store the mapping
@@ -146,4 +147,14 @@ function createAngularCompilerHost(typescript, compilerOptions, hostOptions) {
         augmentHostWithCaching(host, hostOptions.sourceFileCache);
     }
     return host;
+}
+function hasTemplateExtension(file) {
+    const extension = node_path_1.default.extname(file).toLowerCase();
+    switch (extension) {
+        case '.htm':
+        case '.html':
+        case '.svg':
+            return true;
+    }
+    return false;
 }
