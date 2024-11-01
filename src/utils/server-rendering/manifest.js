@@ -44,10 +44,8 @@ function escapeUnsafeChars(str) {
  * includes settings for inlining locales and determining the output structure.
  * @param baseHref - The base HREF for the application. This is used to set the base URL
  * for all relative URLs in the application.
- * @param perenderedRoutes - A record mapping static paths to their associated data.
- * @returns A string representing the content of the SSR server manifest for App Engine.
  */
-function generateAngularServerAppEngineManifest(i18nOptions, baseHref, perenderedRoutes = {}) {
+function generateAngularServerAppEngineManifest(i18nOptions, baseHref) {
     const entryPointsContent = [];
     if (i18nOptions.shouldInline) {
         for (const locale of i18nOptions.inlineLocales) {
@@ -63,22 +61,10 @@ function generateAngularServerAppEngineManifest(i18nOptions, baseHref, perendere
     else {
         entryPointsContent.push(`['', () => import('./${MAIN_SERVER_OUTPUT_FILENAME}')]`);
     }
-    const staticHeaders = [];
-    for (const [path, { headers }] of Object.entries(perenderedRoutes)) {
-        if (!headers) {
-            continue;
-        }
-        const headersValues = [];
-        for (const [name, value] of Object.entries(headers)) {
-            headersValues.push(`['${name}', '${encodeURIComponent(value)}']`);
-        }
-        staticHeaders.push(`['${path}', [${headersValues.join(', ')}]]`);
-    }
     const manifestContent = `
 export default {
   basePath: '${baseHref ?? '/'}',
   entryPoints: new Map([${entryPointsContent.join(', \n')}]),
-  staticPathsHeaders: new Map([${staticHeaders.join(', \n')}]),
 };
   `;
     return manifestContent;
@@ -110,7 +96,7 @@ function generateAngularServerAppManifest(additionalHtmlOutputFiles, outputFiles
     for (const file of [...additionalHtmlOutputFiles.values(), ...outputFiles]) {
         const extension = (0, node_path_1.extname)(file.path);
         if (extension === '.html' || (inlineCriticalCss && extension === '.css')) {
-            serverAssetsContent.push(`['${file.path}', async () => \`${escapeUnsafeChars(file.text)}\`]`);
+            serverAssetsContent.push(`['${file.path}', { size: ${file.size}, hash: '${file.hash}', text: async () => \`${escapeUnsafeChars(file.text)}\`}]`);
         }
     }
     const manifestContent = `
