@@ -17,5 +17,8 @@ import { NormalizedApplicationBuildOptions } from './options';
  * @param codeBundleCache An instance of the TypeScript source file cache.
  * @returns An array of BundlerContext objects.
  */
-export declare function setupBundlerContexts(options: NormalizedApplicationBuildOptions, target: string[], codeBundleCache: SourceFileCache, stylesheetBundler: ComponentStylesheetBundler): BundlerContext[];
+export declare function setupBundlerContexts(options: NormalizedApplicationBuildOptions, target: string[], codeBundleCache: SourceFileCache, stylesheetBundler: ComponentStylesheetBundler): {
+    typescriptContexts: BundlerContext[];
+    otherContexts: BundlerContext[];
+};
 export declare function createComponentStyleBundler(options: NormalizedApplicationBuildOptions, target: string[]): ComponentStylesheetBundler;

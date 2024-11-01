@@ -14,5 +14,5 @@ export declare class SourceFileCache extends Map<string, ts.SourceFile> {
     readonly loadResultCache: MemoryLoadResultCache;
     referencedFiles?: readonly string[];
     constructor(persistentCachePath?: string | undefined);
-    invalidate(files: Iterable<string>): void;
+    invalidate(files: Iterable<string>): boolean;
 }

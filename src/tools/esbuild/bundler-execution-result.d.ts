@@ -15,7 +15,10 @@ export interface BuildOutputAsset {
     destination: string;
 }
 export interface RebuildState {
-    rebuildContexts: BundlerContext[];
+    rebuildContexts: {
+        typescriptContexts: BundlerContext[];
+        otherContexts: BundlerContext[];
+    };
     componentStyleBundler: ComponentStylesheetBundler;
     codeBundleCache?: SourceFileCache;
     fileChanges: ChangedFiles;
@@ -46,7 +49,10 @@ export declare class ExecutionResult {
     extraWatchFiles: string[];
     htmlIndexPath?: string;
     htmlBaseHref?: string;
-    constructor(rebuildContexts: BundlerContext[], componentStyleBundler: ComponentStylesheetBundler, codeBundleCache?: SourceFileCache | undefined);
+    constructor(rebuildContexts: {
+        typescriptContexts: BundlerContext[];
+        otherContexts: BundlerContext[];
+    }, componentStyleBundler: ComponentStylesheetBundler, codeBundleCache?: SourceFileCache | undefined);
     addOutputFile(path: string, content: string | Uint8Array, type: BuildOutputFileType): void;
     addAssets(assets: BuildOutputAsset[]): void;
     addLog(value: string): void;

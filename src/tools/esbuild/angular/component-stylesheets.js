@@ -63,6 +63,9 @@ class ComponentStylesheetBundler {
         });
         return this.extractResult(await bundlerContext.bundle(), bundlerContext.watchFiles, !!externalId, !!direct);
     }
+    bundleAllFiles(external, direct) {
+        return Promise.all(Array.from(this.#fileContexts.entries()).map(([entry]) => this.bundleFile(entry, external, direct)));
+    }
     async bundleInline(data, filename, language = this.defaultInlineLanguage, externalId) {
         // Use a hash of the inline stylesheet content to ensure a consistent identifier. External stylesheets will resolve
         // to the actual stylesheet file path.
