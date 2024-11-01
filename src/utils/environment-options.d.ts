@@ -16,4 +16,5 @@ export declare const useTypeChecking: boolean;
 export declare const useJSONBuildLogs: boolean;
 export declare const shouldOptimizeChunks: boolean;
 export declare const useComponentStyleHmr: boolean;
+export declare const useComponentTemplateHmr: boolean;
 export declare const usePartialSsrBuild: boolean;

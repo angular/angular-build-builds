@@ -99,6 +99,11 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
         // Once @angular/build is native ESM, this should be re-evaluated.
         void (0, load_esm_1.loadEsmModule)('@angular/compiler');
     }
+    // Enable to support component template hot replacement (`NG_HMR_TEMPLATE=1` can be used to enable)
+    browserOptions.templateUpdates = !!serverOptions.liveReload && environment_options_1.useComponentTemplateHmr;
+    if (browserOptions.templateUpdates) {
+        context.logger.warn('Experimental support for component template hot replacement has been enabled via the "NG_HMR_TEMPLATE" environment variable.');
+    }
     // Setup the prebundling transformer that will be shared across Vite prebundling requests
     const prebundleTransformer = new internal_1.JavaScriptTransformer(
     // Always enable JIT linking to support applications built with and without AOT.

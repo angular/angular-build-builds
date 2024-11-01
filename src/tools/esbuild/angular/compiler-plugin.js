@@ -493,6 +493,7 @@ function createCompilerOptionsTransformer(setupWarnings, pluginOptions, preserve
             sourceRoot: undefined,
             preserveSymlinks,
             externalRuntimeStyles: pluginOptions.externalRuntimeStyles,
+            _enableHmr: pluginOptions.templateUpdates,
         };
     };
 }
