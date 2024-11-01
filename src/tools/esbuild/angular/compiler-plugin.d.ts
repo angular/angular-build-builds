@@ -23,5 +23,6 @@ export interface CompilerPluginOptions {
     incremental: boolean;
     externalRuntimeStyles?: boolean;
     instrumentForCoverage?: (request: string) => boolean;
+    templateUpdates?: boolean;
 }
 export declare function createCompilerPlugin(pluginOptions: CompilerPluginOptions, stylesheetBundler: ComponentStylesheetBundler): Plugin;

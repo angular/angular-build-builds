@@ -67,6 +67,12 @@ interface InternalOptions {
      */
     externalRuntimeStyles?: boolean;
     /**
+     * Enables the AOT compiler to generate template component update functions.
+     * This option is only intended to be used with a development server that can process and serve component
+     * template updates.
+     */
+    templateUpdates?: boolean;
+    /**
      * Enables instrumentation to collect code coverage data for specific files.
      *
      * Used exclusively for tests and shouldn't be used for other kinds of builds.
@@ -184,6 +190,7 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     externalRuntimeStyles: boolean | undefined;
     instrumentForCoverage: ((filename: string) => boolean) | undefined;
     security: import("./schema").Security | undefined;
+    templateUpdates: boolean;
 }>;
 export declare function getLocaleBaseHref(baseHref: string | undefined, i18n: NormalizedApplicationBuildOptions['i18nOptions'], locale: string): string | undefined;
 export {};
