@@ -9,6 +9,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ServerSsrMode = void 0;
 exports.createAngularSetupMiddlewaresPlugin = createAngularSetupMiddlewaresPlugin;
+const load_esm_1 = require("../../../utils/load-esm");
 const middlewares_1 = require("../middlewares");
 var ServerSsrMode;
 (function (ServerSsrMode) {
@@ -33,16 +34,23 @@ var ServerSsrMode;
      */
     ServerSsrMode[ServerSsrMode["ExternalSsrMiddleware"] = 2] = "ExternalSsrMiddleware";
 })(ServerSsrMode || (exports.ServerSsrMode = ServerSsrMode = {}));
+async function createEncapsulateStyle() {
+    const { encapsulateStyle } = await (0, load_esm_1.loadEsmModule)('@angular/compiler');
+    const decoder = new TextDecoder('utf-8');
+    return (style, componentId) => {
+        return encapsulateStyle(decoder.decode(style), componentId);
+    };
+}
 function createAngularSetupMiddlewaresPlugin(options) {
     return {
         name: 'vite:angular-setup-middlewares',
         enforce: 'pre',
-        configureServer(server) {
+        async configureServer(server) {
             const { indexHtmlTransformer, outputFiles, extensionMiddleware, assets, usedComponentStyles, templateUpdates, ssrMode, } = options;
             // Headers, assets and resources get handled first
             server.middlewares.use((0, middlewares_1.createAngularHeadersMiddleware)(server));
             server.middlewares.use((0, middlewares_1.createAngularComponentMiddleware)(templateUpdates));
-            server.middlewares.use((0, middlewares_1.createAngularAssetsMiddleware)(server, assets, outputFiles, usedComponentStyles));
+            server.middlewares.use((0, middlewares_1.createAngularAssetsMiddleware)(server, assets, outputFiles, usedComponentStyles, await createEncapsulateStyle()));
             extensionMiddleware?.forEach((middleware) => server.middlewares.use(middleware));
             // Returning a function, installs middleware after the main transform middleware but
             // before the built-in HTML middleware
