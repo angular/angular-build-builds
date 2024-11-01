@@ -67,7 +67,7 @@ function setupBundlerContexts(options, target, codeBundleCache, stylesheetBundle
             typescriptContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, watch, (0, application_code_bundle_1.createSsrEntryCodeBundleOptions)(options, nodeTargets, codeBundleCache, stylesheetBundler)));
         }
         // Server polyfills code
-        const serverPolyfillBundleOptions = (0, application_code_bundle_1.createServerPolyfillBundleOptions)(options, nodeTargets, codeBundleCache);
+        const serverPolyfillBundleOptions = (0, application_code_bundle_1.createServerPolyfillBundleOptions)(options, nodeTargets, codeBundleCache.loadResultCache);
         if (serverPolyfillBundleOptions) {
             otherContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, watch, serverPolyfillBundleOptions));
         }

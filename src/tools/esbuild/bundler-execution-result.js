@@ -110,10 +110,6 @@ class ExecutionResult {
             // To ensure path comparisons are valid, all these paths must be normalized.
             files.push(...this.codeBundleCache.referencedFiles.map(node_path_1.normalize));
         }
-        if (this.codeBundleCache?.loadResultCache) {
-            // Load result caches internally normalize file dependencies
-            files.push(...this.codeBundleCache.loadResultCache.watchFiles);
-        }
         return files.concat(this.extraWatchFiles);
     }
     createRebuildState(fileChanges) {
