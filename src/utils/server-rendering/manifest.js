@@ -10,6 +10,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SERVER_APP_ENGINE_MANIFEST_FILENAME = exports.SERVER_APP_MANIFEST_FILENAME = void 0;
 exports.generateAngularServerAppEngineManifest = generateAngularServerAppEngineManifest;
 exports.generateAngularServerAppManifest = generateAngularServerAppManifest;
+const node_path_1 = require("node:path");
 const options_1 = require("../../builders/application/options");
 exports.SERVER_APP_MANIFEST_FILENAME = 'angular-app-manifest.mjs';
 exports.SERVER_APP_ENGINE_MANIFEST_FILENAME = 'angular-app-engine-manifest.mjs';
@@ -107,9 +108,8 @@ export default {
 function generateAngularServerAppManifest(additionalHtmlOutputFiles, outputFiles, inlineCriticalCss, routes, locale) {
     const serverAssetsContent = [];
     for (const file of [...additionalHtmlOutputFiles.values(), ...outputFiles]) {
-        if (file.path === options_1.INDEX_HTML_SERVER ||
-            file.path === options_1.INDEX_HTML_CSR ||
-            (inlineCriticalCss && file.path.endsWith('.css'))) {
+        const extension = (0, node_path_1.extname)(file.path);
+        if (extension === '.html' || (inlineCriticalCss && extension === '.css')) {
             serverAssetsContent.push(`['${file.path}', async () => \`${escapeUnsafeChars(file.text)}\`]`);
         }
     }
