@@ -7,7 +7,6 @@
  */
 import { NormalizedApplicationBuildOptions } from '../../builders/application/options';
 import type { BuildOutputFile } from '../../tools/esbuild/bundler-context';
-import type { PrerenderedRoutesRecord } from '../../tools/esbuild/bundler-execution-result';
 export declare const SERVER_APP_MANIFEST_FILENAME = "angular-app-manifest.mjs";
 export declare const SERVER_APP_ENGINE_MANIFEST_FILENAME = "angular-app-engine-manifest.mjs";
 /**
@@ -21,10 +20,8 @@ export declare const SERVER_APP_ENGINE_MANIFEST_FILENAME = "angular-app-engine-m
  * includes settings for inlining locales and determining the output structure.
  * @param baseHref - The base HREF for the application. This is used to set the base URL
  * for all relative URLs in the application.
- * @param perenderedRoutes - A record mapping static paths to their associated data.
- * @returns A string representing the content of the SSR server manifest for App Engine.
  */
-export declare function generateAngularServerAppEngineManifest(i18nOptions: NormalizedApplicationBuildOptions['i18nOptions'], baseHref: string | undefined, perenderedRoutes?: PrerenderedRoutesRecord | undefined): string;
+export declare function generateAngularServerAppEngineManifest(i18nOptions: NormalizedApplicationBuildOptions['i18nOptions'], baseHref: string | undefined): string;
 /**
  * Generates the server manifest for the standard Node.js environment.
  *
