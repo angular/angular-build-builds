@@ -87,7 +87,8 @@ async function executePostBundleSteps(options, outputFiles, assetFiles, initialF
             switch (metadata.renderMode) {
                 case models_1.RouteRenderMode.Prerender:
                 case /* Legacy building mode */ undefined: {
-                    if (!metadata.redirectTo || outputMode === schema_1.OutputMode.Static) {
+                    if (!metadata.redirectTo) {
+                        serializableRouteTreeNodeForManifest.push(metadata);
                         prerenderedRoutes[metadata.route] = { headers: metadata.headers };
                     }
                     break;
