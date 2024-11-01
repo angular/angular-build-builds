@@ -79,7 +79,7 @@ function createBrowserCodeBundleOptions(options, target, sourceFileCache, styles
 }
 function createBrowserPolyfillBundleOptions(options, target, sourceFileCache, stylesheetBundler) {
     const namespace = 'angular:polyfills';
-    const polyfillBundleOptions = getEsBuildCommonPolyfillsOptions(options, namespace, true, sourceFileCache);
+    const polyfillBundleOptions = getEsBuildCommonPolyfillsOptions(options, namespace, true, sourceFileCache.loadResultCache);
     if (!polyfillBundleOptions) {
         return;
     }
@@ -130,7 +130,7 @@ function createServerPolyfillBundleOptions(options, target, sourceFileCache) {
     const polyfillBundleOptions = getEsBuildCommonPolyfillsOptions({
         ...options,
         polyfills: serverPolyfills,
-    }, namespace, false, sourceFileCache);
+    }, namespace, false, sourceFileCache?.loadResultCache);
     if (!polyfillBundleOptions) {
         return;
     }
@@ -442,7 +442,7 @@ function getEsBuildCommonOptions(options) {
         footer,
     };
 }
-function getEsBuildCommonPolyfillsOptions(options, namespace, tryToResolvePolyfillsAsRelative, sourceFileCache) {
+function getEsBuildCommonPolyfillsOptions(options, namespace, tryToResolvePolyfillsAsRelative, loadResultCache) {
     const { jit, workspaceRoot, i18nOptions } = options;
     const buildOptions = {
         ...getEsBuildCommonOptions(options),
@@ -480,7 +480,7 @@ function getEsBuildCommonPolyfillsOptions(options, namespace, tryToResolvePolyfi
     }
     buildOptions.plugins?.push((0, virtual_module_plugin_1.createVirtualModulePlugin)({
         namespace,
-        cache: sourceFileCache?.loadResultCache,
+        cache: loadResultCache,
         loadContent: async (_, build) => {
             let polyfillPaths = polyfills;
             let warnings;

@@ -35,6 +35,7 @@ export declare class ComponentStylesheetBundler {
      * @returns A component bundle result object.
      */
     bundleFile(entry: string, externalId?: string | boolean, direct?: boolean): Promise<ComponentStylesheetResult>;
+    bundleAllFiles(external: boolean, direct: boolean): Promise<ComponentStylesheetResult[]>;
     bundleInline(data: string, filename: string, language?: string, externalId?: string): Promise<ComponentStylesheetResult>;
     /**
      * Invalidates both file and inline based component style bundling state for a set of modified files.
