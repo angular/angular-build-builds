@@ -55,13 +55,13 @@ class SourceFileCache extends Map {
         for (let file of files) {
             file = path.normalize(file);
             invalid = this.loadResultCache.invalidate(file) || invalid;
+            invalid = extraWatchFiles.has(file) || invalid;
             // Normalize separators to allow matching TypeScript Host paths
             if (USING_WINDOWS) {
                 file = file.replace(WINDOWS_SEP_REGEXP, path.posix.sep);
             }
             invalid = this.delete(file) || invalid;
             this.modifiedFiles.add(file);
-            invalid = extraWatchFiles.has(file) || invalid;
         }
         return invalid;
     }
