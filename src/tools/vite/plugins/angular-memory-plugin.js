@@ -18,8 +18,6 @@ const load_esm_1 = require("../../../utils/load-esm");
 async function createAngularMemoryPlugin(options) {
     const { virtualProjectRoot, outputFiles, external } = options;
     const { normalizePath } = await (0, load_esm_1.loadEsmModule)('vite');
-    // See: https://github.com/vitejs/vite/blob/a34a73a3ad8feeacc98632c0f4c643b6820bbfda/packages/vite/src/node/server/pluginContainer.ts#L331-L334
-    const defaultImporter = (0, node_path_1.join)(virtualProjectRoot, 'index.html');
     return {
         name: 'vite:angular-memory',
         // Ensures plugin hooks run before built-in Vite hooks
@@ -32,17 +30,10 @@ async function createAngularMemoryPlugin(options) {
                 return source;
             }
             if (importer) {
-                let normalizedSource;
                 if (source[0] === '.' && normalizePath(importer).startsWith(virtualProjectRoot)) {
                     // Remove query if present
                     const [importerFile] = importer.split('?', 1);
-                    normalizedSource = (0, node_path_1.join)((0, node_path_1.dirname)((0, node_path_1.relative)(virtualProjectRoot, importerFile)), source);
-                }
-                else if (source[0] === '/' && importer === defaultImporter) {
-                    normalizedSource = (0, node_path_1.basename)(source);
-                }
-                if (normalizedSource) {
-                    source = '/' + normalizePath(normalizedSource);
+                    source = '/' + (0, node_path_1.join)((0, node_path_1.dirname)((0, node_path_1.relative)(virtualProjectRoot, importerFile)), source);
                 }
             }
             const [file] = source.split('?', 1);

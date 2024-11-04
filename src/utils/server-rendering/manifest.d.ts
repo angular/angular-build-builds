@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 import { NormalizedApplicationBuildOptions } from '../../builders/application/options';
-import type { BuildOutputFile } from '../../tools/esbuild/bundler-context';
+import { type BuildOutputFile } from '../../tools/esbuild/bundler-context';
 export declare const SERVER_APP_MANIFEST_FILENAME = "angular-app-manifest.mjs";
 export declare const SERVER_APP_ENGINE_MANIFEST_FILENAME = "angular-app-engine-manifest.mjs";
 /**
@@ -41,7 +41,11 @@ export declare function generateAngularServerAppEngineManifest(i18nOptions: Norm
  * @param locale - An optional string representing the locale or language code to be used for
  * the application, helping with localization and rendering content specific to the locale.
  *
- * @returns A string representing the content of the SSR server manifest for the Node.js
- * environment.
+ * @returns An object containing:
+ * - `manifestContent`: A string of the SSR manifest content.
+ * - `serverAssetsChunks`: An array of build output files containing the generated assets for the server.
  */
-export declare function generateAngularServerAppManifest(additionalHtmlOutputFiles: Map<string, BuildOutputFile>, outputFiles: BuildOutputFile[], inlineCriticalCss: boolean, routes: readonly unknown[] | undefined, locale: string | undefined): string;
+export declare function generateAngularServerAppManifest(additionalHtmlOutputFiles: Map<string, BuildOutputFile>, outputFiles: BuildOutputFile[], inlineCriticalCss: boolean, routes: readonly unknown[] | undefined, locale: string | undefined): {
+    manifestContent: string;
+    serverAssetsChunks: BuildOutputFile[];
+};

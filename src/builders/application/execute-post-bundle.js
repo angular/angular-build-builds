@@ -30,6 +30,7 @@ const schema_1 = require("./schema");
  * @param initialFiles A map containing initial file information for the executed build.
  * @param locale A language locale to insert in the index.html.
  */
+// eslint-disable-next-line max-lines-per-function
 async function executePostBundleSteps(options, outputFiles, assetFiles, initialFiles, locale) {
     const additionalAssets = [];
     const additionalOutputFiles = [];
@@ -55,7 +56,8 @@ async function executePostBundleSteps(options, outputFiles, assetFiles, initialF
     }
     // Create server manifest
     if (serverEntryPoint) {
-        additionalOutputFiles.push((0, utils_1.createOutputFile)(manifest_1.SERVER_APP_MANIFEST_FILENAME, (0, manifest_1.generateAngularServerAppManifest)(additionalHtmlOutputFiles, outputFiles, optimizationOptions.styles.inlineCritical ?? false, undefined, locale), bundler_context_1.BuildOutputFileType.ServerApplication));
+        const { manifestContent, serverAssetsChunks } = (0, manifest_1.generateAngularServerAppManifest)(additionalHtmlOutputFiles, outputFiles, optimizationOptions.styles.inlineCritical ?? false, undefined, locale);
+        additionalOutputFiles.push(...serverAssetsChunks, (0, utils_1.createOutputFile)(manifest_1.SERVER_APP_MANIFEST_FILENAME, manifestContent, bundler_context_1.BuildOutputFileType.ServerApplication));
     }
     // Pre-render (SSG) and App-shell
     // If localization is enabled, prerendering is handled in the inlining process.
@@ -103,7 +105,17 @@ async function executePostBundleSteps(options, outputFiles, assetFiles, initialF
             // Regenerate the manifest to append route tree. This is only needed if SSR is enabled.
             const manifest = additionalOutputFiles.find((f) => f.path === manifest_1.SERVER_APP_MANIFEST_FILENAME);
             (0, node_assert_1.default)(manifest, `${manifest_1.SERVER_APP_MANIFEST_FILENAME} was not found in output files.`);
-            manifest.contents = new TextEncoder().encode((0, manifest_1.generateAngularServerAppManifest)(additionalHtmlOutputFiles, outputFiles, optimizationOptions.styles.inlineCritical ?? false, serializableRouteTreeNodeForManifest, locale));
+            const { manifestContent, serverAssetsChunks } = (0, manifest_1.generateAngularServerAppManifest)(additionalHtmlOutputFiles, outputFiles, optimizationOptions.styles.inlineCritical ?? false, serializableRouteTreeNodeForManifest, locale);
+            for (const chunk of serverAssetsChunks) {
+                const idx = additionalOutputFiles.findIndex(({ path }) => path === chunk.path);
+                if (idx === -1) {
+                    additionalOutputFiles.push(chunk);
+                }
+                else {
+                    additionalOutputFiles[idx] = chunk;
+                }
+            }
+            manifest.contents = new TextEncoder().encode(manifestContent);
         }
     }
     additionalOutputFiles.push(...additionalHtmlOutputFiles.values());

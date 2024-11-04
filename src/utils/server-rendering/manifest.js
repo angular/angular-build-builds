@@ -12,6 +12,8 @@ exports.generateAngularServerAppEngineManifest = generateAngularServerAppEngineM
 exports.generateAngularServerAppManifest = generateAngularServerAppManifest;
 const node_path_1 = require("node:path");
 const options_1 = require("../../builders/application/options");
+const bundler_context_1 = require("../../tools/esbuild/bundler-context");
+const utils_1 = require("../../tools/esbuild/utils");
 exports.SERVER_APP_MANIFEST_FILENAME = 'angular-app-manifest.mjs';
 exports.SERVER_APP_ENGINE_MANIFEST_FILENAME = 'angular-app-engine-manifest.mjs';
 const MAIN_SERVER_OUTPUT_FILENAME = 'main.server.mjs';
@@ -88,15 +90,21 @@ export default {
  * @param locale - An optional string representing the locale or language code to be used for
  * the application, helping with localization and rendering content specific to the locale.
  *
- * @returns A string representing the content of the SSR server manifest for the Node.js
- * environment.
+ * @returns An object containing:
+ * - `manifestContent`: A string of the SSR manifest content.
+ * - `serverAssetsChunks`: An array of build output files containing the generated assets for the server.
  */
 function generateAngularServerAppManifest(additionalHtmlOutputFiles, outputFiles, inlineCriticalCss, routes, locale) {
+    const serverAssetsChunks = [];
     const serverAssetsContent = [];
     for (const file of [...additionalHtmlOutputFiles.values(), ...outputFiles]) {
         const extension = (0, node_path_1.extname)(file.path);
         if (extension === '.html' || (inlineCriticalCss && extension === '.css')) {
-            serverAssetsContent.push(`['${file.path}', { size: ${file.size}, hash: '${file.hash}', text: async () => \`${escapeUnsafeChars(file.text)}\`}]`);
+            const jsChunkFilePath = `assets-chunks/${file.path.replace(/[./]/g, '_')}.mjs`;
+            const escapedContent = escapeUnsafeChars(file.text);
+            serverAssetsChunks.push((0, utils_1.createOutputFile)(jsChunkFilePath, `export default \`${escapedContent}\`;`, bundler_context_1.BuildOutputFileType.ServerApplication));
+            const contentLength = Buffer.byteLength(escapedContent);
+            serverAssetsContent.push(`['${file.path}', {size: ${contentLength}, hash: '${file.hash}', text: () => import('./${jsChunkFilePath}').then(m => m.default)}]`);
         }
     }
     const manifestContent = `
@@ -104,9 +112,9 @@ export default {
   bootstrap: () => import('./main.server.mjs').then(m => m.default),
   inlineCriticalCss: ${inlineCriticalCss},
   routes: ${JSON.stringify(routes, undefined, 2)},
-  assets: new Map([${serverAssetsContent.join(', \n')}]),
+  assets: new Map([\n${serverAssetsContent.join(', \n')}\n]),
   locale: ${locale !== undefined ? `'${locale}'` : undefined},
 };
 `;
-    return manifestContent;
+    return { manifestContent, serverAssetsChunks };
 }
