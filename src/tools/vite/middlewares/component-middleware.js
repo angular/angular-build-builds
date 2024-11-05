@@ -25,7 +25,7 @@ function createAngularComponentMiddleware(templateUpdates) {
             res.end();
             return;
         }
-        const updateCode = templateUpdates.get(componentId) ?? '';
+        const updateCode = templateUpdates.get(encodeURIComponent(componentId)) ?? '';
         res.setHeader('Content-Type', 'text/javascript');
         res.setHeader('Cache-Control', 'no-cache');
         res.end(updateCode);

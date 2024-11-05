@@ -32,10 +32,10 @@ const sourcemap_ignorelist_plugin_1 = require("./sourcemap-ignorelist-plugin");
 const utils_1 = require("./utils");
 const virtual_module_plugin_1 = require("./virtual-module-plugin");
 const wasm_plugin_1 = require("./wasm-plugin");
-function createBrowserCodeBundleOptions(options, target, sourceFileCache, stylesheetBundler) {
+function createBrowserCodeBundleOptions(options, target, sourceFileCache, stylesheetBundler, templateUpdates) {
     return (loadCache) => {
         const { entryPoints, outputNames, polyfills } = options;
-        const pluginOptions = (0, compiler_plugin_options_1.createCompilerPluginOptions)(options, sourceFileCache, loadCache);
+        const pluginOptions = (0, compiler_plugin_options_1.createCompilerPluginOptions)(options, sourceFileCache, loadCache, templateUpdates);
         const zoneless = (0, utils_1.isZonelessApp)(polyfills);
         const buildOptions = {
             ...getEsBuildCommonOptions(options),

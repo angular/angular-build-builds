@@ -17,6 +17,7 @@ class ExecutionResult {
     rebuildContexts;
     componentStyleBundler;
     codeBundleCache;
+    templateUpdates;
     outputFiles = [];
     assetFiles = [];
     errors = [];
@@ -27,10 +28,11 @@ class ExecutionResult {
     extraWatchFiles = [];
     htmlIndexPath;
     htmlBaseHref;
-    constructor(rebuildContexts, componentStyleBundler, codeBundleCache) {
+    constructor(rebuildContexts, componentStyleBundler, codeBundleCache, templateUpdates) {
         this.rebuildContexts = rebuildContexts;
         this.componentStyleBundler = componentStyleBundler;
         this.codeBundleCache = codeBundleCache;
+        this.templateUpdates = templateUpdates;
     }
     addOutputFile(path, content, type) {
         this.outputFiles.push((0, utils_1.createOutputFile)(path, content, type));
@@ -119,6 +121,7 @@ class ExecutionResult {
             componentStyleBundler: this.componentStyleBundler,
             fileChanges,
             previousOutputHashes: new Map(this.outputFiles.map((file) => [file.path, file.hash])),
+            templateUpdates: this.templateUpdates,
         };
     }
     findChangedFiles(previousOutputHashes) {

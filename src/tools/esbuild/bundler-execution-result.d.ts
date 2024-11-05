@@ -23,6 +23,7 @@ export interface RebuildState {
     codeBundleCache?: SourceFileCache;
     fileChanges: ChangedFiles;
     previousOutputHashes: Map<string, string>;
+    templateUpdates?: Map<string, string>;
 }
 export interface ExternalResultMetadata {
     implicitBrowser: string[];
@@ -39,6 +40,7 @@ export declare class ExecutionResult {
     private rebuildContexts;
     private componentStyleBundler;
     private codeBundleCache?;
+    readonly templateUpdates?: Map<string, string> | undefined;
     outputFiles: BuildOutputFile[];
     assetFiles: BuildOutputAsset[];
     errors: (Message | PartialMessage)[];
@@ -52,7 +54,7 @@ export declare class ExecutionResult {
     constructor(rebuildContexts: {
         typescriptContexts: BundlerContext[];
         otherContexts: BundlerContext[];
-    }, componentStyleBundler: ComponentStylesheetBundler, codeBundleCache?: SourceFileCache | undefined);
+    }, componentStyleBundler: ComponentStylesheetBundler, codeBundleCache?: SourceFileCache | undefined, templateUpdates?: Map<string, string> | undefined);
     addOutputFile(path: string, content: string | Uint8Array, type: BuildOutputFileType): void;
     addAssets(assets: BuildOutputAsset[]): void;
     addLog(value: string): void;

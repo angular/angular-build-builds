@@ -10,5 +10,5 @@ import type { createCompilerPlugin } from './angular/compiler-plugin';
 import type { SourceFileCache } from './angular/source-file-cache';
 import type { LoadResultCache } from './load-result-cache';
 type CreateCompilerPluginParameters = Parameters<typeof createCompilerPlugin>;
-export declare function createCompilerPluginOptions(options: NormalizedApplicationBuildOptions, sourceFileCache: SourceFileCache, loadResultCache?: LoadResultCache): CreateCompilerPluginParameters[0];
+export declare function createCompilerPluginOptions(options: NormalizedApplicationBuildOptions, sourceFileCache: SourceFileCache, loadResultCache?: LoadResultCache, templateUpdates?: Map<string, string>): CreateCompilerPluginParameters[0];
 export {};

@@ -162,7 +162,7 @@ async function* runEsBuildBuildAction(action, options) {
         (0, sass_language_1.shutdownSassWorkerPool)();
     }
 }
-async function emitOutputResult({ outputFiles, assetFiles, errors, warnings, externalMetadata, htmlIndexPath, htmlBaseHref, }, outputOptions) {
+async function emitOutputResult({ outputFiles, assetFiles, errors, warnings, externalMetadata, htmlIndexPath, htmlBaseHref, templateUpdates, }, outputOptions) {
     if (errors.length > 0) {
         return {
             kind: results_1.ResultKind.Failure,
@@ -172,6 +172,18 @@ async function emitOutputResult({ outputFiles, assetFiles, errors, warnings, ext
                 outputOptions,
             },
         };
+    }
+    // Template updates only exist if no other changes have occurred
+    if (templateUpdates?.size) {
+        const updateResult = {
+            kind: results_1.ResultKind.ComponentUpdate,
+            updates: Array.from(templateUpdates).map(([id, content]) => ({
+                type: 'template',
+                id,
+                content,
+            })),
+        };
+        return updateResult;
     }
     const result = {
         kind: results_1.ResultKind.Full,
