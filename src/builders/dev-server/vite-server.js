@@ -131,20 +131,30 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
     });
     // TODO: Switch this to an architect schedule call when infrastructure settings are supported
     for await (const result of builderAction(browserOptions, context, extensions?.buildPlugins)) {
+        if (result.kind === results_1.ResultKind.Failure) {
+            if (result.errors.length && server) {
+                hadError = true;
+                server.ws.send({
+                    type: 'error',
+                    err: {
+                        message: result.errors[0].text,
+                        stack: '',
+                        loc: result.errors[0].location ?? undefined,
+                    },
+                });
+            }
+            continue;
+        }
+        // Clear existing error overlay on successful result
+        if (hadError && server) {
+            hadError = false;
+            // Send an empty update to clear the error overlay
+            server.ws.send({
+                'type': 'update',
+                updates: [],
+            });
+        }
         switch (result.kind) {
-            case results_1.ResultKind.Failure:
-                if (result.errors.length && server) {
-                    hadError = true;
-                    server.ws.send({
-                        type: 'error',
-                        err: {
-                            message: result.errors[0].text,
-                            stack: '',
-                            loc: result.errors[0].location ?? undefined,
-                        },
-                    });
-                }
-                continue;
             case results_1.ResultKind.Full:
                 if (result.detail?.['htmlIndexPath']) {
                     htmlIndexPath = result.detail['htmlIndexPath'];
@@ -189,15 +199,6 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
             default:
                 context.logger.warn(`Unknown result kind [${result.kind}] provided by build.`);
                 continue;
-        }
-        // Clear existing error overlay on successful result
-        if (hadError && server) {
-            hadError = false;
-            // Send an empty update to clear the error overlay
-            server.ws.send({
-                'type': 'update',
-                updates: [],
-            });
         }
         // To avoid disconnecting the array objects from the option, these arrays need to be mutated instead of replaced.
         let requiresServerRestart = false;
