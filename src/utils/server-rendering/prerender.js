@@ -125,8 +125,10 @@ async function renderPages(baseHref, sourcemap, serializableRouteTreeNode, maxTh
         const appShellRoute = appShellOptions && addLeadingSlash(appShellOptions.route);
         const baseHrefWithLeadingSlash = addLeadingSlash(baseHref);
         for (const { route, redirectTo, renderMode } of serializableRouteTreeNode) {
-            // Remove base href from file output path.
-            const routeWithoutBaseHref = addLeadingSlash(route.slice(baseHrefWithLeadingSlash.length - 1));
+            // Remove the base href from the file output path.
+            const routeWithoutBaseHref = addTrailingSlash(route).startsWith(baseHrefWithLeadingSlash)
+                ? addLeadingSlash(route.slice(baseHrefWithLeadingSlash.length - 1))
+                : route;
             const outPath = node_path_1.posix.join(removeLeadingSlash(routeWithoutBaseHref), 'index.html');
             if (typeof redirectTo === 'string') {
                 output[outPath] = { content: generateRedirectStaticPage(redirectTo), appShellRoute: false };
@@ -211,10 +213,13 @@ async function getAllRoutes(workspaceRoot, baseHref, outputFilesForWorker, asset
     }
 }
 function addLeadingSlash(value) {
-    return value.charAt(0) === '/' ? value : '/' + value;
+    return value[0] === '/' ? value : '/' + value;
+}
+function addTrailingSlash(url) {
+    return url[url.length - 1] === '/' ? url : `${url}/`;
 }
 function removeLeadingSlash(value) {
-    return value.charAt(0) === '/' ? value.slice(1) : value;
+    return value[0] === '/' ? value.slice(1) : value;
 }
 /**
  * Generates a static HTML page with a meta refresh tag to redirect the user to a specified URL.
