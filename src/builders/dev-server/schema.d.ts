@@ -15,7 +15,8 @@ export interface Schema {
         [key: string]: string;
     };
     /**
-     * Enable hot module replacement.
+     * Enable hot module replacement. Defaults to the value of 'liveReload'. Currently, only
+     * global and component stylesheets are supported.
      */
     hmr?: boolean;
     /**

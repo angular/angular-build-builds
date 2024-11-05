@@ -11,6 +11,7 @@ interface AngularMemoryPluginOptions {
     virtualProjectRoot: string;
     outputFiles: AngularMemoryOutputFiles;
     external?: string[];
+    skipViteClient?: boolean;
 }
 export declare function createAngularMemoryPlugin(options: AngularMemoryPluginOptions): Promise<Plugin>;
 export {};

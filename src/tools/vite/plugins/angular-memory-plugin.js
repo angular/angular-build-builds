@@ -46,9 +46,10 @@ async function createAngularMemoryPlugin(options) {
             const relativeFile = '/' + normalizePath((0, node_path_1.relative)(virtualProjectRoot, file));
             const codeContents = outputFiles.get(relativeFile)?.contents;
             if (codeContents === undefined) {
-                return relativeFile.endsWith('/node_modules/vite/dist/client/client.mjs')
-                    ? loadViteClientCode(file)
-                    : undefined;
+                if (relativeFile.endsWith('/node_modules/vite/dist/client/client.mjs')) {
+                    return options.skipViteClient ? '' : loadViteClientCode(file);
+                }
+                return undefined;
             }
             const code = Buffer.from(codeContents).toString('utf-8');
             const mapContents = outputFiles.get(relativeFile + '.map')?.contents;

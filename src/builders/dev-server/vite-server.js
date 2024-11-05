@@ -92,8 +92,9 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
         // https://nodejs.org/api/process.html#processsetsourcemapsenabledval
         process.setSourceMapsEnabled(true);
     }
-    // Enable to support component style hot reloading (`NG_HMR_CSTYLES=0` can be used to disable)
-    browserOptions.externalRuntimeStyles = !!serverOptions.liveReload && environment_options_1.useComponentStyleHmr;
+    // Enable to support component style hot reloading (`NG_HMR_CSTYLES=0` can be used to disable selectively)
+    browserOptions.externalRuntimeStyles =
+        serverOptions.liveReload && serverOptions.hmr && environment_options_1.useComponentStyleHmr;
     // Enable to support component template hot replacement (`NG_HMR_TEMPLATE=1` can be used to enable)
     browserOptions.templateUpdates = !!serverOptions.liveReload && environment_options_1.useComponentTemplateHmr;
     if (browserOptions.templateUpdates) {
@@ -334,7 +335,7 @@ async function handleUpdate(normalizePath, generatedFiles, server, serverOptions
     if (!updatedFiles.length) {
         return;
     }
-    if (serverOptions.liveReload || serverOptions.hmr) {
+    if (serverOptions.hmr) {
         if (updatedFiles.every((f) => f.endsWith('.css'))) {
             const timestamp = Date.now();
             server.ws.send({
@@ -472,6 +473,8 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
             host: serverOptions.host,
             open: serverOptions.open,
             headers: serverOptions.headers,
+            // Disable the websocket if live reload is disabled (false/undefined are the only valid values)
+            ws: serverOptions.liveReload === false && serverOptions.hmr === false ? false : undefined,
             proxy,
             cors: {
                 // Allow preflight requests to be proxied.
@@ -531,6 +534,7 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
                 virtualProjectRoot,
                 outputFiles,
                 external: externalMetadata.explicitBrowser,
+                skipViteClient: serverOptions.liveReload === false && serverOptions.hmr === false,
             }),
         ],
         // Browser only optimizeDeps. (This does not run for SSR dependencies).
