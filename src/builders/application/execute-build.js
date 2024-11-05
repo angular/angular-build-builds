@@ -27,7 +27,7 @@ const i18n_1 = require("./i18n");
 const setup_bundling_1 = require("./setup-bundling");
 // eslint-disable-next-line max-lines-per-function
 async function executeBuild(options, context, rebuildState) {
-    const { projectRoot, workspaceRoot, i18nOptions, optimizationOptions, assets, outputMode, cacheOptions, serverEntryPoint, baseHref, ssrOptions, verbose, colors, jsonLogs, } = options;
+    const { projectRoot, workspaceRoot, i18nOptions, optimizationOptions, assets, cacheOptions, serverEntryPoint, baseHref, ssrOptions, verbose, colors, jsonLogs, } = options;
     // TODO: Consider integrating into watch mode. Would require full rebuild on target changes.
     const browsers = (0, supported_browsers_1.getSupportedBrowsers)(projectRoot, context.logger);
     // Load active translations if inlining
@@ -40,17 +40,20 @@ async function executeBuild(options, context, rebuildState) {
     let componentStyleBundler;
     let codeBundleCache;
     let bundlingResult;
+    let templateUpdates;
     if (rebuildState) {
         bundlerContexts = rebuildState.rebuildContexts;
         componentStyleBundler = rebuildState.componentStyleBundler;
         codeBundleCache = rebuildState.codeBundleCache;
+        templateUpdates = rebuildState.templateUpdates;
+        // Reset template updates for new rebuild
+        templateUpdates?.clear();
         const allFileChanges = rebuildState.fileChanges.all;
         // Bundle all contexts that do not require TypeScript changed file checks.
         // These will automatically use cached results based on the changed files.
         bundlingResult = await bundler_context_1.BundlerContext.bundleAll(bundlerContexts.otherContexts, allFileChanges);
         // Check the TypeScript code bundling cache for changes. If invalid, force a rebundle of
         // all TypeScript related contexts.
-        // TODO: Enable cached bundling for the typescript contexts
         const forceTypeScriptRebuild = codeBundleCache?.invalidate(allFileChanges);
         const typescriptResults = [];
         for (const typescriptContext of bundlerContexts.typescriptContexts) {
@@ -64,7 +67,10 @@ async function executeBuild(options, context, rebuildState) {
         const target = (0, utils_1.transformSupportedBrowsersToTargets)(browsers);
         codeBundleCache = new source_file_cache_1.SourceFileCache(cacheOptions.enabled ? cacheOptions.path : undefined);
         componentStyleBundler = (0, setup_bundling_1.createComponentStyleBundler)(options, target);
-        bundlerContexts = (0, setup_bundling_1.setupBundlerContexts)(options, target, codeBundleCache, componentStyleBundler);
+        if (options.templateUpdates) {
+            templateUpdates = new Map();
+        }
+        bundlerContexts = (0, setup_bundling_1.setupBundlerContexts)(options, target, codeBundleCache, componentStyleBundler, templateUpdates);
         // Bundle everything on initial build
         bundlingResult = await bundler_context_1.BundlerContext.bundleAll([
             ...bundlerContexts.typescriptContexts,
@@ -81,7 +87,7 @@ async function executeBuild(options, context, rebuildState) {
     if (options.optimizationOptions.scripts && environment_options_1.shouldOptimizeChunks) {
         bundlingResult = await (0, profiling_1.profileAsync)('OPTIMIZE_CHUNKS', () => (0, chunk_optimizer_1.optimizeChunks)(bundlingResult, options.sourcemapOptions.scripts ? !options.sourcemapOptions.hidden || 'hidden' : false));
     }
-    const executionResult = new bundler_execution_result_1.ExecutionResult(bundlerContexts, componentStyleBundler, codeBundleCache);
+    const executionResult = new bundler_execution_result_1.ExecutionResult(bundlerContexts, componentStyleBundler, codeBundleCache, templateUpdates);
     executionResult.addWarnings(bundlingResult.warnings);
     // Add used external component style referenced files to be watched
     if (options.externalRuntimeStyles) {

@@ -227,6 +227,10 @@ function createCompilerPlugin(pluginOptions, stylesheetBundler) {
                             !!initializationResult.compilerOptions.inlineSourceMap;
                     referencedFiles = initializationResult.referencedFiles;
                     externalStylesheets = initializationResult.externalStylesheets;
+                    if (initializationResult.templateUpdates) {
+                        // Propagate any template updates
+                        initializationResult.templateUpdates.forEach((value, key) => pluginOptions.templateUpdates?.set(key, value));
+                    }
                 }
                 catch (error) {
                     (result.errors ??= []).push({
@@ -493,7 +497,7 @@ function createCompilerOptionsTransformer(setupWarnings, pluginOptions, preserve
             sourceRoot: undefined,
             preserveSymlinks,
             externalRuntimeStyles: pluginOptions.externalRuntimeStyles,
-            _enableHmr: pluginOptions.templateUpdates,
+            _enableHmr: !!pluginOptions.templateUpdates,
         };
     };
 }
