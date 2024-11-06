@@ -36,8 +36,10 @@ interface InternalOptions {
      * If given a relative path, it is resolved relative to the current workspace and will generate an output at the same relative location
      * in the output directory. If given an absolute path, the output will be generated in the root of the output directory with the same base
      * name.
+     *
+     * If provided a Map, the key is the name of the output bundle and the value is the entry point file.
      */
-    entryPoints?: Set<string>;
+    entryPoints?: Set<string> | Map<string, string>;
     /** File extension to use for the generated output files. */
     outExtension?: 'js' | 'mjs';
     /**
