@@ -6,6 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 import type { Connect, Plugin } from 'vite';
+import { ComponentStyleRecord } from '../middlewares';
 import { AngularMemoryOutputFiles } from '../utils';
 export declare enum ServerSsrMode {
     /**
@@ -34,7 +35,7 @@ interface AngularSetupMiddlewaresPluginOptions {
     assets: Map<string, string>;
     extensionMiddleware?: Connect.NextHandleFunction[];
     indexHtmlTransformer?: (content: string) => Promise<string>;
-    usedComponentStyles: Map<string, Set<string>>;
+    componentStyles: Map<string, ComponentStyleRecord>;
     templateUpdates: Map<string, string>;
     ssrMode: ServerSsrMode;
 }
