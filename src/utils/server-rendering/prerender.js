@@ -165,6 +165,7 @@ async function getAllRoutes(workspaceRoot, baseHref, outputFilesForWorker, asset
     const routes = [];
     if (appShellOptions) {
         routes.push({
+            renderMode: models_1.RouteRenderMode.AppShell,
             route: (0, url_1.urlJoin)(baseHref, appShellOptions.route),
         });
     }
@@ -172,6 +173,7 @@ async function getAllRoutes(workspaceRoot, baseHref, outputFilesForWorker, asset
         const routesFromFile = (await (0, promises_1.readFile)(routesFile, 'utf8')).split(/\r?\n/);
         for (const route of routesFromFile) {
             routes.push({
+                renderMode: models_1.RouteRenderMode.Prerender,
                 route: (0, url_1.urlJoin)(baseHref, route.trim()),
             });
         }
@@ -197,7 +199,17 @@ async function getAllRoutes(workspaceRoot, baseHref, outputFilesForWorker, asset
     });
     try {
         const { serializedRouteTree, errors } = await renderWorker.run({});
-        return { errors, serializedRouteTree: [...routes, ...serializedRouteTree] };
+        if (!routes.length) {
+            return { errors, serializedRouteTree };
+        }
+        // Merge the routing trees
+        const uniqueRoutes = new Map();
+        for (const item of [...routes, ...serializedRouteTree]) {
+            if (!uniqueRoutes.has(item.route)) {
+                uniqueRoutes.set(item.route, item);
+            }
+        }
+        return { errors, serializedRouteTree: Array.from(uniqueRoutes.values()) };
     }
     catch (err) {
         (0, error_1.assertIsError)(err);
