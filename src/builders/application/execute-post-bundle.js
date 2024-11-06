@@ -91,7 +91,9 @@ async function executePostBundleSteps(options, outputFiles, assetFiles, initialF
                 case /* Legacy building mode */ undefined: {
                     if (!metadata.redirectTo) {
                         serializableRouteTreeNodeForManifest.push(metadata);
-                        prerenderedRoutes[metadata.route] = { headers: metadata.headers };
+                        if (!metadata.route.includes('*')) {
+                            prerenderedRoutes[metadata.route] = { headers: metadata.headers };
+                        }
                     }
                     break;
                 }
