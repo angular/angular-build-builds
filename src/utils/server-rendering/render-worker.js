@@ -21,8 +21,10 @@ let serverURL = launch_server_1.DEFAULT_URL;
  */
 async function renderPage({ url }) {
     const { ɵgetOrCreateAngularServerApp: getOrCreateAngularServerApp } = await (0, load_esm_from_memory_1.loadEsmModuleFromMemory)('./main.server.mjs');
-    const angularServerApp = getOrCreateAngularServerApp();
-    const response = await angularServerApp.renderStatic(new URL(url, serverURL), AbortSignal.timeout(30_000));
+    const angularServerApp = getOrCreateAngularServerApp({
+        allowStaticRouteRender: true,
+    });
+    const response = await angularServerApp.handle(new Request(new URL(url, serverURL), { signal: AbortSignal.timeout(30_000) }));
     return response ? response.text() : null;
 }
 async function initialize() {

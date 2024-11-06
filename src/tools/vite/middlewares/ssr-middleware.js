@@ -23,7 +23,9 @@ function createAngularSsrInternalMiddleware(server, indexHtmlTransformer) {
             await (0, load_esm_1.loadEsmModule)('@angular/compiler');
             const { writeResponseToNodeResponse, createWebRequestFromNodeRequest } = await (0, load_esm_1.loadEsmModule)('@angular/ssr/node');
             const { ɵgetOrCreateAngularServerApp } = (await server.ssrLoadModule('/main.server.mjs'));
-            const angularServerApp = ɵgetOrCreateAngularServerApp();
+            const angularServerApp = ɵgetOrCreateAngularServerApp({
+                allowStaticRouteRender: true,
+            });
             // Only Add the transform hook only if it's a different instance.
             if (cachedAngularServerApp !== angularServerApp) {
                 angularServerApp.hooks.on('html:transform:pre', async ({ html, url }) => {
@@ -66,6 +68,7 @@ async function createAngularSsrExternalMiddleware(server, indexHtmlTransformer) 
                 return;
             }
             if (cachedAngularAppEngine !== AngularAppEngine) {
+                AngularAppEngine.ɵallowStaticRouteRender = true;
                 AngularAppEngine.ɵhooks.on('html:transform:pre', async ({ html, url }) => {
                     const processedHtml = await server.transformIndexHtml(url.pathname, html);
                     return indexHtmlTransformer?.(processedHtml) ?? processedHtml;
