@@ -349,6 +349,14 @@ function normalizeEntryPoints(workspaceRoot, browser, entryPoints = new Set()) {
         // Use `browser` alone.
         return { 'main': node_path_1.default.join(workspaceRoot, browser) };
     }
+    else if (entryPoints instanceof Map) {
+        return Object.fromEntries(Array.from(entryPoints.entries(), ([name, entryPoint]) => {
+            // Get the full file path to a relative entry point input. Leave bare specifiers alone so they are resolved as modules.
+            const isRelativePath = entryPoint.startsWith('.');
+            const entryPointPath = isRelativePath ? node_path_1.default.join(workspaceRoot, entryPoint) : entryPoint;
+            return [name, entryPointPath];
+        }));
+    }
     else {
         // Use `entryPoints` alone.
         const entryPointPaths = {};
