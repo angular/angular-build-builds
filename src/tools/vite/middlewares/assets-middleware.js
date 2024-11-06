@@ -11,7 +11,7 @@ exports.createAngularAssetsMiddleware = createAngularAssetsMiddleware;
 const mrmime_1 = require("mrmime");
 const node_path_1 = require("node:path");
 const utils_1 = require("../utils");
-function createAngularAssetsMiddleware(server, assets, outputFiles, usedComponentStyles, encapsulateStyle) {
+function createAngularAssetsMiddleware(server, assets, outputFiles, componentStyles, encapsulateStyle) {
     return function angularAssetsMiddleware(req, res, next) {
         if (req.url === undefined || res.writableEnded) {
             return;
@@ -59,21 +59,24 @@ function createAngularAssetsMiddleware(server, assets, outputFiles, usedComponen
             const outputFile = outputFiles.get(pathname);
             if (outputFile?.servable) {
                 let data = outputFile.contents;
-                if (extension === '.css') {
+                const componentStyle = componentStyles.get(pathname);
+                if (componentStyle) {
                     // Inject component ID for view encapsulation if requested
                     const searchParams = new URL(req.url, 'http://localhost').searchParams;
                     const componentId = searchParams.get('ngcomp');
                     if (componentId !== null) {
                         // Track if the component uses ShadowDOM encapsulation (3 = ViewEncapsulation.ShadowDom)
-                        const shadow = searchParams.get('e') === '3';
-                        // Record the component style usage for HMR updates (true = shadow; false = none; string = emulated)
-                        const usedIds = usedComponentStyles.get(pathname);
-                        const trackingId = componentId || shadow;
-                        if (usedIds === undefined) {
-                            usedComponentStyles.set(pathname, new Set([trackingId]));
+                        // Shadow DOM components currently require a full reload.
+                        // Vite's CSS hot replacement does not support shadow root searching.
+                        if (searchParams.get('e') === '3') {
+                            componentStyle.reload = true;
+                        }
+                        // Record the component style usage for HMR updates
+                        if (componentStyle.used === undefined) {
+                            componentStyle.used = new Set([componentId]);
                         }
                         else {
-                            usedIds.add(trackingId);
+                            componentStyle.used.add(componentId);
                         }
                         // Report if there are no changes to avoid reprocessing
                         const etag = `W/"${outputFile.contents.byteLength}-${outputFile.hash}-${componentId}"`;

@@ -121,7 +121,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
         explicitBrowser: [],
         explicitServer: [],
     };
-    const usedComponentStyles = new Map();
+    const componentStyles = new Map();
     const templateUpdates = new Map();
     // Add cleanup logic via a builder teardown.
     let deferred;
@@ -174,10 +174,10 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                         assetFiles.set('/' + normalizePath(outputPath), normalizePath(file.inputPath));
                     }
                 }
-                // Clear stale template updates on a code rebuilds
+                // Clear stale template updates on code rebuilds
                 templateUpdates.clear();
                 // Analyze result files for changes
-                analyzeResultFiles(normalizePath, htmlIndexPath, result.files, generatedFiles);
+                analyzeResultFiles(normalizePath, htmlIndexPath, result.files, generatedFiles, componentStyles);
                 break;
             case results_1.ResultKind.Incremental:
                 (0, node_assert_1.default)(server, 'Builder must provide an initial full build before incremental results.');
@@ -240,7 +240,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                 await server.restart();
             }
             else {
-                await handleUpdate(normalizePath, generatedFiles, server, serverOptions, context.logger, usedComponentStyles);
+                await handleUpdate(normalizePath, generatedFiles, server, serverOptions, context.logger, componentStyles);
             }
         }
         else {
@@ -279,7 +279,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                 });
             }
             // Setup server and start listening
-            const serverConfiguration = await setupServer(serverOptions, generatedFiles, assetFiles, browserOptions.preserveSymlinks, externalMetadata, ssrMode, prebundleTransformer, target, (0, internal_1.isZonelessApp)(polyfills), usedComponentStyles, templateUpdates, browserOptions.loader, extensions?.middleware, transformers?.indexHtml, thirdPartySourcemaps);
+            const serverConfiguration = await setupServer(serverOptions, generatedFiles, assetFiles, browserOptions.preserveSymlinks, externalMetadata, ssrMode, prebundleTransformer, target, (0, internal_1.isZonelessApp)(polyfills), componentStyles, templateUpdates, browserOptions.loader, extensions?.middleware, transformers?.indexHtml, thirdPartySourcemaps);
             server = await createServer(serverConfiguration);
             await server.listen();
             const urls = server.resolvedUrls;
@@ -295,7 +295,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                         key: 'r',
                         description: 'force reload browser',
                         action(server) {
-                            usedComponentStyles.clear();
+                            componentStyles.forEach((record) => record.used?.clear());
                             server.ws.send({
                                 type: 'full-reload',
                                 path: '*',
@@ -314,7 +314,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
     }
     await new Promise((resolve) => (deferred = resolve));
 }
-async function handleUpdate(normalizePath, generatedFiles, server, serverOptions, logger, usedComponentStyles) {
+async function handleUpdate(normalizePath, generatedFiles, server, serverOptions, logger, componentStyles) {
     const updatedFiles = [];
     let destroyAngularServerAppCalled = false;
     // Invalidate any updated files
@@ -346,14 +346,15 @@ async function handleUpdate(normalizePath, generatedFiles, server, serverOptions
                 // the existing search parameters when it performs an update and each one must be
                 // specified explicitly. Typically, there is only one each though as specific style files
                 // are not typically reused across components.
-                const componentIds = usedComponentStyles.get(filePath);
-                if (componentIds) {
-                    return Array.from(componentIds).map((id) => {
-                        if (id === true) {
-                            // Shadow DOM components currently require a full reload.
-                            // Vite's CSS hot replacement does not support shadow root searching.
-                            requiresReload = true;
-                        }
+                const record = componentStyles.get(filePath);
+                if (record) {
+                    if (record.reload) {
+                        // Shadow DOM components currently require a full reload.
+                        // Vite's CSS hot replacement does not support shadow root searching.
+                        requiresReload = true;
+                        return [];
+                    }
+                    return Array.from(record.used ?? []).map((id) => {
                         return {
                             type: 'css-update',
                             timestamp,
@@ -382,7 +383,7 @@ async function handleUpdate(normalizePath, generatedFiles, server, serverOptions
     // Send reload command to clients
     if (serverOptions.liveReload) {
         // Clear used component tracking on full reload
-        usedComponentStyles.clear();
+        componentStyles.forEach((record) => record.used?.clear());
         server.ws.send({
             type: 'full-reload',
             path: '*',
@@ -390,7 +391,7 @@ async function handleUpdate(normalizePath, generatedFiles, server, serverOptions
         logger.info('Page reload sent to client(s).');
     }
 }
-function analyzeResultFiles(normalizePath, htmlIndexPath, resultFiles, generatedFiles) {
+function analyzeResultFiles(normalizePath, htmlIndexPath, resultFiles, generatedFiles, componentStyles) {
     const seen = new Set(['/index.html']);
     for (const [outputPath, file] of Object.entries(resultFiles)) {
         if (file.origin === 'disk') {
@@ -436,15 +437,28 @@ function analyzeResultFiles(normalizePath, htmlIndexPath, resultFiles, generated
             type: file.type,
             servable,
         });
+        // Record any external component styles
+        if (filePath.endsWith('.css') && /^\/[a-f0-9]{64}\.css$/.test(filePath)) {
+            const componentStyle = componentStyles.get(filePath);
+            if (componentStyle) {
+                componentStyle.rawContent = file.contents;
+            }
+            else {
+                componentStyles.set(filePath, {
+                    rawContent: file.contents,
+                });
+            }
+        }
     }
     // Clear stale output files
     for (const file of generatedFiles.keys()) {
         if (!seen.has(file)) {
             generatedFiles.delete(file);
+            componentStyles.delete(file);
         }
     }
 }
-async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks, externalMetadata, ssrMode, prebundleTransformer, target, zoneless, usedComponentStyles, templateUpdates, prebundleLoaderExtensions, extensionMiddleware, indexHtmlTransformer, thirdPartySourcemaps = false) {
+async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks, externalMetadata, ssrMode, prebundleTransformer, target, zoneless, componentStyles, templateUpdates, prebundleLoaderExtensions, extensionMiddleware, indexHtmlTransformer, thirdPartySourcemaps = false) {
     const proxy = await (0, utils_1.loadProxyConfiguration)(serverOptions.workspaceRoot, serverOptions.proxyConfig);
     // dynamically import Vite for ESM compatibility
     const { normalizePath } = await (0, load_esm_1.loadEsmModule)('vite');
@@ -538,7 +552,7 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
                 assets,
                 indexHtmlTransformer,
                 extensionMiddleware,
-                usedComponentStyles,
+                componentStyles,
                 templateUpdates,
                 ssrMode,
             }),
