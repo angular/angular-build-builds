@@ -333,12 +333,20 @@ function createCompilerPlugin(pluginOptions, styleOptions) {
                 };
             });
             build.onLoad({ filter: /\.[cm]?js$/ }, (0, load_result_cache_1.createCachedLoad)(pluginOptions.loadResultCache, async (args) => {
+                let request = args.path;
+                if (pluginOptions.fileReplacements) {
+                    const replacement = pluginOptions.fileReplacements[path.normalize(args.path)];
+                    if (replacement) {
+                        request = path.normalize(replacement);
+                    }
+                }
                 return (0, profiling_1.profileAsync)('NG_EMIT_JS*', async () => {
-                    const sideEffects = await hasSideEffects(args.path);
-                    const contents = await javascriptTransformer.transformFile(args.path, pluginOptions.jit, sideEffects);
+                    const sideEffects = await hasSideEffects(request);
+                    const contents = await javascriptTransformer.transformFile(request, pluginOptions.jit, sideEffects);
                     return {
                         contents,
                         loader: 'js',
+                        watchFiles: request !== args.path ? [request] : undefined,
                     };
                 }, true);
             }));
