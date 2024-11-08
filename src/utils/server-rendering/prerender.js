@@ -51,12 +51,11 @@ async function prerenderPages(workspaceRoot, baseHref, appShellOptions, prerende
         assetsReversed[addLeadingSlash(destination.replace(/\\/g, node_path_1.posix.sep))] = source;
     }
     // Get routes to prerender
-    const { errors: extractionErrors, serializedRouteTree: serializableRouteTreeNode } = await getAllRoutes(workspaceRoot, baseHref, outputFilesForWorker, assetsReversed, appShellOptions, prerenderOptions, sourcemap, outputMode).catch((err) => {
+    const { errors: extractionErrors, serializedRouteTree: serializableRouteTreeNode, appShellRoute, } = await getAllRoutes(workspaceRoot, baseHref, outputFilesForWorker, assetsReversed, appShellOptions, prerenderOptions, sourcemap, outputMode).catch((err) => {
         return {
-            errors: [
-                `An error occurred while extracting routes.\n\n${err.stack ?? err.message ?? err}`,
-            ],
+            errors: [`An error occurred while extracting routes.\n\n${err.stack ?? err.message ?? err}`],
             serializedRouteTree: [],
+            appShellRoute: undefined,
         };
     });
     errors.push(...extractionErrors);
@@ -73,7 +72,6 @@ async function prerenderPages(workspaceRoot, baseHref, appShellOptions, prerende
         switch (metadata.renderMode) {
             case undefined: /* Legacy building mode */
             case models_1.RouteRenderMode.Prerender:
-            case models_1.RouteRenderMode.AppShell:
                 serializableRouteTreeNodeForPrerender.push(metadata);
                 break;
             case models_1.RouteRenderMode.Server:
@@ -92,7 +90,7 @@ async function prerenderPages(workspaceRoot, baseHref, appShellOptions, prerende
         };
     }
     // Render routes
-    const { errors: renderingErrors, output } = await renderPages(baseHref, sourcemap, serializableRouteTreeNodeForPrerender, maxThreads, workspaceRoot, outputFilesForWorker, assetsReversed, appShellOptions, outputMode);
+    const { errors: renderingErrors, output } = await renderPages(baseHref, sourcemap, serializableRouteTreeNodeForPrerender, maxThreads, workspaceRoot, outputFilesForWorker, assetsReversed, appShellOptions, outputMode, appShellRoute ?? appShellOptions?.route);
     errors.push(...renderingErrors);
     return {
         errors,
@@ -101,7 +99,7 @@ async function prerenderPages(workspaceRoot, baseHref, appShellOptions, prerende
         serializableRouteTreeNode,
     };
 }
-async function renderPages(baseHref, sourcemap, serializableRouteTreeNode, maxThreads, workspaceRoot, outputFilesForWorker, assetFilesForWorker, appShellOptions, outputMode) {
+async function renderPages(baseHref, sourcemap, serializableRouteTreeNode, maxThreads, workspaceRoot, outputFilesForWorker, assetFilesForWorker, appShellOptions, outputMode, appShellRoute) {
     const output = {};
     const errors = [];
     const workerExecArgv = [utils_1.IMPORT_EXEC_ARGV];
@@ -122,7 +120,7 @@ async function renderPages(baseHref, sourcemap, serializableRouteTreeNode, maxTh
     });
     try {
         const renderingPromises = [];
-        const appShellRoute = appShellOptions && addLeadingSlash(appShellOptions.route);
+        const appShellRouteWithLeadingSlash = appShellRoute && addLeadingSlash(appShellRoute);
         const baseHrefWithLeadingSlash = addLeadingSlash(baseHref);
         for (const { route, redirectTo, renderMode } of serializableRouteTreeNode) {
             // Remove the base href from the file output path.
@@ -134,14 +132,14 @@ async function renderPages(baseHref, sourcemap, serializableRouteTreeNode, maxTh
                 output[outPath] = { content: generateRedirectStaticPage(redirectTo), appShellRoute: false };
                 continue;
             }
-            const isAppShellRoute = renderMode === models_1.RouteRenderMode.AppShell ||
-                // Legacy handling
-                (renderMode === undefined && appShellRoute === routeWithoutBaseHref);
-            const render = renderWorker.run({ url: route, isAppShellRoute });
+            const render = renderWorker.run({ url: route });
             const renderResult = render
                 .then((content) => {
                 if (content !== null) {
-                    output[outPath] = { content, appShellRoute: isAppShellRoute };
+                    output[outPath] = {
+                        content,
+                        appShellRoute: appShellRouteWithLeadingSlash === routeWithoutBaseHref,
+                    };
                 }
             })
                 .catch((err) => {
@@ -163,10 +161,12 @@ async function renderPages(baseHref, sourcemap, serializableRouteTreeNode, maxTh
 async function getAllRoutes(workspaceRoot, baseHref, outputFilesForWorker, assetFilesForWorker, appShellOptions, prerenderOptions, sourcemap, outputMode) {
     const { routesFile, discoverRoutes } = prerenderOptions ?? {};
     const routes = [];
+    let appShellRoute;
     if (appShellOptions) {
+        appShellRoute = (0, url_1.urlJoin)(baseHref, appShellOptions.route);
         routes.push({
-            renderMode: models_1.RouteRenderMode.AppShell,
-            route: (0, url_1.urlJoin)(baseHref, appShellOptions.route),
+            renderMode: models_1.RouteRenderMode.Prerender,
+            route: appShellRoute,
         });
     }
     if (routesFile) {
@@ -179,7 +179,7 @@ async function getAllRoutes(workspaceRoot, baseHref, outputFilesForWorker, asset
         }
     }
     if (!discoverRoutes) {
-        return { errors: [], serializedRouteTree: routes };
+        return { errors: [], appShellRoute, serializedRouteTree: routes };
     }
     const workerExecArgv = [utils_1.IMPORT_EXEC_ARGV];
     if (sourcemap) {
@@ -198,9 +198,9 @@ async function getAllRoutes(workspaceRoot, baseHref, outputFilesForWorker, asset
         execArgv: workerExecArgv,
     });
     try {
-        const { serializedRouteTree, errors } = await renderWorker.run({});
+        const { serializedRouteTree, appShellRoute, errors } = await renderWorker.run({});
         if (!routes.length) {
-            return { errors, serializedRouteTree };
+            return { errors, appShellRoute, serializedRouteTree };
         }
         // Merge the routing trees
         const uniqueRoutes = new Map();

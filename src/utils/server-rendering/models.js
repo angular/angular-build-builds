@@ -15,8 +15,7 @@ exports.RouteRenderMode = void 0;
  * It maps `RenderMode` enum values to their corresponding numeric identifiers.
  */
 exports.RouteRenderMode = {
-    AppShell: 0,
-    Server: 1,
-    Client: 2,
-    Prerender: 3,
+    Server: 0,
+    Client: 1,
+    Prerender: 2,
 };

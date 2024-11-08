@@ -20,9 +20,10 @@ let serverURL = launch_server_1.DEFAULT_URL;
 /** Renders an application based on a provided options. */
 async function extractRoutes() {
     const { ɵextractRoutesAndCreateRouteTree: extractRoutesAndCreateRouteTree } = await (0, load_esm_from_memory_1.loadEsmModuleFromMemory)('./main.server.mjs');
-    const { routeTree, errors } = await extractRoutesAndCreateRouteTree(serverURL, undefined /** manifest */, true /** invokeGetPrerenderParams */, outputMode === schema_1.OutputMode.Server /** includePrerenderFallbackRoutes */);
+    const { routeTree, appShellRoute, errors } = await extractRoutesAndCreateRouteTree(serverURL, undefined /** manifest */, true /** invokeGetPrerenderParams */, outputMode === schema_1.OutputMode.Server /** includePrerenderFallbackRoutes */);
     return {
         errors,
+        appShellRoute,
         serializedRouteTree: routeTree.toObject(),
     };
 }

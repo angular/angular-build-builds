@@ -15,6 +15,7 @@ export type SerializableRouteTreeNode = ReturnType<Awaited<ReturnType<typeof ɵe
 export type WritableSerializableRouteTreeNode = Writeable<SerializableRouteTreeNode>;
 export interface RoutersExtractorWorkerResult {
     serializedRouteTree: SerializableRouteTreeNode;
+    appShellRoute?: string;
     errors: string[];
 }
 /**
