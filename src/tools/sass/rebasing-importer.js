@@ -65,7 +65,7 @@ class UrlRebasingImporter {
                 continue;
             }
             // Sass variable usage either starts with a `$` or contains a namespace and a `.$`
-            const valueNormalized = value[0] === '$' || /^\w+\.\$/.test(value) ? `#{${value}}` : value;
+            const valueNormalized = value[0] === '$' || /^\w[\w_-]*\.\$/.test(value) ? `#{${value}}` : value;
             const rebasedPath = (0, node_path_1.relative)(this.entryDirectory, stylesheetDirectory);
             // Normalize path separators and escape characters
             // https://developer.mozilla.org/en-US/docs/Web/CSS/url#syntax
