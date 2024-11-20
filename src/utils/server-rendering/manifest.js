@@ -101,10 +101,8 @@ function generateAngularServerAppManifest(additionalHtmlOutputFiles, outputFiles
         const extension = (0, node_path_1.extname)(file.path);
         if (extension === '.html' || (inlineCriticalCss && extension === '.css')) {
             const jsChunkFilePath = `assets-chunks/${file.path.replace(/[./]/g, '_')}.mjs`;
-            const escapedContent = escapeUnsafeChars(file.text);
-            serverAssetsChunks.push((0, utils_1.createOutputFile)(jsChunkFilePath, `export default \`${escapedContent}\`;`, bundler_context_1.BuildOutputFileType.ServerApplication));
-            const contentLength = Buffer.byteLength(escapedContent);
-            serverAssetsContent.push(`['${file.path}', {size: ${contentLength}, hash: '${file.hash}', text: () => import('./${jsChunkFilePath}').then(m => m.default)}]`);
+            serverAssetsChunks.push((0, utils_1.createOutputFile)(jsChunkFilePath, `export default \`${escapeUnsafeChars(file.text)}\`;`, bundler_context_1.BuildOutputFileType.ServerApplication));
+            serverAssetsContent.push(`['${file.path}', {size: ${file.size}, hash: '${file.hash}', text: () => import('./${jsChunkFilePath}').then(m => m.default)}]`);
         }
     }
     const manifestContent = `
