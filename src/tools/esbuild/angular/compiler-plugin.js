@@ -157,7 +157,7 @@ function createCompilerPlugin(pluginOptions, stylesheetBundler) {
                             // invalid the output and force a full page reload for HMR cases. The containing file and order
                             // of the style within the containing file is used.
                             pluginOptions.externalRuntimeStyles
-                                ? (0, node_crypto_1.createHash)('sha-256')
+                                ? (0, node_crypto_1.createHash)('sha256')
                                     .update(containingFile)
                                     .update((order ?? 0).toString())
                                     .update(className ?? '')
