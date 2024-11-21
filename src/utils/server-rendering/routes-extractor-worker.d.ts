@@ -13,5 +13,4 @@ export interface ExtractRoutesWorkerData extends ESMInMemoryFileLoaderWorkerData
 }
 /** Renders an application based on a provided options. */
 declare function extractRoutes(): Promise<RoutersExtractorWorkerResult>;
-declare const _default: Promise<typeof extractRoutes>;
-export default _default;
+export default extractRoutes;
