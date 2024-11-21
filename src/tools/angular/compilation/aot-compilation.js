@@ -51,6 +51,17 @@ class AotCompilation extends angular_compilation_1.AngularCompilation {
         if (compilerOptions.externalRuntimeStyles) {
             hostOptions.externalStylesheets ??= new Map();
         }
+        // Collect stale source files for HMR analysis of inline component resources
+        let staleSourceFiles;
+        if (compilerOptions['_enableHmr'] && hostOptions.modifiedFiles && this.#state) {
+            for (const modifiedFile of hostOptions.modifiedFiles) {
+                const sourceFile = this.#state.typeScriptProgram.getSourceFile(modifiedFile);
+                if (sourceFile) {
+                    staleSourceFiles ??= new Map();
+                    staleSourceFiles.set(modifiedFile, sourceFile);
+                }
+            }
+        }
         // Create Angular compiler host
         const host = (0, angular_host_1.createAngularCompilerHost)(typescript_1.default, compilerOptions, hostOptions);
         // Create the Angular specific program that contains the Angular compiler
@@ -67,12 +78,8 @@ class AotCompilation extends angular_compilation_1.AngularCompilation {
         const typeScriptProgram = typescript_1.default.createEmitAndSemanticDiagnosticsBuilderProgram(angularTypeScriptProgram, host, oldProgram, configurationDiagnostics);
         await (0, profiling_1.profileAsync)('NG_ANALYZE_PROGRAM', () => angularCompiler.analyzeAsync());
         let templateUpdates;
-        if (compilerOptions['_enableHmr'] &&
-            hostOptions.modifiedFiles &&
-            hasOnlyTemplates(hostOptions.modifiedFiles)) {
-            const componentNodes = [...hostOptions.modifiedFiles].flatMap((file) => [
-                ...angularCompiler.getComponentsWithTemplateFile(file),
-            ]);
+        if (compilerOptions['_enableHmr'] && hostOptions.modifiedFiles && this.#state) {
+            const componentNodes = collectHmrCandidates(hostOptions.modifiedFiles, angularProgram, staleSourceFiles);
             for (const node of componentNodes) {
                 if (!typescript_1.default.isClassDeclaration(node)) {
                     continue;
@@ -296,13 +303,35 @@ function findAffectedFiles(builder, { ignoreForDiagnostics }, includeTTC) {
     }
     return affectedFiles;
 }
-function hasOnlyTemplates(modifiedFiles) {
+function collectHmrCandidates(modifiedFiles, { compiler }, staleSourceFiles) {
+    const candidates = new Set();
     for (const file of modifiedFiles) {
-        const lowerFile = file.toLowerCase();
-        if (lowerFile.endsWith('.html') || lowerFile.endsWith('.svg')) {
+        const templateFileNodes = compiler.getComponentsWithTemplateFile(file);
+        if (templateFileNodes.size) {
+            templateFileNodes.forEach((node) => candidates.add(node));
             continue;
         }
-        return false;
+        const styleFileNodes = compiler.getComponentsWithStyleFile(file);
+        if (styleFileNodes.size) {
+            styleFileNodes.forEach((node) => candidates.add(node));
+            continue;
+        }
+        const staleSource = staleSourceFiles?.get(file);
+        if (staleSource === undefined) {
+            // Unknown file requires a rebuild so clear out the candidates and stop collecting
+            candidates.clear();
+            break;
+        }
+        const updatedSource = compiler.getCurrentProgram().getSourceFile(file);
+        if (updatedSource === undefined) {
+            // No longer existing program file requires a rebuild so clear out the candidates and stop collecting
+            candidates.clear();
+            break;
+        }
+        // Compare the stale and updated file for changes
+        // TODO: Implement -- for now assume a rebuild is needed
+        candidates.clear();
+        break;
     }
-    return true;
+    return candidates;
 }
