@@ -11,6 +11,8 @@
  * All exports are not supported for external use, do not provide SemVer guarantees, and
  * their existence may change in any future version.
  */
+import { CompilerPluginOptions } from './tools/esbuild/angular/compiler-plugin';
+import { BundleStylesheetOptions } from './tools/esbuild/stylesheets/bundle-options';
 export { buildApplicationInternal } from './builders/application';
 export type { ApplicationBuilderInternalOptions } from './builders/application/options';
 export { type Result, type ResultFile, ResultKind } from './builders/application/results';
@@ -23,7 +25,9 @@ export { SassWorkerImplementation } from './tools/sass/sass-service';
 export { SourceFileCache } from './tools/esbuild/angular/source-file-cache';
 export { createJitResourceTransformer } from './tools/angular/transformers/jit-resource-transformer';
 export { JavaScriptTransformer } from './tools/esbuild/javascript-transformer';
-export { createCompilerPlugin } from './tools/esbuild/angular/compiler-plugin';
+export declare function createCompilerPlugin(pluginOptions: CompilerPluginOptions, styleOptions: BundleStylesheetOptions & {
+    inlineStyleLanguage: string;
+}): import('esbuild').Plugin;
 export * from './utils/bundle-calculator';
 export { checkPort } from './utils/check-port';
 export { deleteOutputDir } from './utils/delete-output-dir';

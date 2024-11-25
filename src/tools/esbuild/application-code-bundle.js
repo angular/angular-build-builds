@@ -171,7 +171,6 @@ function createServerMainCodeBundleOptions(options, target, sourceFileCache, sty
     return (loadResultCache) => {
         const pluginOptions = (0, compiler_plugin_options_1.createCompilerPluginOptions)(options, sourceFileCache, loadResultCache);
         const mainServerNamespace = 'angular:main-server';
-        const mainServerInjectPolyfillsNamespace = 'angular:main-server-inject-polyfills';
         const mainServerInjectManifestNamespace = 'angular:main-server-inject-manifest';
         const zoneless = (0, utils_1.isZonelessApp)(polyfills);
         const entryPoints = {
@@ -187,7 +186,9 @@ function createServerMainCodeBundleOptions(options, target, sourceFileCache, sty
         const buildOptions = {
             ...getEsBuildServerCommonOptions(options),
             target,
-            inject: [mainServerInjectPolyfillsNamespace, mainServerInjectManifestNamespace],
+            banner: {
+                js: `import './polyfills.server.mjs';`,
+            },
             entryPoints,
             supported: (0, utils_1.getFeatureSupport)(target, zoneless),
             plugins: [
@@ -217,16 +218,9 @@ function createServerMainCodeBundleOptions(options, target, sourceFileCache, sty
             buildOptions.external.push('xhr2');
         }
         buildOptions.plugins.push((0, server_bundle_metadata_plugin_1.createServerBundleMetadata)(), (0, virtual_module_plugin_1.createVirtualModulePlugin)({
-            namespace: mainServerInjectPolyfillsNamespace,
-            cache: loadResultCache,
-            loadContent: () => ({
-                contents: `import './polyfills.server.mjs';`,
-                loader: 'js',
-                resolveDir: workspaceRoot,
-            }),
-        }), (0, virtual_module_plugin_1.createVirtualModulePlugin)({
             namespace: mainServerInjectManifestNamespace,
             cache: loadResultCache,
+            entryPointOnly: false,
             loadContent: async () => {
                 const contents = [
                     // Configure `@angular/ssr` manifest.
@@ -246,15 +240,17 @@ function createServerMainCodeBundleOptions(options, target, sourceFileCache, sty
             loadContent: async () => {
                 const mainServerEntryPointJsImport = entryFileToWorkspaceRelative(workspaceRoot, mainServerEntryPoint);
                 const contents = [
+                    // Inject manifest
+                    `import '${mainServerInjectManifestNamespace}';`,
+                    // Add @angular/ssr exports
+                    `export {
+              ɵdestroyAngularServerApp,
+              ɵextractRoutesAndCreateRouteTree,
+              ɵgetOrCreateAngularServerApp,
+            } from '@angular/ssr';`,
                     // Re-export all symbols including default export from 'main.server.ts'
                     `export { default } from '${mainServerEntryPointJsImport}';`,
                     `export * from '${mainServerEntryPointJsImport}';`,
-                    // Add @angular/ssr exports
-                    `export {
-            ɵdestroyAngularServerApp,
-            ɵextractRoutesAndCreateRouteTree,
-            ɵgetOrCreateAngularServerApp,
-          } from '@angular/ssr';`,
                 ];
                 return {
                     contents: contents.join('\n'),
@@ -277,17 +273,21 @@ function createSsrEntryCodeBundleOptions(options, target, sourceFileCache, style
         const pluginOptions = (0, compiler_plugin_options_1.createCompilerPluginOptions)(options, sourceFileCache, loadResultCache);
         const ssrEntryNamespace = 'angular:ssr-entry';
         const ssrInjectManifestNamespace = 'angular:ssr-entry-inject-manifest';
-        const ssrInjectRequireNamespace = 'angular:ssr-entry-inject-require';
         const isNodePlatform = options.ssrOptions?.platform !== schema_1.ExperimentalPlatform.Neutral;
-        const inject = [ssrInjectManifestNamespace];
-        if (isNodePlatform) {
-            inject.unshift(ssrInjectRequireNamespace);
-        }
         const buildOptions = {
             ...getEsBuildServerCommonOptions(options),
             target,
+            banner: isNodePlatform
+                ? {
+                    js: [
+                        // Note: Needed as esbuild does not provide require shims / proxy from ESModules.
+                        // See: https://github.com/evanw/esbuild/issues/1921.
+                        `import { createRequire } from 'node:module';`,
+                        `globalThis['require'] ??= createRequire(import.meta.url);`,
+                    ].join('\n'),
+                }
+                : undefined,
             entryPoints: {
-                // TODO: consider renaming to index
                 'server': ssrEntryNamespace,
             },
             supported: (0, utils_1.getFeatureSupport)(target, true),
@@ -299,7 +299,6 @@ function createSsrEntryCodeBundleOptions(options, target, sourceFileCache, style
                 // Component stylesheet bundler
                 stylesheetBundler),
             ],
-            inject,
         };
         buildOptions.plugins ??= [];
         if (externalPackages) {
@@ -317,24 +316,9 @@ function createSsrEntryCodeBundleOptions(options, target, sourceFileCache, style
             buildOptions.external.push('xhr2');
         }
         buildOptions.plugins.push((0, server_bundle_metadata_plugin_1.createServerBundleMetadata)({ ssrEntryBundle: true }), (0, virtual_module_plugin_1.createVirtualModulePlugin)({
-            namespace: ssrInjectRequireNamespace,
-            cache: loadResultCache,
-            loadContent: () => {
-                const contents = [
-                    // Note: Needed as esbuild does not provide require shims / proxy from ESModules.
-                    // See: https://github.com/evanw/esbuild/issues/1921.
-                    `import { createRequire } from 'node:module';`,
-                    `globalThis['require'] ??= createRequire(import.meta.url);`,
-                ];
-                return {
-                    contents: contents.join('\n'),
-                    loader: 'js',
-                    resolveDir: workspaceRoot,
-                };
-            },
-        }), (0, virtual_module_plugin_1.createVirtualModulePlugin)({
             namespace: ssrInjectManifestNamespace,
             cache: loadResultCache,
+            entryPointOnly: false,
             loadContent: () => {
                 const contents = [
                     // Configure `@angular/ssr` app engine manifest.
@@ -354,6 +338,8 @@ function createSsrEntryCodeBundleOptions(options, target, sourceFileCache, style
             loadContent: () => {
                 const serverEntryPointJsImport = entryFileToWorkspaceRelative(workspaceRoot, serverEntryPoint);
                 const contents = [
+                    // Configure `@angular/ssr` app engine manifest.
+                    `import '${ssrInjectManifestNamespace}';`,
                     // Re-export all symbols including default export
                     `import * as server from '${serverEntryPointJsImport}';`,
                     `export * from '${serverEntryPointJsImport}';`,
