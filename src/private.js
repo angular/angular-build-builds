@@ -21,13 +21,16 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.assertCompatibleAngularVersion = exports.getSupportedBrowsers = exports.generateBuildStatsTable = exports.augmentAppWithServiceWorker = exports.purgeStaleBuildCache = exports.createTranslationLoader = exports.loadProxyConfiguration = exports.InlineCriticalCssProcessor = exports.IndexHtmlGenerator = exports.loadTranslations = exports.createI18nOptions = exports.deleteOutputDir = exports.checkPort = exports.createCompilerPlugin = exports.JavaScriptTransformer = exports.createJitResourceTransformer = exports.SourceFileCache = exports.SassWorkerImplementation = exports.transformSupportedBrowsersToTargets = exports.emitFilesToDisk = exports.serveWithVite = exports.ResultKind = exports.buildApplicationInternal = void 0;
+exports.assertCompatibleAngularVersion = exports.getSupportedBrowsers = exports.generateBuildStatsTable = exports.augmentAppWithServiceWorker = exports.purgeStaleBuildCache = exports.createTranslationLoader = exports.loadProxyConfiguration = exports.InlineCriticalCssProcessor = exports.IndexHtmlGenerator = exports.loadTranslations = exports.createI18nOptions = exports.deleteOutputDir = exports.checkPort = exports.JavaScriptTransformer = exports.createJitResourceTransformer = exports.SourceFileCache = exports.SassWorkerImplementation = exports.transformSupportedBrowsersToTargets = exports.emitFilesToDisk = exports.serveWithVite = exports.ResultKind = exports.buildApplicationInternal = void 0;
+exports.createCompilerPlugin = createCompilerPlugin;
 /**
  * @fileoverview
  * Private exports intended only for use with the @angular-devkit/build-angular package.
  * All exports are not supported for external use, do not provide SemVer guarantees, and
  * their existence may change in any future version.
  */
+const compiler_plugin_1 = require("./tools/esbuild/angular/compiler-plugin");
+const component_stylesheets_1 = require("./tools/esbuild/angular/component-stylesheets");
 // Builders
 var application_1 = require("./builders/application");
 Object.defineProperty(exports, "buildApplicationInternal", { enumerable: true, get: function () { return application_1.buildApplicationInternal; } });
@@ -49,8 +52,9 @@ var jit_resource_transformer_1 = require("./tools/angular/transformers/jit-resou
 Object.defineProperty(exports, "createJitResourceTransformer", { enumerable: true, get: function () { return jit_resource_transformer_1.createJitResourceTransformer; } });
 var javascript_transformer_1 = require("./tools/esbuild/javascript-transformer");
 Object.defineProperty(exports, "JavaScriptTransformer", { enumerable: true, get: function () { return javascript_transformer_1.JavaScriptTransformer; } });
-var compiler_plugin_1 = require("./tools/esbuild/angular/compiler-plugin");
-Object.defineProperty(exports, "createCompilerPlugin", { enumerable: true, get: function () { return compiler_plugin_1.createCompilerPlugin; } });
+function createCompilerPlugin(pluginOptions, styleOptions) {
+    return (0, compiler_plugin_1.createCompilerPlugin)(pluginOptions, new component_stylesheets_1.ComponentStylesheetBundler(styleOptions, styleOptions.inlineStyleLanguage, pluginOptions.incremental));
+}
 // Utilities
 __exportStar(require("./utils/bundle-calculator"), exports);
 var check_port_1 = require("./utils/check-port");
