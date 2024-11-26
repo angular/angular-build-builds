@@ -202,17 +202,10 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                 continue;
         }
         // To avoid disconnecting the array objects from the option, these arrays need to be mutated instead of replaced.
-        let requiresServerRestart = false;
         if (result.detail?.['externalMetadata']) {
             const { implicitBrowser, implicitServer, explicit } = result.detail['externalMetadata'];
             const implicitServerFiltered = implicitServer.filter((m) => !(0, node_module_1.isBuiltin)(m) && !isAbsoluteUrl(m));
             const implicitBrowserFiltered = implicitBrowser.filter((m) => !isAbsoluteUrl(m));
-            if (browserOptions.ssr && serverOptions.prebundle !== false) {
-                const previousImplicitServer = new Set(externalMetadata.implicitServer);
-                // Restart the server to force SSR dep re-optimization when a dependency has been added.
-                // This is a workaround for: https://github.com/vitejs/vite/issues/14896
-                requiresServerRestart = implicitServerFiltered.some((dep) => !previousImplicitServer.has(dep));
-            }
             // Empty Arrays to avoid growing unlimited with every re-build.
             externalMetadata.explicitBrowser.length = 0;
             externalMetadata.explicitServer.length = 0;
@@ -234,14 +227,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
             server.config.server.fs.allow = [
                 ...new Set([...server.config.server.fs.allow, ...assetFiles.values()]),
             ];
-            if (requiresServerRestart) {
-                // Restart the server to force SSR dep re-optimization when a dependency has been added.
-                // This is a workaround for: https://github.com/vitejs/vite/issues/14896
-                await server.restart();
-            }
-            else {
-                await handleUpdate(normalizePath, generatedFiles, server, serverOptions, context.logger, componentStyles);
-            }
+            await handleUpdate(normalizePath, generatedFiles, server, serverOptions, context.logger, componentStyles);
         }
         else {
             const projectName = context.target?.project;
@@ -335,6 +321,10 @@ async function handleUpdate(normalizePath, generatedFiles, server, serverOptions
     }
     if (!updatedFiles.length) {
         return;
+    }
+    if (destroyAngularServerAppCalled) {
+        // Trigger module evaluation before reload to initiate dependency optimization.
+        await server.ssrLoadModule('/main.server.mjs');
     }
     if (serverOptions.hmr) {
         if (updatedFiles.every((f) => f.endsWith('.css'))) {
@@ -516,10 +506,6 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
                 // the Vite client-side code for browser reloading. These would be available by default but when
                 // the `allow` option is explicitly configured, they must be included manually.
                 allow: [cacheDir, (0, node_path_1.join)(serverOptions.workspaceRoot, 'node_modules'), ...assets.values()],
-                // Temporary disable cached FS checks.
-                // This is because we configure `config.base` to a virtual directory which causes `getRealPath` to fail.
-                // See: https://github.com/vitejs/vite/blob/b2873ac3936de25ca8784327cb9ef16bd4881805/packages/vite/src/node/fsUtils.ts#L45-L67
-                cachedChecks: false,
             },
             // This is needed when `externalDependencies` is used to prevent Vite load errors.
             // NOTE: If Vite adds direct support for externals, this can be removed.
