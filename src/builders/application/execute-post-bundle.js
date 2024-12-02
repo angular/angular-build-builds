@@ -37,7 +37,7 @@ async function executePostBundleSteps(options, outputFiles, assetFiles, initialF
     const allErrors = [];
     const allWarnings = [];
     const prerenderedRoutes = {};
-    const { baseHref = '/', serviceWorker, indexHtmlOptions, optimizationOptions, sourcemapOptions, outputMode, serverEntryPoint, prerenderOptions, appShellOptions, workspaceRoot, partialSSRBuild, } = options;
+    const { baseHref = '/', serviceWorker, i18nOptions, indexHtmlOptions, optimizationOptions, sourcemapOptions, outputMode, serverEntryPoint, prerenderOptions, appShellOptions, workspaceRoot, partialSSRBuild, } = options;
     // Index HTML content without CSS inlining to be used for server rendering (AppShell, SSG and SSR).
     // NOTE: Critical CSS inlining is deliberately omitted here, as it will be handled during server rendering.
     // Additionally, when using prerendering or AppShell, the index HTML file may be regenerated.
@@ -56,7 +56,7 @@ async function executePostBundleSteps(options, outputFiles, assetFiles, initialF
     }
     // Create server manifest
     if (serverEntryPoint) {
-        const { manifestContent, serverAssetsChunks } = (0, manifest_1.generateAngularServerAppManifest)(additionalHtmlOutputFiles, outputFiles, optimizationOptions.styles.inlineCritical ?? false, undefined, locale);
+        const { manifestContent, serverAssetsChunks } = (0, manifest_1.generateAngularServerAppManifest)(additionalHtmlOutputFiles, outputFiles, optimizationOptions.styles.inlineCritical ?? false, undefined, locale, baseHref);
         additionalOutputFiles.push(...serverAssetsChunks, (0, utils_1.createOutputFile)(manifest_1.SERVER_APP_MANIFEST_FILENAME, manifestContent, bundler_context_1.BuildOutputFileType.ServerApplication));
     }
     // Pre-render (SSG) and App-shell
@@ -95,7 +95,7 @@ async function executePostBundleSteps(options, outputFiles, assetFiles, initialF
             // Regenerate the manifest to append route tree. This is only needed if SSR is enabled.
             const manifest = additionalOutputFiles.find((f) => f.path === manifest_1.SERVER_APP_MANIFEST_FILENAME);
             (0, node_assert_1.default)(manifest, `${manifest_1.SERVER_APP_MANIFEST_FILENAME} was not found in output files.`);
-            const { manifestContent, serverAssetsChunks } = (0, manifest_1.generateAngularServerAppManifest)(additionalHtmlOutputFiles, outputFiles, optimizationOptions.styles.inlineCritical ?? false, serializableRouteTreeNodeForManifest, locale);
+            const { manifestContent, serverAssetsChunks } = (0, manifest_1.generateAngularServerAppManifest)(additionalHtmlOutputFiles, outputFiles, optimizationOptions.styles.inlineCritical ?? false, serializableRouteTreeNodeForManifest, locale, baseHref);
             for (const chunk of serverAssetsChunks) {
                 const idx = additionalOutputFiles.findIndex(({ path }) => path === chunk.path);
                 if (idx === -1) {

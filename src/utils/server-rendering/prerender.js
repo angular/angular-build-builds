@@ -90,7 +90,7 @@ async function prerenderPages(workspaceRoot, baseHref, appShellOptions, prerende
         };
     }
     // Render routes
-    const { errors: renderingErrors, output } = await renderPages(baseHref, sourcemap, serializableRouteTreeNodeForPrerender, maxThreads, workspaceRoot, outputFilesForWorker, assetsReversed, appShellOptions, outputMode, appShellRoute ?? appShellOptions?.route);
+    const { errors: renderingErrors, output } = await renderPages(baseHref, sourcemap, serializableRouteTreeNodeForPrerender, maxThreads, workspaceRoot, outputFilesForWorker, assetsReversed, outputMode, appShellRoute ?? appShellOptions?.route);
     errors.push(...renderingErrors);
     return {
         errors,
@@ -99,7 +99,7 @@ async function prerenderPages(workspaceRoot, baseHref, appShellOptions, prerende
         serializableRouteTreeNode,
     };
 }
-async function renderPages(baseHref, sourcemap, serializableRouteTreeNode, maxThreads, workspaceRoot, outputFilesForWorker, assetFilesForWorker, appShellOptions, outputMode, appShellRoute) {
+async function renderPages(baseHref, sourcemap, serializableRouteTreeNode, maxThreads, workspaceRoot, outputFilesForWorker, assetFilesForWorker, outputMode, appShellRoute) {
     const output = {};
     const errors = [];
     const workerExecArgv = [utils_1.IMPORT_EXEC_ARGV];
@@ -125,7 +125,7 @@ async function renderPages(baseHref, sourcemap, serializableRouteTreeNode, maxTh
         for (const { route, redirectTo, renderMode } of serializableRouteTreeNode) {
             // Remove the base href from the file output path.
             const routeWithoutBaseHref = addTrailingSlash(route).startsWith(baseHrefWithLeadingSlash)
-                ? addLeadingSlash(route.slice(baseHrefWithLeadingSlash.length - 1))
+                ? addLeadingSlash(route.slice(baseHrefWithLeadingSlash.length))
                 : route;
             const outPath = node_path_1.posix.join(removeLeadingSlash(routeWithoutBaseHref), 'index.html');
             if (typeof redirectTo === 'string') {

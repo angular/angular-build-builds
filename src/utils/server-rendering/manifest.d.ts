@@ -40,12 +40,14 @@ export declare function generateAngularServerAppEngineManifest(i18nOptions: Norm
  * server-side rendering and routing.
  * @param locale - An optional string representing the locale or language code to be used for
  * the application, helping with localization and rendering content specific to the locale.
+ * @param baseHref - The base HREF for the application. This is used to set the base URL
+ * for all relative URLs in the application.
  *
  * @returns An object containing:
  * - `manifestContent`: A string of the SSR manifest content.
  * - `serverAssetsChunks`: An array of build output files containing the generated assets for the server.
  */
-export declare function generateAngularServerAppManifest(additionalHtmlOutputFiles: Map<string, BuildOutputFile>, outputFiles: BuildOutputFile[], inlineCriticalCss: boolean, routes: readonly unknown[] | undefined, locale: string | undefined): {
+export declare function generateAngularServerAppManifest(additionalHtmlOutputFiles: Map<string, BuildOutputFile>, outputFiles: BuildOutputFile[], inlineCriticalCss: boolean, routes: readonly unknown[] | undefined, locale: string | undefined, baseHref: string): {
     manifestContent: string;
     serverAssetsChunks: BuildOutputFile[];
 };
