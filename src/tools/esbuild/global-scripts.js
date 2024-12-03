@@ -49,7 +49,7 @@ const virtual_module_plugin_1 = require("./virtual-module-plugin");
  * @returns An esbuild BuildOptions object.
  */
 function createGlobalScriptsBundleOptions(options, target, initial) {
-    const { globalScripts, optimizationOptions, outputNames, preserveSymlinks, sourcemapOptions, jsonLogs, workspaceRoot, } = options;
+    const { globalScripts, optimizationOptions, outputNames, preserveSymlinks, sourcemapOptions, jsonLogs, workspaceRoot, define, } = options;
     const namespace = 'angular:script/global';
     const entryPoints = {};
     let found = false;
@@ -83,6 +83,7 @@ function createGlobalScriptsBundleOptions(options, target, initial) {
             platform: 'neutral',
             target,
             preserveSymlinks,
+            define,
             plugins: [
                 (0, sourcemap_ignorelist_plugin_1.createSourcemapIgnorelistPlugin)(),
                 (0, virtual_module_plugin_1.createVirtualModulePlugin)({
