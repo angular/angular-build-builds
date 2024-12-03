@@ -19,6 +19,13 @@ const angular_host_1 = require("../angular-host");
 const jit_bootstrap_transformer_1 = require("../transformers/jit-bootstrap-transformer");
 const web_worker_transformer_1 = require("../transformers/web-worker-transformer");
 const angular_compilation_1 = require("./angular-compilation");
+const hmr_candidates_1 = require("./hmr-candidates");
+/**
+ * The modified files count limit for performing component HMR analysis.
+ * Performing content analysis for a large amount of files can result in longer rebuild times
+ * than a full rebuild would entail.
+ */
+const HMR_MODIFIED_FILE_LIMIT = 32;
 class AngularCompilationState {
     angularProgram;
     compilerHost;
@@ -51,9 +58,12 @@ class AotCompilation extends angular_compilation_1.AngularCompilation {
         if (compilerOptions.externalRuntimeStyles) {
             hostOptions.externalStylesheets ??= new Map();
         }
+        const useHmr = compilerOptions['_enableHmr'] &&
+            hostOptions.modifiedFiles &&
+            hostOptions.modifiedFiles.size <= HMR_MODIFIED_FILE_LIMIT;
         // Collect stale source files for HMR analysis of inline component resources
         let staleSourceFiles;
-        if (compilerOptions['_enableHmr'] && hostOptions.modifiedFiles && this.#state) {
+        if (useHmr && hostOptions.modifiedFiles && this.#state) {
             for (const modifiedFile of hostOptions.modifiedFiles) {
                 const sourceFile = this.#state.typeScriptProgram.getSourceFile(modifiedFile);
                 if (sourceFile) {
@@ -78,8 +88,8 @@ class AotCompilation extends angular_compilation_1.AngularCompilation {
         const typeScriptProgram = typescript_1.default.createEmitAndSemanticDiagnosticsBuilderProgram(angularTypeScriptProgram, host, oldProgram, configurationDiagnostics);
         await (0, profiling_1.profileAsync)('NG_ANALYZE_PROGRAM', () => angularCompiler.analyzeAsync());
         let templateUpdates;
-        if (compilerOptions['_enableHmr'] && hostOptions.modifiedFiles && this.#state) {
-            const componentNodes = collectHmrCandidates(hostOptions.modifiedFiles, angularProgram, staleSourceFiles);
+        if (useHmr && hostOptions.modifiedFiles && this.#state) {
+            const componentNodes = (0, hmr_candidates_1.collectHmrCandidates)(hostOptions.modifiedFiles, angularProgram, staleSourceFiles);
             for (const node of componentNodes) {
                 if (!typescript_1.default.isClassDeclaration(node)) {
                     continue;
@@ -302,36 +312,4 @@ function findAffectedFiles(builder, { ignoreForDiagnostics }, includeTTC) {
         }
     }
     return affectedFiles;
-}
-function collectHmrCandidates(modifiedFiles, { compiler }, staleSourceFiles) {
-    const candidates = new Set();
-    for (const file of modifiedFiles) {
-        const templateFileNodes = compiler.getComponentsWithTemplateFile(file);
-        if (templateFileNodes.size) {
-            templateFileNodes.forEach((node) => candidates.add(node));
-            continue;
-        }
-        const styleFileNodes = compiler.getComponentsWithStyleFile(file);
-        if (styleFileNodes.size) {
-            styleFileNodes.forEach((node) => candidates.add(node));
-            continue;
-        }
-        const staleSource = staleSourceFiles?.get(file);
-        if (staleSource === undefined) {
-            // Unknown file requires a rebuild so clear out the candidates and stop collecting
-            candidates.clear();
-            break;
-        }
-        const updatedSource = compiler.getCurrentProgram().getSourceFile(file);
-        if (updatedSource === undefined) {
-            // No longer existing program file requires a rebuild so clear out the candidates and stop collecting
-            candidates.clear();
-            break;
-        }
-        // Compare the stale and updated file for changes
-        // TODO: Implement -- for now assume a rebuild is needed
-        candidates.clear();
-        break;
-    }
-    return candidates;
 }
