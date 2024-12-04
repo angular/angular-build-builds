@@ -48,7 +48,7 @@ function escapeUnsafeChars(str) {
  * for all relative URLs in the application.
  */
 function generateAngularServerAppEngineManifest(i18nOptions, baseHref) {
-    const entryPointsContent = [];
+    const entryPoints = {};
     if (i18nOptions.shouldInline) {
         for (const locale of i18nOptions.inlineLocales) {
             const importPath = './' + (i18nOptions.flatOutput ? '' : locale + '/') + MAIN_SERVER_OUTPUT_FILENAME;
@@ -57,18 +57,22 @@ function generateAngularServerAppEngineManifest(i18nOptions, baseHref) {
             const start = localeWithBaseHref[0] === '/' ? 1 : 0;
             const end = localeWithBaseHref[localeWithBaseHref.length - 1] === '/' ? -1 : undefined;
             localeWithBaseHref = localeWithBaseHref.slice(start, end);
-            entryPointsContent.push(`['${localeWithBaseHref}', () => import('${importPath}')]`);
+            entryPoints[localeWithBaseHref] = `() => import('${importPath}')`;
         }
     }
     else {
-        entryPointsContent.push(`['', () => import('./${MAIN_SERVER_OUTPUT_FILENAME}')]`);
+        entryPoints[''] = `() => import('./${MAIN_SERVER_OUTPUT_FILENAME}')`;
     }
     const manifestContent = `
 export default {
   basePath: '${baseHref ?? '/'}',
-  entryPoints: new Map([${entryPointsContent.join(', \n')}]),
+  entryPoints: {
+    ${Object.entries(entryPoints)
+        .map(([key, value]) => `'${key}': ${value}`)
+        .join(',\n    ')}
+  },
 };
-  `;
+`;
     return manifestContent;
 }
 /**
@@ -98,13 +102,14 @@ export default {
  */
 function generateAngularServerAppManifest(additionalHtmlOutputFiles, outputFiles, inlineCriticalCss, routes, locale, baseHref) {
     const serverAssetsChunks = [];
-    const serverAssetsContent = [];
+    const serverAssets = {};
     for (const file of [...additionalHtmlOutputFiles.values(), ...outputFiles]) {
         const extension = (0, node_path_1.extname)(file.path);
         if (extension === '.html' || (inlineCriticalCss && extension === '.css')) {
             const jsChunkFilePath = `assets-chunks/${file.path.replace(/[./]/g, '_')}.mjs`;
             serverAssetsChunks.push((0, utils_1.createOutputFile)(jsChunkFilePath, `export default \`${escapeUnsafeChars(file.text)}\`;`, bundler_context_1.BuildOutputFileType.ServerApplication));
-            serverAssetsContent.push(`['${file.path}', {size: ${file.size}, hash: '${file.hash}', text: () => import('./${jsChunkFilePath}').then(m => m.default)}]`);
+            serverAssets[file.path] =
+                `{size: ${file.size}, hash: '${file.hash}', text: () => import('./${jsChunkFilePath}').then(m => m.default)}`;
         }
     }
     const manifestContent = `
@@ -112,9 +117,13 @@ export default {
   bootstrap: () => import('./main.server.mjs').then(m => m.default),
   inlineCriticalCss: ${inlineCriticalCss},
   baseHref: '${baseHref}',
-  locale: ${locale !== undefined ? `'${locale}'` : undefined},
+  locale: ${JSON.stringify(locale)},
   routes: ${JSON.stringify(routes, undefined, 2)},
-  assets: new Map([\n${serverAssetsContent.join(', \n')}\n]),
+  assets: {
+    ${Object.entries(serverAssets)
+        .map(([key, value]) => `'${key}': ${value}`)
+        .join(',\n    ')}
+  },
 };
 `;
     return { manifestContent, serverAssetsChunks };
