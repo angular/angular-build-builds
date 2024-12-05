@@ -24,4 +24,4 @@ export interface AngularHostOptions {
  * @param program The TypeScript Program instance to patch.
  */
 export declare function ensureSourceFileVersions(program: ts.Program): void;
-export declare function createAngularCompilerHost(typescript: typeof ts, compilerOptions: AngularCompilerOptions, hostOptions: AngularHostOptions): AngularCompilerHost;
+export declare function createAngularCompilerHost(typescript: typeof ts, compilerOptions: AngularCompilerOptions, hostOptions: AngularHostOptions, packageJsonCache: ts.PackageJsonInfoCache | undefined): AngularCompilerHost;
