@@ -7,9 +7,10 @@
  */
 import type { BuilderContext } from '@angular-devkit/architect';
 import type { Plugin } from 'esbuild';
-import type { Connect, DepOptimizationConfig, InlineConfig } from 'vite';
+import type { Connect, InlineConfig } from 'vite';
 import type { ComponentStyleRecord } from '../../tools/vite/middlewares';
 import { ServerSsrMode } from '../../tools/vite/plugins';
+import { EsbuildLoaderOption } from '../../tools/vite/utils';
 import { Result } from '../application/results';
 import { type ApplicationBuilderInternalOptions, BuildOutputFileType, type ExternalResultMetadata, JavaScriptTransformer } from './internal';
 import type { NormalizedDevServerOptions } from './options';
@@ -34,5 +35,4 @@ export declare function serveWithVite(serverOptions: NormalizedDevServerOptions,
     buildPlugins?: Plugin[];
 }): AsyncIterableIterator<DevServerBuilderOutput>;
 export declare function setupServer(serverOptions: NormalizedDevServerOptions, outputFiles: Map<string, OutputFileRecord>, assets: Map<string, string>, preserveSymlinks: boolean | undefined, externalMetadata: DevServerExternalResultMetadata, ssrMode: ServerSsrMode, prebundleTransformer: JavaScriptTransformer, target: string[], zoneless: boolean, componentStyles: Map<string, ComponentStyleRecord>, templateUpdates: Map<string, string>, prebundleLoaderExtensions: EsbuildLoaderOption | undefined, extensionMiddleware?: Connect.NextHandleFunction[], indexHtmlTransformer?: (content: string) => Promise<string>, thirdPartySourcemaps?: boolean): Promise<InlineConfig>;
-type EsbuildLoaderOption = Exclude<DepOptimizationConfig['esbuildOptions'], undefined>['loader'];
 export {};
