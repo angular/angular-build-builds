@@ -58,22 +58,34 @@ class AotCompilation extends angular_compilation_1.AngularCompilation {
         if (compilerOptions.externalRuntimeStyles) {
             hostOptions.externalStylesheets ??= new Map();
         }
+        // Reuse the package.json cache from the previous compilation
+        const packageJsonCache = this.#state?.compilerHost
+            .getModuleResolutionCache?.()
+            ?.getPackageJsonInfoCache();
         const useHmr = compilerOptions['_enableHmr'] &&
             hostOptions.modifiedFiles &&
             hostOptions.modifiedFiles.size <= HMR_MODIFIED_FILE_LIMIT;
-        // Collect stale source files for HMR analysis of inline component resources
         let staleSourceFiles;
-        if (useHmr && hostOptions.modifiedFiles && this.#state) {
+        let clearPackageJsonCache = false;
+        if (hostOptions.modifiedFiles && this.#state) {
             for (const modifiedFile of hostOptions.modifiedFiles) {
-                const sourceFile = this.#state.typeScriptProgram.getSourceFile(modifiedFile);
-                if (sourceFile) {
-                    staleSourceFiles ??= new Map();
-                    staleSourceFiles.set(modifiedFile, sourceFile);
+                // Clear package.json cache if a node modules file was modified
+                if (!clearPackageJsonCache && modifiedFile.includes('node_modules')) {
+                    clearPackageJsonCache = true;
+                    packageJsonCache?.clear();
+                }
+                // Collect stale source files for HMR analysis of inline component resources
+                if (useHmr) {
+                    const sourceFile = this.#state.typeScriptProgram.getSourceFile(modifiedFile);
+                    if (sourceFile) {
+                        staleSourceFiles ??= new Map();
+                        staleSourceFiles.set(modifiedFile, sourceFile);
+                    }
                 }
             }
         }
         // Create Angular compiler host
-        const host = (0, angular_host_1.createAngularCompilerHost)(typescript_1.default, compilerOptions, hostOptions);
+        const host = (0, angular_host_1.createAngularCompilerHost)(typescript_1.default, compilerOptions, hostOptions, packageJsonCache);
         // Create the Angular specific program that contains the Angular compiler
         const angularProgram = (0, profiling_1.profileSync)('NG_CREATE_PROGRAM', () => new NgtscProgram(rootNames, compilerOptions, host, this.#state?.angularProgram));
         const angularCompiler = angularProgram.compiler;

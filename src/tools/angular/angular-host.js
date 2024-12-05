@@ -91,7 +91,7 @@ function augmentHostWithReplacements(typescript, host, replacements, moduleResol
     };
     augmentResolveModuleNames(typescript, host, tryReplace, moduleResolutionCache);
 }
-function createAngularCompilerHost(typescript, compilerOptions, hostOptions) {
+function createAngularCompilerHost(typescript, compilerOptions, hostOptions, packageJsonCache) {
     // Create TypeScript compiler host
     const host = typescript.createIncrementalCompilerHost(compilerOptions);
     // Set the parsing mode to the same as TS 5.3+ default for tsc. This provides a parse
@@ -135,11 +135,11 @@ function createAngularCompilerHost(typescript, compilerOptions, hostOptions) {
     host.getModifiedResourceFiles = function () {
         return hostOptions.modifiedFiles;
     };
+    // Provide a resolution cache to ensure package.json lookups are cached
+    const resolutionCache = typescript.createModuleResolutionCache(host.getCurrentDirectory(), host.getCanonicalFileName.bind(host), compilerOptions, packageJsonCache);
+    host.getModuleResolutionCache = () => resolutionCache;
     // Augment TypeScript Host for file replacements option
     if (hostOptions.fileReplacements) {
-        // Provide a resolution cache since overriding resolution prevents automatic creation
-        const resolutionCache = typescript.createModuleResolutionCache(host.getCurrentDirectory(), host.getCanonicalFileName.bind(host), compilerOptions);
-        host.getModuleResolutionCache = () => resolutionCache;
         augmentHostWithReplacements(typescript, host, hostOptions.fileReplacements, resolutionCache);
     }
     // Augment TypeScript Host with source file caching if provided
