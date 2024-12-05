@@ -40,7 +40,8 @@ const promises_1 = require("node:fs/promises");
 const node_module_1 = require("node:module");
 const node_path_1 = require("node:path");
 const plugins_1 = require("../../tools/vite/plugins");
-const utils_1 = require("../../utils");
+const utils_1 = require("../../tools/vite/utils");
+const utils_2 = require("../../utils");
 const environment_options_1 = require("../../utils/environment-options");
 const load_esm_1 = require("../../utils/load-esm");
 const results_1 = require("../application/results");
@@ -87,7 +88,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
         // When localization is enabled with a single locale, force a flat path to maintain behavior with the existing Webpack-based dev server.
         browserOptions.forceI18nFlatOutput = true;
     }
-    const { vendor: thirdPartySourcemaps, scripts: scriptsSourcemaps } = (0, utils_1.normalizeSourceMaps)(browserOptions.sourceMap ?? false);
+    const { vendor: thirdPartySourcemaps, scripts: scriptsSourcemaps } = (0, utils_2.normalizeSourceMaps)(browserOptions.sourceMap ?? false);
     if (scriptsSourcemaps && browserOptions.server) {
         // https://nodejs.org/api/process.html#processsetsourcemapsenabledval
         process.setSourceMapsEnabled(true);
@@ -459,7 +460,7 @@ function analyzeResultFiles(normalizePath, htmlIndexPath, resultFiles, generated
     }
 }
 async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks, externalMetadata, ssrMode, prebundleTransformer, target, zoneless, componentStyles, templateUpdates, prebundleLoaderExtensions, extensionMiddleware, indexHtmlTransformer, thirdPartySourcemaps = false) {
-    const proxy = await (0, utils_1.loadProxyConfiguration)(serverOptions.workspaceRoot, serverOptions.proxyConfig);
+    const proxy = await (0, utils_2.loadProxyConfiguration)(serverOptions.workspaceRoot, serverOptions.proxyConfig);
     // dynamically import Vite for ESM compatibility
     const { normalizePath } = await (0, load_esm_1.loadEsmModule)('vite');
     // Path will not exist on disk and only used to provide separate path for Vite requests
@@ -530,7 +531,7 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
             noExternal: /.*/,
             // Exclude any Node.js built in module and provided dependencies (currently build defined externals)
             external: externalMetadata.explicitServer,
-            optimizeDeps: getDepOptimizationConfig({
+            optimizeDeps: (0, utils_1.getDepOptimizationConfig)({
                 // Only enable with caching since it causes prebundle dependencies to be cached
                 disabled: serverOptions.prebundle === false,
                 // Exclude any explicitly defined dependencies (currently build defined externals and node.js built-ins)
@@ -566,7 +567,7 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
             }),
         ],
         // Browser only optimizeDeps. (This does not run for SSR dependencies).
-        optimizeDeps: getDepOptimizationConfig({
+        optimizeDeps: (0, utils_1.getDepOptimizationConfig)({
             // Only enable with caching since it causes prebundle dependencies to be cached
             disabled: serverOptions.prebundle === false,
             // Exclude any explicitly defined dependencies (currently build defined externals)
@@ -598,60 +599,6 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
         }
     }
     return configuration;
-}
-function getDepOptimizationConfig({ disabled, exclude, include, target, zoneless, prebundleTransformer, ssr, loader, thirdPartySourcemaps, }) {
-    const plugins = [
-        {
-            name: 'angular-browser-node-built-in',
-            setup(build) {
-                // This namespace is configured by vite.
-                // @see: https://github.com/vitejs/vite/blob/a1dd396da856401a12c921d0cd2c4e97cb63f1b5/packages/vite/src/node/optimizer/esbuildDepPlugin.ts#L109
-                build.onLoad({ filter: /.*/, namespace: 'browser-external' }, (args) => {
-                    if (!(0, node_module_1.isBuiltin)(args.path)) {
-                        return;
-                    }
-                    return {
-                        errors: [
-                            {
-                                text: `The package "${args.path}" wasn't found on the file system but is built into node.`,
-                            },
-                        ],
-                    };
-                });
-            },
-        },
-        {
-            name: `angular-vite-optimize-deps${ssr ? '-ssr' : ''}${thirdPartySourcemaps ? '-vendor-sourcemap' : ''}`,
-            setup(build) {
-                build.onLoad({ filter: /\.[cm]?js$/ }, async (args) => {
-                    return {
-                        contents: await prebundleTransformer.transformFile(args.path),
-                        loader: 'js',
-                    };
-                });
-            },
-        },
-    ];
-    return {
-        // Exclude any explicitly defined dependencies (currently build defined externals)
-        exclude,
-        // NB: to disable the deps optimizer, set optimizeDeps.noDiscovery to true and optimizeDeps.include as undefined.
-        // Include all implict dependencies from the external packages internal option
-        include: disabled ? undefined : include,
-        noDiscovery: disabled,
-        // Add an esbuild plugin to run the Angular linker on dependencies
-        esbuildOptions: {
-            // Set esbuild supported targets.
-            target,
-            supported: (0, internal_1.getFeatureSupport)(target, zoneless),
-            plugins,
-            loader,
-            define: {
-                'ngServerMode': `${ssr}`,
-            },
-            resolveExtensions: ['.mjs', '.js', '.cjs'],
-        },
-    };
 }
 /**
  * Checks if the given value is an absolute URL.
