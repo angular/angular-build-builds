@@ -11,7 +11,6 @@ exports.SERVER_APP_ENGINE_MANIFEST_FILENAME = exports.SERVER_APP_MANIFEST_FILENA
 exports.generateAngularServerAppEngineManifest = generateAngularServerAppEngineManifest;
 exports.generateAngularServerAppManifest = generateAngularServerAppManifest;
 const node_path_1 = require("node:path");
-const options_1 = require("../../builders/application/options");
 const bundler_context_1 = require("../../tools/esbuild/bundler-context");
 const utils_1 = require("../../tools/esbuild/utils");
 exports.SERVER_APP_MANIFEST_FILENAME = 'angular-app-manifest.mjs';
@@ -49,15 +48,11 @@ function escapeUnsafeChars(str) {
  */
 function generateAngularServerAppEngineManifest(i18nOptions, baseHref) {
     const entryPoints = {};
-    if (i18nOptions.shouldInline) {
+    if (i18nOptions.shouldInline && !i18nOptions.flatOutput) {
         for (const locale of i18nOptions.inlineLocales) {
-            const importPath = './' + (i18nOptions.flatOutput ? '' : locale + '/') + MAIN_SERVER_OUTPUT_FILENAME;
-            let localeWithBaseHref = (0, options_1.getLocaleBaseHref)('', i18nOptions, locale) || '/';
-            // Remove leading and trailing slashes.
-            const start = localeWithBaseHref[0] === '/' ? 1 : 0;
-            const end = localeWithBaseHref[localeWithBaseHref.length - 1] === '/' ? -1 : undefined;
-            localeWithBaseHref = localeWithBaseHref.slice(start, end);
-            entryPoints[localeWithBaseHref] = `() => import('${importPath}')`;
+            const { subPath } = i18nOptions.locales[locale];
+            const importPath = `${subPath ? `${subPath}/` : ''}${MAIN_SERVER_OUTPUT_FILENAME}`;
+            entryPoints[subPath] = `() => import('./${importPath}')`;
         }
     }
     else {
