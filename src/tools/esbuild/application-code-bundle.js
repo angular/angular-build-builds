@@ -136,7 +136,10 @@ function createServerPolyfillBundleOptions(options, target, loadResultCache) {
     if (!polyfillBundleOptions) {
         return;
     }
-    const jsBanner = [`globalThis['ngServerMode'] = true;`];
+    const jsBanner = [];
+    if (polyfillBundleOptions.external?.length) {
+        jsBanner.push(`globalThis['ngServerMode'] = true;`);
+    }
     if (isNodePlatform) {
         // Note: Needed as esbuild does not provide require shims / proxy from ESModules.
         // See: https://github.com/evanw/esbuild/issues/1921.
@@ -273,7 +276,10 @@ function createSsrEntryCodeBundleOptions(options, target, sourceFileCache, style
         const ssrEntryNamespace = 'angular:ssr-entry';
         const ssrInjectManifestNamespace = 'angular:ssr-entry-inject-manifest';
         const isNodePlatform = options.ssrOptions?.platform !== schema_1.ExperimentalPlatform.Neutral;
-        const jsBanner = [`globalThis['ngServerMode'] = true;`];
+        const jsBanner = [];
+        if (options.externalDependencies?.length) {
+            jsBanner.push(`globalThis['ngServerMode'] = true;`);
+        }
         if (isNodePlatform) {
             // Note: Needed as esbuild does not provide require shims / proxy from ESModules.
             // See: https://github.com/evanw/esbuild/issues/1921.
