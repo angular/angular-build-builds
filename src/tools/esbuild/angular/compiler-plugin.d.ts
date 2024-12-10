@@ -13,6 +13,7 @@ export interface CompilerPluginOptions {
     sourcemap: boolean | 'external';
     tsconfig: string;
     jit?: boolean;
+    browserOnlyBuild?: boolean;
     /** Skip TypeScript compilation setup. This is useful to re-use the TypeScript compilation from another plugin. */
     noopTypeScriptCompilation?: boolean;
     advancedOptimizations?: boolean;

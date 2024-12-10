@@ -20,11 +20,12 @@ const options_1 = require("./options");
 /**
  * Inlines all active locales as specified by the application build options into all
  * application JavaScript files created during the build.
+ * @param metafile An esbuild metafile object.
  * @param options The normalized application builder options used to create the build.
  * @param executionResult The result of an executed build.
  * @param initialFiles A map containing initial file information for the executed build.
  */
-async function inlineI18n(options, executionResult, initialFiles) {
+async function inlineI18n(metafile, options, executionResult, initialFiles) {
     const { i18nOptions, optimizationOptions, baseHref } = options;
     // Create the multi-threaded inliner with common options and the files generated from the build.
     const inliner = new i18n_inliner_1.I18nInliner({
@@ -47,7 +48,7 @@ async function inlineI18n(options, executionResult, initialFiles) {
             const localeOutputFiles = localeInlineResult.outputFiles;
             inlineResult.errors.push(...localeInlineResult.errors);
             inlineResult.warnings.push(...localeInlineResult.warnings);
-            const { errors, warnings, additionalAssets, additionalOutputFiles, prerenderedRoutes: generatedRoutes, } = await (0, execute_post_bundle_1.executePostBundleSteps)({
+            const { errors, warnings, additionalAssets, additionalOutputFiles, prerenderedRoutes: generatedRoutes, } = await (0, execute_post_bundle_1.executePostBundleSteps)(metafile, {
                 ...options,
                 baseHref: (0, options_1.getLocaleBaseHref)(baseHref, i18nOptions, locale) ?? baseHref,
             }, localeOutputFiles, executionResult.assetFiles, initialFiles, locale);

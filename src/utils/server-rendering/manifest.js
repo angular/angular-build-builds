@@ -13,6 +13,7 @@ exports.generateAngularServerAppManifest = generateAngularServerAppManifest;
 const node_path_1 = require("node:path");
 const bundler_context_1 = require("../../tools/esbuild/bundler-context");
 const utils_1 = require("../../tools/esbuild/utils");
+const environment_options_1 = require("../environment-options");
 exports.SERVER_APP_MANIFEST_FILENAME = 'angular-app-manifest.mjs';
 exports.SERVER_APP_ENGINE_MANIFEST_FILENAME = 'angular-app-engine-manifest.mjs';
 const MAIN_SERVER_OUTPUT_FILENAME = 'main.server.mjs';
@@ -90,12 +91,15 @@ export default {
  * the application, helping with localization and rendering content specific to the locale.
  * @param baseHref - The base HREF for the application. This is used to set the base URL
  * for all relative URLs in the application.
+ * @param initialFiles - A list of initial files that preload tags have already been added for.
+ * @param metafile - An esbuild metafile object.
+ * @param publicPath - The configured public path.
  *
  * @returns An object containing:
  * - `manifestContent`: A string of the SSR manifest content.
  * - `serverAssetsChunks`: An array of build output files containing the generated assets for the server.
  */
-function generateAngularServerAppManifest(additionalHtmlOutputFiles, outputFiles, inlineCriticalCss, routes, locale, baseHref) {
+function generateAngularServerAppManifest(additionalHtmlOutputFiles, outputFiles, inlineCriticalCss, routes, locale, baseHref, initialFiles, metafile, publicPath) {
     const serverAssetsChunks = [];
     const serverAssets = {};
     for (const file of [...additionalHtmlOutputFiles.values(), ...outputFiles]) {
@@ -107,6 +111,11 @@ function generateAngularServerAppManifest(additionalHtmlOutputFiles, outputFiles
                 `{size: ${file.size}, hash: '${file.hash}', text: () => import('./${jsChunkFilePath}').then(m => m.default)}`;
         }
     }
+    // When routes have been extracted, mappings are no longer needed, as preloads will be included in the metadata.
+    // When shouldOptimizeChunks is enabled the metadata is no longer correct and thus we cannot generate the mappings.
+    const entryPointToBrowserMapping = routes?.length || environment_options_1.shouldOptimizeChunks
+        ? undefined
+        : generateLazyLoadedFilesMappings(metafile, initialFiles, publicPath);
     const manifestContent = `
 export default {
   bootstrap: () => import('./main.server.mjs').then(m => m.default),
@@ -114,6 +123,7 @@ export default {
   baseHref: '${baseHref}',
   locale: ${JSON.stringify(locale)},
   routes: ${JSON.stringify(routes, undefined, 2)},
+  entryPointToBrowserMapping: ${JSON.stringify(entryPointToBrowserMapping, undefined, 2)},
   assets: {
     ${Object.entries(serverAssets)
         .map(([key, value]) => `'${key}': ${value}`)
@@ -122,4 +132,39 @@ export default {
 };
 `;
     return { manifestContent, serverAssetsChunks };
+}
+/**
+ * Maps entry points to their corresponding browser bundles for lazy loading.
+ *
+ * This function processes a metafile's outputs to generate a mapping between browser-side entry points
+ * and the associated JavaScript files that should be loaded in the browser. It includes the entry-point's
+ * own path and any valid imports while excluding initial files or external resources.
+ */
+function generateLazyLoadedFilesMappings(metafile, initialFiles, publicPath = '') {
+    const entryPointToBundles = {};
+    for (const [fileName, { entryPoint, exports, imports }] of Object.entries(metafile.outputs)) {
+        // Skip files that don't have an entryPoint, no exports, or are not .js
+        if (!entryPoint || exports?.length < 1 || !fileName.endsWith('.js')) {
+            continue;
+        }
+        const importedPaths = [
+            {
+                path: `${publicPath}${fileName}`,
+                dynamicImport: false,
+            },
+        ];
+        for (const { kind, external, path } of imports) {
+            if (external ||
+                initialFiles.has(path) ||
+                (kind !== 'dynamic-import' && kind !== 'import-statement')) {
+                continue;
+            }
+            importedPaths.push({
+                path: `${publicPath}${path}`,
+                dynamicImport: kind === 'dynamic-import',
+            });
+        }
+        entryPointToBundles[entryPoint] = importedPaths;
+    }
+    return entryPointToBundles;
 }

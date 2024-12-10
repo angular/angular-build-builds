@@ -161,13 +161,13 @@ async function executeBuild(options, context, rebuildState) {
     }
     // Perform i18n translation inlining if enabled
     if (i18nOptions.shouldInline) {
-        const result = await (0, i18n_1.inlineI18n)(options, executionResult, initialFiles);
+        const result = await (0, i18n_1.inlineI18n)(metafile, options, executionResult, initialFiles);
         executionResult.addErrors(result.errors);
         executionResult.addWarnings(result.warnings);
         executionResult.addPrerenderedRoutes(result.prerenderedRoutes);
     }
     else {
-        const result = await (0, execute_post_bundle_1.executePostBundleSteps)(options, executionResult.outputFiles, executionResult.assetFiles, initialFiles, 
+        const result = await (0, execute_post_bundle_1.executePostBundleSteps)(metafile, options, executionResult.outputFiles, executionResult.assetFiles, initialFiles, 
         // Set lang attribute to the defined source locale if present
         i18nOptions.hasDefinedSourceLocale ? i18nOptions.sourceLocale : undefined);
         executionResult.addErrors(result.errors);

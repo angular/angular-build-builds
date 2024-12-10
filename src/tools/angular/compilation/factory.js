@@ -47,19 +47,20 @@ const environment_options_1 = require("../../../utils/environment-options");
  * compilation either for AOT or JIT mode. By default a parallel compilation is created
  * that uses a Node.js worker thread.
  * @param jit True, for Angular JIT compilation; False, for Angular AOT compilation.
+ * @param browserOnlyBuild True, for browser only builds; False, for browser and server builds.
  * @returns An instance of an Angular compilation object.
  */
-async function createAngularCompilation(jit) {
+async function createAngularCompilation(jit, browserOnlyBuild) {
     if (environment_options_1.useParallelTs) {
         const { ParallelCompilation } = await Promise.resolve().then(() => __importStar(require('./parallel-compilation')));
-        return new ParallelCompilation(jit);
+        return new ParallelCompilation(jit, browserOnlyBuild);
     }
     if (jit) {
         const { JitCompilation } = await Promise.resolve().then(() => __importStar(require('./jit-compilation')));
-        return new JitCompilation();
+        return new JitCompilation(browserOnlyBuild);
     }
     else {
         const { AotCompilation } = await Promise.resolve().then(() => __importStar(require('./aot-compilation')));
-        return new AotCompilation();
+        return new AotCompilation(browserOnlyBuild);
     }
 }

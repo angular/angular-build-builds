@@ -103,7 +103,7 @@ function createCompilerPlugin(pluginOptions, stylesheetBundler) {
             // Create new reusable compilation for the appropriate mode based on the `jit` plugin option
             const compilation = pluginOptions.noopTypeScriptCompilation
                 ? new compilation_1.NoopCompilation()
-                : await (0, compilation_1.createAngularCompilation)(!!pluginOptions.jit);
+                : await (0, compilation_1.createAngularCompilation)(!!pluginOptions.jit, !!pluginOptions.browserOnlyBuild);
             // Compilation is initially assumed to have errors until emitted
             let hasCompilationErrors = true;
             // Determines if TypeScript should process JavaScript files based on tsconfig `allowJs` option

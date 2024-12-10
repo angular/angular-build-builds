@@ -17,6 +17,7 @@ const typescript_1 = __importDefault(require("typescript"));
 const profiling_1 = require("../../esbuild/profiling");
 const angular_host_1 = require("../angular-host");
 const jit_bootstrap_transformer_1 = require("../transformers/jit-bootstrap-transformer");
+const lazy_routes_transformer_1 = require("../transformers/lazy-routes-transformer");
 const web_worker_transformer_1 = require("../transformers/web-worker-transformer");
 const angular_compilation_1 = require("./angular-compilation");
 const hmr_candidates_1 = require("./hmr-candidates");
@@ -48,7 +49,12 @@ class AngularCompilationState {
     }
 }
 class AotCompilation extends angular_compilation_1.AngularCompilation {
+    browserOnlyBuild;
     #state;
+    constructor(browserOnlyBuild) {
+        super();
+        this.browserOnlyBuild = browserOnlyBuild;
+    }
     async initialize(tsconfig, hostOptions, compilerOptionsTransformer) {
         // Dynamically load the Angular compiler CLI package
         const { NgtscProgram, OptimizeFor } = await angular_compilation_1.AngularCompilation.loadCompilerCli();
@@ -222,8 +228,10 @@ class AotCompilation extends angular_compilation_1.AngularCompilation {
         };
         const transformers = angularCompiler.prepareEmit().transformers;
         transformers.before ??= [];
-        transformers.before.push((0, jit_bootstrap_transformer_1.replaceBootstrap)(() => typeScriptProgram.getProgram().getTypeChecker()));
-        transformers.before.push(webWorkerTransform);
+        transformers.before.push((0, jit_bootstrap_transformer_1.replaceBootstrap)(() => typeScriptProgram.getProgram().getTypeChecker()), webWorkerTransform);
+        if (!this.browserOnlyBuild) {
+            transformers.before.push((0, lazy_routes_transformer_1.lazyRoutesTransformer)(compilerOptions, compilerHost));
+        }
         // Emit is handled in write file callback when using TypeScript
         if (useTypeScriptTranspilation) {
             // TypeScript will loop until there are no more affected files in the program
