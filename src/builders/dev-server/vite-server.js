@@ -562,6 +562,7 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
             await (0, plugins_1.createAngularMemoryPlugin)({
                 virtualProjectRoot,
                 outputFiles,
+                templateUpdates,
                 external: externalMetadata.explicitBrowser,
                 skipViteClient: serverOptions.liveReload === false && serverOptions.hmr === false,
             }),
