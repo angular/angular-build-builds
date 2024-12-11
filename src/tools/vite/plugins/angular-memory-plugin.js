@@ -15,6 +15,7 @@ const node_assert_1 = __importDefault(require("node:assert"));
 const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
 const load_esm_1 = require("../../../utils/load-esm");
+const ANGULAR_PREFIX = '/@ng/';
 async function createAngularMemoryPlugin(options) {
     const { virtualProjectRoot, outputFiles, external } = options;
     const { normalizePath } = await (0, load_esm_1.loadEsmModule)('vite');
@@ -22,7 +23,11 @@ async function createAngularMemoryPlugin(options) {
         name: 'vite:angular-memory',
         // Ensures plugin hooks run before built-in Vite hooks
         enforce: 'pre',
-        async resolveId(source, importer) {
+        async resolveId(source, importer, { ssr }) {
+            // For SSR with component HMR, pass through as a virtual module
+            if (ssr && source.startsWith(ANGULAR_PREFIX)) {
+                return '\0' + source;
+            }
             // Prevent vite from resolving an explicit external dependency (`externalDependencies` option)
             if (external?.includes(source)) {
                 // This is still not ideal since Vite will still transform the import specifier to
@@ -41,7 +46,14 @@ async function createAngularMemoryPlugin(options) {
                 return (0, node_path_1.join)(virtualProjectRoot, source);
             }
         },
-        load(id) {
+        load(id, loadOptions) {
+            // For SSR component updates, return the component update module or empty if none
+            if (loadOptions?.ssr && id.startsWith(`\0${ANGULAR_PREFIX}`)) {
+                // Extract component identifier (first character is rollup virtual module null)
+                const requestUrl = new URL(id.slice(1), 'http://localhost');
+                const componentId = requestUrl.searchParams.get('c');
+                return (componentId && options.templateUpdates?.get(componentId)) ?? '';
+            }
             const [file] = id.split('?', 1);
             const relativeFile = '/' + normalizePath((0, node_path_1.relative)(virtualProjectRoot, file));
             const codeContents = outputFiles.get(relativeFile)?.contents;
