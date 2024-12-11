@@ -97,7 +97,7 @@ async function autoCsp(html, unsafeEval = false) {
      * loader script to the collection of hashes to add to the <meta> tag CSP.
      */
     function emitLoaderScript() {
-        const loaderScript = createLoaderScript(scriptContent);
+        const loaderScript = createLoaderScript(scriptContent, /* enableTrustedTypes = */ false);
         hashes.push(hashTextContent(loaderScript));
         rewriter.emitRaw(`<script>${loaderScript}</script>`);
         scriptContent = [];
@@ -151,7 +151,7 @@ async function autoCsp(html, unsafeEval = false) {
                 return;
             }
         }
-        if (tag.tagName === 'body' || tag.tagName === 'html') {
+        if (tag.tagName === 'head' || tag.tagName === 'body' || tag.tagName === 'html') {
             // Write the loader script if a string of <script>s were the last opening tag of the document.
             if (scriptContent.length > 0) {
                 emitLoaderScript();
@@ -249,7 +249,7 @@ function createLoaderScript(srcList, enableTrustedTypes = false) {
         // URI encoding means value can't escape string, JS, or HTML context.
         const srcAttr = encodeURI(s.src).replaceAll("'", "\\'");
         // Can only be 'module' or a JS MIME type or an empty string.
-        const typeAttr = s.type ? "'" + s.type + "'" : undefined;
+        const typeAttr = s.type ? "'" + s.type + "'" : "''";
         const asyncAttr = s.async ? 'true' : 'false';
         const deferAttr = s.defer ? 'true' : 'false';
         return `['${srcAttr}', ${typeAttr}, ${asyncAttr}, ${deferAttr}]`;
@@ -268,7 +268,7 @@ function createLoaderScript(srcList, enableTrustedTypes = false) {
     s.type = scriptUrl[1];
     s.async = !!scriptUrl[2];
     s.defer = !!scriptUrl[3];
-    document.body.appendChild(s);
+    document.lastElementChild.appendChild(s);
   });\n`
         : `
   var scripts = [${srcListFormatted}];
@@ -278,6 +278,6 @@ function createLoaderScript(srcList, enableTrustedTypes = false) {
     s.type = scriptUrl[1];
     s.async = !!scriptUrl[2];
     s.defer = !!scriptUrl[3];
-    document.body.appendChild(s);
+    document.lastElementChild.appendChild(s);
   });\n`;
 }
