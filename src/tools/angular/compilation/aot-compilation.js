@@ -102,6 +102,7 @@ class AotCompilation extends angular_compilation_1.AngularCompilation {
                 if (relativePath.startsWith('..')) {
                     relativePath = componentFilename;
                 }
+                relativePath = relativePath.replaceAll('\\', '/');
                 const updateId = encodeURIComponent(`${host.getCanonicalFileName(relativePath)}@${node.name?.text}`);
                 const updateText = angularCompiler.emitHmrUpdateModule(node);
                 if (updateText === null) {
