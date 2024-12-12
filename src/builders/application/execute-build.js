@@ -6,6 +6,29 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.executeBuild = executeBuild;
 const source_file_cache_1 = require("../../tools/esbuild/angular/source-file-cache");
@@ -21,7 +44,6 @@ const environment_options_1 = require("../../utils/environment-options");
 const resolve_assets_1 = require("../../utils/resolve-assets");
 const manifest_1 = require("../../utils/server-rendering/manifest");
 const supported_browsers_1 = require("../../utils/supported-browsers");
-const chunk_optimizer_1 = require("./chunk-optimizer");
 const execute_post_bundle_1 = require("./execute-post-bundle");
 const i18n_1 = require("./i18n");
 const setup_bundling_1 = require("./setup-bundling");
@@ -85,7 +107,8 @@ async function executeBuild(options, context, rebuildState) {
         bundlingResult = bundler_context_1.BundlerContext.mergeResults([bundlingResult, ...componentResults]);
     }
     if (options.optimizationOptions.scripts && environment_options_1.shouldOptimizeChunks) {
-        bundlingResult = await (0, profiling_1.profileAsync)('OPTIMIZE_CHUNKS', () => (0, chunk_optimizer_1.optimizeChunks)(bundlingResult, options.sourcemapOptions.scripts ? !options.sourcemapOptions.hidden || 'hidden' : false));
+        const { optimizeChunks } = await Promise.resolve().then(() => __importStar(require('./chunk-optimizer')));
+        bundlingResult = await (0, profiling_1.profileAsync)('OPTIMIZE_CHUNKS', () => optimizeChunks(bundlingResult, options.sourcemapOptions.scripts ? !options.sourcemapOptions.hidden || 'hidden' : false));
     }
     const executionResult = new bundler_execution_result_1.ExecutionResult(bundlerContexts, componentStyleBundler, codeBundleCache, templateUpdates);
     executionResult.addWarnings(bundlingResult.warnings);
