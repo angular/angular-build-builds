@@ -103,14 +103,13 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
         // https://nodejs.org/api/process.html#processsetsourcemapsenabledval
         process.setSourceMapsEnabled(true);
     }
-    // Enable to support component style hot reloading (`NG_HMR_CSTYLES=0` can be used to disable selectively)
+    // Enable to support link-based component style hot reloading (`NG_HMR_CSTYLES=0` can be used to disable selectively)
     browserOptions.externalRuntimeStyles =
         serverOptions.liveReload && serverOptions.hmr && environment_options_1.useComponentStyleHmr;
-    // Enable to support component template hot replacement (`NG_HMR_TEMPLATE=1` can be used to enable)
-    browserOptions.templateUpdates = !!serverOptions.liveReload && environment_options_1.useComponentTemplateHmr;
-    if (browserOptions.templateUpdates) {
-        context.logger.warn('Experimental support for component template hot replacement has been enabled via the "NG_HMR_TEMPLATE" environment variable.');
-    }
+    // Enable to support component template hot replacement (`NG_HMR_TEMPLATE=0` can be used to disable selectively)
+    // This will also replace file-based/inline styles as code if external runtime styles are not enabled.
+    browserOptions.templateUpdates =
+        serverOptions.liveReload && serverOptions.hmr && environment_options_1.useComponentTemplateHmr;
     // Setup the prebundling transformer that will be shared across Vite prebundling requests
     const prebundleTransformer = new internal_1.JavaScriptTransformer(
     // Always enable JIT linking to support applications built with and without AOT.
@@ -185,6 +184,10 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                         assetFiles.set('/' + normalizePath(outputPath), normalizePath(file.inputPath));
                     }
                 }
+                // Invalidate SSR module graph to ensure that only new rebuild is used and not stale component updates
+                if (server && browserOptions.ssr && templateUpdates.size > 0) {
+                    server.moduleGraph.invalidateAll();
+                }
                 // Clear stale template updates on code rebuilds
                 templateUpdates.clear();
                 // Analyze result files for changes
@@ -197,6 +200,13 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
             case results_1.ResultKind.ComponentUpdate:
                 (0, node_assert_1.default)(serverOptions.hmr, 'Component updates are only supported with HMR enabled.');
                 (0, node_assert_1.default)(server, 'Builder must provide an initial full build before component update results.');
+                // Invalidate SSR module graph to ensure that new component updates are used
+                // TODO: Use fine-grained invalidation of only the component update modules
+                if (browserOptions.ssr) {
+                    server.moduleGraph.invalidateAll();
+                    const { ɵresetCompiledComponents } = (await server.ssrLoadModule('/main.server.mjs'));
+                    ɵresetCompiledComponents();
+                }
                 for (const componentUpdate of result.updates) {
                     if (componentUpdate.type === 'template') {
                         templateUpdates.set(componentUpdate.id, componentUpdate.content);

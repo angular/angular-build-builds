@@ -85,6 +85,6 @@ exports.shouldOptimizeChunks = isPresent(optimizeChunksVariable) && isEnabled(op
 const hmrComponentStylesVariable = process.env['NG_HMR_CSTYLES'];
 exports.useComponentStyleHmr = !isPresent(hmrComponentStylesVariable) || !isDisabled(hmrComponentStylesVariable);
 const hmrComponentTemplateVariable = process.env['NG_HMR_TEMPLATES'];
-exports.useComponentTemplateHmr = isPresent(hmrComponentTemplateVariable) && isEnabled(hmrComponentTemplateVariable);
+exports.useComponentTemplateHmr = !isPresent(hmrComponentTemplateVariable) || !isDisabled(hmrComponentTemplateVariable);
 const partialSsrBuildVariable = process.env['NG_BUILD_PARTIAL_SSR'];
 exports.usePartialSsrBuild = isPresent(partialSsrBuildVariable) && isEnabled(partialSsrBuildVariable);

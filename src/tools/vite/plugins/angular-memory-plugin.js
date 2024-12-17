@@ -63,7 +63,7 @@ async function createAngularMemoryPlugin(options) {
                 // Extract component identifier (first character is rollup virtual module null)
                 const requestUrl = new URL(id.slice(1), 'http://localhost');
                 const componentId = requestUrl.searchParams.get('c');
-                return (componentId && options.templateUpdates?.get(componentId)) ?? '';
+                return (componentId && options.templateUpdates?.get(encodeURIComponent(componentId))) ?? '';
             }
             const [file] = id.split('?', 1);
             const relativeFile = '/' + normalizePath((0, node_path_1.relative)(virtualProjectRoot, file));

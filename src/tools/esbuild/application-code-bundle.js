@@ -250,6 +250,8 @@ function createServerMainCodeBundleOptions(options, target, sourceFileCache, sty
               ɵextractRoutesAndCreateRouteTree,
               ɵgetOrCreateAngularServerApp,
             } from '@angular/ssr';`,
+                    // Need for HMR
+                    `export { ɵresetCompiledComponents } from '@angular/core';`,
                     // Re-export all symbols including default export from 'main.server.ts'
                     `export { default } from '${mainServerEntryPointJsImport}';`,
                     `export * from '${mainServerEntryPointJsImport}';`,
