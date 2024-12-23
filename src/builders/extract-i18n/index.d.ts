@@ -8,5 +8,5 @@
 import { execute } from './builder';
 import type { Schema as ExtractI18nBuilderOptions } from './schema';
 export { ExtractI18nBuilderOptions, execute };
-declare const _default: import("../../../../../angular_devkit/architect/src/internal").Builder<ExtractI18nBuilderOptions & import("../../../../../angular_devkit/core/src").JsonObject>;
+declare const _default: import("../../../../../angular_devkit/architect/src/internal").Builder<ExtractI18nBuilderOptions & import("../../../../../angular_devkit/core").JsonObject>;
 export default _default;
