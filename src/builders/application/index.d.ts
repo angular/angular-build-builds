@@ -36,5 +36,5 @@ export interface ApplicationBuilderOutput extends BuilderOutput {
  * @returns The build output results of the build.
  */
 export declare function buildApplication(options: ApplicationBuilderOptions, context: BuilderContext, extensions?: ApplicationBuilderExtensions): AsyncIterable<ApplicationBuilderOutput>;
-declare const _default: import("../../../../../angular_devkit/architect/src/internal").Builder<ApplicationBuilderOptions & import("../../../../../angular_devkit/core/src").JsonObject>;
+declare const _default: import("../../../../../angular_devkit/architect/src/internal").Builder<ApplicationBuilderOptions & import("../../../../../angular_devkit/core").JsonObject>;
 export default _default;
