@@ -54,6 +54,16 @@ function isTslibHelperName(name) {
     }
     return tslibHelpers.has(originalName);
 }
+const babelHelpers = new Set(['_defineProperty']);
+/**
+ * Determinates whether an identifier name matches one of the Babel helper function names.
+ *
+ * @param name The identifier name to check.
+ * @returns True, if the name matches a Babel helper name; otherwise, false.
+ */
+function isBabelHelperName(name) {
+    return babelHelpers.has(name);
+}
 /**
  * A babel plugin factory function for adding the PURE annotation to top-level new and call expressions.
  *
@@ -72,9 +82,10 @@ function default_1() {
                     path.node.arguments.length !== 0) {
                     return;
                 }
-                // Do not annotate TypeScript helpers emitted by the TypeScript compiler.
-                // TypeScript helpers are intended to cause side effects.
-                if (callee.isIdentifier() && isTslibHelperName(callee.node.name)) {
+                // Do not annotate TypeScript helpers emitted by the TypeScript compiler or Babel helpers.
+                // They are intended to cause side effects.
+                if (callee.isIdentifier() &&
+                    (isTslibHelperName(callee.node.name) || isBabelHelperName(callee.node.name))) {
                     return;
                 }
                 (0, helper_annotate_as_pure_1.default)(path);
