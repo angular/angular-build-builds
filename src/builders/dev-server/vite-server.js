@@ -110,6 +110,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
     // This will also replace file-based/inline styles as code if external runtime styles are not enabled.
     browserOptions.templateUpdates =
         serverOptions.liveReload && serverOptions.hmr && environment_options_1.useComponentTemplateHmr;
+    browserOptions.incrementalResults = true;
     // Setup the prebundling transformer that will be shared across Vite prebundling requests
     const prebundleTransformer = new internal_1.JavaScriptTransformer(
     // Always enable JIT linking to support applications built with and without AOT.
@@ -179,10 +180,17 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                             : baseHref;
                 }
                 assetFiles.clear();
-                for (const [outputPath, file] of Object.entries(result.files)) {
+                componentStyles.clear();
+                generatedFiles.clear();
+                for (const entry of Object.entries(result.files)) {
+                    const [outputPath, file] = entry;
                     if (file.origin === 'disk') {
                         assetFiles.set('/' + normalizePath(outputPath), normalizePath(file.inputPath));
+                        continue;
                     }
+                    updateResultRecord(outputPath, file, normalizePath, htmlIndexPath, generatedFiles, componentStyles, 
+                    // The initial build will not yet have a server setup
+                    !server);
                 }
                 // Invalidate SSR module graph to ensure that only new rebuild is used and not stale component updates
                 if (server && browserOptions.ssr && templateUpdates.size > 0) {
@@ -190,12 +198,20 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                 }
                 // Clear stale template updates on code rebuilds
                 templateUpdates.clear();
-                // Analyze result files for changes
-                analyzeResultFiles(normalizePath, htmlIndexPath, result.files, generatedFiles, componentStyles);
                 break;
             case results_1.ResultKind.Incremental:
                 (0, node_assert_1.default)(server, 'Builder must provide an initial full build before incremental results.');
-                // TODO: Implement support -- application builder currently does not use
+                for (const removed of result.removed) {
+                    const filePath = '/' + normalizePath(removed.path);
+                    generatedFiles.delete(filePath);
+                    assetFiles.delete(filePath);
+                }
+                for (const modified of result.modified) {
+                    updateResultRecord(modified, result.files[modified], normalizePath, htmlIndexPath, generatedFiles, componentStyles);
+                }
+                for (const added of result.added) {
+                    updateResultRecord(added, result.files[added], normalizePath, htmlIndexPath, generatedFiles, componentStyles);
+                }
                 break;
             case results_1.ResultKind.ComponentUpdate:
                 (0, node_assert_1.default)(serverOptions.hmr, 'Component updates are only supported with HMR enabled.');
@@ -325,11 +341,12 @@ async function handleUpdate(normalizePath, generatedFiles, server, serverOptions
     const updatedFiles = [];
     let destroyAngularServerAppCalled = false;
     // Invalidate any updated files
-    for (const [file, { updated, type }] of generatedFiles) {
-        if (!updated) {
+    for (const [file, record] of generatedFiles) {
+        if (!record.updated) {
             continue;
         }
-        if (type === internal_1.BuildOutputFileType.ServerApplication && !destroyAngularServerAppCalled) {
+        record.updated = false;
+        if (record.type === internal_1.BuildOutputFileType.ServerApplication && !destroyAngularServerAppCalled) {
             // Clear the server app cache
             // This must be done before module invalidation.
             const { ɵdestroyAngularServerApp } = (await server.ssrLoadModule('/main.server.mjs'));
@@ -402,70 +419,52 @@ async function handleUpdate(normalizePath, generatedFiles, server, serverOptions
         logger.info('Page reload sent to client(s).');
     }
 }
-function analyzeResultFiles(normalizePath, htmlIndexPath, resultFiles, generatedFiles, componentStyles) {
-    const seen = new Set(['/index.html']);
-    for (const [outputPath, file] of Object.entries(resultFiles)) {
-        if (file.origin === 'disk') {
-            continue;
-        }
-        let filePath;
-        if (outputPath === htmlIndexPath) {
-            // Convert custom index output path to standard index path for dev-server usage.
-            // This mimics the Webpack dev-server behavior.
-            filePath = '/index.html';
-        }
-        else {
-            filePath = '/' + normalizePath(outputPath);
-        }
-        seen.add(filePath);
-        const servable = file.type === internal_1.BuildOutputFileType.Browser || file.type === internal_1.BuildOutputFileType.Media;
-        // Skip analysis of sourcemaps
-        if (filePath.endsWith('.map')) {
-            generatedFiles.set(filePath, {
-                contents: file.contents,
-                servable,
-                size: file.contents.byteLength,
-                hash: file.hash,
-                type: file.type,
-                updated: false,
-            });
-            continue;
-        }
-        const existingRecord = generatedFiles.get(filePath);
-        if (existingRecord &&
-            existingRecord.size === file.contents.byteLength &&
-            existingRecord.hash === file.hash) {
-            // Same file
-            existingRecord.updated = false;
-            continue;
-        }
-        // New or updated file
+function updateResultRecord(outputPath, file, normalizePath, htmlIndexPath, generatedFiles, componentStyles, initial = false) {
+    if (file.origin === 'disk') {
+        return;
+    }
+    let filePath;
+    if (outputPath === htmlIndexPath) {
+        // Convert custom index output path to standard index path for dev-server usage.
+        // This mimics the Webpack dev-server behavior.
+        filePath = '/index.html';
+    }
+    else {
+        filePath = '/' + normalizePath(outputPath);
+    }
+    const servable = file.type === internal_1.BuildOutputFileType.Browser || file.type === internal_1.BuildOutputFileType.Media;
+    // Skip analysis of sourcemaps
+    if (filePath.endsWith('.map')) {
         generatedFiles.set(filePath, {
             contents: file.contents,
+            servable,
             size: file.contents.byteLength,
             hash: file.hash,
-            updated: true,
             type: file.type,
-            servable,
+            updated: false,
         });
-        // Record any external component styles
-        if (filePath.endsWith('.css') && /^\/[a-f0-9]{64}\.css$/.test(filePath)) {
-            const componentStyle = componentStyles.get(filePath);
-            if (componentStyle) {
-                componentStyle.rawContent = file.contents;
-            }
-            else {
-                componentStyles.set(filePath, {
-                    rawContent: file.contents,
-                });
-            }
-        }
+        return;
     }
-    // Clear stale output files
-    for (const file of generatedFiles.keys()) {
-        if (!seen.has(file)) {
-            generatedFiles.delete(file);
-            componentStyles.delete(file);
+    // New or updated file
+    generatedFiles.set(filePath, {
+        contents: file.contents,
+        size: file.contents.byteLength,
+        hash: file.hash,
+        // Consider the files updated except on the initial build result
+        updated: !initial,
+        type: file.type,
+        servable,
+    });
+    // Record any external component styles
+    if (filePath.endsWith('.css') && /^\/[a-f0-9]{64}\.css$/.test(filePath)) {
+        const componentStyle = componentStyles.get(filePath);
+        if (componentStyle) {
+            componentStyle.rawContent = file.contents;
+        }
+        else {
+            componentStyles.set(filePath, {
+                rawContent: file.contents,
+            });
         }
     }
 }
