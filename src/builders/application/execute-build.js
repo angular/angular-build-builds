@@ -145,7 +145,7 @@ async function executeBuild(options, context, rebuildState) {
     }
     const { metafile, initialFiles, outputFiles } = bundlingResult;
     executionResult.outputFiles.push(...outputFiles);
-    const changedFiles = rebuildState && executionResult.findChangedFiles(rebuildState.previousOutputHashes);
+    const changedFiles = rebuildState && executionResult.findChangedFiles(rebuildState.previousOutputInfo);
     // Analyze files for bundle budget failures if present
     let budgetFailures;
     if (options.budgets) {

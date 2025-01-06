@@ -30,7 +30,10 @@ export interface FullResult extends BaseResult {
 export interface IncrementalResult extends BaseResult {
     kind: ResultKind.Incremental;
     added: string[];
-    removed: string[];
+    removed: {
+        path: string;
+        type: BuildOutputFileType;
+    }[];
     modified: string[];
     files: Record<string, ResultFile>;
 }

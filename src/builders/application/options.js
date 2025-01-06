@@ -298,6 +298,7 @@ async function normalizeOptions(context, projectName, options, extensions) {
         instrumentForCoverage,
         security,
         templateUpdates: !!options.templateUpdates,
+        incrementalResults: !!options.incrementalResults,
     };
 }
 async function getTailwindConfig(searchDirectories, workspaceRoot, context) {

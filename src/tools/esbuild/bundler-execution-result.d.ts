@@ -22,7 +22,10 @@ export interface RebuildState {
     componentStyleBundler: ComponentStylesheetBundler;
     codeBundleCache?: SourceFileCache;
     fileChanges: ChangedFiles;
-    previousOutputHashes: Map<string, string>;
+    previousOutputInfo: Map<string, {
+        hash: string;
+        type: BuildOutputFileType;
+    }>;
     templateUpdates?: Map<string, string>;
 }
 export interface ExternalResultMetadata {
@@ -83,6 +86,9 @@ export declare class ExecutionResult {
     };
     get watchFiles(): string[];
     createRebuildState(fileChanges: ChangedFiles): RebuildState;
-    findChangedFiles(previousOutputHashes: Map<string, string>): Set<string>;
+    findChangedFiles(previousOutputHashes: Map<string, {
+        hash: string;
+        type: BuildOutputFileType;
+    }>): Set<string>;
     dispose(): Promise<void>;
 }
