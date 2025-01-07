@@ -16,6 +16,7 @@ const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
 const load_esm_1 = require("../../../utils/load-esm");
 const ANGULAR_PREFIX = '/@ng/';
+const VITE_FS_PREFIX = '/@fs/';
 async function createAngularMemoryPlugin(options) {
     const { virtualProjectRoot, outputFiles, external } = options;
     const { normalizePath } = await (0, load_esm_1.loadEsmModule)('vite');
@@ -24,6 +25,9 @@ async function createAngularMemoryPlugin(options) {
         // Ensures plugin hooks run before built-in Vite hooks
         enforce: 'pre',
         async resolveId(source, importer, { ssr }) {
+            if (source.startsWith(VITE_FS_PREFIX)) {
+                return;
+            }
             // For SSR with component HMR, pass through as a virtual module
             if (ssr && source.startsWith(ANGULAR_PREFIX)) {
                 return '\0' + source;

@@ -81,7 +81,7 @@ export declare class ExecutionResult {
         errors: (PartialMessage | Message)[];
         externalMetadata: ExternalResultMetadata | undefined;
     };
-    get watchFiles(): string[];
+    get watchFiles(): Readonly<string[]>;
     createRebuildState(fileChanges: ChangedFiles): RebuildState;
     findChangedFiles(previousOutputHashes: Map<string, string>): Set<string>;
     dispose(): Promise<void>;
