@@ -11,3 +11,4 @@ export { type BuildOutputFile, BuildOutputFileType } from './tools/esbuild/bundl
 export type { BuildOutputAsset } from './tools/esbuild/bundler-execution-result';
 export { executeDevServerBuilder, type DevServerBuilderOptions, type DevServerBuilderOutput, } from './builders/dev-server';
 export { execute as executeExtractI18nBuilder, type ExtractI18nBuilderOptions, } from './builders/extract-i18n';
+export { execute as executeNgPackagrBuilder, type NgPackagrBuilderOptions, } from './builders/ng-packagr';
