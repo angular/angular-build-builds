@@ -302,7 +302,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                 });
             }
             // Setup server and start listening
-            const serverConfiguration = await setupServer(serverOptions, generatedFiles, assetFiles, browserOptions.preserveSymlinks, externalMetadata, ssrMode, prebundleTransformer, target, (0, internal_1.isZonelessApp)(polyfills), componentStyles, templateUpdates, browserOptions.loader, extensions?.middleware, transformers?.indexHtml, thirdPartySourcemaps);
+            const serverConfiguration = await setupServer(serverOptions, generatedFiles, assetFiles, browserOptions.preserveSymlinks, externalMetadata, ssrMode, prebundleTransformer, target, (0, internal_1.isZonelessApp)(polyfills), componentStyles, templateUpdates, browserOptions.loader, browserOptions.define, extensions?.middleware, transformers?.indexHtml, thirdPartySourcemaps);
             server = await createServer(serverConfiguration);
             await server.listen();
             const urls = server.resolvedUrls;
@@ -468,12 +468,22 @@ function updateResultRecord(outputPath, file, normalizePath, htmlIndexPath, gene
         }
     }
 }
-async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks, externalMetadata, ssrMode, prebundleTransformer, target, zoneless, componentStyles, templateUpdates, prebundleLoaderExtensions, extensionMiddleware, indexHtmlTransformer, thirdPartySourcemaps = false) {
+async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks, externalMetadata, ssrMode, prebundleTransformer, target, zoneless, componentStyles, templateUpdates, prebundleLoaderExtensions, define, extensionMiddleware, indexHtmlTransformer, thirdPartySourcemaps = false) {
     const proxy = await (0, utils_2.loadProxyConfiguration)(serverOptions.workspaceRoot, serverOptions.proxyConfig);
     // dynamically import Vite for ESM compatibility
     const { normalizePath } = await (0, load_esm_1.loadEsmModule)('vite');
     // Path will not exist on disk and only used to provide separate path for Vite requests
     const virtualProjectRoot = normalizePath((0, node_path_1.join)(serverOptions.workspaceRoot, `.angular/vite-root`, serverOptions.buildTarget.project));
+    // Files used for SSR warmup.
+    let ssrFiles;
+    switch (ssrMode) {
+        case plugins_1.ServerSsrMode.InternalSsrMiddleware:
+            ssrFiles = ['./main.server.mjs'];
+            break;
+        case plugins_1.ServerSsrMode.ExternalSsrMiddleware:
+            ssrFiles = ['./main.server.mjs', './server.mjs'];
+            break;
+    }
     const cacheDir = (0, node_path_1.join)(serverOptions.cacheOptions.path, serverOptions.buildTarget.project, 'vite');
     const configuration = {
         configFile: false,
@@ -504,7 +514,7 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
         },
         server: {
             warmup: {
-                ssrFiles: ['./main.server.mjs', './server.mjs'],
+                ssrFiles,
             },
             port: serverOptions.port,
             strictPort: true,
@@ -556,6 +566,7 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
                 target,
                 loader: prebundleLoaderExtensions,
                 thirdPartySourcemaps,
+                define,
             }),
         },
         plugins: [
@@ -593,6 +604,7 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
             zoneless,
             loader: prebundleLoaderExtensions,
             thirdPartySourcemaps,
+            define,
         }),
     };
     if (serverOptions.ssl) {

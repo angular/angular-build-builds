@@ -28,7 +28,7 @@ function lookupMimeTypeFromRequest(url) {
     }
     return extension && (0, mrmime_1.lookup)(extension);
 }
-function getDepOptimizationConfig({ disabled, exclude, include, target, zoneless, prebundleTransformer, ssr, loader, thirdPartySourcemaps, }) {
+function getDepOptimizationConfig({ disabled, exclude, include, target, zoneless, prebundleTransformer, ssr, loader, thirdPartySourcemaps, define = {}, }) {
     const plugins = [
         {
             name: `angular-vite-optimize-deps${ssr ? '-ssr' : ''}${thirdPartySourcemaps ? '-vendor-sourcemap' : ''}`,
@@ -57,6 +57,7 @@ function getDepOptimizationConfig({ disabled, exclude, include, target, zoneless
             plugins,
             loader,
             define: {
+                ...define,
                 'ngServerMode': `${ssr}`,
             },
             resolveExtensions: ['.mjs', '.js', '.cjs'],

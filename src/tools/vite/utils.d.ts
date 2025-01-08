@@ -15,7 +15,7 @@ export type AngularMemoryOutputFiles = Map<string, {
 export declare function pathnameWithoutBasePath(url: string, basePath: string): string;
 export declare function lookupMimeTypeFromRequest(url: string): string | undefined;
 export type EsbuildLoaderOption = Exclude<DepOptimizationConfig['esbuildOptions'], undefined>['loader'];
-export declare function getDepOptimizationConfig({ disabled, exclude, include, target, zoneless, prebundleTransformer, ssr, loader, thirdPartySourcemaps, }: {
+export declare function getDepOptimizationConfig({ disabled, exclude, include, target, zoneless, prebundleTransformer, ssr, loader, thirdPartySourcemaps, define, }: {
     disabled: boolean;
     exclude: string[];
     include: string[];
@@ -25,4 +25,5 @@ export declare function getDepOptimizationConfig({ disabled, exclude, include, t
     zoneless: boolean;
     loader?: EsbuildLoaderOption;
     thirdPartySourcemaps: boolean;
+    define: Record<string, string> | undefined;
 }): DepOptimizationConfig;
