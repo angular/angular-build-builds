@@ -22,6 +22,7 @@ const schema_1 = require("../../builders/application/schema");
 const environment_options_1 = require("../../utils/environment-options");
 const manifest_1 = require("../../utils/server-rendering/manifest");
 const compiler_plugin_1 = require("./angular/compiler-plugin");
+const angular_localize_init_warning_plugin_1 = require("./angular-localize-init-warning-plugin");
 const compiler_plugin_options_1 = require("./compiler-plugin-options");
 const external_packages_plugin_1 = require("./external-packages-plugin");
 const i18n_locale_plugin_1 = require("./i18n-locale-plugin");
@@ -53,6 +54,7 @@ function createBrowserCodeBundleOptions(options, target, sourceFileCache, styles
                 (0, loader_import_attribute_plugin_1.createLoaderImportAttributePlugin)(),
                 (0, wasm_plugin_1.createWasmPlugin)({ allowAsync: zoneless, cache: loadCache }),
                 (0, sourcemap_ignorelist_plugin_1.createSourcemapIgnorelistPlugin)(),
+                (0, angular_localize_init_warning_plugin_1.createAngularLocalizeInitWarningPlugin)(),
                 (0, compiler_plugin_1.createCompilerPlugin)(
                 // JS/TS options
                 pluginOptions, 
@@ -196,6 +198,7 @@ function createServerMainCodeBundleOptions(options, target, sourceFileCache, sty
             plugins: [
                 (0, wasm_plugin_1.createWasmPlugin)({ allowAsync: zoneless, cache: loadResultCache }),
                 (0, sourcemap_ignorelist_plugin_1.createSourcemapIgnorelistPlugin)(),
+                (0, angular_localize_init_warning_plugin_1.createAngularLocalizeInitWarningPlugin)(),
                 (0, compiler_plugin_1.createCompilerPlugin)(
                 // JS/TS options
                 { ...pluginOptions, noopTypeScriptCompilation: true }, 
@@ -297,6 +300,7 @@ function createSsrEntryCodeBundleOptions(options, target, sourceFileCache, style
             supported: (0, utils_1.getFeatureSupport)(target, true),
             plugins: [
                 (0, sourcemap_ignorelist_plugin_1.createSourcemapIgnorelistPlugin)(),
+                (0, angular_localize_init_warning_plugin_1.createAngularLocalizeInitWarningPlugin)(),
                 (0, compiler_plugin_1.createCompilerPlugin)(
                 // JS/TS options
                 { ...pluginOptions, noopTypeScriptCompilation: true }, 
