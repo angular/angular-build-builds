@@ -597,8 +597,8 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
     };
     if (serverOptions.ssl) {
         if (serverOptions.sslCert && serverOptions.sslKey) {
+            configuration.server ??= {};
             // server configuration is defined above
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             configuration.server.https = {
                 cert: await (0, promises_1.readFile)(serverOptions.sslCert),
                 key: await (0, promises_1.readFile)(serverOptions.sslKey),
@@ -606,7 +606,6 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
         }
         else {
             const { default: basicSslPlugin } = await Promise.resolve().then(() => __importStar(require('@vitejs/plugin-basic-ssl')));
-            // eslint-disable-next-line @typescript-eslint/no-floating-promises
             configuration.plugins ??= [];
             configuration.plugins.push(basicSslPlugin());
         }

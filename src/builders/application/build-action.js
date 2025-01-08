@@ -122,7 +122,7 @@ async function* runEsBuildBuildAction(action, options) {
     // Output the first build results after setting up the watcher to ensure that any code executed
     // higher in the iterator call stack will trigger the watcher. This is particularly relevant for
     // unit tests which execute the builder and modify the file system programmatically.
-    yield emitOutputResult(result, outputOptions);
+    yield* emitOutputResults(result, outputOptions);
     // Finish if watch mode is not enabled
     if (!watcher) {
         return;
@@ -164,7 +164,9 @@ async function* runEsBuildBuildAction(action, options) {
             if (staleWatchFiles?.size) {
                 watcher.remove([...staleWatchFiles]);
             }
-            yield emitOutputResult(result, outputOptions, incrementalResults ? rebuildState.previousOutputInfo : undefined);
+            for (const outputResult of emitOutputResults(result, outputOptions, incrementalResults ? rebuildState.previousOutputInfo : undefined)) {
+                yield outputResult;
+            }
         }
     }
     finally {
@@ -173,9 +175,9 @@ async function* runEsBuildBuildAction(action, options) {
         (0, sass_language_1.shutdownSassWorkerPool)();
     }
 }
-function emitOutputResult({ outputFiles, assetFiles, errors, warnings, externalMetadata, htmlIndexPath, htmlBaseHref, templateUpdates, }, outputOptions, previousOutputInfo) {
+function* emitOutputResults({ outputFiles, assetFiles, errors, warnings, externalMetadata, htmlIndexPath, htmlBaseHref, templateUpdates, }, outputOptions, previousOutputInfo) {
     if (errors.length > 0) {
-        return {
+        yield {
             kind: results_1.ResultKind.Failure,
             errors: errors,
             warnings: warnings,
@@ -183,6 +185,7 @@ function emitOutputResult({ outputFiles, assetFiles, errors, warnings, externalM
                 outputOptions,
             },
         };
+        return;
     }
     // Template updates only exist if no other JS changes have occurred
     const hasTemplateUpdates = !!templateUpdates?.size;
@@ -195,7 +198,7 @@ function emitOutputResult({ outputFiles, assetFiles, errors, warnings, externalM
                 content,
             })),
         };
-        return updateResult;
+        yield updateResult;
     }
     // Use an incremental result if previous output information is available
     if (previousOutputInfo) {
@@ -217,6 +220,12 @@ function emitOutputResult({ outputFiles, assetFiles, errors, warnings, externalM
         const removedOutputFiles = new Map(previousOutputInfo);
         for (const file of outputFiles) {
             removedOutputFiles.delete(file.path);
+            // Temporarily ignore JS files until Angular compiler plugin refactor to allow
+            // bypassing application code bundling for template affecting only changes.
+            // TODO: Remove once refactor is complete.
+            if (hasTemplateUpdates && /\.js(?:\.map)?$/.test(file.path)) {
+                continue;
+            }
             const previousHash = previousOutputInfo.get(file.path)?.hash;
             let needFile = false;
             if (previousHash === undefined) {
@@ -251,7 +260,8 @@ function emitOutputResult({ outputFiles, assetFiles, errors, warnings, externalM
                 origin: 'disk',
             };
         }
-        return incrementalResult;
+        yield incrementalResult;
+        return;
     }
     // Otherwise, use a full result
     const result = {
@@ -280,5 +290,5 @@ function emitOutputResult({ outputFiles, assetFiles, errors, warnings, externalM
             hash: file.hash,
         };
     }
-    return result;
+    yield result;
 }
