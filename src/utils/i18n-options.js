@@ -39,7 +39,7 @@ function ensureString(value, name) {
         throw new Error(`Project field '${name}' is malformed. Expected a string.`);
     }
 }
-function ensureValidsubPath(value, name) {
+function ensureValidSubPath(value, name) {
     ensureString(value, name);
     if (!/^[\w-]*$/.test(value)) {
         throw new Error(`Project field '${name}' is invalid. It can only contain letters, numbers, hyphens, and underscores.`);
@@ -78,7 +78,7 @@ function createI18nOptions(projectMetadata, inline, logger) {
             rawSourceLocaleBaseHref = metadata.sourceLocale.baseHref;
         }
         if (metadata.sourceLocale.subPath !== undefined) {
-            ensureValidsubPath(metadata.sourceLocale.subPath, 'i18n.sourceLocale.subPath');
+            ensureValidSubPath(metadata.sourceLocale.subPath, 'i18n.sourceLocale.subPath');
             rawsubPath = metadata.sourceLocale.subPath;
         }
         if (rawsubPath !== undefined && rawSourceLocaleBaseHref !== undefined) {
@@ -111,7 +111,7 @@ function createI18nOptions(projectMetadata, inline, logger) {
                     baseHref = options.baseHref;
                 }
                 if ('subPath' in options) {
-                    ensureString(options.subPath, `i18n.locales.${locale}.subPath`);
+                    ensureValidSubPath(options.subPath, `i18n.locales.${locale}.subPath`);
                     subPath = options.subPath;
                 }
                 if (subPath !== undefined && baseHref !== undefined) {
