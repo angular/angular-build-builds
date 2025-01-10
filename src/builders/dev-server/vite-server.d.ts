@@ -23,6 +23,10 @@ interface OutputFileRecord {
     servable: boolean;
     type: BuildOutputFileType;
 }
+interface OutputAssetRecord {
+    source: string;
+    updated: boolean;
+}
 interface DevServerExternalResultMetadata extends Omit<ExternalResultMetadata, 'explicit'> {
     explicitBrowser: string[];
     explicitServer: string[];
@@ -34,5 +38,5 @@ export declare function serveWithVite(serverOptions: NormalizedDevServerOptions,
     middleware?: Connect.NextHandleFunction[];
     buildPlugins?: Plugin[];
 }): AsyncIterableIterator<DevServerBuilderOutput>;
-export declare function setupServer(serverOptions: NormalizedDevServerOptions, outputFiles: Map<string, OutputFileRecord>, assets: Map<string, string>, preserveSymlinks: boolean | undefined, externalMetadata: DevServerExternalResultMetadata, ssrMode: ServerSsrMode, prebundleTransformer: JavaScriptTransformer, target: string[], zoneless: boolean, componentStyles: Map<string, ComponentStyleRecord>, templateUpdates: Map<string, string>, prebundleLoaderExtensions: EsbuildLoaderOption | undefined, define: ApplicationBuilderInternalOptions['define'], extensionMiddleware?: Connect.NextHandleFunction[], indexHtmlTransformer?: (content: string) => Promise<string>, thirdPartySourcemaps?: boolean): Promise<InlineConfig>;
+export declare function setupServer(serverOptions: NormalizedDevServerOptions, outputFiles: Map<string, OutputFileRecord>, assets: Map<string, OutputAssetRecord>, preserveSymlinks: boolean | undefined, externalMetadata: DevServerExternalResultMetadata, ssrMode: ServerSsrMode, prebundleTransformer: JavaScriptTransformer, target: string[], zoneless: boolean, componentStyles: Map<string, ComponentStyleRecord>, templateUpdates: Map<string, string>, prebundleLoaderExtensions: EsbuildLoaderOption | undefined, define: ApplicationBuilderInternalOptions['define'], extensionMiddleware?: Connect.NextHandleFunction[], indexHtmlTransformer?: (content: string) => Promise<string>, thirdPartySourcemaps?: boolean): Promise<InlineConfig>;
 export {};

@@ -164,7 +164,7 @@ async function* runEsBuildBuildAction(action, options) {
             if (staleWatchFiles?.size) {
                 watcher.remove([...staleWatchFiles]);
             }
-            for (const outputResult of emitOutputResults(result, outputOptions, incrementalResults ? rebuildState.previousOutputInfo : undefined)) {
+            for (const outputResult of emitOutputResults(result, outputOptions, changes, incrementalResults ? rebuildState : undefined)) {
                 yield outputResult;
             }
         }
@@ -175,7 +175,7 @@ async function* runEsBuildBuildAction(action, options) {
         (0, sass_language_1.shutdownSassWorkerPool)();
     }
 }
-function* emitOutputResults({ outputFiles, assetFiles, errors, warnings, externalMetadata, htmlIndexPath, htmlBaseHref, templateUpdates, }, outputOptions, previousOutputInfo) {
+function* emitOutputResults({ outputFiles, assetFiles, errors, warnings, externalMetadata, htmlIndexPath, htmlBaseHref, templateUpdates, }, outputOptions, changes, rebuildState) {
     if (errors.length > 0) {
         yield {
             kind: results_1.ResultKind.Failure,
@@ -201,7 +201,8 @@ function* emitOutputResults({ outputFiles, assetFiles, errors, warnings, externa
         yield updateResult;
     }
     // Use an incremental result if previous output information is available
-    if (previousOutputInfo) {
+    if (rebuildState && changes) {
+        const { previousAssetsInfo, previousOutputInfo } = rebuildState;
         const incrementalResult = {
             kind: results_1.ResultKind.Incremental,
             warnings: warnings,
@@ -245,21 +246,33 @@ function* emitOutputResults({ outputFiles, assetFiles, errors, warnings, externa
                 };
             }
         }
-        // Include the removed output files
-        incrementalResult.removed.push(...Array.from(removedOutputFiles, ([file, { type }]) => ({
-            path: file,
-            type,
-        })));
-        // Always consider asset files as added to ensure new/modified assets are available.
-        // TODO: Consider more comprehensive asset analysis.
-        for (const file of assetFiles) {
-            incrementalResult.added.push(file.destination);
-            incrementalResult.files[file.destination] = {
+        // Initially assume all previous assets files have been removed
+        const removedAssetFiles = new Map(previousAssetsInfo);
+        for (const { source, destination } of assetFiles) {
+            removedAssetFiles.delete(source);
+            if (!previousAssetsInfo.has(source)) {
+                incrementalResult.added.push(destination);
+            }
+            else if (changes.modified.has(source)) {
+                incrementalResult.modified.push(destination);
+            }
+            else {
+                continue;
+            }
+            incrementalResult.files[destination] = {
                 type: bundler_context_1.BuildOutputFileType.Browser,
-                inputPath: file.source,
+                inputPath: source,
                 origin: 'disk',
             };
         }
+        // Include the removed output and asset files
+        incrementalResult.removed.push(...Array.from(removedOutputFiles, ([file, { type }]) => ({
+            path: file,
+            type,
+        })), ...Array.from(removedAssetFiles.values(), (file) => ({
+            path: file,
+            type: bundler_context_1.BuildOutputFileType.Browser,
+        })));
         yield incrementalResult;
         return;
     }

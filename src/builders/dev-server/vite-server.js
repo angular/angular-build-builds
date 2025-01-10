@@ -182,13 +182,8 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                 assetFiles.clear();
                 componentStyles.clear();
                 generatedFiles.clear();
-                for (const entry of Object.entries(result.files)) {
-                    const [outputPath, file] = entry;
-                    if (file.origin === 'disk') {
-                        assetFiles.set('/' + normalizePath(outputPath), normalizePath(file.inputPath));
-                        continue;
-                    }
-                    updateResultRecord(outputPath, file, normalizePath, htmlIndexPath, generatedFiles, componentStyles, 
+                for (const [outputPath, file] of Object.entries(result.files)) {
+                    updateResultRecord(outputPath, file, normalizePath, htmlIndexPath, generatedFiles, assetFiles, componentStyles, 
                     // The initial build will not yet have a server setup
                     !server);
                 }
@@ -207,10 +202,10 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                     assetFiles.delete(filePath);
                 }
                 for (const modified of result.modified) {
-                    updateResultRecord(modified, result.files[modified], normalizePath, htmlIndexPath, generatedFiles, componentStyles);
+                    updateResultRecord(modified, result.files[modified], normalizePath, htmlIndexPath, generatedFiles, assetFiles, componentStyles);
                 }
                 for (const added of result.added) {
-                    updateResultRecord(added, result.files[added], normalizePath, htmlIndexPath, generatedFiles, componentStyles);
+                    updateResultRecord(added, result.files[added], normalizePath, htmlIndexPath, generatedFiles, assetFiles, componentStyles);
                 }
                 break;
             case results_1.ResultKind.ComponentUpdate:
@@ -262,9 +257,12 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
         if (server) {
             // Update fs allow list to include any new assets from the build option.
             server.config.server.fs.allow = [
-                ...new Set([...server.config.server.fs.allow, ...assetFiles.values()]),
+                ...new Set([
+                    ...server.config.server.fs.allow,
+                    ...[...assetFiles.values()].map(({ source }) => source),
+                ]),
             ];
-            await handleUpdate(normalizePath, generatedFiles, server, serverOptions, context.logger, componentStyles);
+            await handleUpdate(normalizePath, generatedFiles, assetFiles, server, serverOptions, context.logger, componentStyles);
         }
         else {
             const projectName = context.target?.project;
@@ -337,10 +335,18 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
     }
     await new Promise((resolve) => (deferred = resolve));
 }
-async function handleUpdate(normalizePath, generatedFiles, server, serverOptions, logger, componentStyles) {
+async function handleUpdate(normalizePath, generatedFiles, assetFiles, server, serverOptions, logger, componentStyles) {
     const updatedFiles = [];
-    let destroyAngularServerAppCalled = false;
+    // Invalidate any updated asset
+    for (const [file, record] of assetFiles) {
+        if (!record.updated) {
+            continue;
+        }
+        record.updated = false;
+        updatedFiles.push(file);
+    }
     // Invalidate any updated files
+    let destroyAngularServerAppCalled = false;
     for (const [file, record] of generatedFiles) {
         if (!record.updated) {
             continue;
@@ -419,8 +425,12 @@ async function handleUpdate(normalizePath, generatedFiles, server, serverOptions
         logger.info('Page reload sent to client(s).');
     }
 }
-function updateResultRecord(outputPath, file, normalizePath, htmlIndexPath, generatedFiles, componentStyles, initial = false) {
+function updateResultRecord(outputPath, file, normalizePath, htmlIndexPath, generatedFiles, assetFiles, componentStyles, initial = false) {
     if (file.origin === 'disk') {
+        assetFiles.set('/' + normalizePath(outputPath), {
+            source: normalizePath(file.inputPath),
+            updated: !initial,
+        });
         return;
     }
     let filePath;
@@ -542,7 +552,11 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
                 // The first two are required for Vite to function in prebundling mode (the default) and to load
                 // the Vite client-side code for browser reloading. These would be available by default but when
                 // the `allow` option is explicitly configured, they must be included manually.
-                allow: [cacheDir, (0, node_path_1.join)(serverOptions.workspaceRoot, 'node_modules'), ...assets.values()],
+                allow: [
+                    cacheDir,
+                    (0, node_path_1.join)(serverOptions.workspaceRoot, 'node_modules'),
+                    ...[...assets.values()].map(({ source }) => source),
+                ],
             },
             // This is needed when `externalDependencies` is used to prevent Vite load errors.
             // NOTE: If Vite adds direct support for externals, this can be removed.
