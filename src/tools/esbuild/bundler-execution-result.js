@@ -123,6 +123,7 @@ class ExecutionResult {
             componentStyleBundler: this.componentStyleBundler,
             fileChanges,
             previousOutputInfo: new Map(this.outputFiles.map(({ path, hash, type }) => [path, { hash, type }])),
+            previousAssetsInfo: new Map(this.assetFiles.map(({ source, destination }) => [source, destination])),
             templateUpdates: this.templateUpdates,
         };
     }

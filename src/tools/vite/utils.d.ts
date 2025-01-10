@@ -12,6 +12,9 @@ export type AngularMemoryOutputFiles = Map<string, {
     hash: string;
     servable: boolean;
 }>;
+export type AngularOutputAssets = Map<string, {
+    source: string;
+}>;
 export declare function pathnameWithoutBasePath(url: string, basePath: string): string;
 export declare function lookupMimeTypeFromRequest(url: string): string | undefined;
 export type EsbuildLoaderOption = Exclude<DepOptimizationConfig['esbuildOptions'], undefined>['loader'];

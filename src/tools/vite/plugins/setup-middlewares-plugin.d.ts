@@ -7,7 +7,7 @@
  */
 import type { Connect, Plugin } from 'vite';
 import { ComponentStyleRecord } from '../middlewares';
-import { AngularMemoryOutputFiles } from '../utils';
+import { AngularMemoryOutputFiles, AngularOutputAssets } from '../utils';
 export declare enum ServerSsrMode {
     /**
      * No SSR
@@ -32,7 +32,7 @@ export declare enum ServerSsrMode {
 }
 interface AngularSetupMiddlewaresPluginOptions {
     outputFiles: AngularMemoryOutputFiles;
-    assets: Map<string, string>;
+    assets: AngularOutputAssets;
     extensionMiddleware?: Connect.NextHandleFunction[];
     indexHtmlTransformer?: (content: string) => Promise<string>;
     componentStyles: Map<string, ComponentStyleRecord>;
