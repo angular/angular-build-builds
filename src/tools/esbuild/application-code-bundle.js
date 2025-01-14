@@ -21,6 +21,7 @@ const node_path_1 = require("node:path");
 const schema_1 = require("../../builders/application/schema");
 const environment_options_1 = require("../../utils/environment-options");
 const manifest_1 = require("../../utils/server-rendering/manifest");
+const compilation_1 = require("../angular/compilation");
 const compiler_plugin_1 = require("./angular/compiler-plugin");
 const angular_localize_init_warning_plugin_1 = require("./angular-localize-init-warning-plugin");
 const compiler_plugin_options_1 = require("./compiler-plugin-options");
@@ -33,7 +34,7 @@ const sourcemap_ignorelist_plugin_1 = require("./sourcemap-ignorelist-plugin");
 const utils_1 = require("./utils");
 const virtual_module_plugin_1 = require("./virtual-module-plugin");
 const wasm_plugin_1 = require("./wasm-plugin");
-function createBrowserCodeBundleOptions(options, target, sourceFileCache, stylesheetBundler, templateUpdates) {
+function createBrowserCodeBundleOptions(options, target, sourceFileCache, stylesheetBundler, angularCompilation, templateUpdates) {
     return (loadCache) => {
         const { entryPoints, outputNames, polyfills } = options;
         const pluginOptions = (0, compiler_plugin_options_1.createCompilerPluginOptions)(options, sourceFileCache, loadCache, templateUpdates);
@@ -57,7 +58,7 @@ function createBrowserCodeBundleOptions(options, target, sourceFileCache, styles
                 (0, angular_localize_init_warning_plugin_1.createAngularLocalizeInitWarningPlugin)(),
                 (0, compiler_plugin_1.createCompilerPlugin)(
                 // JS/TS options
-                pluginOptions, 
+                pluginOptions, angularCompilation, 
                 // Component stylesheet bundler
                 stylesheetBundler),
             ],
@@ -97,7 +98,9 @@ function createBrowserPolyfillBundleOptions(options, target, sourceFileCache, st
         const pluginOptions = (0, compiler_plugin_options_1.createCompilerPluginOptions)(options, sourceFileCache);
         buildOptions.plugins.push((0, compiler_plugin_1.createCompilerPlugin)(
         // JS/TS options
-        { ...pluginOptions, noopTypeScriptCompilation: true }, 
+        pluginOptions, 
+        // Browser compilation handles the actual Angular code compilation
+        new compilation_1.NoopCompilation(), 
         // Component stylesheet options are unused for polyfills but required by the plugin
         stylesheetBundler));
     }
@@ -189,7 +192,9 @@ function createServerMainCodeBundleOptions(options, target, sourceFileCache, sty
                 (0, angular_localize_init_warning_plugin_1.createAngularLocalizeInitWarningPlugin)(),
                 (0, compiler_plugin_1.createCompilerPlugin)(
                 // JS/TS options
-                { ...pluginOptions, noopTypeScriptCompilation: true }, 
+                pluginOptions, 
+                // Browser compilation handles the actual Angular code compilation
+                new compilation_1.NoopCompilation(), 
                 // Component stylesheet bundler
                 stylesheetBundler),
             ],
@@ -291,7 +296,9 @@ function createSsrEntryCodeBundleOptions(options, target, sourceFileCache, style
                 (0, angular_localize_init_warning_plugin_1.createAngularLocalizeInitWarningPlugin)(),
                 (0, compiler_plugin_1.createCompilerPlugin)(
                 // JS/TS options
-                { ...pluginOptions, noopTypeScriptCompilation: true }, 
+                pluginOptions, 
+                // Browser compilation handles the actual Angular code compilation
+                new compilation_1.NoopCompilation(), 
                 // Component stylesheet bundler
                 stylesheetBundler),
             ],

@@ -56,7 +56,7 @@ const compilation_state_1 = require("./compilation-state");
 const file_reference_tracker_1 = require("./file-reference-tracker");
 const jit_plugin_callbacks_1 = require("./jit-plugin-callbacks");
 // eslint-disable-next-line max-lines-per-function
-function createCompilerPlugin(pluginOptions, stylesheetBundler) {
+function createCompilerPlugin(pluginOptions, compilationOrFactory, stylesheetBundler) {
     return {
         name: 'angular-compiler',
         // eslint-disable-next-line max-lines-per-function
@@ -94,16 +94,17 @@ function createCompilerPlugin(pluginOptions, stylesheetBundler) {
             // Setup defines based on the values used by the Angular compiler-cli
             build.initialOptions.define ??= {};
             build.initialOptions.define['ngI18nClosureMode'] ??= 'false';
+            // The factory is only relevant for compatibility purposes with the private API.
+            // TODO: Update private API in the next major to allow compilation function factory removal here.
+            const compilation = typeof compilationOrFactory === 'function'
+                ? await compilationOrFactory()
+                : compilationOrFactory;
             // The in-memory cache of TypeScript file outputs will be used during the build in `onLoad` callbacks for TS files.
             // A string value indicates direct TS/NG output and a Uint8Array indicates fully transformed code.
             const typeScriptFileCache = pluginOptions.sourceFileCache?.typeScriptFileCache ??
                 new Map();
             // The resources from component stylesheets and web workers that will be added to the build results output files
             const additionalResults = new Map();
-            // Create new reusable compilation for the appropriate mode based on the `jit` plugin option
-            const compilation = pluginOptions.noopTypeScriptCompilation
-                ? new compilation_1.NoopCompilation()
-                : await (0, compilation_1.createAngularCompilation)(!!pluginOptions.jit, !!pluginOptions.browserOnlyBuild);
             // Compilation is initially assumed to have errors until emitted
             let hasCompilationErrors = true;
             // Determines if TypeScript should process JavaScript files based on tsconfig `allowJs` option
@@ -128,8 +129,8 @@ function createCompilerPlugin(pluginOptions, stylesheetBundler) {
                 // Angular compiler which does not have direct knowledge of transitive resource
                 // dependencies or web worker processing.
                 let modifiedFiles;
-                if (pluginOptions.sourceFileCache?.modifiedFiles.size &&
-                    !pluginOptions.noopTypeScriptCompilation) {
+                if (!(compilation instanceof compilation_1.NoopCompilation) &&
+                    pluginOptions.sourceFileCache?.modifiedFiles.size) {
                     // TODO: Differentiate between changed input files and stale output files
                     modifiedFiles = referencedFileTracker.update(pluginOptions.sourceFileCache.modifiedFiles);
                     pluginOptions.sourceFileCache.invalidate(modifiedFiles);
@@ -141,9 +142,7 @@ function createCompilerPlugin(pluginOptions, stylesheetBundler) {
                     // Remove any stale additional results based on modified files
                     modifiedFiles.forEach((file) => additionalResults.delete(file));
                 }
-                if (!pluginOptions.noopTypeScriptCompilation &&
-                    compilation.update &&
-                    pluginOptions.sourceFileCache?.modifiedFiles.size) {
+                if (compilation.update && pluginOptions.sourceFileCache?.modifiedFiles.size) {
                     await compilation.update(modifiedFiles ?? pluginOptions.sourceFileCache.modifiedFiles);
                 }
                 // Create Angular compiler host options
@@ -521,6 +520,18 @@ function createCompilerOptionsTransformer(setupWarnings, pluginOptions, preserve
                 text: `TypeScript compiler options 'module' values 'CommonJS', 'UMD', 'System' and 'AMD' are not supported.`,
                 location: null,
                 notes: [{ text: `The 'module' option will be set to 'ES2022' instead.` }],
+            });
+        }
+        if (compilerOptions.isolatedModules && compilerOptions.emitDecoratorMetadata) {
+            setupWarnings?.push({
+                text: `TypeScript compiler option 'isolatedModules' may prevent the 'emitDecoratorMetadata' option from emitting all metadata.`,
+                location: null,
+                notes: [
+                    {
+                        text: `The 'emitDecoratorMetadata' option is not required by Angular` +
+                            'and can be removed if not explictly required by the project.',
+                    },
+                ],
             });
         }
         // Synchronize custom resolve conditions.
