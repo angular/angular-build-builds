@@ -41,6 +41,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.executeBuild = executeBuild;
+const compilation_1 = require("../../tools/angular/compilation");
 const source_file_cache_1 = require("../../tools/esbuild/angular/source-file-cache");
 const budget_stats_1 = require("../../tools/esbuild/budget-stats");
 const bundler_context_1 = require("../../tools/esbuild/bundler-context");
@@ -102,7 +103,9 @@ async function executeBuild(options, context, rebuildState) {
         if (options.templateUpdates) {
             templateUpdates = new Map();
         }
-        bundlerContexts = (0, setup_bundling_1.setupBundlerContexts)(options, target, codeBundleCache, componentStyleBundler, templateUpdates);
+        bundlerContexts = (0, setup_bundling_1.setupBundlerContexts)(options, target, codeBundleCache, componentStyleBundler, 
+        // Create new reusable compilation for the appropriate mode based on the `jit` plugin option
+        await (0, compilation_1.createAngularCompilation)(!!options.jit, !options.serverEntryPoint), templateUpdates);
         // Bundle everything on initial build
         bundlingResult = await bundler_context_1.BundlerContext.bundleAll([
             ...bundlerContexts.typescriptContexts,
