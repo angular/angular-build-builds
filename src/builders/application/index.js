@@ -196,4 +196,5 @@ function generateFullPath(filePath, type, outputOptions) {
     const fullFilePath = node_path_1.default.join(outputOptions.base, typeDirectory, filePath);
     return fullFilePath;
 }
-exports.default = (0, architect_1.createBuilder)(buildApplication);
+const builder = (0, architect_1.createBuilder)(buildApplication);
+exports.default = builder;
