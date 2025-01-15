@@ -5,10 +5,12 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
+import { Builder } from '@angular-devkit/architect';
+import { json } from '@angular-devkit/core';
 import { execute } from './builder';
 import type { DevServerBuilderOutput } from './output';
 import type { Schema as DevServerBuilderOptions } from './schema';
 export { type DevServerBuilderOptions, type DevServerBuilderOutput, execute as executeDevServerBuilder, };
-declare const _default: import("../../../../../angular_devkit/architect/src/internal").Builder<DevServerBuilderOptions & import("../../../../../angular_devkit/core").JsonObject>;
-export default _default;
+declare const builder: Builder<DevServerBuilderOptions & json.JsonObject>;
+export default builder;
 export { execute as executeDevServer };

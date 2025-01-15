@@ -5,7 +5,8 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-import { BuilderContext, BuilderOutput } from '@angular-devkit/architect';
+import { Builder, BuilderContext, BuilderOutput } from '@angular-devkit/architect';
+import { json } from '@angular-devkit/core';
 import { ApplicationBuilderExtensions, ApplicationBuilderInternalOptions } from './options';
 import { Result } from './results';
 import { Schema as ApplicationBuilderOptions } from './schema';
@@ -28,5 +29,5 @@ export declare function buildApplicationInternal(options: ApplicationBuilderInte
  * @returns The build output results of the build.
  */
 export declare function buildApplication(options: ApplicationBuilderOptions, context: BuilderContext, extensions?: ApplicationBuilderExtensions): AsyncIterable<BuilderOutput>;
-declare const _default: import("../../../../../angular_devkit/architect/src/internal").Builder<ApplicationBuilderOptions & import("../../../../../angular_devkit/core").JsonObject>;
-export default _default;
+declare const builder: Builder<ApplicationBuilderOptions & json.JsonObject>;
+export default builder;
