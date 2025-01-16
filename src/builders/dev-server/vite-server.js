@@ -166,6 +166,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                 updates: [],
             });
         }
+        let needClientUpdate = true;
         switch (result.kind) {
             case results_1.ResultKind.Full:
                 if (result.detail?.['htmlIndexPath']) {
@@ -196,6 +197,8 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                 break;
             case results_1.ResultKind.Incremental:
                 (0, node_assert_1.default)(server, 'Builder must provide an initial full build before incremental results.');
+                // Background updates should only update server files/options
+                needClientUpdate = !result.background;
                 for (const removed of result.removed) {
                     const filePath = '/' + normalizePath(removed.path);
                     generatedFiles.delete(filePath);
@@ -262,7 +265,9 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                     ...[...assetFiles.values()].map(({ source }) => source),
                 ]),
             ];
-            await handleUpdate(normalizePath, generatedFiles, assetFiles, server, serverOptions, context.logger, componentStyles);
+            if (needClientUpdate) {
+                await handleUpdate(normalizePath, generatedFiles, assetFiles, server, serverOptions, context.logger, componentStyles);
+            }
         }
         else {
             const projectName = context.target?.project;
