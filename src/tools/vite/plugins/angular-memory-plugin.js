@@ -14,9 +14,11 @@ exports.createAngularMemoryPlugin = createAngularMemoryPlugin;
 const node_assert_1 = __importDefault(require("node:assert"));
 const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
+const node_url_1 = require("node:url");
 const load_esm_1 = require("../../../utils/load-esm");
 const ANGULAR_PREFIX = '/@ng/';
 const VITE_FS_PREFIX = '/@fs/';
+const FILE_PROTOCOL = 'file:';
 async function createAngularMemoryPlugin(options) {
     const { virtualProjectRoot, outputFiles, external } = options;
     const { normalizePath } = await (0, load_esm_1.loadEsmModule)('vite');
@@ -29,8 +31,16 @@ async function createAngularMemoryPlugin(options) {
                 return;
             }
             // For SSR with component HMR, pass through as a virtual module
-            if (ssr && source.startsWith(ANGULAR_PREFIX)) {
-                return '\0' + source;
+            if (ssr && source.startsWith(FILE_PROTOCOL) && source.includes(ANGULAR_PREFIX)) {
+                // Vite will resolve these these files example:
+                // `file:///@ng/component?c=src%2Fapp%2Fapp.component.ts%40AppComponent&t=1737017253850`
+                const sourcePath = (0, node_url_1.fileURLToPath)(source);
+                const { root } = (0, node_path_1.parse)(sourcePath);
+                const sourceWithoutRoot = normalizePath('/' + sourcePath.slice(root.length));
+                if (sourceWithoutRoot.startsWith(ANGULAR_PREFIX)) {
+                    const [, query] = source.split('?', 2);
+                    return `\0${sourceWithoutRoot}?${query}`;
+                }
             }
             // Prevent vite from resolving an explicit external dependency (`externalDependencies` option)
             if (external?.includes(source)) {
