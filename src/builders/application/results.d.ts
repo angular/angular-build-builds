@@ -29,6 +29,7 @@ export interface FullResult extends BaseResult {
 }
 export interface IncrementalResult extends BaseResult {
     kind: ResultKind.Incremental;
+    background?: boolean;
     added: string[];
     removed: {
         path: string;

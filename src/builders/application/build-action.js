@@ -206,6 +206,8 @@ function* emitOutputResults({ outputFiles, assetFiles, errors, warnings, externa
         const incrementalResult = {
             kind: results_1.ResultKind.Incremental,
             warnings: warnings,
+            // These files need to be updated in the dev server but should not signal any updates
+            background: hasTemplateUpdates,
             added: [],
             removed: [],
             modified: [],
@@ -221,12 +223,6 @@ function* emitOutputResults({ outputFiles, assetFiles, errors, warnings, externa
         const removedOutputFiles = new Map(previousOutputInfo);
         for (const file of outputFiles) {
             removedOutputFiles.delete(file.path);
-            // Temporarily ignore JS files until Angular compiler plugin refactor to allow
-            // bypassing application code bundling for template affecting only changes.
-            // TODO: Remove once refactor is complete.
-            if (hasTemplateUpdates && /\.js(?:\.map)?$/.test(file.path)) {
-                continue;
-            }
             const previousHash = previousOutputInfo.get(file.path)?.hash;
             let needFile = false;
             if (previousHash === undefined) {
@@ -238,6 +234,10 @@ function* emitOutputResults({ outputFiles, assetFiles, errors, warnings, externa
                 incrementalResult.modified.push(file.path);
             }
             if (needFile) {
+                // Updates to non-JS files must signal an update with the dev server
+                if (!/(?:\.js|\.map)?$/.test(file.path)) {
+                    incrementalResult.background = false;
+                }
                 incrementalResult.files[file.path] = {
                     type: file.type,
                     contents: file.contents,
