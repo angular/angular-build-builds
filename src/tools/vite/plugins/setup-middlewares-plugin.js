@@ -46,7 +46,7 @@ function createAngularSetupMiddlewaresPlugin(options) {
         name: 'vite:angular-setup-middlewares',
         enforce: 'pre',
         async configureServer(server) {
-            const { indexHtmlTransformer, outputFiles, extensionMiddleware, assets, componentStyles, templateUpdates, ssrMode, } = options;
+            const { indexHtmlTransformer, outputFiles, extensionMiddleware, assets, componentStyles, templateUpdates, ssrMode, resetComponentUpdates, } = options;
             // Headers, assets and resources get handled first
             server.middlewares.use((0, middlewares_1.createAngularHeadersMiddleware)(server));
             server.middlewares.use((0, middlewares_1.createAngularComponentMiddleware)(templateUpdates));
@@ -64,7 +64,7 @@ function createAngularSetupMiddlewaresPlugin(options) {
                     server.middlewares.use((0, middlewares_1.createAngularSsrInternalMiddleware)(server, indexHtmlTransformer));
                 }
                 server.middlewares.use(middlewares_1.angularHtmlFallbackMiddleware);
-                server.middlewares.use((0, middlewares_1.createAngularIndexHtmlMiddleware)(server, outputFiles, indexHtmlTransformer));
+                server.middlewares.use((0, middlewares_1.createAngularIndexHtmlMiddleware)(server, outputFiles, resetComponentUpdates, indexHtmlTransformer));
             };
         },
     };

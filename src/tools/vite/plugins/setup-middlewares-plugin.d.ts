@@ -38,6 +38,7 @@ interface AngularSetupMiddlewaresPluginOptions {
     componentStyles: Map<string, ComponentStyleRecord>;
     templateUpdates: Map<string, string>;
     ssrMode: ServerSsrMode;
+    resetComponentUpdates: () => void;
 }
 export declare function createAngularSetupMiddlewaresPlugin(options: AngularSetupMiddlewaresPluginOptions): Plugin;
 export {};
