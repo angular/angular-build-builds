@@ -188,10 +188,6 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                     // The initial build will not yet have a server setup
                     !server);
                 }
-                // Invalidate SSR module graph to ensure that only new rebuild is used and not stale component updates
-                if (server && browserOptions.ssr && templateUpdates.size > 0) {
-                    server.moduleGraph.invalidateAll();
-                }
                 // Clear stale template updates on code rebuilds
                 templateUpdates.clear();
                 break;
@@ -214,13 +210,6 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
             case results_1.ResultKind.ComponentUpdate:
                 (0, node_assert_1.default)(serverOptions.hmr, 'Component updates are only supported with HMR enabled.');
                 (0, node_assert_1.default)(server, 'Builder must provide an initial full build before component update results.');
-                // Invalidate SSR module graph to ensure that new component updates are used
-                // TODO: Use fine-grained invalidation of only the component update modules
-                if (browserOptions.ssr) {
-                    server.moduleGraph.invalidateAll();
-                    const { ɵresetCompiledComponents } = (await server.ssrLoadModule('/main.server.mjs'));
-                    ɵresetCompiledComponents();
-                }
                 for (const componentUpdate of result.updates) {
                     if (componentUpdate.type === 'template') {
                         templateUpdates.set(componentUpdate.id, componentUpdate.content);
@@ -265,8 +254,9 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                     ...[...assetFiles.values()].map(({ source }) => source),
                 ]),
             ];
+            const updatedFiles = await invalidateUpdatedFiles(normalizePath, generatedFiles, assetFiles, server);
             if (needClientUpdate) {
-                await handleUpdate(normalizePath, generatedFiles, assetFiles, server, serverOptions, context.logger, componentStyles);
+                handleUpdate(server, serverOptions, context.logger, componentStyles, updatedFiles);
             }
         }
         else {
@@ -340,7 +330,13 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
     }
     await new Promise((resolve) => (deferred = resolve));
 }
-async function handleUpdate(normalizePath, generatedFiles, assetFiles, server, serverOptions, logger, componentStyles) {
+/**
+ * Invalidates any updated asset or generated files and resets their `updated` state.
+ * This function also clears the server application cache when necessary.
+ *
+ * @returns A list of files that were updated and invalidated.
+ */
+async function invalidateUpdatedFiles(normalizePath, generatedFiles, assetFiles, server) {
     const updatedFiles = [];
     // Invalidate any updated asset
     for (const [file, record] of assetFiles) {
@@ -368,12 +364,20 @@ async function handleUpdate(normalizePath, generatedFiles, assetFiles, server, s
         const updatedModules = server.moduleGraph.getModulesByFile(normalizePath((0, node_path_1.join)(server.config.root, file)));
         updatedModules?.forEach((m) => server.moduleGraph.invalidateModule(m));
     }
-    if (!updatedFiles.length) {
-        return;
-    }
     if (destroyAngularServerAppCalled) {
         // Trigger module evaluation before reload to initiate dependency optimization.
         await server.ssrLoadModule('/main.server.mjs');
+    }
+    return updatedFiles;
+}
+/**
+ * Handles updates for the client by sending HMR or full page reload commands
+ * based on the updated files. It also ensures proper tracking of component styles and determines if
+ * a full reload is needed.
+ */
+function handleUpdate(server, serverOptions, logger, componentStyles, updatedFiles) {
+    if (!updatedFiles.length) {
+        return;
     }
     if (serverOptions.hmr) {
         if (updatedFiles.every((f) => f.endsWith('.css'))) {
