@@ -49,7 +49,7 @@ function createAngularSetupMiddlewaresPlugin(options) {
             const { indexHtmlTransformer, outputFiles, extensionMiddleware, assets, componentStyles, templateUpdates, ssrMode, resetComponentUpdates, } = options;
             // Headers, assets and resources get handled first
             server.middlewares.use((0, middlewares_1.createAngularHeadersMiddleware)(server));
-            server.middlewares.use((0, middlewares_1.createAngularComponentMiddleware)(templateUpdates));
+            server.middlewares.use((0, middlewares_1.createAngularComponentMiddleware)(server, templateUpdates));
             server.middlewares.use((0, middlewares_1.createAngularAssetsMiddleware)(server, assets, outputFiles, componentStyles, await createEncapsulateStyle()));
             extensionMiddleware?.forEach((middleware) => server.middlewares.use(middleware));
             // Returning a function, installs middleware after the main transform middleware but
