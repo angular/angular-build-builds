@@ -63,7 +63,7 @@ async function normalizeOptions(context, projectName, options, extensions) {
     // Gather persistent caching option and provide a project specific cache location
     const cacheOptions = (0, normalize_cache_1.normalizeCacheOptions)(projectMetadata, workspaceRoot);
     cacheOptions.path = node_path_1.default.join(cacheOptions.path, projectName);
-    const i18nOptions = (0, i18n_options_1.createI18nOptions)(projectMetadata, options.localize, context.logger);
+    const i18nOptions = (0, i18n_options_1.createI18nOptions)(projectMetadata, options.localize, context.logger, !!options.ssr);
     i18nOptions.duplicateTranslationBehavior = options.i18nDuplicateTranslation;
     i18nOptions.missingTranslationBehavior = options.i18nMissingTranslation;
     if (options.forceI18nFlatOutput) {
