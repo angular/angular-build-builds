@@ -135,17 +135,6 @@ function createI18nOptions(projectMetadata, inline, logger, ssrEnabled) {
             };
         }
     }
-    // Check that subPaths are unique.
-    const localesData = Object.entries(i18n.locales);
-    for (let i = 0; i < localesData.length; i++) {
-        const [localeA, { subPath: subPathA }] = localesData[i];
-        for (let j = i + 1; j < localesData.length; j++) {
-            const [localeB, { subPath: subPathB }] = localesData[j];
-            if (subPathA === subPathB) {
-                throw new Error(`Invalid i18n configuration: Locales '${localeA}' and '${localeB}' cannot have the same subPath: '${subPathB}'.`);
-            }
-        }
-    }
     if (inline === true) {
         i18n.inlineLocales.add(i18n.sourceLocale);
         Object.keys(i18n.locales).forEach((locale) => i18n.inlineLocales.add(locale));
@@ -156,6 +145,17 @@ function createI18nOptions(projectMetadata, inline, logger, ssrEnabled) {
                 throw new Error(`Requested locale '${locale}' is not defined for the project.`);
             }
             i18n.inlineLocales.add(locale);
+        }
+    }
+    // Check that subPaths are unique only the locales that we are inlining.
+    const localesData = Object.entries(i18n.locales).filter(([locale]) => i18n.inlineLocales.has(locale));
+    for (let i = 0; i < localesData.length; i++) {
+        const [localeA, { subPath: subPathA }] = localesData[i];
+        for (let j = i + 1; j < localesData.length; j++) {
+            const [localeB, { subPath: subPathB }] = localesData[j];
+            if (subPathA === subPathB) {
+                throw new Error(`Invalid i18n configuration: Locales '${localeA}' and '${localeB}' cannot have the same subPath: '${subPathB}'.`);
+            }
         }
     }
     return i18n;
