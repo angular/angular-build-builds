@@ -541,6 +541,7 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
             strictPort: true,
             host: serverOptions.host,
             open: serverOptions.open,
+            allowedHosts: serverOptions.allowedHosts,
             headers: serverOptions.headers,
             // Disable the websocket if live reload is disabled (false/undefined are the only valid values)
             ws: serverOptions.liveReload === false && serverOptions.hmr === false ? false : undefined,
