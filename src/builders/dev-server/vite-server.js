@@ -420,7 +420,7 @@ function handleUpdate(server, serverOptions, logger, componentStyles, updatedFil
                     type: 'update',
                     updates,
                 });
-                logger.info('HMR update sent to client(s).');
+                logger.info('Stylesheet update sent to client(s).');
                 return;
             }
         }
