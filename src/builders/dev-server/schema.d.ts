@@ -3,6 +3,12 @@
  */
 export interface Schema {
     /**
+     * The hosts that can access the development server. This option sets the Vite option of the
+     * same name. For further details:
+     * https://vite.dev/config/server-options.html#server-allowedhosts
+     */
+    allowedHosts?: AllowedHosts;
+    /**
      * A build builder target to serve in the format of `project:target[:configuration]`. You
      * can also pass in more than one configuration name as a comma-separated list. Example:
      * `project:target:production,staging`.
@@ -78,6 +84,12 @@ export interface Schema {
      */
     watch?: boolean;
 }
+/**
+ * The hosts that can access the development server. This option sets the Vite option of the
+ * same name. For further details:
+ * https://vite.dev/config/server-options.html#server-allowedhosts
+ */
+export type AllowedHosts = string[] | boolean;
 /**
  * Activate debugging inspector. This option only has an effect when 'SSR' or 'SSG' are
  * enabled.
