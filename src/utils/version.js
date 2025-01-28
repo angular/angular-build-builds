@@ -47,13 +47,7 @@ function assertCompatibleAngularVersion(projectRoot) {
         // repository with the generated development @angular/core npm package which is versioned "0.0.0".
         return;
     }
-    let supportedAngularSemver;
-    try {
-        supportedAngularSemver = projectRequire('@angular/build/package.json')['peerDependencies']['@angular/compiler-cli'];
-    }
-    catch {
-        supportedAngularSemver = projectRequire('@angular-devkit/build-angular/package.json')['peerDependencies']['@angular/compiler-cli'];
-    }
+    const supportedAngularSemver = '^19.0.0 || ^19.2.0-next.0';
     const angularVersion = new semver_1.SemVer(angularPkgJson['version']);
     if (!(0, semver_1.satisfies)(angularVersion, supportedAngularSemver, { includePrerelease: true })) {
         console.error(`This version of CLI is only compatible with Angular versions ${supportedAngularSemver},\n` +
