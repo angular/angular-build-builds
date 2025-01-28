@@ -304,6 +304,23 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
             const serverConfiguration = await setupServer(serverOptions, generatedFiles, assetFiles, browserOptions.preserveSymlinks, externalMetadata, ssrMode, prebundleTransformer, target, (0, internal_1.isZonelessApp)(polyfills), componentStyles, templateUpdates, browserOptions.loader, browserOptions.define, extensions?.middleware, transformers?.indexHtml, thirdPartySourcemaps);
             server = await createServer(serverConfiguration);
             await server.listen();
+            // Setup builder context logging for browser clients
+            server.hot.on('angular:log', (data) => {
+                if (typeof data?.text !== 'string') {
+                    context.logger.warn('Development server client sent invalid internal log event.');
+                }
+                switch (data.kind) {
+                    case 'error':
+                        context.logger.error(`[CLIENT ERROR]: ${data.text}`);
+                        break;
+                    case 'warning':
+                        context.logger.warn(`[CLIENT WARNING]: ${data.text}`);
+                        break;
+                    default:
+                        context.logger.info(`[CLIENT INFO]: ${data.text}`);
+                        break;
+                }
+            });
             const urls = server.resolvedUrls;
             if (urls && (urls.local.length || urls.network.length)) {
                 serverUrl = new URL(urls.local[0] ?? urls.network[0]);
