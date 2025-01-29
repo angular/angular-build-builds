@@ -589,7 +589,10 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
             },
             // This is needed when `externalDependencies` is used to prevent Vite load errors.
             // NOTE: If Vite adds direct support for externals, this can be removed.
-            preTransformRequests: externalMetadata.explicitBrowser.length === 0,
+            // NOTE: Vite breaks the resolution of browser modules in SSR
+            //       when accessing a url with two or more segments (e.g., 'foo/bar'),
+            //       as they are not re-based from the base href.
+            preTransformRequests: externalMetadata.explicitBrowser.length === 0 && ssrMode === plugins_1.ServerSsrMode.NoSsr,
         },
         ssr: {
             // Note: `true` and `/.*/` have different sematics. When true, the `external` option is ignored.
