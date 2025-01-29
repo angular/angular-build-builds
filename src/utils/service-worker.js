@@ -133,7 +133,7 @@ class ResultFilesystem {
         throw new Error('Serviceworker manifest generator should not attempted to write.');
     }
 }
-async function augmentAppWithServiceWorker(appRoot, workspaceRoot, outputPath, baseHref, ngswConfigPath, inputputFileSystem = node_fs_1.promises, outputFileSystem = node_fs_1.promises) {
+async function augmentAppWithServiceWorker(appRoot, workspaceRoot, outputPath, baseHref, ngswConfigPath, inputFileSystem = node_fs_1.promises, outputFileSystem = node_fs_1.promises) {
     // Determine the configuration file path
     const configPath = ngswConfigPath
         ? path.join(workspaceRoot, ngswConfigPath)
@@ -141,7 +141,7 @@ async function augmentAppWithServiceWorker(appRoot, workspaceRoot, outputPath, b
     // Read the configuration file
     let config;
     try {
-        const configurationData = await inputputFileSystem.readFile(configPath, 'utf-8');
+        const configurationData = await inputFileSystem.readFile(configPath, 'utf-8');
         config = JSON.parse(configurationData);
     }
     catch (error) {
@@ -158,11 +158,7 @@ async function augmentAppWithServiceWorker(appRoot, workspaceRoot, outputPath, b
     const result = await augmentAppWithServiceWorkerCore(config, new CliFilesystem(outputFileSystem, outputPath), baseHref);
     const copy = async (src, dest) => {
         const resolvedDest = path.join(outputPath, dest);
-        return inputputFileSystem === outputFileSystem
-            ? // Native FS (Builder).
-                inputputFileSystem.copyFile(src, resolvedDest, node_fs_1.constants.COPYFILE_FICLONE)
-            : // memfs (Webpack): Read the file from the input FS (disk) and write it to the output FS (memory).
-                outputFileSystem.writeFile(resolvedDest, await inputputFileSystem.readFile(src));
+        return outputFileSystem.writeFile(resolvedDest, await inputFileSystem.readFile(src));
     };
     await outputFileSystem.writeFile(path.join(outputPath, 'ngsw.json'), result.manifest);
     for (const { source, destination } of result.assetFiles) {
