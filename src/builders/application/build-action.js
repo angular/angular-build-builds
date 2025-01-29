@@ -292,6 +292,14 @@ function* emitOutputResults({ outputFiles, assetFiles, errors, warnings, externa
             origin: 'disk',
         };
     }
+    // Do not remove stale files yet if there are template updates.
+    // Component chunk files may still be referenced in running browser code.
+    // Module evaluation time component updates will update any of these files.
+    // This typically occurs when a lazy component is changed that has not yet
+    // been accessed at runtime.
+    if (hasTemplateUpdates && incrementalResult.background) {
+        removedOutputFiles.clear();
+    }
     // Include the removed output and asset files
     incrementalResult.removed.push(...Array.from(removedOutputFiles, ([file, { type }]) => ({
         path: file,
