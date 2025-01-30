@@ -29,8 +29,8 @@ function assertCompatibleAngularVersion(projectRoot) {
         process.exit(2);
     }
     const supportedAngularSemver = '^19.0.0 || ^19.2.0-next.0';
-    if (supportedAngularSemver.startsWith('0.0.0')) {
-        // Internal CLI testing version.
+    if (angularPkgJson['version'] === '0.0.0' || supportedAngularSemver.startsWith('0.0.0')) {
+        // Internal CLI and FW testing version.
         return;
     }
     const angularVersion = new semver_1.SemVer(angularPkgJson['version']);
