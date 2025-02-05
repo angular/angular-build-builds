@@ -127,6 +127,9 @@ async function* runEsBuildBuildAction(action, options) {
     if (!watcher) {
         return;
     }
+    // Used to force a full result on next rebuild if there were initial errors.
+    // This ensures at least one full result is emitted.
+    let hasInitialErrors = result.errors.length > 0;
     // Wait for changes and rebuild as needed
     const currentWatchFiles = new Set(result.watchFiles);
     try {
@@ -164,9 +167,11 @@ async function* runEsBuildBuildAction(action, options) {
             if (staleWatchFiles?.size) {
                 watcher.remove([...staleWatchFiles]);
             }
-            for (const outputResult of emitOutputResults(result, outputOptions, changes, incrementalResults ? rebuildState : undefined)) {
+            for (const outputResult of emitOutputResults(result, outputOptions, changes, incrementalResults && !hasInitialErrors ? rebuildState : undefined)) {
                 yield outputResult;
             }
+            // Clear initial build errors flag if no errors are now present
+            hasInitialErrors &&= result.errors.length > 0;
         }
     }
     finally {
