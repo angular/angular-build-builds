@@ -41,6 +41,8 @@ async function inlineI18n(metafile, options, executionResult, initialFiles) {
     // For each active locale, use the inliner to process the output files of the build.
     const updatedOutputFiles = [];
     const updatedAssetFiles = [];
+    // Root and SSR entry files are not modified.
+    const unModifiedOutputFiles = executionResult.outputFiles.filter(({ type }) => type === bundler_context_1.BuildOutputFileType.Root || type === bundler_context_1.BuildOutputFileType.ServerRoot);
     try {
         for (const locale of i18nOptions.inlineLocales) {
             // A locale specific set of files is returned from the inliner.
@@ -51,7 +53,7 @@ async function inlineI18n(metafile, options, executionResult, initialFiles) {
             const { errors, warnings, additionalAssets, additionalOutputFiles, prerenderedRoutes: generatedRoutes, } = await (0, execute_post_bundle_1.executePostBundleSteps)(metafile, {
                 ...options,
                 baseHref: (0, options_1.getLocaleBaseHref)(baseHref, i18nOptions, locale) ?? baseHref,
-            }, localeOutputFiles, executionResult.assetFiles, initialFiles, locale);
+            }, [...unModifiedOutputFiles, ...localeOutputFiles], executionResult.assetFiles, initialFiles, locale);
             localeOutputFiles.push(...additionalOutputFiles);
             inlineResult.errors.push(...errors);
             inlineResult.warnings.push(...warnings);
@@ -81,7 +83,7 @@ async function inlineI18n(metafile, options, executionResult, initialFiles) {
     // Update the result with all localized files.
     executionResult.outputFiles = [
         // Root and SSR entry files are not modified.
-        ...executionResult.outputFiles.filter(({ type }) => type === bundler_context_1.BuildOutputFileType.Root || type === bundler_context_1.BuildOutputFileType.ServerRoot),
+        ...unModifiedOutputFiles,
         // Updated files for each locale.
         ...updatedOutputFiles,
     ];
