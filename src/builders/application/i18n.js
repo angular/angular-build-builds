@@ -26,12 +26,13 @@ const options_1 = require("./options");
  * @param initialFiles A map containing initial file information for the executed build.
  */
 async function inlineI18n(metafile, options, executionResult, initialFiles) {
-    const { i18nOptions, optimizationOptions, baseHref } = options;
+    const { i18nOptions, optimizationOptions, baseHref, cacheOptions } = options;
     // Create the multi-threaded inliner with common options and the files generated from the build.
     const inliner = new i18n_inliner_1.I18nInliner({
         missingTranslation: i18nOptions.missingTranslationBehavior ?? 'warning',
         outputFiles: executionResult.outputFiles,
         shouldOptimize: optimizationOptions.scripts,
+        persistentCachePath: cacheOptions.enabled ? cacheOptions.path : undefined,
     }, environment_options_1.maxWorkers);
     const inlineResult = {
         errors: [],
