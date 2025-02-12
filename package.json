@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "19.2.0-next.1+sha-be15b88",
+  "version": "19.2.0-next.1+sha-25007e1",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -23,7 +23,7 @@
   "builders": "builders.json",
   "dependencies": {
     "@ampproject/remapping": "2.3.0",
-    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#be15b88",
+    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#25007e1",
     "@babel/core": "7.26.8",
     "@babel/helper-annotate-as-pure": "7.25.9",
     "@babel/helper-split-export-declaration": "7.24.7",
@@ -57,7 +57,7 @@
     "@angular/localize": "^19.0.0 || ^19.2.0-next.0",
     "@angular/platform-server": "^19.0.0 || ^19.2.0-next.0",
     "@angular/service-worker": "^19.0.0 || ^19.2.0-next.0",
-    "@angular/ssr": "github:angular/angular-ssr-builds#be15b88",
+    "@angular/ssr": "github:angular/angular-ssr-builds#25007e1",
     "less": "^4.2.0",
     "ng-packagr": "^19.0.0 || ^19.2.0-next.0",
     "postcss": "^8.4.0",
@@ -74,7 +74,7 @@
     "@angular/service-worker": {
       "optional": true
     },
-    "@angular/ssr": "github:angular/angular-ssr-builds#be15b88",
+    "@angular/ssr": "github:angular/angular-ssr-builds#25007e1",
     "less": {
       "optional": true
     },
