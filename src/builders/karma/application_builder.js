@@ -45,13 +45,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.execute = execute;
 exports.writeTestFiles = writeTestFiles;
-const private_1 = require("@angular/build/private");
 const fast_glob_1 = __importDefault(require("fast-glob"));
 const node_crypto_1 = require("node:crypto");
 const fs = __importStar(require("node:fs/promises"));
 const node_module_1 = require("node:module");
 const path = __importStar(require("node:path"));
 const bundler_context_1 = require("../../tools/esbuild/bundler-context");
+const utils_1 = require("../../tools/esbuild/utils");
+const index_1 = require("../application/index");
+const results_1 = require("../application/results");
 const schema_1 = require("../application/schema");
 const find_tests_1 = require("./find-tests");
 const localResolve = (0, node_module_1.createRequire)(__filename).resolve;
@@ -182,12 +184,12 @@ function injectKarmaReporter(buildOptions, buildIterator, karmaConfig, controlle
                         isDone = true;
                         break;
                     }
-                    if (buildOutput.kind === private_1.ResultKind.Failure) {
+                    if (buildOutput.kind === results_1.ResultKind.Failure) {
                         controller.enqueue({ success: false, message: 'Build failed' });
                     }
-                    else if (buildOutput.kind === private_1.ResultKind.Incremental ||
-                        buildOutput.kind === private_1.ResultKind.Full) {
-                        if (buildOutput.kind === private_1.ResultKind.Full) {
+                    else if (buildOutput.kind === results_1.ResultKind.Incremental ||
+                        buildOutput.kind === results_1.ResultKind.Full) {
+                        if (buildOutput.kind === results_1.ResultKind.Full) {
                             this.latestBuildFiles.files = buildOutput.files;
                         }
                         else {
@@ -341,11 +343,11 @@ async function initializeApplication(options, context, karmaOptions, transforms 
         externalDependencies: options.externalDependencies,
     };
     // Build tests with `application` builder, using test files as entry points.
-    const [buildOutput, buildIterator] = await first((0, private_1.buildApplicationInternal)(buildOptions, context), { cancel: !buildOptions.watch });
-    if (buildOutput.kind === private_1.ResultKind.Failure) {
+    const [buildOutput, buildIterator] = await first((0, index_1.buildApplicationInternal)(buildOptions, context), { cancel: !buildOptions.watch });
+    if (buildOutput.kind === results_1.ResultKind.Failure) {
         throw new ApplicationBuildError('Build failed');
     }
-    else if (buildOutput.kind !== private_1.ResultKind.Full) {
+    else if (buildOutput.kind !== results_1.ResultKind.Full) {
         throw new ApplicationBuildError('A full build result is required from the application builder.');
     }
     // Write test files
@@ -437,7 +439,7 @@ function hasChunkOrWorkerFiles(files) {
 async function writeTestFiles(files, testDir) {
     const directoryExists = new Set();
     // Writes the test related output files to disk and ensures the containing directories are present
-    await (0, private_1.emitFilesToDisk)(Object.entries(files), async ([filePath, file]) => {
+    await (0, utils_1.emitFilesToDisk)(Object.entries(files), async ([filePath, file]) => {
         if (file.type !== bundler_context_1.BuildOutputFileType.Browser && file.type !== bundler_context_1.BuildOutputFileType.Media) {
             return;
         }
