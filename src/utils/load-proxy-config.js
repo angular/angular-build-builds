@@ -41,12 +41,12 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.loadProxyConfiguration = loadProxyConfiguration;
-const fast_glob_1 = require("fast-glob");
 const node_fs_1 = require("node:fs");
 const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
 const node_url_1 = require("node:url");
 const picomatch_1 = require("picomatch");
+const tinyglobby_1 = require("tinyglobby");
 const error_1 = require("./error");
 const load_esm_1 = require("./load-esm");
 async function loadProxyConfiguration(root, proxyConfig) {
@@ -141,7 +141,7 @@ function normalizeProxyConfiguration(proxy) {
     }
     // TODO: Consider upstreaming glob support
     for (const key of Object.keys(normalizedProxy)) {
-        if (key[0] !== '^' && (0, fast_glob_1.isDynamicPattern)(key)) {
+        if (key[0] !== '^' && (0, tinyglobby_1.isDynamicPattern)(key)) {
             const pattern = (0, picomatch_1.makeRe)(key).source;
             normalizedProxy[pattern] = normalizedProxy[key];
             delete normalizedProxy[key];

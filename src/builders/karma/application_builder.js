@@ -39,17 +39,14 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.execute = execute;
 exports.writeTestFiles = writeTestFiles;
-const fast_glob_1 = __importDefault(require("fast-glob"));
 const node_crypto_1 = require("node:crypto");
 const fs = __importStar(require("node:fs/promises"));
 const node_module_1 = require("node:module");
 const path = __importStar(require("node:path"));
+const tinyglobby_1 = require("tinyglobby");
 const bundler_context_1 = require("../../tools/esbuild/bundler-context");
 const utils_1 = require("../../tools/esbuild/utils");
 const index_1 = require("../application/index");
@@ -486,7 +483,7 @@ function getInstrumentationExcludedPaths(root, excludedPaths) {
     const excluded = new Set();
     for (const excludeGlob of excludedPaths) {
         const excludePath = excludeGlob[0] === '/' ? excludeGlob.slice(1) : excludeGlob;
-        fast_glob_1.default.sync(excludePath, { cwd: root }).forEach((p) => excluded.add(path.join(root, p)));
+        (0, tinyglobby_1.globSync)(excludePath, { absolute: true, cwd: root }).forEach((p) => excluded.add(p));
     }
     return excluded;
 }
