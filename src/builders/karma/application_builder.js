@@ -483,7 +483,7 @@ function getInstrumentationExcludedPaths(root, excludedPaths) {
     const excluded = new Set();
     for (const excludeGlob of excludedPaths) {
         const excludePath = excludeGlob[0] === '/' ? excludeGlob.slice(1) : excludeGlob;
-        (0, tinyglobby_1.globSync)(excludePath, { absolute: true, cwd: root }).forEach((p) => excluded.add(p));
+        (0, tinyglobby_1.globSync)(excludePath, { cwd: root }).forEach((p) => excluded.add(path.join(root, p)));
     }
     return excluded;
 }
