@@ -62,7 +62,9 @@ export type Schema = {
     deployUrl?: string;
     /**
      * Exclude the listed external dependencies from being bundled into the bundle. Instead, the
-     * created bundle relies on these dependencies to be available during runtime.
+     * created bundle relies on these dependencies to be available during runtime. Note:
+     * `@foo/bar` marks all paths within the `@foo/bar` package as external, including sub-paths
+     * like `@foo/bar/baz`.
      */
     externalDependencies?: string[];
     /**
