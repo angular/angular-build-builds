@@ -47,7 +47,6 @@ exports.createCompilerPlugin = createCompilerPlugin;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_crypto_1 = require("node:crypto");
 const path = __importStar(require("node:path"));
-const node_url_1 = require("node:url");
 const environment_options_1 = require("../../../utils/environment-options");
 const compilation_1 = require("../../angular/compilation");
 const javascript_transformer_1 = require("../javascript-transformer");
@@ -543,10 +542,6 @@ function createCompilerOptionsTransformer(setupWarnings, pluginOptions, preserve
         return {
             ...compilerOptions,
             noEmitOnError: false,
-            // Using the path as a URL is necessary here; otherwise, esbuild will not generate source maps correctly.
-            // https://github.com/evanw/esbuild/issues/4070
-            // https://github.com/evanw/esbuild/issues/4075
-            outDir: absWorkingDir ? (0, node_url_1.pathToFileURL)(absWorkingDir + '/').href : undefined,
             inlineSources: !!pluginOptions.sourcemap,
             inlineSourceMap: !!pluginOptions.sourcemap,
             sourceMap: undefined,
