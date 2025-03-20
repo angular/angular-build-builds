@@ -163,7 +163,7 @@ async function normalizeOptions(context, projectName, options, extensions) {
             route: 'shell',
         };
     }
-    const outputPath = options.outputPath;
+    const outputPath = options.outputPath ?? node_path_1.default.join(workspaceRoot, 'dist', projectName);
     const outputOptions = {
         browser: 'browser',
         server: 'server',

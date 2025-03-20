@@ -128,7 +128,7 @@ export type Schema = {
     /**
      * Specify the output path relative to workspace root.
      */
-    outputPath: OutputPathUnion;
+    outputPath?: OutputPathUnion;
     /**
      * Enable and define the file watching poll time period in milliseconds.
      */
