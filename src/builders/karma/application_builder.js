@@ -55,6 +55,7 @@ const bundler_context_1 = require("../../tools/esbuild/bundler-context");
 const schema_1 = require("../application/schema");
 const find_tests_1 = require("./find-tests");
 const localResolve = (0, node_module_1.createRequire)(__filename).resolve;
+const isWindows = process.platform === 'win32';
 class ApplicationBuildError extends Error {
     constructor(message) {
         super(message);
@@ -75,7 +76,13 @@ class AngularAssetsMiddleware {
         let err = null;
         try {
             const url = new URL(`http://${req.headers['host']}${req.url}`);
-            const file = this.latestBuildFiles.files[url.pathname.slice(1)];
+            // Remove the leading slash from the URL path and convert to platform specific.
+            // The latest build files will use the platform path separator.
+            let pathname = url.pathname.slice(1);
+            if (isWindows) {
+                pathname = pathname.replaceAll(path.posix.sep, path.win32.sep);
+            }
+            const file = this.latestBuildFiles.files[pathname];
             if (file?.origin === 'disk') {
                 this.serveFile(file.inputPath, undefined, res);
                 return;
