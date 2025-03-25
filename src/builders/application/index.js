@@ -27,6 +27,7 @@ const build_action_1 = require("./build-action");
 const execute_build_1 = require("./execute-build");
 const options_1 = require("./options");
 const results_1 = require("./results");
+const isNodeV22orHigher = Number(process.versions.node.split('.', 1)[0]) >= 22;
 async function* buildApplicationInternal(options, 
 // TODO: Integrate abort signal support into builder system
 context, extensions) {
@@ -162,7 +163,18 @@ async function* buildApplication(options, context, extensions) {
             }
             else {
                 // Copy file contents
-                await promises_1.default.copyFile(file.inputPath, fullFilePath, promises_1.default.constants.COPYFILE_FICLONE);
+                if (isNodeV22orHigher) {
+                    // Use newer `cp` API on Node.js 22+ (minimum v22 for CLI is 22.11)
+                    await promises_1.default.cp(file.inputPath, fullFilePath, {
+                        mode: promises_1.default.constants.COPYFILE_FICLONE,
+                        preserveTimestamps: true,
+                    });
+                }
+                else {
+                    // For Node.js 20 use `copyFile` (`cp` is not stable for v20)
+                    // TODO: Remove when Node.js 20 is no longer supported
+                    await promises_1.default.copyFile(file.inputPath, fullFilePath, promises_1.default.constants.COPYFILE_FICLONE);
+                }
             }
         });
         // Delete any removed files if incremental
