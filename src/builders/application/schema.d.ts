@@ -514,6 +514,10 @@ export type SourceMapClass = {
      */
     scripts?: boolean;
     /**
+     * Output original source content for files within the source map.
+     */
+    sourcesContent?: boolean;
+    /**
      * Output source maps for all styles.
      */
     styles?: boolean;

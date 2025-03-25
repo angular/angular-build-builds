@@ -416,6 +416,7 @@ function getEsBuildCommonOptions(options) {
         outdir: workspaceRoot,
         outExtension: outExtension ? { '.js': `.${outExtension}` } : undefined,
         sourcemap: sourcemapOptions.scripts && (sourcemapOptions.hidden ? 'external' : true),
+        sourcesContent: sourcemapOptions.sourcesContent,
         splitting: true,
         chunkNames: options.namedChunks ? '[name]-[hash]' : 'chunk-[hash]',
         tsconfig,
