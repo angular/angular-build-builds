@@ -76,7 +76,7 @@ function getBaseKarmaOptions(options, context) {
     karmaOptions.client.clearContext ??= singleRun ?? false; // `singleRun` defaults to `false` per Karma docs.
     // Convert browsers from a string to an array
     if (typeof options.browsers === 'string' && options.browsers) {
-        karmaOptions.browsers = options.browsers.split(',');
+        karmaOptions.browsers = options.browsers.split(',').map((browser) => browser.trim());
     }
     else if (options.browsers === false) {
         karmaOptions.browsers = [];

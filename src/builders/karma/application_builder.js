@@ -295,6 +295,7 @@ async function collectEntrypoints(options, context, projectSourceRoot) {
     const testFiles = await (0, find_tests_1.findTests)(options.include ?? [], options.exclude ?? [], context.workspaceRoot, projectSourceRoot);
     return (0, find_tests_1.getTestEntrypoints)(testFiles, { projectSourceRoot, workspaceRoot: context.workspaceRoot });
 }
+// eslint-disable-next-line max-lines-per-function
 async function initializeApplication(options, context, karmaOptions, transforms = {}) {
     const outputPath = path.join(context.workspaceRoot, 'dist/test-out', (0, node_crypto_1.randomUUID)());
     const projectSourceRoot = await getProjectSourceRoot(context);
@@ -406,6 +407,14 @@ async function initializeApplication(options, context, karmaOptions, transforms 
         karmaOptions.files.push({ pattern: `*.css`, type: 'css', watched: false });
     }
     const parsedKarmaConfig = await karma.config.parseConfig(options.karmaConfig && path.resolve(context.workspaceRoot, options.karmaConfig), transforms.karmaOptions ? transforms.karmaOptions(karmaOptions) : karmaOptions, { promiseConfig: true, throwErrors: true });
+    // Check for jsdom which does not support executing ESM scripts.
+    // If present, remove jsdom and issue a warning.
+    const updatedBrowsers = parsedKarmaConfig.browsers?.filter((browser) => browser !== 'jsdom');
+    if (parsedKarmaConfig.browsers?.length !== updatedBrowsers?.length) {
+        parsedKarmaConfig.browsers = updatedBrowsers;
+        context.logger.warn(`'jsdom' does not support ESM code execution and cannot be used for karma testing.` +
+            ` The 'jsdom' entry has been removed from the 'browsers' option.`);
+    }
     // Remove the webpack plugin/framework:
     // Alternative would be to make the Karma plugin "smart" but that's a tall order
     // with managing unneeded imports etc..
