@@ -38,6 +38,13 @@ export type Schema = {
      */
     clearScreen?: boolean;
     /**
+     * Custom package resolution conditions used to resolve conditional exports/imports.
+     * Defaults to ['module', 'development'/'production']. The following special conditions are
+     * always present if the requirements are satisfied: 'default', 'import', 'require',
+     * 'browser', 'node'.
+     */
+    conditions?: string[];
+    /**
      * Define the crossorigin attribute setting of elements that provide CORS support.
      */
     crossOrigin?: CrossOrigin;

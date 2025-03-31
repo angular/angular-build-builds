@@ -312,6 +312,7 @@ async function normalizeOptions(context, projectName, options, extensions) {
         security,
         templateUpdates: !!options.templateUpdates,
         incrementalResults: !!options.incrementalResults,
+        customConditions: options.conditions,
     };
 }
 async function getTailwindConfig(searchDirectories, workspaceRoot, context) {

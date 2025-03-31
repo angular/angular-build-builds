@@ -382,7 +382,7 @@ function getEsBuildServerCommonOptions(options) {
     };
 }
 function getEsBuildCommonOptions(options) {
-    const { workspaceRoot, outExtension, optimizationOptions, sourcemapOptions, tsconfig, externalDependencies, outputNames, preserveSymlinks, jit, loaderExtensions, jsonLogs, i18nOptions, } = options;
+    const { workspaceRoot, outExtension, optimizationOptions, sourcemapOptions, tsconfig, externalDependencies, outputNames, preserveSymlinks, jit, loaderExtensions, jsonLogs, i18nOptions, customConditions, } = options;
     // Ensure unique hashes for i18n translation changes when using post-process inlining.
     // This hash value is added as a footer to each file and ensures that the output file names (with hashes)
     // change when translation files have changed. If this is not done the post processed files may have
@@ -393,18 +393,28 @@ function getEsBuildCommonOptions(options) {
         const i18nHash = Object.values(i18nOptions.locales).reduce((data, locale) => data + locale.files.map((file) => file.integrity || '').join('|'), '');
         footer = { js: `/**i18n:${(0, node_crypto_1.createHash)('sha256').update(i18nHash).digest('hex')}*/` };
     }
+    // Core conditions that are always included
+    const conditions = [
+        // Required to support rxjs 7.x which will use es5 code if this condition is not present
+        'es2015',
+        'es2020',
+    ];
+    // Append custom conditions if present
+    if (customConditions) {
+        conditions.push(...customConditions);
+    }
+    else {
+        // Include default conditions
+        conditions.push('module');
+        conditions.push(optimizationOptions.scripts ? 'production' : 'development');
+    }
     return {
         absWorkingDir: workspaceRoot,
         format: 'esm',
         bundle: true,
         packages: 'bundle',
         assetNames: outputNames.media,
-        conditions: [
-            'es2020',
-            'es2015',
-            'module',
-            optimizationOptions.scripts ? 'production' : 'development',
-        ],
+        conditions,
         resolveExtensions: ['.ts', '.tsx', '.mjs', '.js', '.cjs'],
         metafile: true,
         legalComments: options.extractLicenses ? 'none' : 'eof',
