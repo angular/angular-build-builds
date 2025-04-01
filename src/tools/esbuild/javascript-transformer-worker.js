@@ -70,9 +70,7 @@ async function transformWithBabel(filename, data, options) {
     const shouldLink = !options.skipLinker && (await requiresLinking(filename, data));
     const useInputSourcemap = options.sourcemap &&
         (!!options.thirdPartySourcemaps || !/[\\/]node_modules[\\/]/.test(filename));
-    // @ts-expect-error Import attribute syntax plugin does not currently have type definitions
-    const { default: importAttributePlugin } = await Promise.resolve().then(() => __importStar(require('@babel/plugin-syntax-import-attributes')));
-    const plugins = [importAttributePlugin];
+    const plugins = [];
     if (options.instrumentForCoverage) {
         const { default: coveragePlugin } = await Promise.resolve().then(() => __importStar(require('../babel/plugins/add-code-coverage.js')));
         plugins.push(coveragePlugin);
