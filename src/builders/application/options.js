@@ -313,6 +313,7 @@ async function normalizeOptions(context, projectName, options, extensions) {
         templateUpdates: !!options.templateUpdates,
         incrementalResults: !!options.incrementalResults,
         customConditions: options.conditions,
+        frameworkVersion: await findFrameworkVersion(projectRoot),
     };
 }
 async function getTailwindConfig(searchDirectories, workspaceRoot, context) {
@@ -470,4 +471,19 @@ function normalizeExternals(value) {
         return undefined;
     }
     return [...new Set(value.map((d) => (d.endsWith('/*') ? d.slice(0, -2) : d)))];
+}
+async function findFrameworkVersion(projectRoot) {
+    // Create a custom require function for ESM compliance.
+    // NOTE: The trailing slash is significant.
+    const projectResolve = (0, node_module_1.createRequire)(projectRoot + '/').resolve;
+    try {
+        const manifestPath = projectResolve('@angular/core/package.json');
+        const manifestData = await (0, promises_1.readFile)(manifestPath, 'utf-8');
+        const manifestObject = JSON.parse(manifestData);
+        const version = manifestObject.version;
+        return version;
+    }
+    catch {
+        throw new Error('Error: It appears that "@angular/core" is missing as a dependency. Please ensure it is included in your project.');
+    }
 }

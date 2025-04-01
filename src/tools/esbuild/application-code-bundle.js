@@ -382,7 +382,7 @@ function getEsBuildServerCommonOptions(options) {
     };
 }
 function getEsBuildCommonOptions(options) {
-    const { workspaceRoot, outExtension, optimizationOptions, sourcemapOptions, tsconfig, externalDependencies, outputNames, preserveSymlinks, jit, loaderExtensions, jsonLogs, i18nOptions, customConditions, } = options;
+    const { workspaceRoot, outExtension, optimizationOptions, sourcemapOptions, tsconfig, externalDependencies, outputNames, preserveSymlinks, jit, loaderExtensions, jsonLogs, i18nOptions, customConditions, frameworkVersion, } = options;
     // Ensure unique hashes for i18n translation changes when using post-process inlining.
     // This hash value is added as a footer to each file and ensures that the output file names (with hashes)
     // change when translation files have changed. If this is not done the post processed files may have
@@ -399,6 +399,14 @@ function getEsBuildCommonOptions(options) {
         'es2015',
         'es2020',
     ];
+    // The pre-linked code is not used with JIT for two reasons:
+    // 1) The pre-linked code may not have the metadata included that is required for JIT
+    // 2) The CLI is otherwise setup to use runtime linking for JIT to match the application template compilation
+    if (!jit) {
+        // The pre-linked package condition is based on the framework version.
+        // Currently this is specific to each patch version of the framework.
+        conditions.push('angular:linked-' + frameworkVersion);
+    }
     // Append custom conditions if present
     if (customConditions) {
         conditions.push(...customConditions);

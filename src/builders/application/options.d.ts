@@ -204,6 +204,7 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     templateUpdates: boolean;
     incrementalResults: boolean;
     customConditions: string[] | undefined;
+    frameworkVersion: string;
 }>;
 export declare function getLocaleBaseHref(baseHref: string | undefined, i18n: NormalizedApplicationBuildOptions['i18nOptions'], locale: string): string | undefined;
 export {};
