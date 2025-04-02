@@ -93,7 +93,7 @@ export type Schema = {
     /**
      * Configures the generation of the application's HTML index.
      */
-    index: IndexUnion;
+    index?: IndexUnion;
     /**
      * The stylesheet language to use for the application's inline component styles.
      */

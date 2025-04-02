@@ -191,12 +191,18 @@ async function normalizeOptions(context, projectName, options, extensions) {
     let indexHtmlOptions;
     // index can never have a value of `true` but in the schema it's of type `boolean`.
     if (typeof options.index !== 'boolean') {
+        let indexInput;
         let indexOutput;
         // The output file will be created within the configured output path
         if (typeof options.index === 'string') {
-            indexOutput = options.index;
+            indexInput = indexOutput = node_path_1.default.join(workspaceRoot, options.index);
+        }
+        else if (typeof options.index === 'undefined') {
+            indexInput = node_path_1.default.join(projectSourceRoot, 'index.html');
+            indexOutput = 'index.html';
         }
         else {
+            indexInput = node_path_1.default.join(workspaceRoot, options.index.input);
             indexOutput = options.index.output || 'index.html';
         }
         /**
@@ -214,7 +220,7 @@ async function normalizeOptions(context, projectName, options, extensions) {
                 ? exports.INDEX_HTML_CSR
                 : indexBaseName;
         indexHtmlOptions = {
-            input: node_path_1.default.join(workspaceRoot, typeof options.index === 'string' ? options.index : options.index.input),
+            input: indexInput,
             output: indexOutput,
             insertionOrder: [
                 ['polyfills', true],
