@@ -233,7 +233,7 @@ function createCompilerPlugin(pluginOptions, compilationOrFactory, stylesheetBun
                 let referencedFiles;
                 let externalStylesheets;
                 try {
-                    const initializationResult = await compilation.initialize(pluginOptions.tsconfig, hostOptions, createCompilerOptionsTransformer(setupWarnings, pluginOptions, preserveSymlinks, build.initialOptions.conditions, build.initialOptions.absWorkingDir));
+                    const initializationResult = await compilation.initialize(pluginOptions.tsconfig, hostOptions, createCompilerOptionsTransformer(setupWarnings, pluginOptions, preserveSymlinks, build.initialOptions.conditions));
                     shouldTsIgnoreJs = !initializationResult.compilerOptions.allowJs;
                     // Isolated modules option ensures safe non-TypeScript transpilation.
                     // Typescript printing support for sourcemaps is not yet integrated.
@@ -474,7 +474,7 @@ async function bundleExternalStylesheet(stylesheetBundler, stylesheetFile, exter
         });
     }
 }
-function createCompilerOptionsTransformer(setupWarnings, pluginOptions, preserveSymlinks, customConditions, absWorkingDir) {
+function createCompilerOptionsTransformer(setupWarnings, pluginOptions, preserveSymlinks, customConditions) {
     return (compilerOptions) => {
         // target of 9 is ES2022 (using the number avoids an expensive import of typescript just for an enum)
         if (compilerOptions.target === undefined || compilerOptions.target < 9 /** ES2022 */) {
@@ -550,6 +550,7 @@ function createCompilerOptionsTransformer(setupWarnings, pluginOptions, preserve
             preserveSymlinks,
             externalRuntimeStyles: pluginOptions.externalRuntimeStyles,
             _enableHmr: !!pluginOptions.templateUpdates,
+            supportTestBed: !!pluginOptions.includeTestMetadata,
         };
     };
 }
