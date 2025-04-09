@@ -542,6 +542,7 @@ function createCompilerOptionsTransformer(setupWarnings, pluginOptions, preserve
         return {
             ...compilerOptions,
             noEmitOnError: false,
+            composite: false,
             inlineSources: !!pluginOptions.sourcemap,
             inlineSourceMap: !!pluginOptions.sourcemap,
             sourceMap: undefined,
