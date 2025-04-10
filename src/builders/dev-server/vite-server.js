@@ -247,8 +247,9 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
             externalMetadata.explicitServer.length = 0;
             externalMetadata.implicitServer.length = 0;
             externalMetadata.implicitBrowser.length = 0;
-            externalMetadata.explicitBrowser.push(...explicit);
-            externalMetadata.explicitServer.push(...explicit, ...node_module_1.builtinModules);
+            const externalDeps = browserOptions.externalDependencies ?? [];
+            externalMetadata.explicitBrowser.push(...explicit, ...externalDeps);
+            externalMetadata.explicitServer.push(...explicit, ...externalDeps, ...node_module_1.builtinModules);
             externalMetadata.implicitServer.push(...implicitServerFiltered);
             externalMetadata.implicitBrowser.push(...implicitBrowserFiltered);
             // The below needs to be sorted as Vite uses these options are part of the hashing invalidation algorithm.
