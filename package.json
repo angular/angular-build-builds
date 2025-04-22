@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "20.0.0-next.6+sha-0459d80",
+  "version": "20.0.0-next.6+sha-8ac0ca6",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -29,7 +29,7 @@
     "@babel/helper-split-export-declaration": "7.24.7",
     "@inquirer/confirm": "5.1.9",
     "@vitejs/plugin-basic-ssl": "2.0.0",
-    "beasties": "0.3.2",
+    "beasties": "0.3.3",
     "browserslist": "^4.23.0",
     "esbuild": "0.25.2",
     "https-proxy-agent": "7.0.6",
@@ -42,11 +42,11 @@
     "picomatch": "4.0.2",
     "piscina": "4.9.2",
     "rollup": "4.40.0",
-    "sass": "1.86.3",
+    "sass": "1.87.0",
     "semver": "7.7.1",
     "source-map-support": "0.5.21",
-    "tinyglobby": "0.2.12",
-    "vite": "6.2.6",
+    "tinyglobby": "0.2.13",
+    "vite": "6.3.2",
     "watchpack": "2.4.2"
   },
   "optionalDependencies": {
