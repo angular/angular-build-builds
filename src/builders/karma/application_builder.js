@@ -49,6 +49,7 @@ const path = __importStar(require("node:path"));
 const tinyglobby_1 = require("tinyglobby");
 const bundler_context_1 = require("../../tools/esbuild/bundler-context");
 const utils_1 = require("../../tools/esbuild/utils");
+const virtual_module_plugin_1 = require("../../tools/esbuild/virtual-module-plugin");
 const index_1 = require("../application/index");
 const results_1 = require("../application/results");
 const schema_1 = require("../application/schema");
@@ -306,7 +307,7 @@ async function initializeApplication(options, context, karmaOptions, transforms 
         entryPoints.set(mainName, options.main);
     }
     else {
-        entryPoints.set(mainName, localResolve('./polyfills/init_test_bed.js'));
+        entryPoints.set(mainName, 'angular:test-bed-init');
     }
     const instrumentForCoverage = options.codeCoverage
         ? createInstrumentationFilter(projectSourceRoot, getInstrumentationExcludedPaths(context.workspaceRoot, options.codeCoverageExclude ?? []))
@@ -345,8 +346,27 @@ async function initializeApplication(options, context, karmaOptions, transforms 
         loader: options.loader,
         externalDependencies: options.externalDependencies,
     };
+    const virtualTestBedInit = (0, virtual_module_plugin_1.createVirtualModulePlugin)({
+        namespace: 'angular:test-bed-init',
+        loadContent: async () => {
+            const contents = [
+                // Initialize the Angular testing environment
+                `import { getTestBed } from '@angular/core/testing';`,
+                `import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';`,
+                `getTestBed().initTestEnvironment(BrowserTestingModule, platformBrowserTesting(), {`,
+                `  errorOnUnknownElements: true,`,
+                `  errorOnUnknownProperties: true,`,
+                '});',
+            ];
+            return {
+                contents: contents.join('\n'),
+                loader: 'js',
+                resolveDir: projectSourceRoot,
+            };
+        },
+    });
     // Build tests with `application` builder, using test files as entry points.
-    const [buildOutput, buildIterator] = await first((0, index_1.buildApplicationInternal)(buildOptions, context), { cancel: !buildOptions.watch });
+    const [buildOutput, buildIterator] = await first((0, index_1.buildApplicationInternal)(buildOptions, context, { codePlugins: [virtualTestBedInit] }), { cancel: !buildOptions.watch });
     if (buildOutput.kind === results_1.ResultKind.Failure) {
         throw new ApplicationBuildError('Build failed');
     }
