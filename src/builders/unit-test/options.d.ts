@@ -21,5 +21,6 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     codeCoverageExclude: string[] | undefined;
     tsConfig: string;
     reporters: string[] | undefined;
+    browsers: string[] | undefined;
     watch: boolean;
 }>;

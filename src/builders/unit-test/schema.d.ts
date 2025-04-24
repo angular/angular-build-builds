@@ -3,6 +3,11 @@
  */
 export type Schema = {
     /**
+     * A list of browsers to use for test execution. If undefined, jsdom on Node.js will be used
+     * instead of a browser.
+     */
+    browsers?: string[];
+    /**
      * A build builder target to serve in the format of `project:target[:configuration]`. You
      * can also pass in more than one configuration name as a comma-separated list. Example:
      * `project:target:production,staging`.

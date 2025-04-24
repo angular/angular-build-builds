@@ -13,6 +13,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.execute = execute;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_crypto_1 = require("node:crypto");
+const node_module_1 = require("node:module");
 const node_path_1 = __importDefault(require("node:path"));
 const virtual_module_plugin_1 = require("../../tools/esbuild/virtual-module-plugin");
 const load_esm_1 = require("../../utils/load-esm");
@@ -97,6 +98,23 @@ async function* execute(options, context, extensions = {}) {
     });
     extensions.codePlugins.unshift(virtualTestBedInit);
     let instance;
+    // Setup vitest browser options if configured
+    let browser;
+    if (normalizedOptions.browsers) {
+        const provider = findBrowserProvider(projectSourceRoot);
+        if (!provider) {
+            context.logger.error('The "browsers" option requires either "playwright" or "webdriverio" to be installed within the project.' +
+                ' Please install one of these packages and rerun the test command.');
+            return { success: false };
+        }
+        browser = {
+            enabled: true,
+            provider,
+            instances: normalizedOptions.browsers.map((browserName) => ({
+                browser: browserName,
+            })),
+        };
+    }
     for await (const result of (0, application_1.buildApplicationInternal)(buildOptions, context, extensions)) {
         if (result.kind === results_1.ResultKind.Failure) {
             continue;
@@ -114,8 +132,11 @@ async function* execute(options, context, extensions = {}) {
             test: {
                 root: outputPath,
                 setupFiles,
-                environment: 'jsdom',
+                // Use `jsdom` if no browsers are explicitly configured.
+                // `node` is effectively no "environment" and the default.
+                environment: browser ? 'node' : 'jsdom',
                 watch: normalizedOptions.watch,
+                browser,
                 coverage: {
                     enabled: normalizedOptions.codeCoverage,
                     exclude: normalizedOptions.codeCoverageExclude,
@@ -126,5 +147,17 @@ async function* execute(options, context, extensions = {}) {
         // Check if all the tests pass to calculate the result
         const testModules = instance.state.getTestModules();
         yield { success: testModules.every((testModule) => testModule.ok()) };
+    }
+}
+function findBrowserProvider(projectSourceRoot) {
+    const projectResolver = (0, node_module_1.createRequire)(projectSourceRoot + '/').resolve;
+    // These must be installed in the project to be used
+    const vitestBuiltinProviders = ['playwright', 'webdriverio'];
+    for (const providerName of vitestBuiltinProviders) {
+        try {
+            projectResolver(providerName);
+            return providerName;
+        }
+        catch { }
     }
 }
