@@ -27,7 +27,7 @@ function createChromeDevtoolsMiddleware(cacheDir, projectRoot) {
         if (!devtoolsConfig) {
             // We store the UUID and re-use it to ensure Chrome does not repeatedly ask for permissions when restarting the dev server.
             try {
-                const devtoolsConfig = (0, node_fs_1.readFileSync)(devtoolsConfigPath, 'utf-8');
+                devtoolsConfig = (0, node_fs_1.readFileSync)(devtoolsConfigPath, 'utf-8');
                 const devtoolsConfigJson = JSON.parse(devtoolsConfig);
                 node_assert_1.default.equal(projectRoot, devtoolsConfigJson?.workspace.root);
             }
