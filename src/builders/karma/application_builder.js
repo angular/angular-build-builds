@@ -50,6 +50,7 @@ const tinyglobby_1 = require("tinyglobby");
 const bundler_context_1 = require("../../tools/esbuild/bundler-context");
 const utils_1 = require("../../tools/esbuild/utils");
 const virtual_module_plugin_1 = require("../../tools/esbuild/virtual-module-plugin");
+const project_metadata_1 = require("../../utils/project-metadata");
 const index_1 = require("../application/index");
 const results_1 = require("../application/results");
 const schema_1 = require("../application/schema");
@@ -266,8 +267,8 @@ async function getProjectSourceRoot(context) {
         return context.workspaceRoot;
     }
     const projectMetadata = await context.getProjectMetadata(projectName);
-    const sourceRoot = (projectMetadata.sourceRoot ?? projectMetadata.root ?? '');
-    return path.join(context.workspaceRoot, sourceRoot);
+    const { projectSourceRoot } = (0, project_metadata_1.getProjectRootPaths)(context.workspaceRoot, projectMetadata);
+    return projectSourceRoot;
 }
 function normalizePolyfills(polyfills) {
     if (typeof polyfills === 'string') {

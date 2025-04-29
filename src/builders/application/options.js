@@ -23,6 +23,7 @@ const environment_options_1 = require("../../utils/environment-options");
 const i18n_options_1 = require("../../utils/i18n-options");
 const normalize_cache_1 = require("../../utils/normalize-cache");
 const postcss_configuration_1 = require("../../utils/postcss-configuration");
+const project_metadata_1 = require("../../utils/project-metadata");
 const url_1 = require("../../utils/url");
 const schema_1 = require("./schema");
 /**
@@ -58,8 +59,7 @@ async function normalizeOptions(context, projectName, options, extensions) {
             // ref: https://github.com/nodejs/node/issues/7726
             (0, node_fs_1.realpathSync)(context.workspaceRoot);
     const projectMetadata = await context.getProjectMetadata(projectName);
-    const projectRoot = normalizeDirectoryPath(node_path_1.default.join(workspaceRoot, projectMetadata.root ?? ''));
-    const projectSourceRoot = normalizeDirectoryPath(node_path_1.default.join(workspaceRoot, projectMetadata.sourceRoot ?? 'src'));
+    const { projectRoot, projectSourceRoot } = (0, project_metadata_1.getProjectRootPaths)(workspaceRoot, projectMetadata);
     // Gather persistent caching option and provide a project specific cache location
     const cacheOptions = (0, normalize_cache_1.normalizeCacheOptions)(projectMetadata, workspaceRoot);
     cacheOptions.path = node_path_1.default.join(cacheOptions.path, projectName);
@@ -169,7 +169,7 @@ async function normalizeOptions(context, projectName, options, extensions) {
         server: 'server',
         media: 'media',
         ...(typeof outputPath === 'string' ? undefined : outputPath),
-        base: normalizeDirectoryPath(node_path_1.default.resolve(workspaceRoot, typeof outputPath === 'string' ? outputPath : outputPath.base)),
+        base: (0, project_metadata_1.normalizeDirectoryPath)(node_path_1.default.resolve(workspaceRoot, typeof outputPath === 'string' ? outputPath : outputPath.base)),
         clean: options.deleteOutputPath ?? true,
         // For app-shell and SSG server files are not required by users.
         // Omit these when SSR is not enabled.
@@ -405,19 +405,6 @@ function normalizeEntryPoints(workspaceRoot, browser, entryPoints = new Set()) {
         }
         return entryPointPaths;
     }
-}
-/**
- * Normalize a directory path string.
- * Currently only removes a trailing slash if present.
- * @param path A path string.
- * @returns A normalized path string.
- */
-function normalizeDirectoryPath(path) {
-    const last = path[path.length - 1];
-    if (last === '/' || last === '\\') {
-        return path.slice(0, -1);
-    }
-    return path;
 }
 function normalizeGlobalEntries(rawEntries, defaultName) {
     if (!rawEntries?.length) {

@@ -14,12 +14,12 @@ exports.normalizeOptions = normalizeOptions;
 const architect_1 = require("@angular-devkit/architect");
 const node_path_1 = __importDefault(require("node:path"));
 const normalize_cache_1 = require("../../utils/normalize-cache");
+const project_metadata_1 = require("../../utils/project-metadata");
 async function normalizeOptions(context, projectName, options) {
     // Setup base paths based on workspace root and project information
     const workspaceRoot = context.workspaceRoot;
     const projectMetadata = await context.getProjectMetadata(projectName);
-    const projectRoot = normalizeDirectoryPath(node_path_1.default.join(workspaceRoot, projectMetadata.root ?? ''));
-    const projectSourceRoot = normalizeDirectoryPath(node_path_1.default.join(workspaceRoot, projectMetadata.sourceRoot ?? 'src'));
+    const { projectRoot, projectSourceRoot } = (0, project_metadata_1.getProjectRootPaths)(workspaceRoot, projectMetadata);
     // Gather persistent caching option and provide a project specific cache location
     const cacheOptions = (0, normalize_cache_1.normalizeCacheOptions)(projectMetadata, workspaceRoot);
     cacheOptions.path = node_path_1.default.join(cacheOptions.path, projectName);
