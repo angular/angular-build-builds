@@ -22,6 +22,7 @@ const results_1 = require("../application/results");
 const schema_1 = require("../application/schema");
 const application_builder_1 = require("../karma/application_builder");
 const find_tests_1 = require("../karma/find-tests");
+const karma_bridge_1 = require("./karma-bridge");
 const options_1 = require("./options");
 /**
  * @experimental Direct usage of this function is considered experimental.
@@ -36,6 +37,12 @@ async function* execute(options, context, extensions = {}) {
     context.logger.warn(`NOTE: The "${context.builder.builderName}" builder is currently EXPERIMENTAL and not ready for production use.`);
     const normalizedOptions = await (0, options_1.normalizeOptions)(context, projectName, options);
     const { projectSourceRoot, workspaceRoot, runnerName } = normalizedOptions;
+    // Translate options and use karma builder directly if specified
+    if (runnerName === 'karma') {
+        const karmaBridge = await (0, karma_bridge_1.useKarmaBuilder)(context, normalizedOptions);
+        yield* karmaBridge;
+        return;
+    }
     if (runnerName !== 'vitest') {
         context.logger.error('Unknown test runner: ' + runnerName);
         return;

@@ -8,5 +8,6 @@ exports.Runner = void 0;
  */
 var Runner;
 (function (Runner) {
+    Runner["Karma"] = "karma";
     Runner["Vitest"] = "vitest";
 })(Runner || (exports.Runner = Runner = {}));

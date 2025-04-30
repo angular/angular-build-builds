@@ -55,5 +55,6 @@ export type Schema = {
  * The name of the test runner to use for test execution.
  */
 export declare enum Runner {
+    Karma = "karma",
     Vitest = "vitest"
 }
