@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "20.0.0-next.9+sha-209c8a7",
+  "version": "20.0.0-next.9+sha-2b28ecd",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -24,8 +24,8 @@
   "dependencies": {
     "@ampproject/remapping": "2.3.0",
     "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#{BUILD_SCM_ABBREV_HASH}",
-    "@babel/core": "7.26.10",
-    "@babel/helper-annotate-as-pure": "7.25.9",
+    "@babel/core": "7.27.1",
+    "@babel/helper-annotate-as-pure": "7.27.1",
     "@babel/helper-split-export-declaration": "7.24.7",
     "@inquirer/confirm": "5.1.9",
     "@vitejs/plugin-basic-ssl": "2.0.0",
