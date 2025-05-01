@@ -144,6 +144,7 @@ async function* execute(options, context, extensions = {}) {
                 environment: browser ? 'node' : 'jsdom',
                 watch: normalizedOptions.watch,
                 browser,
+                reporters: normalizedOptions.reporters ?? ['default'],
                 coverage: {
                     enabled: normalizedOptions.codeCoverage,
                     exclude: normalizedOptions.codeCoverageExclude,
