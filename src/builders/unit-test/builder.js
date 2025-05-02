@@ -89,8 +89,14 @@ async function* execute(options, context, extensions = {}) {
         loadContent: async () => {
             const contents = [
                 // Initialize the Angular testing environment
-                `import { getTestBed } from '@angular/core/testing';`,
+                `import { getTestBed, ɵgetCleanupHook as getCleanupHook } from '@angular/core/testing';`,
                 `import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';`,
+                `import { beforeEach, afterEach } from 'vitest';`,
+                '',
+                // Same as https://github.com/angular/angular/blob/05a03d3f975771bb59c7eefd37c01fa127ee2229/packages/core/testing/src/test_hooks.ts#L21-L29
+                `beforeEach(getCleanupHook(false));`,
+                `afterEach(getCleanupHook(true));`,
+                '',
                 `getTestBed().initTestEnvironment(BrowserTestingModule, platformBrowserTesting(), {`,
                 `  errorOnUnknownElements: true,`,
                 `  errorOnUnknownProperties: true,`,
