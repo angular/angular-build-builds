@@ -184,7 +184,7 @@ class BundlerContext {
                 // When incremental always add any files from the load result cache
                 if (this.#loadCache) {
                     for (const file of this.#loadCache.watchFiles) {
-                        if (!isInternalAngularFile(file)) {
+                        if (!isInternalAngularFileOrEsBuildDefine(file)) {
                             // watch files are fully resolved paths
                             this.watchFiles.add(file);
                         }
@@ -198,7 +198,7 @@ class BundlerContext {
         if (this.incremental) {
             // Add input files except virtual angular files which do not exist on disk
             for (const input of Object.keys(result.metafile.inputs)) {
-                if (!isInternalAngularFile(input)) {
+                if (!isInternalAngularFileOrEsBuildDefine(input)) {
                     // input file paths are always relative to the workspace root
                     this.watchFiles.add((0, node_path_1.join)(this.workspaceRoot, input));
                 }
@@ -324,12 +324,12 @@ class BundlerContext {
     #addErrorsToWatch(result) {
         for (const error of result.errors) {
             let file = error.location?.file;
-            if (file && !isInternalAngularFile(file)) {
+            if (file && !isInternalAngularFileOrEsBuildDefine(file)) {
                 this.watchFiles.add((0, node_path_1.join)(this.workspaceRoot, file));
             }
             for (const note of error.notes) {
                 file = note.location?.file;
-                if (file && !isInternalAngularFile(file)) {
+                if (file && !isInternalAngularFileOrEsBuildDefine(file)) {
                     this.watchFiles.add((0, node_path_1.join)(this.workspaceRoot, file));
                 }
             }
@@ -377,6 +377,6 @@ class BundlerContext {
     }
 }
 exports.BundlerContext = BundlerContext;
-function isInternalAngularFile(file) {
-    return file.startsWith('angular:');
+function isInternalAngularFileOrEsBuildDefine(file) {
+    return file.startsWith('angular:') || file.startsWith('<define:');
 }
