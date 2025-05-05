@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "20.0.0-next.9+sha-ce03490",
+  "version": "20.0.0-next.9+sha-3fb0e3e",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -40,7 +40,7 @@
     "mrmime": "2.0.1",
     "parse5-html-rewriting-stream": "7.1.0",
     "picomatch": "4.0.2",
-    "piscina": "4.9.2",
+    "piscina": "5.0.0",
     "rollup": "4.40.1",
     "sass": "1.87.0",
     "semver": "7.7.1",
