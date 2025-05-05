@@ -69,7 +69,7 @@ async function normalizeOptions(context, projectName, options, extensions) {
     if (options.forceI18nFlatOutput) {
         i18nOptions.flatOutput = true;
     }
-    const entryPoints = normalizeEntryPoints(workspaceRoot, options.browser, options.entryPoints);
+    const entryPoints = normalizeEntryPoints(workspaceRoot, projectSourceRoot, options.browser, options.entryPoints);
     const tsconfig = node_path_1.default.join(workspaceRoot, options.tsConfig);
     const optimizationOptions = (0, utils_1.normalizeOptimization)(options.optimization);
     const sourcemapOptions = (0, utils_1.normalizeSourceMaps)(options.sourceMap ?? false);
@@ -355,22 +355,21 @@ async function getTailwindConfig(searchDirectories, workspaceRoot, context) {
  * @param entryPoints Set of entry points to use if provided.
  * @returns An object mapping entry point names to their file paths.
  */
-function normalizeEntryPoints(workspaceRoot, browser, entryPoints = new Set()) {
+function normalizeEntryPoints(workspaceRoot, projectSourceRoot, browser, entryPoints) {
     if (browser === '') {
         throw new Error('`browser` option cannot be an empty string.');
     }
     // `browser` and `entryPoints` are mutually exclusive.
-    if (browser && entryPoints.size > 0) {
+    if (browser && entryPoints) {
         throw new Error('Only one of `browser` or `entryPoints` may be provided.');
     }
-    if (!browser && entryPoints.size === 0) {
-        // Schema should normally reject this case, but programmatic usages of the builder might make this mistake.
-        throw new Error('Either `browser` or at least one `entryPoints` value must be provided.');
-    }
-    // Schema types force `browser` to always be provided, but it may be omitted when the builder is invoked programmatically.
     if (browser) {
         // Use `browser` alone.
         return { 'main': node_path_1.default.join(workspaceRoot, browser) };
+    }
+    else if (!entryPoints) {
+        // Default browser entry if no explicit entry points
+        return { 'main': node_path_1.default.join(projectSourceRoot, 'main.ts') };
     }
     else if (entryPoints instanceof Map) {
         return Object.fromEntries(Array.from(entryPoints.entries(), ([name, entryPoint]) => {
