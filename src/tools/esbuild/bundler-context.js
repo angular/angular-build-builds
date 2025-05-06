@@ -13,6 +13,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.BundlerContext = exports.BuildOutputFileType = void 0;
 const esbuild_1 = require("esbuild");
 const node_assert_1 = __importDefault(require("node:assert"));
+const node_module_1 = require("node:module");
 const node_path_1 = require("node:path");
 const load_result_cache_1 = require("./load-result-cache");
 const utils_1 = require("./utils");
@@ -184,7 +185,7 @@ class BundlerContext {
                 // When incremental always add any files from the load result cache
                 if (this.#loadCache) {
                     for (const file of this.#loadCache.watchFiles) {
-                        if (!isInternalAngularFileOrEsBuildDefine(file)) {
+                        if (!isInternalAngularFile(file)) {
                             // watch files are fully resolved paths
                             this.watchFiles.add(file);
                         }
@@ -198,10 +199,11 @@ class BundlerContext {
         if (this.incremental) {
             // Add input files except virtual angular files which do not exist on disk
             for (const input of Object.keys(result.metafile.inputs)) {
-                if (!isInternalAngularFileOrEsBuildDefine(input)) {
-                    // input file paths are always relative to the workspace root
-                    this.watchFiles.add((0, node_path_1.join)(this.workspaceRoot, input));
+                if (isInternalAngularFile(input) || isInternalBundlerFile(input)) {
+                    continue;
                 }
+                // Input file paths are always relative to the workspace root
+                this.watchFiles.add((0, node_path_1.join)(this.workspaceRoot, input));
             }
         }
         // Return if the build encountered any errors
@@ -324,12 +326,12 @@ class BundlerContext {
     #addErrorsToWatch(result) {
         for (const error of result.errors) {
             let file = error.location?.file;
-            if (file && !isInternalAngularFileOrEsBuildDefine(file)) {
+            if (file && !isInternalAngularFile(file)) {
                 this.watchFiles.add((0, node_path_1.join)(this.workspaceRoot, file));
             }
             for (const note of error.notes) {
                 file = note.location?.file;
-                if (file && !isInternalAngularFileOrEsBuildDefine(file)) {
+                if (file && !isInternalAngularFile(file)) {
                     this.watchFiles.add((0, node_path_1.join)(this.workspaceRoot, file));
                 }
             }
@@ -377,6 +379,19 @@ class BundlerContext {
     }
 }
 exports.BundlerContext = BundlerContext;
-function isInternalAngularFileOrEsBuildDefine(file) {
-    return file.startsWith('angular:') || file.startsWith('<define:');
+function isInternalAngularFile(file) {
+    return file.startsWith('angular:');
+}
+function isInternalBundlerFile(file) {
+    // Bundler virtual files such as "<define:???>" or "<runtime>"
+    if (file[0] === '<' && file.at(-1) === '>') {
+        return true;
+    }
+    const DISABLED_BUILTIN = '(disabled):';
+    // Disabled node builtins such as "/some/path/(disabled):fs"
+    const disabledIndex = file.indexOf(DISABLED_BUILTIN);
+    if (disabledIndex >= 0) {
+        return node_module_1.builtinModules.includes(file.slice(disabledIndex + DISABLED_BUILTIN.length));
+    }
+    return false;
 }
