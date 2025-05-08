@@ -16,6 +16,7 @@ const node_crypto_1 = require("node:crypto");
 const node_module_1 = require("node:module");
 const node_path_1 = __importDefault(require("node:path"));
 const virtual_module_plugin_1 = require("../../tools/esbuild/virtual-module-plugin");
+const error_1 = require("../../utils/error");
 const load_esm_1 = require("../../utils/load-esm");
 const application_1 = require("../application");
 const results_1 = require("../application/results");
@@ -27,6 +28,7 @@ const options_1 = require("./options");
 /**
  * @experimental Direct usage of this function is considered experimental.
  */
+// eslint-disable-next-line max-lines-per-function
 async function* execute(options, context, extensions = {}) {
     // Determine project name from builder context target
     const projectName = context.target?.project;
@@ -55,7 +57,19 @@ async function* execute(options, context, extensions = {}) {
     }
     const entryPoints = (0, find_tests_1.getTestEntrypoints)(testFiles, { projectSourceRoot, workspaceRoot });
     entryPoints.set('init-testbed', 'angular:test-bed-init');
-    const { startVitest } = await (0, load_esm_1.loadEsmModule)('vitest/node');
+    let vitestNodeModule;
+    try {
+        vitestNodeModule = await (0, load_esm_1.loadEsmModule)('vitest/node');
+    }
+    catch (error) {
+        (0, error_1.assertIsError)(error);
+        if (error.code !== 'ERR_MODULE_NOT_FOUND') {
+            throw error;
+        }
+        context.logger.error('The `vitest` package was not found. Please install the package and rerun the test command.');
+        return;
+    }
+    const { startVitest } = vitestNodeModule;
     // Setup test file build options based on application build target options
     const buildTargetOptions = (await context.validateOptions(await context.getTargetOptions(normalizedOptions.buildTarget), await context.getBuilderNameForTarget(normalizedOptions.buildTarget)));
     if (buildTargetOptions.polyfills?.includes('zone.js')) {
@@ -65,6 +79,7 @@ async function* execute(options, context, extensions = {}) {
     const buildOptions = {
         ...buildTargetOptions,
         watch: normalizedOptions.watch,
+        incrementalResults: normalizedOptions.watch,
         outputPath,
         index: false,
         browser: undefined,
@@ -128,39 +143,47 @@ async function* execute(options, context, extensions = {}) {
             })),
         };
     }
-    for await (const result of (0, application_1.buildApplicationInternal)(buildOptions, context, extensions)) {
-        if (result.kind === results_1.ResultKind.Failure) {
-            continue;
-        }
-        else if (result.kind !== results_1.ResultKind.Full) {
-            node_assert_1.default.fail('A full build result is required from the application builder.');
-        }
-        (0, node_assert_1.default)(result.files, 'Builder did not provide result files.');
-        await (0, application_builder_1.writeTestFiles)(result.files, outputPath);
-        const setupFiles = ['init-testbed.js'];
-        if (buildTargetOptions?.polyfills?.length) {
-            setupFiles.push('polyfills.js');
-        }
-        instance ??= await startVitest('test', undefined /* cliFilters */, undefined /* options */, {
-            test: {
-                root: outputPath,
-                setupFiles,
-                // Use `jsdom` if no browsers are explicitly configured.
-                // `node` is effectively no "environment" and the default.
-                environment: browser ? 'node' : 'jsdom',
-                watch: normalizedOptions.watch,
-                browser,
-                reporters: normalizedOptions.reporters ?? ['default'],
-                coverage: {
-                    enabled: normalizedOptions.codeCoverage,
-                    exclude: normalizedOptions.codeCoverageExclude,
-                    excludeAfterRemap: true,
+    const setupFiles = ['init-testbed.js'];
+    if (buildTargetOptions?.polyfills?.length) {
+        setupFiles.push('polyfills.js');
+    }
+    try {
+        for await (const result of (0, application_1.buildApplicationInternal)(buildOptions, context, extensions)) {
+            if (result.kind === results_1.ResultKind.Failure) {
+                continue;
+            }
+            else if (result.kind !== results_1.ResultKind.Full && result.kind !== results_1.ResultKind.Incremental) {
+                node_assert_1.default.fail('A full and/or incremental build result is required from the application builder.');
+            }
+            (0, node_assert_1.default)(result.files, 'Builder did not provide result files.');
+            await (0, application_builder_1.writeTestFiles)(result.files, outputPath);
+            instance ??= await startVitest('test', undefined /* cliFilters */, undefined /* options */, {
+                test: {
+                    root: outputPath,
+                    setupFiles,
+                    // Use `jsdom` if no browsers are explicitly configured.
+                    // `node` is effectively no "environment" and the default.
+                    environment: browser ? 'node' : 'jsdom',
+                    watch: normalizedOptions.watch,
+                    browser,
+                    reporters: normalizedOptions.reporters ?? ['default'],
+                    coverage: {
+                        enabled: normalizedOptions.codeCoverage,
+                        exclude: normalizedOptions.codeCoverageExclude,
+                        excludeAfterRemap: true,
+                    },
                 },
-            },
-        });
-        // Check if all the tests pass to calculate the result
-        const testModules = instance.state.getTestModules();
-        yield { success: testModules.every((testModule) => testModule.ok()) };
+            });
+            // Check if all the tests pass to calculate the result
+            const testModules = instance.state.getTestModules();
+            yield { success: testModules.every((testModule) => testModule.ok()) };
+        }
+    }
+    finally {
+        if (normalizedOptions.watch) {
+            // Vitest will automatically close if not using watch mode
+            await instance?.close();
+        }
     }
 }
 function findBrowserProvider(projectSourceRoot) {
