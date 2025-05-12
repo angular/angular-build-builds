@@ -35,6 +35,11 @@ export type Schema = {
      */
     include?: string[];
     /**
+     * TypeScript file that exports an array of Angular providers to use during test execution.
+     * The array must be a default export.
+     */
+    providersFile?: string;
+    /**
      * Test runner reporters to use. Directly passed to the test runner.
      */
     reporters?: string[];
