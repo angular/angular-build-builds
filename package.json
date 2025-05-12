@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "19.2.11+sha-7720741",
+  "version": "19.2.11+sha-cf1ab3e",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
