@@ -23,4 +23,5 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     reporters: string[] | undefined;
     browsers: string[] | undefined;
     watch: boolean | undefined;
+    providersFile: string | undefined;
 }>;

@@ -104,15 +104,28 @@ async function* execute(options, context, extensions = {}) {
         loadContent: async () => {
             const contents = [
                 // Initialize the Angular testing environment
+                `import { NgModule } from '@angular/core';`,
                 `import { getTestBed, ɵgetCleanupHook as getCleanupHook } from '@angular/core/testing';`,
                 `import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';`,
                 `import { beforeEach, afterEach } from 'vitest';`,
+                '',
+                normalizedOptions.providersFile
+                    ? `import providers from './${node_path_1.default
+                        .relative(projectSourceRoot, normalizedOptions.providersFile)
+                        .replace(/.[mc]?ts$/, '')
+                        .replace(/\\/g, '/')}'`
+                    : 'const providers = [];',
                 '',
                 // Same as https://github.com/angular/angular/blob/05a03d3f975771bb59c7eefd37c01fa127ee2229/packages/core/testing/src/test_hooks.ts#L21-L29
                 `beforeEach(getCleanupHook(false));`,
                 `afterEach(getCleanupHook(true));`,
                 '',
-                `getTestBed().initTestEnvironment(BrowserTestingModule, platformBrowserTesting(), {`,
+                `@NgModule({`,
+                `  providers,`,
+                `})`,
+                `export class TestModule {}`,
+                '',
+                `getTestBed().initTestEnvironment([BrowserTestingModule, TestModule], platformBrowserTesting(), {`,
                 `  errorOnUnknownElements: true,`,
                 `  errorOnUnknownProperties: true,`,
                 '});',
