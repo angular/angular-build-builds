@@ -140,22 +140,12 @@ async function* execute(options, context, extensions = {}) {
     extensions.codePlugins.unshift(virtualTestBedInit);
     let instance;
     // Setup vitest browser options if configured
-    let browser;
-    if (normalizedOptions.browsers) {
-        const provider = findBrowserProvider(projectSourceRoot);
-        if (!provider) {
-            context.logger.error('The "browsers" option requires either "playwright" or "webdriverio" to be installed within the project.' +
-                ' Please install one of these packages and rerun the test command.');
-            return { success: false };
-        }
-        browser = {
-            enabled: true,
-            provider,
-            instances: normalizedOptions.browsers.map((browserName) => ({
-                browser: browserName,
-            })),
-        };
+    const { browser, errors } = setupBrowserConfiguration(normalizedOptions.browsers, projectSourceRoot);
+    if (errors?.length) {
+        errors.forEach((error) => context.logger.error(error));
+        return { success: false };
     }
+    // Add setup file entries for TestBed initialization and project polyfills
     const setupFiles = ['init-testbed.js'];
     if (buildTargetOptions?.polyfills?.length) {
         setupFiles.push('polyfills.js');
@@ -199,9 +189,8 @@ async function* execute(options, context, extensions = {}) {
         }
     }
 }
-function findBrowserProvider(projectSourceRoot) {
-    const projectResolver = (0, node_module_1.createRequire)(projectSourceRoot + '/').resolve;
-    // These must be installed in the project to be used
+function findBrowserProvider(projectResolver) {
+    // One of these must be installed in the project to use browser testing
     const vitestBuiltinProviders = ['playwright', 'webdriverio'];
     for (const providerName of vitestBuiltinProviders) {
         try {
@@ -210,4 +199,36 @@ function findBrowserProvider(projectSourceRoot) {
         }
         catch { }
     }
+}
+function setupBrowserConfiguration(browsers, projectSourceRoot) {
+    if (browsers === undefined) {
+        return {};
+    }
+    const projectResolver = (0, node_module_1.createRequire)(projectSourceRoot + '/').resolve;
+    let errors;
+    try {
+        projectResolver('@vitest/browser');
+    }
+    catch {
+        errors ??= [];
+        errors.push('The "browsers" option requires the "@vitest/browser" package to be installed within the project.' +
+            ' Please install this package and rerun the test command.');
+    }
+    const provider = findBrowserProvider(projectResolver);
+    if (!provider) {
+        errors ??= [];
+        errors.push('The "browsers" option requires either "playwright" or "webdriverio" to be installed within the project.' +
+            ' Please install one of these packages and rerun the test command.');
+    }
+    if (errors) {
+        return { errors };
+    }
+    const browser = {
+        enabled: true,
+        provider,
+        instances: browsers.map((browserName) => ({
+            browser: browserName,
+        })),
+    };
+    return { browser };
 }
