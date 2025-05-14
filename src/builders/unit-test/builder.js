@@ -148,7 +148,7 @@ async function* execute(options, context, extensions = {}) {
     // Add setup file entries for TestBed initialization and project polyfills
     const setupFiles = ['init-testbed.js'];
     if (buildTargetOptions?.polyfills?.length) {
-        setupFiles.unshift('polyfills.js');
+        setupFiles.push('polyfills.js');
     }
     try {
         for await (const result of (0, application_1.buildApplicationInternal)(buildOptions, context, extensions)) {
