@@ -107,7 +107,6 @@ async function* execute(options, context, extensions = {}) {
                 `import { NgModule } from '@angular/core';`,
                 `import { getTestBed, ɵgetCleanupHook as getCleanupHook } from '@angular/core/testing';`,
                 `import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';`,
-                `import { beforeEach, afterEach } from 'vitest';`,
                 '',
                 normalizedOptions.providersFile
                     ? `import providers from './${node_path_1.default
@@ -140,7 +139,7 @@ async function* execute(options, context, extensions = {}) {
     extensions.codePlugins.unshift(virtualTestBedInit);
     let instance;
     // Setup vitest browser options if configured
-    const { browser, errors } = setupBrowserConfiguration(normalizedOptions.browsers, projectSourceRoot);
+    const { browser, errors } = setupBrowserConfiguration(normalizedOptions.browsers, normalizedOptions.debug, projectSourceRoot);
     if (errors?.length) {
         errors.forEach((error) => context.logger.error(error));
         return { success: false };
@@ -150,6 +149,13 @@ async function* execute(options, context, extensions = {}) {
     if (buildTargetOptions?.polyfills?.length) {
         setupFiles.push('polyfills.js');
     }
+    const debugOptions = normalizedOptions.debug
+        ? {
+            inspectBrk: true,
+            isolate: false,
+            fileParallelism: false,
+        }
+        : {};
     try {
         for await (const result of (0, application_1.buildApplicationInternal)(buildOptions, context, extensions)) {
             if (result.kind === results_1.ResultKind.Failure) {
@@ -176,6 +182,7 @@ async function* execute(options, context, extensions = {}) {
                         exclude: normalizedOptions.codeCoverageExclude,
                         excludeAfterRemap: true,
                     },
+                    ...debugOptions,
                 },
             });
             // Check if all the tests pass to calculate the result
@@ -201,7 +208,7 @@ function findBrowserProvider(projectResolver) {
         catch { }
     }
 }
-function setupBrowserConfiguration(browsers, projectSourceRoot) {
+function setupBrowserConfiguration(browsers, debug, projectSourceRoot) {
     if (browsers === undefined) {
         return {};
     }
@@ -220,6 +227,12 @@ function setupBrowserConfiguration(browsers, projectSourceRoot) {
         errors ??= [];
         errors.push('The "browsers" option requires either "playwright" or "webdriverio" to be installed within the project.' +
             ' Please install one of these packages and rerun the test command.');
+    }
+    // Vitest current requires the playwright browser provider to use the inspect-brk option used by "debug"
+    if (debug && provider !== 'playwright') {
+        errors ??= [];
+        errors.push('Debugging browser mode tests currently requires the use of "playwright".' +
+            ' Please install this package and rerun the test command.');
     }
     if (errors) {
         return { errors };

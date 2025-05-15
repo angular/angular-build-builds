@@ -44,6 +44,7 @@ async function normalizeOptions(context, projectName, options) {
         reporters,
         browsers,
         watch,
+        debug: options.debug ?? false,
         providersFile: options.providersFile && node_path_1.default.join(workspaceRoot, options.providersFile),
     };
 }
