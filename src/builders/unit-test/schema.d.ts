@@ -22,6 +22,10 @@ export type Schema = {
      */
     codeCoverageExclude?: string[];
     /**
+     * Initialize the test runner to support using the Node Inspector for test debugging.
+     */
+    debug?: boolean;
+    /**
      * Globs of files to exclude, relative to the project root.
      */
     exclude?: string[];
