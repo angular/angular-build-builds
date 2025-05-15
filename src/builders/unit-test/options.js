@@ -47,16 +47,3 @@ async function normalizeOptions(context, projectName, options) {
         providersFile: options.providersFile && node_path_1.default.join(workspaceRoot, options.providersFile),
     };
 }
-/**
- * Normalize a directory path string.
- * Currently only removes a trailing slash if present.
- * @param path A path string.
- * @returns A normalized path string.
- */
-function normalizeDirectoryPath(path) {
-    const last = path[path.length - 1];
-    if (last === '/' || last === '\\') {
-        return path.slice(0, -1);
-    }
-    return path;
-}
