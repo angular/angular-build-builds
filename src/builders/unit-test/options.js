@@ -15,6 +15,7 @@ const architect_1 = require("@angular-devkit/architect");
 const node_path_1 = __importDefault(require("node:path"));
 const normalize_cache_1 = require("../../utils/normalize-cache");
 const project_metadata_1 = require("../../utils/project-metadata");
+const tty_1 = require("../../utils/tty");
 async function normalizeOptions(context, projectName, options) {
     // Setup base paths based on workspace root and project information
     const workspaceRoot = context.workspaceRoot;
@@ -26,7 +27,7 @@ async function normalizeOptions(context, projectName, options) {
     // Target specifier defaults to the current project's build target using a development configuration
     const buildTargetSpecifier = options.buildTarget ?? `::development`;
     const buildTarget = (0, architect_1.targetFromTargetString)(buildTargetSpecifier, projectName, 'build');
-    const { codeCoverage, codeCoverageExclude, tsConfig, runner, reporters, browsers, watch } = options;
+    const { codeCoverage, codeCoverageExclude, tsConfig, runner, reporters, browsers } = options;
     return {
         // Project/workspace information
         workspaceRoot,
@@ -43,7 +44,7 @@ async function normalizeOptions(context, projectName, options) {
         tsConfig,
         reporters,
         browsers,
-        watch,
+        watch: options.watch ?? (0, tty_1.isTTY)(),
         debug: options.debug ?? false,
         providersFile: options.providersFile && node_path_1.default.join(workspaceRoot, options.providersFile),
     };
