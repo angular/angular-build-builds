@@ -114,13 +114,12 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
         // https://nodejs.org/api/process.html#processsetsourcemapsenabledval
         process.setSourceMapsEnabled(true);
     }
+    const componentsHmrCanBeUsed = browserOptions.aot && serverOptions.liveReload && serverOptions.hmr;
     // Enable to support link-based component style hot reloading (`NG_HMR_CSTYLES=1` can be used to enable)
-    browserOptions.externalRuntimeStyles =
-        serverOptions.liveReload && serverOptions.hmr && environment_options_1.useComponentStyleHmr;
+    browserOptions.externalRuntimeStyles = componentsHmrCanBeUsed && environment_options_1.useComponentStyleHmr;
     // Enable to support component template hot replacement (`NG_HMR_TEMPLATE=0` can be used to disable selectively)
     // This will also replace file-based/inline styles as code if external runtime styles are not enabled.
-    browserOptions.templateUpdates =
-        serverOptions.liveReload && serverOptions.hmr && environment_options_1.useComponentTemplateHmr;
+    browserOptions.templateUpdates = componentsHmrCanBeUsed && environment_options_1.useComponentTemplateHmr;
     browserOptions.incrementalResults = true;
     // Setup the prebundling transformer that will be shared across Vite prebundling requests
     const prebundleTransformer = new internal_1.JavaScriptTransformer(
