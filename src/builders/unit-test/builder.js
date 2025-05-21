@@ -166,7 +166,10 @@ async function* execute(options, context, extensions = {}) {
             }
             (0, node_assert_1.default)(result.files, 'Builder did not provide result files.');
             await (0, application_builder_1.writeTestFiles)(result.files, outputPath);
-            instance ??= await startVitest('test', undefined /* cliFilters */, undefined /* options */, {
+            instance ??= await startVitest('test', undefined /* cliFilters */, {
+                // Disable configuration file resolution/loading
+                config: false,
+            }, {
                 test: {
                     root: outputPath,
                     globals: true,
