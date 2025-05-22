@@ -51,6 +51,13 @@ const piscina_1 = __importDefault(require("piscina"));
 const load_esm_1 = require("../../utils/load-esm");
 const textDecoder = new TextDecoder();
 const textEncoder = new TextEncoder();
+/**
+ * The function name prefix for all Angular partial compilation functions.
+ * Used to determine if linking of a JavaScript file is required.
+ * If any additional declarations are added or otherwise changed in the linker,
+ * the names MUST begin with this prefix.
+ */
+const LINKER_DECLARATION_PREFIX = 'ɵɵngDeclare';
 async function transformJavaScript(request) {
     const { filename, data, ...options } = request;
     const textData = typeof data === 'string' ? data : textDecoder.decode(data);
@@ -62,10 +69,6 @@ async function transformJavaScript(request) {
  * Cached instance of the compiler-cli linker's createEs2015LinkerPlugin function.
  */
 let linkerPluginCreator;
-/**
- * Cached instance of the compiler-cli linker's needsLinking function.
- */
-let needsLinking;
 async function transformWithBabel(filename, data, options) {
     const shouldLink = !options.skipLinker && (await requiresLinking(filename, data));
     const useInputSourcemap = options.sourcemap &&
@@ -120,14 +123,10 @@ async function requiresLinking(path, source) {
     if (/[\\/]@angular[\\/](?:compiler|core)|\.tsx?$/.test(path)) {
         return false;
     }
-    if (!needsLinking) {
-        // Load ESM `@angular/compiler-cli/linker` using the TypeScript dynamic import workaround.
-        // Once TypeScript provides support for keeping the dynamic import this workaround can be
-        // changed to a direct dynamic import.
-        const linkerModule = await (0, load_esm_1.loadEsmModule)('@angular/compiler-cli/linker');
-        needsLinking = linkerModule.needsLinking;
-    }
-    return needsLinking(path, source);
+    // Check if the source code includes one of the declaration functions.
+    // There is a low chance of a false positive but the names are fairly unique
+    // and the result would be an unnecessary no-op additional plugin pass.
+    return source.includes(LINKER_DECLARATION_PREFIX);
 }
 async function createLinkerPlugin(options) {
     linkerPluginCreator ??= (await (0, load_esm_1.loadEsmModule)('@angular/compiler-cli/linker/babel')).createEs2015LinkerPlugin;
