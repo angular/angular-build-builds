@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "20.1.0-next.0+sha-eed60d1",
+  "version": "20.1.0-next.0+sha-5f7ac55",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -29,7 +29,7 @@
     "@babel/helper-split-export-declaration": "7.24.7",
     "@inquirer/confirm": "5.1.10",
     "@vitejs/plugin-basic-ssl": "2.0.0",
-    "beasties": "0.3.3",
+    "beasties": "0.3.4",
     "browserslist": "^4.23.0",
     "esbuild": "0.25.4",
     "https-proxy-agent": "7.0.6",
