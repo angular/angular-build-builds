@@ -84,6 +84,7 @@ async function* execute(options, context, extensions = {}) {
         index: false,
         browser: undefined,
         server: undefined,
+        outputMode: undefined,
         localize: false,
         budgets: [],
         serviceWorker: false,
