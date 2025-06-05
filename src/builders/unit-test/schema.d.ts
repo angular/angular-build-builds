@@ -22,6 +22,10 @@ export type Schema = {
      */
     codeCoverageExclude?: string[];
     /**
+     * Reporters to use for code coverage results.
+     */
+    codeCoverageReporters?: SchemaCodeCoverageReporter[];
+    /**
      * Initialize the test runner to support using the Node Inspector for test debugging.
      */
     debug?: boolean;
@@ -60,6 +64,18 @@ export type Schema = {
      */
     watch?: boolean;
 };
+export type SchemaCodeCoverageReporter = CodeCoverageReporterCodeCoverageReporter[] | CoverageReporters;
+export type CodeCoverageReporterCodeCoverageReporter = CoverageReporters | {
+    [key: string]: any;
+};
+export declare enum CoverageReporters {
+    Cobertura = "cobertura",
+    Html = "html",
+    Lcov = "lcov",
+    Lcovonly = "lcovonly",
+    Text = "text",
+    TextSummary = "text-summary"
+}
 /**
  * The name of the test runner to use for test execution.
  */

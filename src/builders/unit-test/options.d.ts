@@ -17,8 +17,10 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     include: string[];
     exclude: string[];
     runnerName: import("./schema").Runner;
-    codeCoverage: boolean | undefined;
-    codeCoverageExclude: string[] | undefined;
+    codeCoverage: {
+        exclude: string[] | undefined;
+        reporters: [string, Record<string, unknown>][] | undefined;
+    } | undefined;
     tsConfig: string;
     reporters: string[] | undefined;
     browsers: string[] | undefined;
