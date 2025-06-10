@@ -75,7 +75,7 @@ async function* execute(options, context, extensions = {}) {
     if (buildTargetOptions.polyfills?.includes('zone.js')) {
         buildTargetOptions.polyfills.push('zone.js/testing');
     }
-    const outputPath = node_path_1.default.join(context.workspaceRoot, 'dist/test-out', (0, node_crypto_1.randomUUID)());
+    const outputPath = node_path_1.default.join(context.workspaceRoot, generateOutputPath());
     const buildOptions = {
         ...buildTargetOptions,
         watch: normalizedOptions.watch,
@@ -264,4 +264,9 @@ function setupBrowserConfiguration(browsers, debug, projectSourceRoot) {
         })),
     };
     return { browser };
+}
+function generateOutputPath() {
+    const datePrefix = new Date().toISOString().replaceAll(/[-:.]/g, '');
+    const uuidSuffix = (0, node_crypto_1.randomUUID)().slice(0, 8);
+    return node_path_1.default.join('dist', 'test-out', `${datePrefix}-${uuidSuffix}`);
 }
