@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "18.2.19+sha-cfb0a4f",
+  "version": "18.2.19+sha-f048078",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -23,7 +23,7 @@
   "builders": "builders.json",
   "dependencies": {
     "@ampproject/remapping": "2.3.0",
-    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#cfb0a4f",
+    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#f048078",
     "@babel/core": "7.25.2",
     "@babel/helper-annotate-as-pure": "7.24.7",
     "@babel/helper-split-export-declaration": "7.24.7",
