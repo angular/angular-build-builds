@@ -112,7 +112,7 @@ class AngularAssetsMiddleware {
 class AngularPolyfillsPlugin {
     static $inject = ['config.files'];
     static NAME = 'angular-polyfills';
-    static createPlugin(polyfillsFile, jasmineCleanupFiles) {
+    static createPlugin(polyfillsFile, jasmineCleanupFiles, scriptsFiles) {
         return {
             // This has to be a "reporter" because reporters run _after_ frameworks
             // and karma-jasmine-html-reporter injects additional scripts that may
@@ -151,15 +151,12 @@ class AngularPolyfillsPlugin {
                             // page load. `type` won't affect them.
                             continue;
                         }
-                        if (f.pattern === 'scripts.js') {
-                            // Don't consider "scripts" option files as module types.
-                            // This should be expanded if custom scripts bundle names support is added.
-                            continue;
-                        }
                         if (f.pattern.endsWith('.js') && 'js' === (f.type ?? 'js')) {
                             f.type = 'module';
                         }
                     }
+                    // Add "scripts" option files as classic scripts
+                    files.unshift(...scriptsFiles);
                     // Add browser sourcemap support as a classic script
                     files.unshift({
                         pattern: localResolve('source-map-support/browser-source-map-support.js'),
@@ -399,16 +396,25 @@ async function initializeApplication(options, context, karmaOptions, transforms 
         watched: false,
     };
     karmaOptions.basePath = outputPath;
-    karmaOptions.files ??= [];
+    const scriptsFiles = [];
     if (options.scripts?.length) {
-        // This should be more granular to support named bundles.
-        // However, it replicates the behavior of the Karma Webpack-based builder.
-        karmaOptions.files.push({
-            pattern: `scripts.js`,
-            watched: false,
-            type: 'js',
-        });
+        const outputScripts = new Set();
+        for (const scriptEntry of options.scripts) {
+            const outputName = typeof scriptEntry === 'string'
+                ? 'scripts.js'
+                : `${scriptEntry.bundleName ?? 'scripts'}.js`;
+            if (outputScripts.has(outputName)) {
+                continue;
+            }
+            outputScripts.add(outputName);
+            scriptsFiles.push({
+                pattern: `${outputPath}/${outputName}`,
+                watched: false,
+                type: 'js',
+            });
+        }
     }
+    karmaOptions.files ??= [];
     karmaOptions.files.push(
     // Serve global setup script.
     { pattern: `${mainName}.js`, type: 'module', watched: false }, 
@@ -459,7 +465,7 @@ async function initializeApplication(options, context, karmaOptions, transforms 
     parsedKarmaConfig.plugins.push(AngularAssetsMiddleware.createPlugin(buildOutput));
     parsedKarmaConfig.middleware ??= [];
     parsedKarmaConfig.middleware.push(AngularAssetsMiddleware.NAME);
-    parsedKarmaConfig.plugins.push(AngularPolyfillsPlugin.createPlugin(polyfillsFile, jasmineCleanupFiles));
+    parsedKarmaConfig.plugins.push(AngularPolyfillsPlugin.createPlugin(polyfillsFile, jasmineCleanupFiles, scriptsFiles));
     parsedKarmaConfig.reporters ??= [];
     parsedKarmaConfig.reporters.push(AngularPolyfillsPlugin.NAME);
     // Adjust karma junit reporter outDir location to maintain previous (devkit) behavior
