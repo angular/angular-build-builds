@@ -71,6 +71,8 @@ export type CodeCoverageReporterCodeCoverageReporter = CoverageReporters | {
 export declare enum CoverageReporters {
     Cobertura = "cobertura",
     Html = "html",
+    Json = "json",
+    JsonSummary = "json-summary",
     Lcov = "lcov",
     Lcovonly = "lcovonly",
     Text = "text",

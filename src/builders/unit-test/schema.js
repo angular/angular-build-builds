@@ -7,6 +7,8 @@ var CoverageReporters;
 (function (CoverageReporters) {
     CoverageReporters["Cobertura"] = "cobertura";
     CoverageReporters["Html"] = "html";
+    CoverageReporters["Json"] = "json";
+    CoverageReporters["JsonSummary"] = "json-summary";
     CoverageReporters["Lcov"] = "lcov";
     CoverageReporters["Lcovonly"] = "lcovonly";
     CoverageReporters["Text"] = "text";
