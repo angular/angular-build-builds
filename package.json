@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "20.0.3+sha-358febb",
+  "version": "20.0.3+sha-1cc7014",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -23,7 +23,7 @@
   "builders": "builders.json",
   "dependencies": {
     "@ampproject/remapping": "2.3.0",
-    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#358febb",
+    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#1cc7014",
     "@babel/core": "7.27.1",
     "@babel/helper-annotate-as-pure": "7.27.1",
     "@babel/helper-split-export-declaration": "7.24.7",
@@ -40,7 +40,7 @@
     "mrmime": "2.0.1",
     "parse5-html-rewriting-stream": "7.1.0",
     "picomatch": "4.0.2",
-    "piscina": "5.0.0",
+    "piscina": "5.1.1",
     "rollup": "4.40.2",
     "sass": "1.88.0",
     "semver": "7.7.2",
@@ -60,7 +60,7 @@
     "@angular/platform-browser": "^20.0.0",
     "@angular/platform-server": "^20.0.0",
     "@angular/service-worker": "^20.0.0",
-    "@angular/ssr": "github:angular/angular-ssr-builds#358febb",
+    "@angular/ssr": "github:angular/angular-ssr-builds#1cc7014",
     "karma": "^6.4.0",
     "less": "^4.2.0",
     "ng-packagr": "^20.0.0",
