@@ -176,15 +176,7 @@ async function* execute(options, context, extensions = {}) {
                 include: [],
                 reporters: normalizedOptions.reporters ?? ['default'],
                 watch: normalizedOptions.watch,
-                coverage: {
-                    enabled: !!normalizedOptions.codeCoverage,
-                    excludeAfterRemap: true,
-                    exclude: normalizedOptions.codeCoverage?.exclude ?? [],
-                    // Special handling for `reporter` due to an undefined value causing upstream failures
-                    ...(normalizedOptions.codeCoverage?.reporters
-                        ? { reporter: normalizedOptions.codeCoverage.reporters }
-                        : {}),
-                },
+                coverage: generateCoverageOption(normalizedOptions.codeCoverage, workspaceRoot, outputPath),
                 ...debugOptions,
             }, {
                 plugins: [
@@ -194,7 +186,7 @@ async function* execute(options, context, extensions = {}) {
                             // Create a subproject that can be configured with plugins for browser mode.
                             // Plugins defined directly in the vite overrides will not be present in the
                             // browser specific Vite instance.
-                            await context.injectTestProjects({
+                            const [project] = await context.injectTestProjects({
                                 test: {
                                     name: projectName,
                                     root: outputPath,
@@ -225,6 +217,14 @@ async function* execute(options, context, extensions = {}) {
                                     },
                                 ],
                             });
+                            // Adjust coverage excludes to not include the otherwise automatically inserted included unit tests.
+                            // Vite does this as a convenience but is problematic for the bundling strategy employed by the
+                            // builder's test setup. To workaround this, the excludes are adjusted here to only automaticallyAdd commentMore actions
+                            // exclude the TypeScript source test files.
+                            project.config.coverage.exclude = [
+                                ...(normalizedOptions.codeCoverage?.exclude ?? []),
+                                '**/*.{test,spec}.?(c|m)ts',
+                            ];
                         },
                     },
                 ],
@@ -294,4 +294,20 @@ function generateOutputPath() {
     const datePrefix = new Date().toISOString().replaceAll(/[-:.]/g, '');
     const uuidSuffix = (0, node_crypto_1.randomUUID)().slice(0, 8);
     return node_path_1.default.join('dist', 'test-out', `${datePrefix}-${uuidSuffix}`);
+}
+function generateCoverageOption(codeCoverage, workspaceRoot, outputPath) {
+    if (!codeCoverage) {
+        return {
+            enabled: false,
+        };
+    }
+    return {
+        enabled: true,
+        excludeAfterRemap: true,
+        include: [`${node_path_1.default.relative(workspaceRoot, outputPath)}/**`],
+        // Special handling for `reporter` due to an undefined value causing upstream failures
+        ...(codeCoverage.reporters
+            ? { reporter: codeCoverage.reporters }
+            : {}),
+    };
 }
