@@ -11,6 +11,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.normalizeOptions = normalizeOptions;
+exports.injectTestingPolyfills = injectTestingPolyfills;
 const architect_1 = require("@angular-devkit/architect");
 const node_path_1 = __importDefault(require("node:path"));
 const normalize_cache_1 = require("../../utils/normalize-cache");
@@ -54,4 +55,7 @@ async function normalizeOptions(context, projectName, options) {
         debug: options.debug ?? false,
         providersFile: options.providersFile && node_path_1.default.join(workspaceRoot, options.providersFile),
     };
+}
+function injectTestingPolyfills(polyfills = []) {
+    return polyfills.includes('zone.js') ? [...polyfills, 'zone.js/testing'] : polyfills;
 }

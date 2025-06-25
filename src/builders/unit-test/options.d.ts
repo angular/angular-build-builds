@@ -28,3 +28,4 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     debug: boolean;
     providersFile: string | undefined;
 }>;
+export declare function injectTestingPolyfills(polyfills?: string[]): string[];

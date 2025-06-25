@@ -72,9 +72,7 @@ async function* execute(options, context, extensions = {}) {
     const { startVitest } = vitestNodeModule;
     // Setup test file build options based on application build target options
     const buildTargetOptions = (await context.validateOptions(await context.getTargetOptions(normalizedOptions.buildTarget), await context.getBuilderNameForTarget(normalizedOptions.buildTarget)));
-    if (buildTargetOptions.polyfills?.includes('zone.js')) {
-        buildTargetOptions.polyfills.push('zone.js/testing');
-    }
+    buildTargetOptions.polyfills = (0, options_1.injectTestingPolyfills)(buildTargetOptions.polyfills);
     const outputPath = node_path_1.default.join(context.workspaceRoot, generateOutputPath());
     const buildOptions = {
         ...buildTargetOptions,
