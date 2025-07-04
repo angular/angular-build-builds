@@ -6,9 +6,9 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 import { type BuilderContext } from '@angular-devkit/architect';
-import type { Schema as UnitTestOptions } from './schema';
-export type NormalizedUnitTestOptions = Awaited<ReturnType<typeof normalizeOptions>>;
-export declare function normalizeOptions(context: BuilderContext, projectName: string, options: UnitTestOptions): Promise<{
+import type { Schema as UnitTestBuilderOptions } from './schema';
+export type NormalizedUnitTestBuilderOptions = Awaited<ReturnType<typeof normalizeOptions>>;
+export declare function normalizeOptions(context: BuilderContext, projectName: string, options: UnitTestBuilderOptions): Promise<{
     workspaceRoot: string;
     projectRoot: string;
     projectSourceRoot: string;
