@@ -120,7 +120,7 @@ export type Schema = {
      */
     tsConfig: string;
     /**
-     * Run build when files change.
+     * Re-run tests when source files change.
      */
     watch?: boolean;
     /**

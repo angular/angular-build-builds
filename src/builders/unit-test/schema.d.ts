@@ -60,7 +60,8 @@ export type Schema = {
      */
     tsConfig: string;
     /**
-     * Run build when files change.
+     * Re-run tests when source files change. Defaults to `true` in TTY environments and `false`
+     * otherwise.
      */
     watch?: boolean;
 };
