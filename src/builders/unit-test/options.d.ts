@@ -27,5 +27,6 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     watch: boolean;
     debug: boolean;
     providersFile: string | undefined;
+    setupFiles: string[];
 }>;
 export declare function injectTestingPolyfills(polyfills?: string[]): string[];

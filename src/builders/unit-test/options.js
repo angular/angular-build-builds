@@ -54,6 +54,9 @@ async function normalizeOptions(context, projectName, options) {
         watch: options.watch ?? (0, tty_1.isTTY)(),
         debug: options.debug ?? false,
         providersFile: options.providersFile && node_path_1.default.join(workspaceRoot, options.providersFile),
+        setupFiles: options.setupFiles
+            ? options.setupFiles.map((setupFile) => node_path_1.default.join(workspaceRoot, setupFile))
+            : [],
     };
 }
 function injectTestingPolyfills(polyfills = []) {
