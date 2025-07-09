@@ -96,7 +96,11 @@ async function* execute(options, context, extensions = {}) {
         optimization: false,
         tsConfig: normalizedOptions.tsConfig,
         entryPoints,
-        externalDependencies: ['vitest', ...(buildTargetOptions.externalDependencies ?? [])],
+        externalDependencies: [
+            'vitest',
+            '@vitest/browser/context',
+            ...(buildTargetOptions.externalDependencies ?? []),
+        ],
     };
     extensions ??= {};
     extensions.codePlugins ??= [];
