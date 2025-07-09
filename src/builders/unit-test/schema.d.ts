@@ -56,6 +56,12 @@ export type Schema = {
      */
     runner: Runner;
     /**
+     * A list of global setup and configuration files that are included before the test files.
+     * The application's polyfills are always included before these files. The Angular Testbed
+     * is also initialized prior to the execution of these files.
+     */
+    setupFiles?: string[];
+    /**
      * The name of the TypeScript configuration file.
      */
     tsConfig: string;

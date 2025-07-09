@@ -46,6 +46,9 @@ async function useKarmaBuilder(context, unitTestOptions) {
     if (unitTestOptions.debug) {
         context.logger.warn('The "karma" test runner does not support the "debug" option. The option will be ignored.');
     }
+    if (unitTestOptions.setupFiles.length) {
+        context.logger.warn('The "karma" test runner does not support the "setupFiles" option. The option will be ignored.');
+    }
     const buildTargetOptions = (await context.validateOptions(await context.getTargetOptions(unitTestOptions.buildTarget), await context.getBuilderNameForTarget(unitTestOptions.buildTarget)));
     buildTargetOptions.polyfills = (0, options_1.injectTestingPolyfills)(buildTargetOptions.polyfills);
     const options = {

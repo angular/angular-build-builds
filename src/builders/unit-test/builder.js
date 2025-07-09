@@ -94,7 +94,11 @@ async function* execute(options, context, extensions = {}) {
         optimization: false,
         tsConfig: normalizedOptions.tsConfig,
         entryPoints,
-        externalDependencies: ['vitest', ...(buildTargetOptions.externalDependencies ?? [])],
+        externalDependencies: [
+            'vitest',
+            '@vitest/browser/context',
+            ...(buildTargetOptions.externalDependencies ?? []),
+        ],
     };
     extensions ??= {};
     extensions.codePlugins ??= [];
@@ -144,9 +148,11 @@ async function* execute(options, context, extensions = {}) {
         return { success: false };
     }
     // Add setup file entries for TestBed initialization and project polyfills
-    const setupFiles = ['init-testbed.js'];
+    const setupFiles = ['init-testbed.js', ...normalizedOptions.setupFiles];
     if (buildTargetOptions?.polyfills?.length) {
-        setupFiles.push('polyfills.js');
+        // Placed first as polyfills may be required by the Testbed initialization
+        // or other project provided setup files (e.g., zone.js, ECMAScript polyfills).
+        setupFiles.unshift('polyfills.js');
     }
     const debugOptions = normalizedOptions.debug
         ? {
