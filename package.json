@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "20.1.0-rc.0+sha-aea3ed8",
+  "version": "20.1.0-rc.0+sha-bf6823d",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -23,7 +23,7 @@
   "builders": "builders.json",
   "dependencies": {
     "@ampproject/remapping": "2.3.0",
-    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#aea3ed8",
+    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#bf6823d",
     "@babel/core": "7.27.7",
     "@babel/helper-annotate-as-pure": "7.27.3",
     "@babel/helper-split-export-declaration": "7.24.7",
@@ -53,17 +53,17 @@
     "lmdb": "3.4.1"
   },
   "peerDependencies": {
-    "@angular/core": "^20.0.0 || ^20.1.0-next.0",
-    "@angular/compiler": "^20.0.0 || ^20.1.0-next.0",
-    "@angular/compiler-cli": "^20.0.0 || ^20.1.0-next.0",
-    "@angular/localize": "^20.0.0 || ^20.1.0-next.0",
-    "@angular/platform-browser": "^20.0.0 || ^20.1.0-next.0",
-    "@angular/platform-server": "^20.0.0 || ^20.1.0-next.0",
-    "@angular/service-worker": "^20.0.0 || ^20.1.0-next.0",
-    "@angular/ssr": "github:angular/angular-ssr-builds#aea3ed8",
+    "@angular/core": "^20.0.0",
+    "@angular/compiler": "^20.0.0",
+    "@angular/compiler-cli": "^20.0.0",
+    "@angular/localize": "^20.0.0",
+    "@angular/platform-browser": "^20.0.0",
+    "@angular/platform-server": "^20.0.0",
+    "@angular/service-worker": "^20.0.0",
+    "@angular/ssr": "github:angular/angular-ssr-builds#bf6823d",
     "karma": "^6.4.0",
     "less": "^4.2.0",
-    "ng-packagr": "^20.0.0 || ^20.1.0-next.0",
+    "ng-packagr": "^20.0.0",
     "postcss": "^8.4.0",
     "tailwindcss": "^2.0.0 || ^3.0.0 || ^4.0.0",
     "tslib": "^2.3.0",
