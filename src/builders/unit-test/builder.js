@@ -18,6 +18,7 @@ const node_path_1 = __importDefault(require("node:path"));
 const virtual_module_plugin_1 = require("../../tools/esbuild/virtual-module-plugin");
 const error_1 = require("../../utils/error");
 const load_esm_1 = require("../../utils/load-esm");
+const path_1 = require("../../utils/path");
 const application_1 = require("../application");
 const results_1 = require("../application/results");
 const schema_1 = require("../application/schema");
@@ -73,7 +74,7 @@ async function* execute(options, context, extensions = {}) {
     // Setup test file build options based on application build target options
     const buildTargetOptions = (await context.validateOptions(await context.getTargetOptions(normalizedOptions.buildTarget), await context.getBuilderNameForTarget(normalizedOptions.buildTarget)));
     buildTargetOptions.polyfills = (0, options_1.injectTestingPolyfills)(buildTargetOptions.polyfills);
-    const outputPath = node_path_1.default.join(context.workspaceRoot, generateOutputPath());
+    const outputPath = (0, path_1.toPosixPath)(node_path_1.default.join(context.workspaceRoot, generateOutputPath()));
     const buildOptions = {
         ...buildTargetOptions,
         watch: normalizedOptions.watch,
@@ -112,10 +113,9 @@ async function* execute(options, context, extensions = {}) {
                 `import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';`,
                 '',
                 normalizedOptions.providersFile
-                    ? `import providers from './${node_path_1.default
+                    ? `import providers from './${(0, path_1.toPosixPath)(node_path_1.default
                         .relative(projectSourceRoot, normalizedOptions.providersFile)
-                        .replace(/.[mc]?ts$/, '')
-                        .replace(/\\/g, '/')}'`
+                        .replace(/.[mc]?ts$/, ''))}'`
                     : 'const providers = [];',
                 '',
                 // Same as https://github.com/angular/angular/blob/05a03d3f975771bb59c7eefd37c01fa127ee2229/packages/core/testing/src/test_hooks.ts#L21-L29
@@ -308,7 +308,7 @@ function generateCoverageOption(codeCoverage, workspaceRoot, outputPath) {
     return {
         enabled: true,
         excludeAfterRemap: true,
-        include: [`${node_path_1.default.relative(workspaceRoot, outputPath)}/**`],
+        include: [`${(0, path_1.toPosixPath)(node_path_1.default.relative(workspaceRoot, outputPath))}/**`],
         // Special handling for `reporter` due to an undefined value causing upstream failures
         ...(codeCoverage.reporters
             ? { reporter: codeCoverage.reporters }
