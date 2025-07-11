@@ -164,7 +164,6 @@ class InlineFontsProcessor {
         const data = await new Promise((resolve, reject) => {
             let rawResponse = '';
             (0, node_https_1.get)(url, {
-                // TODO(alanagius): remove casting https://github.com/TooTallNate/proxy-agents/issues/379 is fixed.
                 agent: httpsProxy ? new https_proxy_agent_1.HttpsProxyAgent(httpsProxy) : undefined,
                 headers: {
                     /**
