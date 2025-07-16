@@ -5,6 +5,13 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
+/**
+ * @fileoverview
+ * Private exports intended only for use with the @angular-devkit/build-angular package.
+ * All exports are not supported for external use, do not provide SemVer guarantees, and
+ * their existence may change in any future version.
+ */
+import { createAngularCompilation } from './tools/angular/compilation';
 import { CompilerPluginOptions } from './tools/esbuild/angular/compiler-plugin';
 import { BundleStylesheetOptions } from './tools/esbuild/stylesheets/bundle-options';
 export { buildApplicationInternal } from './builders/application';
@@ -25,6 +32,8 @@ export declare function createCompilerPlugin(pluginOptions: CompilerPluginOption
 }, styleOptions: BundleStylesheetOptions & {
     inlineStyleLanguage: string;
 }): import('esbuild').Plugin;
+export type { AngularCompilation } from './tools/angular/compilation';
+export { createAngularCompilation };
 export * from './utils/bundle-calculator';
 export { checkPort } from './utils/check-port';
 export { deleteOutputDir } from './utils/delete-output-dir';
