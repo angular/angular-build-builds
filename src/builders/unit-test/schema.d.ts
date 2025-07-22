@@ -4,7 +4,8 @@
 export type Schema = {
     /**
      * A list of browsers to use for test execution. If undefined, jsdom on Node.js will be used
-     * instead of a browser.
+     * instead of a browser. For Vitest and Karma, browser names ending with 'Headless' (e.g.,
+     * 'ChromeHeadless') will enable headless mode for that browser.
      */
     browsers?: string[];
     /**

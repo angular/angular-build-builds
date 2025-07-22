@@ -256,6 +256,13 @@ function findBrowserProvider(projectResolver) {
         catch { }
     }
 }
+function normalizeBrowserName(browserName) {
+    // Normalize browser names to match Vitest's expectations for headless but also supports karma's names
+    // e.g., 'ChromeHeadless' -> 'chrome', 'FirefoxHeadless'
+    // and 'Chrome' -> 'chrome', 'Firefox' -> 'firefox'.
+    const normalized = browserName.toLowerCase();
+    return normalized.replace(/headless$/, '');
+}
 function setupBrowserConfiguration(browsers, debug, projectSourceRoot) {
     if (browsers === undefined) {
         return {};
@@ -288,8 +295,9 @@ function setupBrowserConfiguration(browsers, debug, projectSourceRoot) {
     const browser = {
         enabled: true,
         provider,
+        headless: browsers.some((name) => name.toLowerCase().includes('headless')),
         instances: browsers.map((browserName) => ({
-            browser: browserName,
+            browser: normalizeBrowserName(browserName),
         })),
     };
     return { browser };
