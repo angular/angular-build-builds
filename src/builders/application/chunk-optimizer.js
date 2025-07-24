@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.optimizeChunks = optimizeChunks;
 const node_assert_1 = __importDefault(require("node:assert"));
-const rollup_1 = require("rollup");
+const rolldown_1 = require("rolldown");
 const bundler_context_1 = require("../../tools/esbuild/bundler-context");
 const utils_1 = require("../../tools/esbuild/utils");
 const error_1 = require("../../utils/error");
@@ -54,7 +54,7 @@ async function optimizeChunks(original, sourcemap) {
     let bundle;
     let optimizedOutput;
     try {
-        bundle = await (0, rollup_1.rollup)({
+        bundle = await (0, rolldown_1.rolldown)({
             input: mainFile,
             plugins: [
                 {
@@ -81,7 +81,7 @@ async function optimizeChunks(original, sourcemap) {
             ],
         });
         const result = await bundle.generate({
-            compact: true,
+            minify: { mangle: false, compress: false, removeWhitespace: true },
             sourcemap,
             chunkFileNames: (chunkInfo) => `${chunkInfo.name.replace(/-[a-zA-Z0-9]{8}$/, '')}-[hash].js`,
         });
