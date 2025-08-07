@@ -34,6 +34,7 @@ export declare function createCompilerPlugin(pluginOptions: CompilerPluginOption
 }): import('esbuild').Plugin;
 export type { AngularCompilation } from './tools/angular/compilation';
 export { createAngularCompilation };
+export { ComponentStylesheetBundler } from './tools/esbuild/angular/component-stylesheets';
 export * from './utils/bundle-calculator';
 export { checkPort } from './utils/check-port';
 export { deleteOutputDir } from './utils/delete-output-dir';
