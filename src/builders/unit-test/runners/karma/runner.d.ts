@@ -6,5 +6,5 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 import type { BuilderContext, BuilderOutput } from '@angular-devkit/architect';
-import { type NormalizedUnitTestBuilderOptions } from './options';
-export declare function useKarmaBuilder(context: BuilderContext, unitTestOptions: NormalizedUnitTestBuilderOptions): Promise<AsyncIterable<BuilderOutput>>;
+import { type NormalizedUnitTestBuilderOptions } from '../../options';
+export declare function useKarmaRunner(context: BuilderContext, unitTestOptions: NormalizedUnitTestBuilderOptions): Promise<AsyncIterable<BuilderOutput>>;

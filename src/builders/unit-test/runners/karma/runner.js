@@ -40,9 +40,9 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.useKarmaBuilder = useKarmaBuilder;
-const options_1 = require("./options");
-async function useKarmaBuilder(context, unitTestOptions) {
+exports.useKarmaRunner = useKarmaRunner;
+const options_1 = require("../../options");
+async function useKarmaRunner(context, unitTestOptions) {
     if (unitTestOptions.debug) {
         context.logger.warn('The "karma" test runner does not support the "debug" option. The option will be ignored.');
     }
@@ -77,6 +77,6 @@ async function useKarmaBuilder(context, unitTestOptions) {
         webWorkerTsConfig: buildTargetOptions.webWorkerTsConfig,
         aot: buildTargetOptions.aot,
     };
-    const { execute } = await Promise.resolve().then(() => __importStar(require('../karma')));
+    const { execute } = await Promise.resolve().then(() => __importStar(require('../../../karma')));
     return execute(options, context);
 }
