@@ -6,6 +6,12 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 import type { BuilderContext, BuilderOutput } from '@angular-devkit/architect';
-import type { ApplicationBuilderExtensions } from '../../../application/options';
 import { NormalizedUnitTestBuilderOptions } from '../../options';
-export declare function run(normalizedOptions: NormalizedUnitTestBuilderOptions, context: BuilderContext, extensions?: ApplicationBuilderExtensions): AsyncIterable<BuilderOutput>;
+import type { TestExecutor } from '../api';
+export declare class KarmaExecutor implements TestExecutor {
+    private context;
+    private options;
+    constructor(context: BuilderContext, options: NormalizedUnitTestBuilderOptions);
+    execute(): AsyncIterable<BuilderOutput>;
+    [Symbol.asyncDispose](): Promise<void>;
+}

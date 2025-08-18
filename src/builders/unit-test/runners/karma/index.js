@@ -7,6 +7,20 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.useKarmaRunner = void 0;
-var runner_1 = require("./runner");
-Object.defineProperty(exports, "useKarmaRunner", { enumerable: true, get: function () { return runner_1.useKarmaRunner; } });
+const executor_1 = require("./executor");
+/**
+ * A declarative definition of the Karma test runner.
+ */
+const KarmaTestRunner = {
+    name: 'karma',
+    isStandalone: true,
+    getBuildOptions() {
+        return {
+            buildOptions: {},
+        };
+    },
+    async createExecutor(context, options) {
+        return new executor_1.KarmaExecutor(context, options);
+    },
+};
+exports.default = KarmaTestRunner;

@@ -1,0 +1,22 @@
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.dev/license
+ */
+import type { BuilderOutput } from '@angular-devkit/architect';
+import type { FullResult, IncrementalResult } from '../../../application/results';
+import { NormalizedUnitTestBuilderOptions } from '../../options';
+import type { TestExecutor } from '../api';
+export declare class VitestExecutor implements TestExecutor {
+    private vitest;
+    private readonly projectName;
+    private readonly options;
+    private readonly outputPath;
+    private latestBuildResult;
+    constructor(projectName: string, options: NormalizedUnitTestBuilderOptions);
+    execute(buildResult: FullResult | IncrementalResult): AsyncIterable<BuilderOutput>;
+    [Symbol.asyncDispose](): Promise<void>;
+    private initializeVitest;
+}
