@@ -38,8 +38,8 @@ var application_1 = require("./builders/application");
 Object.defineProperty(exports, "buildApplicationInternal", { enumerable: true, get: function () { return application_1.buildApplicationInternal; } });
 var results_1 = require("./builders/application/results");
 Object.defineProperty(exports, "ResultKind", { enumerable: true, get: function () { return results_1.ResultKind; } });
-var vite_server_1 = require("./builders/dev-server/vite-server");
-Object.defineProperty(exports, "serveWithVite", { enumerable: true, get: function () { return vite_server_1.serveWithVite; } });
+var vite_1 = require("./builders/dev-server/vite");
+Object.defineProperty(exports, "serveWithVite", { enumerable: true, get: function () { return vite_1.serveWithVite; } });
 // Tools
 __exportStar(require("./tools/babel/plugins"), exports);
 var utils_1 = require("./tools/esbuild/utils");
