@@ -96,12 +96,73 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.execute = execute;
+const architect_1 = require("@angular-devkit/architect");
 const node_assert_1 = __importDefault(require("node:assert"));
 const virtual_module_plugin_1 = require("../../tools/esbuild/virtual-module-plugin");
 const error_1 = require("../../utils/error");
 const application_1 = require("../application");
 const results_1 = require("../application/results");
 const options_1 = require("./options");
+async function loadTestRunner(runnerName) {
+    // Harden against directory traversal
+    if (!/^[a-zA-Z0-9-]+$/.test(runnerName)) {
+        throw new Error(`Invalid runner name "${runnerName}". Runner names can only contain alphanumeric characters and hyphens.`);
+    }
+    let runnerModule;
+    try {
+        runnerModule = await Promise.resolve(`${`./runners/${runnerName}/index`}`).then(s => __importStar(require(s)));
+    }
+    catch (e) {
+        (0, error_1.assertIsError)(e);
+        if (e.code === 'ERR_MODULE_NOT_FOUND') {
+            throw new Error(`Unknown test runner "${runnerName}".`);
+        }
+        throw new Error(`Failed to load the '${runnerName}' test runner. The package may be corrupted or improperly installed.\n` +
+            `Error: ${e.message}`);
+    }
+    const runner = runnerModule.default;
+    if (!runner ||
+        typeof runner.getBuildOptions !== 'function' ||
+        typeof runner.createExecutor !== 'function') {
+        throw new Error(`The loaded test runner '${runnerName}' does not appear to be a valid TestRunner implementation.`);
+    }
+    return runner;
+}
+function prepareBuildExtensions(virtualFiles, projectSourceRoot, extensions) {
+    if (!virtualFiles) {
+        return extensions;
+    }
+    extensions ??= {};
+    extensions.codePlugins ??= [];
+    for (const [namespace, contents] of Object.entries(virtualFiles)) {
+        extensions.codePlugins.push((0, virtual_module_plugin_1.createVirtualModulePlugin)({
+            namespace,
+            loadContent: () => {
+                return {
+                    contents,
+                    loader: 'js',
+                    resolveDir: projectSourceRoot,
+                };
+            },
+        }));
+    }
+    return extensions;
+}
+async function* runBuildAndTest(executor, applicationBuildOptions, context, extensions) {
+    for await (const buildResult of (0, application_1.buildApplicationInternal)(applicationBuildOptions, context, extensions)) {
+        if (buildResult.kind === results_1.ResultKind.Failure) {
+            yield { success: false };
+            continue;
+        }
+        else if (buildResult.kind !== results_1.ResultKind.Full &&
+            buildResult.kind !== results_1.ResultKind.Incremental) {
+            node_assert_1.default.fail('A full and/or incremental build result is required from the application builder.');
+        }
+        (0, node_assert_1.default)(buildResult.files, 'Builder did not provide result files.');
+        // Pass the build artifacts to the executor
+        yield* executor.execute(buildResult);
+    }
+}
 /**
  * @experimental Direct usage of this function is considered experimental.
  */
@@ -116,22 +177,7 @@ async function* execute(options, context, extensions) {
         }
         context.logger.warn(`NOTE: The "unit-test" builder is currently EXPERIMENTAL and not ready for production use.`);
         const normalizedOptions = await (0, options_1.normalizeOptions)(context, projectName, options);
-        const { runnerName, projectSourceRoot } = normalizedOptions;
-        // Dynamically load the requested runner
-        let runner;
-        try {
-            const { default: runnerModule } = await Promise.resolve(`${`./runners/${runnerName}/index`}`).then(s => __importStar(require(s)));
-            runner = runnerModule;
-        }
-        catch (e) {
-            (0, error_1.assertIsError)(e);
-            if (e.code !== 'ERR_MODULE_NOT_FOUND') {
-                throw e;
-            }
-            context.logger.error(`Unknown test runner "${runnerName}".`);
-            return;
-        }
-        // Create the stateful executor once
+        const runner = await loadTestRunner(normalizedOptions.runnerName);
         const executor = __addDisposableResource(env_1, await runner.createExecutor(context, normalizedOptions), true);
         if (runner.isStandalone) {
             yield* executor.execute({
@@ -141,48 +187,29 @@ async function* execute(options, context, extensions) {
             return;
         }
         // Get base build options from the buildTarget
-        const buildTargetOptions = (await context.validateOptions(await context.getTargetOptions(normalizedOptions.buildTarget), await context.getBuilderNameForTarget(normalizedOptions.buildTarget)));
+        let buildTargetOptions;
+        try {
+            buildTargetOptions = (await context.validateOptions(await context.getTargetOptions(normalizedOptions.buildTarget), await context.getBuilderNameForTarget(normalizedOptions.buildTarget)));
+        }
+        catch (e) {
+            (0, error_1.assertIsError)(e);
+            context.logger.error(`Could not load build target options for "${(0, architect_1.targetStringFromTarget)(normalizedOptions.buildTarget)}".\n` +
+                `Please check your 'angular.json' configuration.\n` +
+                `Error: ${e.message}`);
+            return;
+        }
         // Get runner-specific build options from the hook
         const { buildOptions: runnerBuildOptions, virtualFiles } = await runner.getBuildOptions(normalizedOptions, buildTargetOptions);
-        if (virtualFiles) {
-            extensions ??= {};
-            extensions.codePlugins ??= [];
-            for (const [namespace, contents] of Object.entries(virtualFiles)) {
-                extensions.codePlugins.push((0, virtual_module_plugin_1.createVirtualModulePlugin)({
-                    namespace,
-                    loadContent: () => {
-                        return {
-                            contents,
-                            loader: 'js',
-                            resolveDir: projectSourceRoot,
-                        };
-                    },
-                }));
-            }
-        }
-        const { watch, tsConfig } = normalizedOptions;
+        const finalExtensions = prepareBuildExtensions(virtualFiles, normalizedOptions.projectSourceRoot, extensions);
         // Prepare and run the application build
         const applicationBuildOptions = {
-            // Base options
             ...buildTargetOptions,
-            watch,
-            tsConfig,
-            // Runner specific
             ...runnerBuildOptions,
+            watch: normalizedOptions.watch,
+            tsConfig: normalizedOptions.tsConfig,
+            progress: normalizedOptions.buildProgress ?? buildTargetOptions.progress,
         };
-        for await (const buildResult of (0, application_1.buildApplicationInternal)(applicationBuildOptions, context, extensions)) {
-            if (buildResult.kind === results_1.ResultKind.Failure) {
-                yield { success: false };
-                continue;
-            }
-            else if (buildResult.kind !== results_1.ResultKind.Full &&
-                buildResult.kind !== results_1.ResultKind.Incremental) {
-                node_assert_1.default.fail('A full and/or incremental build result is required from the application builder.');
-            }
-            (0, node_assert_1.default)(buildResult.files, 'Builder did not provide result files.');
-            // Pass the build artifacts to the executor
-            yield* executor.execute(buildResult);
-        }
+        yield* runBuildAndTest(executor, applicationBuildOptions, context, finalExtensions);
     }
     catch (e_1) {
         env_1.error = e_1;

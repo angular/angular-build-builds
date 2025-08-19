@@ -13,12 +13,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.VitestExecutor = void 0;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_crypto_1 = require("node:crypto");
-const node_module_1 = require("node:module");
 const node_path_1 = __importDefault(require("node:path"));
 const error_1 = require("../../../../utils/error");
 const load_esm_1 = require("../../../../utils/load-esm");
 const path_1 = require("../../../../utils/path");
 const application_builder_1 = require("../../../karma/application_builder");
+const browser_provider_1 = require("./browser-provider");
 class VitestExecutor {
     vitest;
     projectName;
@@ -57,7 +57,7 @@ class VitestExecutor {
         }
         const { startVitest } = vitestNodeModule;
         // Setup vitest browser options if configured
-        const browserOptions = setupBrowserConfiguration(browsers, debug, this.options.projectSourceRoot);
+        const browserOptions = (0, browser_provider_1.setupBrowserConfiguration)(browsers, debug, this.options.projectSourceRoot);
         if (browserOptions.errors?.length) {
             throw new Error(browserOptions.errors.join('\n'));
         }
@@ -137,64 +137,6 @@ class VitestExecutor {
     }
 }
 exports.VitestExecutor = VitestExecutor;
-function findBrowserProvider(projectResolver) {
-    // One of these must be installed in the project to use browser testing
-    const vitestBuiltinProviders = ['playwright', 'webdriverio'];
-    for (const providerName of vitestBuiltinProviders) {
-        try {
-            projectResolver(providerName);
-            return providerName;
-        }
-        catch { }
-    }
-    return undefined;
-}
-function normalizeBrowserName(browserName) {
-    // Normalize browser names to match Vitest's expectations for headless but also supports karma's names
-    // e.g., 'ChromeHeadless' -> 'chrome', 'FirefoxHeadless' -> 'firefox'
-    // and 'Chrome' -> 'chrome', 'Firefox' -> 'firefox'.
-    const normalized = browserName.toLowerCase();
-    return normalized.replace(/headless$/, '');
-}
-function setupBrowserConfiguration(browsers, debug, projectSourceRoot) {
-    if (browsers === undefined) {
-        return {};
-    }
-    const projectResolver = (0, node_module_1.createRequire)(projectSourceRoot + '/').resolve;
-    let errors;
-    try {
-        projectResolver('@vitest/browser');
-    }
-    catch {
-        errors ??= [];
-        errors.push('The "browsers" option requires the "@vitest/browser" package to be installed within the project.' +
-            ' Please install this package and rerun the test command.');
-    }
-    const provider = findBrowserProvider(projectResolver);
-    if (!provider) {
-        errors ??= [];
-        errors.push('The "browsers" option requires either "playwright" or "webdriverio" to be installed within the project.' +
-            ' Please install one of these packages and rerun the test command.');
-    }
-    // Vitest current requires the playwright browser provider to use the inspect-brk option used by "debug"
-    if (debug && provider !== 'playwright') {
-        errors ??= [];
-        errors.push('Debugging browser mode tests currently requires the use of "playwright".' +
-            ' Please install this package and rerun the test command.');
-    }
-    if (errors) {
-        return { errors };
-    }
-    const browser = {
-        enabled: true,
-        provider,
-        headless: browsers.some((name) => name.toLowerCase().includes('headless')),
-        instances: browsers.map((browserName) => ({
-            browser: normalizeBrowserName(browserName),
-        })),
-    };
-    return { browser };
-}
 function generateOutputPath() {
     const datePrefix = new Date().toISOString().replaceAll(/[-:.]/g, '');
     const uuidSuffix = (0, node_crypto_1.randomUUID)().slice(0, 8);
