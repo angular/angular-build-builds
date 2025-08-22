@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 import type { BuilderOutput } from '@angular-devkit/architect';
-import type { FullResult, IncrementalResult } from '../../../application/results';
+import { type FullResult, type IncrementalResult } from '../../../application/results';
 import { NormalizedUnitTestBuilderOptions } from '../../options';
 import type { TestExecutor } from '../api';
 export declare class VitestExecutor implements TestExecutor {
@@ -15,6 +15,7 @@ export declare class VitestExecutor implements TestExecutor {
     private readonly options;
     private readonly outputPath;
     private latestBuildResult;
+    private readonly sigintListener;
     constructor(projectName: string, options: NormalizedUnitTestBuilderOptions);
     execute(buildResult: FullResult | IncrementalResult): AsyncIterable<BuilderOutput>;
     [Symbol.asyncDispose](): Promise<void>;

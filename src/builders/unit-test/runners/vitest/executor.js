@@ -13,10 +13,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.VitestExecutor = void 0;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_crypto_1 = require("node:crypto");
+const node_fs_1 = require("node:fs");
+const promises_1 = require("node:fs/promises");
 const node_path_1 = __importDefault(require("node:path"));
 const error_1 = require("../../../../utils/error");
 const load_esm_1 = require("../../../../utils/load-esm");
 const path_1 = require("../../../../utils/path");
+const results_1 = require("../../../application/results");
 const application_builder_1 = require("../../../karma/application_builder");
 const browser_provider_1 = require("./browser-provider");
 class VitestExecutor {
@@ -25,24 +28,56 @@ class VitestExecutor {
     options;
     outputPath;
     latestBuildResult;
+    // Graceful shutdown signal handler
+    // This is needed to remove the temporary output directory on Ctrl+C
+    sigintListener = () => {
+        (0, node_fs_1.rmSync)(this.outputPath, { recursive: true, force: true });
+    };
     constructor(projectName, options) {
         this.projectName = projectName;
         this.options = options;
         this.outputPath = (0, path_1.toPosixPath)(node_path_1.default.join(options.workspaceRoot, generateOutputPath()));
+        process.on('SIGINT', this.sigintListener);
     }
     async *execute(buildResult) {
         await (0, application_builder_1.writeTestFiles)(buildResult.files, this.outputPath);
         this.latestBuildResult = buildResult;
+        // Initialize Vitest if not already present.
         this.vitest ??= await this.initializeVitest();
+        const vitest = this.vitest;
+        let testResults;
+        if (buildResult.kind === results_1.ResultKind.Incremental) {
+            const addedFiles = buildResult.added.map((file) => node_path_1.default.join(this.outputPath, file));
+            const modifiedFiles = buildResult.modified.map((file) => node_path_1.default.join(this.outputPath, file));
+            if (addedFiles.length === 0 && modifiedFiles.length === 0) {
+                yield { success: true };
+                return;
+            }
+            // If new files are added, use `start` to trigger test discovery.
+            // Also pass modified files to `start` to ensure they are re-run.
+            if (addedFiles.length > 0) {
+                await vitest.start([...addedFiles, ...modifiedFiles]);
+            }
+            else {
+                // For modified files only, use the more efficient `rerunTestSpecifications`
+                const specsToRerun = modifiedFiles.flatMap((file) => vitest.getModuleSpecifications(file));
+                if (specsToRerun.length > 0) {
+                    modifiedFiles.forEach((file) => vitest.invalidateFile(file));
+                    testResults = await vitest.rerunTestSpecifications(specsToRerun);
+                }
+            }
+        }
         // Check if all the tests pass to calculate the result
-        const testModules = this.vitest.state.getTestModules();
-        yield { success: testModules.every((testModule) => testModule.ok()) };
+        const testModules = testResults?.testModules;
+        yield { success: testModules?.every((testModule) => testModule.ok()) ?? true };
     }
     async [Symbol.asyncDispose]() {
+        process.off('SIGINT', this.sigintListener);
         await this.vitest?.close();
+        await (0, promises_1.rm)(this.outputPath, { recursive: true, force: true });
     }
     async initializeVitest() {
-        const { codeCoverage, reporters, watch, workspaceRoot, setupFiles, browsers, debug } = this.options;
+        const { codeCoverage, reporters, workspaceRoot, setupFiles, browsers, debug, watch } = this.options;
         const { outputPath, projectName, latestBuildResult } = this;
         let vitestNodeModule;
         try {
@@ -76,7 +111,7 @@ class VitestExecutor {
                 fileParallelism: false,
             }
             : {};
-        return startVitest('test', undefined /* cliFilters */, {
+        return startVitest('test', undefined, {
             // Disable configuration file resolution/loading
             config: false,
             root: workspaceRoot,
@@ -88,6 +123,11 @@ class VitestExecutor {
             coverage: generateCoverageOption(codeCoverage, workspaceRoot, this.outputPath),
             ...debugOptions,
         }, {
+            server: {
+                // Disable the actual file watcher. The boolean watch option above should still
+                // be enabled as it controls other internal behavior related to rerunning tests.
+                watch: null,
+            },
             plugins: [
                 {
                     name: 'angular:project-init',
