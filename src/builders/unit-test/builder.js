@@ -26,6 +26,16 @@ const application_builder_1 = require("../karma/application_builder");
 const find_tests_1 = require("../karma/find-tests");
 const karma_bridge_1 = require("./karma-bridge");
 const options_1 = require("./options");
+function adjustOutputHashing(hashing) {
+    switch (hashing) {
+        case schema_1.OutputHashing.All:
+        case schema_1.OutputHashing.Media:
+            // Ensure media is continued to be hashed to avoid overwriting of output media files
+            return schema_1.OutputHashing.Media;
+        default:
+            return schema_1.OutputHashing.None;
+    }
+}
 /**
  * @experimental Direct usage of this function is considered experimental.
  */
@@ -91,7 +101,7 @@ async function* execute(options, context, extensions = {}) {
         ssr: false,
         prerender: false,
         sourceMap: { scripts: true, vendor: false, styles: false },
-        outputHashing: schema_1.OutputHashing.None,
+        outputHashing: adjustOutputHashing(buildTargetOptions.outputHashing),
         optimization: false,
         tsConfig: normalizedOptions.tsConfig,
         entryPoints,
