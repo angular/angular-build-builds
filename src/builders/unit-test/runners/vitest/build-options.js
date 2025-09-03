@@ -43,6 +43,16 @@ function createTestBedInitVirtualFile(providersFile, projectSourceRoot) {
     });
   `;
 }
+function adjustOutputHashing(hashing) {
+    switch (hashing) {
+        case schema_1.OutputHashing.All:
+        case schema_1.OutputHashing.Media:
+            // Ensure media is continued to be hashed to avoid overwriting of output media files
+            return schema_1.OutputHashing.Media;
+        default:
+            return schema_1.OutputHashing.None;
+    }
+}
 async function getVitestBuildOptions(options, baseBuildOptions) {
     const { workspaceRoot, projectSourceRoot, include, exclude, watch, tsConfig, providersFile } = options;
     // Find test files
@@ -70,7 +80,7 @@ async function getVitestBuildOptions(options, baseBuildOptions) {
         ssr: false,
         prerender: false,
         sourceMap: { scripts: true, vendor: false, styles: false },
-        outputHashing: schema_1.OutputHashing.None,
+        outputHashing: adjustOutputHashing(baseBuildOptions.outputHashing),
         optimization: false,
         tsConfig,
         entryPoints,
