@@ -54,7 +54,7 @@ function adjustOutputHashing(hashing) {
     }
 }
 async function getVitestBuildOptions(options, baseBuildOptions) {
-    const { workspaceRoot, projectSourceRoot, include, exclude, watch, tsConfig, providersFile } = options;
+    const { workspaceRoot, projectSourceRoot, include, exclude = [], watch, tsConfig, providersFile, } = options;
     // Find test files
     const testFiles = await (0, test_discovery_1.findTests)(include, exclude, workspaceRoot, projectSourceRoot);
     if (testFiles.length === 0) {

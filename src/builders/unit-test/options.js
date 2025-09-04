@@ -38,7 +38,7 @@ async function normalizeOptions(context, projectName, options) {
         // Target/configuration specified options
         buildTarget,
         include: options.include ?? ['**/*.spec.ts'],
-        exclude: options.exclude ?? [],
+        exclude: options.exclude,
         runnerName: runner,
         codeCoverage: options.codeCoverage
             ? {

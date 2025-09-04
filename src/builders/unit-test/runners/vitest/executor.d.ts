@@ -13,9 +13,9 @@ export declare class VitestExecutor implements TestExecutor {
     private vitest;
     private readonly projectName;
     private readonly options;
-    private readonly outputPath;
-    private latestBuildResult;
-    private readonly sigintListener;
+    private buildResultFiles;
+    private testFileToEntryPoint;
+    private entryPointToTestFile;
     constructor(projectName: string, options: NormalizedUnitTestBuilderOptions);
     execute(buildResult: FullResult | IncrementalResult): AsyncIterable<BuilderOutput>;
     [Symbol.asyncDispose](): Promise<void>;

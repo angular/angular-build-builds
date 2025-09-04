@@ -15,7 +15,7 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     cacheOptions: import("../../utils/normalize-cache").NormalizedCachedOptions;
     buildTarget: import("@angular-devkit/architect").Target;
     include: string[];
-    exclude: string[];
+    exclude: string[] | undefined;
     runnerName: import("./schema").Runner;
     codeCoverage: {
         exclude: string[] | undefined;
