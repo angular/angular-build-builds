@@ -19,5 +19,7 @@ export declare class VitestExecutor implements TestExecutor {
     constructor(projectName: string, options: NormalizedUnitTestBuilderOptions);
     execute(buildResult: FullResult | IncrementalResult): AsyncIterable<BuilderOutput>;
     [Symbol.asyncDispose](): Promise<void>;
+    private prepareSetupFiles;
+    private createVitestPlugins;
     private initializeVitest;
 }

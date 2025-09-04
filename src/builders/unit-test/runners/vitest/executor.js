@@ -98,8 +98,133 @@ class VitestExecutor {
     async [Symbol.asyncDispose]() {
         await this.vitest?.close();
     }
+    prepareSetupFiles() {
+        const { setupFiles } = this.options;
+        // Add setup file entries for TestBed initialization and project polyfills
+        const testSetupFiles = ['init-testbed.js', ...setupFiles];
+        // TODO: Provide additional result metadata to avoid needing to extract based on filename
+        if (this.buildResultFiles.has('polyfills.js')) {
+            testSetupFiles.unshift('polyfills.js');
+        }
+        return testSetupFiles;
+    }
+    createVitestPlugins(testSetupFiles, browserOptions) {
+        const { workspaceRoot, codeCoverage } = this.options;
+        return [
+            {
+                name: 'angular:project-init',
+                // Type is incorrect. This allows a Promise<void>.
+                // eslint-disable-next-line @typescript-eslint/no-misused-promises
+                configureVitest: async (context) => {
+                    // Create a subproject that can be configured with plugins for browser mode.
+                    // Plugins defined directly in the vite overrides will not be present in the
+                    // browser specific Vite instance.
+                    const [project] = await context.injectTestProjects({
+                        test: {
+                            name: this.projectName,
+                            root: workspaceRoot,
+                            globals: true,
+                            setupFiles: testSetupFiles,
+                            // Use `jsdom` if no browsers are explicitly configured.
+                            // `node` is effectively no "environment" and the default.
+                            environment: browserOptions.browser ? 'node' : 'jsdom',
+                            browser: browserOptions.browser,
+                            include: this.options.include,
+                            ...(this.options.exclude ? { exclude: this.options.exclude } : {}),
+                        },
+                        plugins: [
+                            {
+                                name: 'angular:test-in-memory-provider',
+                                enforce: 'pre',
+                                resolveId: (id, importer) => {
+                                    if (importer && id.startsWith('.')) {
+                                        let fullPath;
+                                        let relativePath;
+                                        if (this.testFileToEntryPoint.has(importer)) {
+                                            fullPath = (0, path_1.toPosixPath)(node_path_1.default.join(this.options.workspaceRoot, id));
+                                            relativePath = node_path_1.default.normalize(id);
+                                        }
+                                        else {
+                                            fullPath = (0, path_1.toPosixPath)(node_path_1.default.join(node_path_1.default.dirname(importer), id));
+                                            relativePath = node_path_1.default.relative(this.options.workspaceRoot, fullPath);
+                                        }
+                                        if (this.buildResultFiles.has((0, path_1.toPosixPath)(relativePath))) {
+                                            return fullPath;
+                                        }
+                                    }
+                                    if (this.testFileToEntryPoint.has(id)) {
+                                        return id;
+                                    }
+                                    (0, node_assert_1.default)(this.buildResultFiles.size > 0, 'buildResult must be available for resolving.');
+                                    const relativePath = node_path_1.default.relative(this.options.workspaceRoot, id);
+                                    if (this.buildResultFiles.has((0, path_1.toPosixPath)(relativePath))) {
+                                        return id;
+                                    }
+                                },
+                                load: async (id) => {
+                                    (0, node_assert_1.default)(this.buildResultFiles.size > 0, 'buildResult must be available for in-memory loading.');
+                                    // Attempt to load as a source test file.
+                                    const entryPoint = this.testFileToEntryPoint.get(id);
+                                    let outputPath;
+                                    if (entryPoint) {
+                                        outputPath = entryPoint + '.js';
+                                    }
+                                    else {
+                                        // Attempt to load as a built artifact.
+                                        const relativePath = node_path_1.default.relative(this.options.workspaceRoot, id);
+                                        outputPath = (0, path_1.toPosixPath)(relativePath);
+                                    }
+                                    const outputFile = this.buildResultFiles.get(outputPath);
+                                    if (outputFile) {
+                                        const sourceMapPath = outputPath + '.map';
+                                        const sourceMapFile = this.buildResultFiles.get(sourceMapPath);
+                                        const code = outputFile.origin === 'memory'
+                                            ? Buffer.from(outputFile.contents).toString('utf-8')
+                                            : await (0, promises_1.readFile)(outputFile.inputPath, 'utf-8');
+                                        const map = sourceMapFile
+                                            ? sourceMapFile.origin === 'memory'
+                                                ? Buffer.from(sourceMapFile.contents).toString('utf-8')
+                                                : await (0, promises_1.readFile)(sourceMapFile.inputPath, 'utf-8')
+                                            : undefined;
+                                        return {
+                                            code,
+                                            map: map ? JSON.parse(map) : undefined,
+                                        };
+                                    }
+                                },
+                            },
+                            {
+                                name: 'angular:html-index',
+                                transformIndexHtml: () => {
+                                    // Add all global stylesheets
+                                    if (this.buildResultFiles.has('styles.css')) {
+                                        return [
+                                            {
+                                                tag: 'link',
+                                                attrs: { href: 'styles.css', rel: 'stylesheet' },
+                                                injectTo: 'head',
+                                            },
+                                        ];
+                                    }
+                                    return [];
+                                },
+                            },
+                        ],
+                    });
+                    // Adjust coverage excludes to not include the otherwise automatically inserted included unit tests.
+                    // Vite does this as a convenience but is problematic for the bundling strategy employed by the
+                    // builder's test setup. To workaround this, the excludes are adjusted here to only automatically
+                    // exclude the TypeScript source test files.
+                    project.config.coverage.exclude = [
+                        ...(codeCoverage?.exclude ?? []),
+                        '**/*.{test,spec}.?(c|m)ts',
+                    ];
+                },
+            },
+        ];
+    }
     async initializeVitest() {
-        const { codeCoverage, reporters, workspaceRoot, setupFiles, browsers, debug, watch } = this.options;
+        const { codeCoverage, reporters, workspaceRoot, browsers, debug, watch } = this.options;
         let vitestNodeModule;
         try {
             vitestNodeModule = await (0, load_esm_1.loadEsmModule)('vitest/node');
@@ -118,12 +243,8 @@ class VitestExecutor {
             throw new Error(browserOptions.errors.join('\n'));
         }
         (0, node_assert_1.default)(this.buildResultFiles.size > 0, 'buildResult must be available before initializing vitest');
-        // Add setup file entries for TestBed initialization and project polyfills
-        const testSetupFiles = ['init-testbed.js', ...setupFiles];
-        // TODO: Provide additional result metadata to avoid needing to extract based on filename
-        if (this.buildResultFiles.has('polyfills.js')) {
-            testSetupFiles.unshift('polyfills.js');
-        }
+        const testSetupFiles = this.prepareSetupFiles();
+        const plugins = this.createVitestPlugins(testSetupFiles, browserOptions);
         const debugOptions = debug
             ? {
                 inspectBrk: true,
@@ -148,118 +269,7 @@ class VitestExecutor {
                 // be enabled as it controls other internal behavior related to rerunning tests.
                 watch: null,
             },
-            plugins: [
-                {
-                    name: 'angular:project-init',
-                    // Type is incorrect. This allows a Promise<void>.
-                    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-                    configureVitest: async (context) => {
-                        // Create a subproject that can be configured with plugins for browser mode.
-                        // Plugins defined directly in the vite overrides will not be present in the
-                        // browser specific Vite instance.
-                        const [project] = await context.injectTestProjects({
-                            test: {
-                                name: this.projectName,
-                                root: workspaceRoot,
-                                globals: true,
-                                setupFiles: testSetupFiles,
-                                // Use `jsdom` if no browsers are explicitly configured.
-                                // `node` is effectively no "environment" and the default.
-                                environment: browserOptions.browser ? 'node' : 'jsdom',
-                                browser: browserOptions.browser,
-                                include: this.options.include,
-                                ...(this.options.exclude ? { exclude: this.options.exclude } : {}),
-                            },
-                            plugins: [
-                                {
-                                    name: 'angular:test-in-memory-provider',
-                                    enforce: 'pre',
-                                    resolveId: (id, importer) => {
-                                        if (importer && id.startsWith('.')) {
-                                            let fullPath;
-                                            let relativePath;
-                                            if (this.testFileToEntryPoint.has(importer)) {
-                                                fullPath = (0, path_1.toPosixPath)(node_path_1.default.join(this.options.workspaceRoot, id));
-                                                relativePath = node_path_1.default.normalize(id);
-                                            }
-                                            else {
-                                                fullPath = (0, path_1.toPosixPath)(node_path_1.default.join(node_path_1.default.dirname(importer), id));
-                                                relativePath = node_path_1.default.relative(this.options.workspaceRoot, fullPath);
-                                            }
-                                            if (this.buildResultFiles.has((0, path_1.toPosixPath)(relativePath))) {
-                                                return fullPath;
-                                            }
-                                        }
-                                        if (this.testFileToEntryPoint.has(id)) {
-                                            return id;
-                                        }
-                                        (0, node_assert_1.default)(this.buildResultFiles.size > 0, 'buildResult must be available for resolving.');
-                                        const relativePath = node_path_1.default.relative(this.options.workspaceRoot, id);
-                                        if (this.buildResultFiles.has((0, path_1.toPosixPath)(relativePath))) {
-                                            return id;
-                                        }
-                                    },
-                                    load: async (id) => {
-                                        (0, node_assert_1.default)(this.buildResultFiles.size > 0, 'buildResult must be available for in-memory loading.');
-                                        // Attempt to load as a source test file.
-                                        const entryPoint = this.testFileToEntryPoint.get(id);
-                                        let outputPath;
-                                        if (entryPoint) {
-                                            outputPath = entryPoint + '.js';
-                                        }
-                                        else {
-                                            // Attempt to load as a built artifact.
-                                            const relativePath = node_path_1.default.relative(this.options.workspaceRoot, id);
-                                            outputPath = (0, path_1.toPosixPath)(relativePath);
-                                        }
-                                        const outputFile = this.buildResultFiles.get(outputPath);
-                                        if (outputFile) {
-                                            const sourceMapPath = outputPath + '.map';
-                                            const sourceMapFile = this.buildResultFiles.get(sourceMapPath);
-                                            const code = outputFile.origin === 'memory'
-                                                ? Buffer.from(outputFile.contents).toString('utf-8')
-                                                : await (0, promises_1.readFile)(outputFile.inputPath, 'utf-8');
-                                            const map = sourceMapFile
-                                                ? sourceMapFile.origin === 'memory'
-                                                    ? Buffer.from(sourceMapFile.contents).toString('utf-8')
-                                                    : await (0, promises_1.readFile)(sourceMapFile.inputPath, 'utf-8')
-                                                : undefined;
-                                            return {
-                                                code,
-                                                map: map ? JSON.parse(map) : undefined,
-                                            };
-                                        }
-                                    },
-                                },
-                                {
-                                    name: 'angular:html-index',
-                                    transformIndexHtml: () => {
-                                        // Add all global stylesheets
-                                        if (this.buildResultFiles.has('styles.css')) {
-                                            return [
-                                                {
-                                                    tag: 'link',
-                                                    attrs: { href: 'styles.css', rel: 'stylesheet' },
-                                                    injectTo: 'head',
-                                                },
-                                            ];
-                                        }
-                                        return [];
-                                    },
-                                },
-                            ],
-                        });
-                        // Adjust coverage excludes to not include the otherwise automatically inserted included unit tests.
-                        // Vite does this as a convenience but is problematic for the bundling strategy employed by the
-                        // builder's test setup. To workaround this, the excludes are adjusted here to only automatically
-                        // exclude the TypeScript source test files.
-                        project.config.coverage.exclude = [
-                            ...(codeCoverage?.exclude ?? []),
-                            '**/*.{test,spec}.?(c|m)ts',
-                        ];
-                    },
-                },
-            ],
+            plugins,
         });
     }
 }
