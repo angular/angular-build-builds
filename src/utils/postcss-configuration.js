@@ -67,7 +67,7 @@ async function loadPostcssConfiguration(searchDirectories) {
                 config.plugins.push(element);
             }
         }
-        return config;
+        return { config, configPath };
     }
     // Normalize plugin object map form
     const entries = Object.entries(raw.plugins);
@@ -81,5 +81,5 @@ async function loadPostcssConfiguration(searchDirectories) {
         }
         config.plugins.push([name, options]);
     }
-    return config;
+    return { config, configPath };
 }
