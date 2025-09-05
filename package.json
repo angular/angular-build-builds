@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "21.0.0-next.2+sha-26127bd",
+  "version": "21.0.0-next.2+sha-2981fca",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -23,7 +23,7 @@
   "builders": "builders.json",
   "dependencies": {
     "@ampproject/remapping": "2.3.0",
-    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#26127bd",
+    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#2981fca",
     "@babel/core": "7.28.3",
     "@babel/helper-annotate-as-pure": "7.27.3",
     "@babel/helper-split-export-declaration": "7.24.7",
@@ -41,7 +41,7 @@
     "parse5-html-rewriting-stream": "8.0.0",
     "picomatch": "4.0.3",
     "piscina": "5.1.3",
-    "rolldown": "1.0.0-beta.34",
+    "rolldown": "1.0.0-beta.35",
     "sass": "1.92.0",
     "semver": "7.7.2",
     "source-map-support": "0.5.21",
@@ -60,7 +60,7 @@
     "@angular/platform-browser": "^21.0.0-next.0",
     "@angular/platform-server": "^21.0.0-next.0",
     "@angular/service-worker": "^21.0.0-next.0",
-    "@angular/ssr": "github:angular/angular-ssr-builds#26127bd",
+    "@angular/ssr": "github:angular/angular-ssr-builds#2981fca",
     "karma": "^6.4.0",
     "less": "^4.2.0",
     "ng-packagr": "^21.0.0-next.0",

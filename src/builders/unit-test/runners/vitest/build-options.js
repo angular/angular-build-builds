@@ -63,7 +63,11 @@ async function getVitestBuildOptions(options, baseBuildOptions) {
             (exclude.length ? `- Excluded: ${exclude.join(', ')}\n` : '') +
             `\nPlease check the 'test' target configuration in your project's 'angular.json' file.`);
     }
-    const entryPoints = (0, test_discovery_1.getTestEntrypoints)(testFiles, { projectSourceRoot, workspaceRoot });
+    const entryPoints = (0, test_discovery_1.getTestEntrypoints)(testFiles, {
+        projectSourceRoot,
+        workspaceRoot,
+        removeTestExtension: true,
+    });
     entryPoints.set('init-testbed', 'angular:test-bed-init');
     const buildOptions = {
         ...baseBuildOptions,

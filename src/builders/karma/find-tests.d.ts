@@ -9,7 +9,8 @@ export declare function findTests(include: string[], exclude: string[], workspac
 interface TestEntrypointsOptions {
     projectSourceRoot: string;
     workspaceRoot: string;
+    removeTestExtension?: boolean;
 }
 /** Generate unique bundle names for a set of test files. */
-export declare function getTestEntrypoints(testFiles: string[], { projectSourceRoot, workspaceRoot }: TestEntrypointsOptions): Map<string, string>;
+export declare function getTestEntrypoints(testFiles: string[], { projectSourceRoot, workspaceRoot, removeTestExtension }: TestEntrypointsOptions): Map<string, string>;
 export {};

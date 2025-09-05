@@ -58,7 +58,11 @@ class VitestExecutor {
         if (this.testFileToEntryPoint.size === 0) {
             const { include, exclude = [], workspaceRoot, projectSourceRoot } = this.options;
             const testFiles = await (0, test_discovery_1.findTests)(include, exclude, workspaceRoot, projectSourceRoot);
-            const entryPoints = (0, test_discovery_1.getTestEntrypoints)(testFiles, { projectSourceRoot, workspaceRoot });
+            const entryPoints = (0, test_discovery_1.getTestEntrypoints)(testFiles, {
+                projectSourceRoot,
+                workspaceRoot,
+                removeTestExtension: true,
+            });
             for (const [entryPoint, testFile] of entryPoints) {
                 this.testFileToEntryPoint.set(testFile, entryPoint);
                 this.entryPointToTestFile.set(entryPoint + '.js', testFile);
@@ -78,6 +82,7 @@ class VitestExecutor {
                 if (source) {
                     modifiedSourceFiles.add(source);
                 }
+                vitest.invalidateFile((0, path_1.toPosixPath)(node_path_1.default.join(this.options.workspaceRoot, modifiedFile)));
             }
             const specsToRerun = [];
             for (const file of modifiedSourceFiles) {
@@ -137,17 +142,15 @@ class VitestExecutor {
                                 name: 'angular:test-in-memory-provider',
                                 enforce: 'pre',
                                 resolveId: (id, importer) => {
-                                    if (importer && id.startsWith('.')) {
+                                    if (importer && (id[0] === '.' || id[0] === '/')) {
                                         let fullPath;
-                                        let relativePath;
                                         if (this.testFileToEntryPoint.has(importer)) {
                                             fullPath = (0, path_1.toPosixPath)(node_path_1.default.join(this.options.workspaceRoot, id));
-                                            relativePath = node_path_1.default.normalize(id);
                                         }
                                         else {
                                             fullPath = (0, path_1.toPosixPath)(node_path_1.default.join(node_path_1.default.dirname(importer), id));
-                                            relativePath = node_path_1.default.relative(this.options.workspaceRoot, fullPath);
                                         }
+                                        const relativePath = node_path_1.default.relative(this.options.workspaceRoot, fullPath);
                                         if (this.buildResultFiles.has((0, path_1.toPosixPath)(relativePath))) {
                                             return fullPath;
                                         }
@@ -168,6 +171,11 @@ class VitestExecutor {
                                     let outputPath;
                                     if (entryPoint) {
                                         outputPath = entryPoint + '.js';
+                                        // To support coverage exclusion of the actual test file, the virtual
+                                        // test entry point only references the built and bundled intermediate file.
+                                        return {
+                                            code: `import "./${outputPath}";`,
+                                        };
                                     }
                                     else {
                                         // Attempt to load as a built artifact.
@@ -211,14 +219,6 @@ class VitestExecutor {
                             },
                         ],
                     });
-                    // Adjust coverage excludes to not include the otherwise automatically inserted included unit tests.
-                    // Vite does this as a convenience but is problematic for the bundling strategy employed by the
-                    // builder's test setup. To workaround this, the excludes are adjusted here to only automatically
-                    // exclude the TypeScript source test files.
-                    project.config.coverage.exclude = [
-                        ...(codeCoverage?.exclude ?? []),
-                        '**/*.{test,spec}.?(c|m)ts',
-                    ];
                 },
             },
         ];
@@ -283,7 +283,8 @@ function generateCoverageOption(codeCoverage) {
     return {
         enabled: true,
         excludeAfterRemap: true,
-        // Special handling for `reporter` due to an undefined value causing upstream failures
+        // Special handling for `exclude`/`reporters` due to an undefined value causing upstream failures
+        ...(codeCoverage.exclude ? { exclude: codeCoverage.exclude } : {}),
         ...(codeCoverage.reporters
             ? { reporter: codeCoverage.reporters }
             : {}),
