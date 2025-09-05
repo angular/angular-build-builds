@@ -418,6 +418,8 @@ function getEsBuildCommonOptions(options) {
             packages = 'external';
         }
     }
+    const minifySyntax = optimizationOptions.scripts;
+    const minifyIdentifiers = minifySyntax && environment_options_1.allowMangle;
     return {
         absWorkingDir: workspaceRoot,
         format: 'esm',
@@ -429,9 +431,10 @@ function getEsBuildCommonOptions(options) {
         metafile: true,
         legalComments: options.extractLicenses ? 'none' : 'eof',
         logLevel: options.verbose && !jsonLogs ? 'debug' : 'silent',
-        minifyIdentifiers: optimizationOptions.scripts && environment_options_1.allowMangle,
-        minifySyntax: optimizationOptions.scripts,
-        minifyWhitespace: optimizationOptions.scripts,
+        keepNames: !minifyIdentifiers,
+        minifyIdentifiers,
+        minifySyntax,
+        minifyWhitespace: minifySyntax,
         pure: ['forwardRef'],
         outdir: workspaceRoot,
         outExtension: outExtension ? { '.js': `.${outExtension}` } : undefined,
@@ -448,7 +451,7 @@ function getEsBuildCommonOptions(options) {
             // Only set to false when script optimizations are enabled. It should not be set to true because
             // Angular turns `ngDevMode` into an object for development debugging purposes when not defined
             // which a constant true value would break.
-            ...(optimizationOptions.scripts ? { 'ngDevMode': 'false' } : undefined),
+            ...(minifySyntax ? { 'ngDevMode': 'false' } : undefined),
             'ngJitMode': jit ? 'true' : 'false',
             'ngServerMode': 'false',
             'ngHmrMode': options.templateUpdates ? 'true' : 'false',
