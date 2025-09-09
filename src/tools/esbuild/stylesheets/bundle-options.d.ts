@@ -29,10 +29,7 @@ export interface BundleStylesheetOptions {
         file: string;
         package: string;
     };
-    postcssConfiguration?: {
-        config: PostcssConfiguration;
-        configPath: string;
-    };
+    postcssConfiguration?: PostcssConfiguration;
     publicPath?: string;
     cacheOptions: NormalizedCachedOptions;
 }

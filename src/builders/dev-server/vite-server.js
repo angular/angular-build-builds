@@ -44,19 +44,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.serveWithVite = serveWithVite;
+exports.setupServer = setupServer;
 const node_assert_1 = __importDefault(require("node:assert"));
+const promises_1 = require("node:fs/promises");
 const node_module_1 = require("node:module");
 const node_path_1 = require("node:path");
-const plugins_1 = require("../../../tools/vite/plugins");
-const utils_1 = require("../../../utils");
-const environment_options_1 = require("../../../utils/environment-options");
-const load_esm_1 = require("../../../utils/load-esm");
-const results_1 = require("../../application/results");
-const schema_1 = require("../../application/schema");
-const internal_1 = require("../internal");
-const hmr_1 = require("./hmr");
-const server_1 = require("./server");
-const utils_2 = require("./utils");
+const plugins_1 = require("../../tools/vite/plugins");
+const utils_1 = require("../../tools/vite/utils");
+const utils_2 = require("../../utils");
+const environment_options_1 = require("../../utils/environment-options");
+const load_esm_1 = require("../../utils/load-esm");
+const results_1 = require("../application/results");
+const schema_1 = require("../application/schema");
+const internal_1 = require("./internal");
 /**
  * Build options that are also present on the dev server but are only passed
  * to the build.
@@ -110,7 +110,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
         // When localization is enabled with a single locale, force a flat path to maintain behavior with the existing Webpack-based dev server.
         browserOptions.forceI18nFlatOutput = true;
     }
-    const { vendor: thirdPartySourcemaps, scripts: scriptsSourcemaps } = (0, utils_1.normalizeSourceMaps)(browserOptions.sourceMap ?? false);
+    const { vendor: thirdPartySourcemaps, scripts: scriptsSourcemaps } = (0, utils_2.normalizeSourceMaps)(browserOptions.sourceMap ?? false);
     if (scriptsSourcemaps && browserOptions.server) {
         // https://nodejs.org/api/process.html#processsetsourcemapsenabledval
         process.setSourceMapsEnabled(true);
@@ -203,7 +203,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                 componentStyles.clear();
                 generatedFiles.clear();
                 for (const [outputPath, file] of Object.entries(result.files)) {
-                    (0, utils_2.updateResultRecord)(outputPath, file, normalizePath, htmlIndexPath, generatedFiles, assetFiles, componentStyles, 
+                    updateResultRecord(outputPath, file, normalizePath, htmlIndexPath, generatedFiles, assetFiles, componentStyles, 
                     // The initial build will not yet have a server setup
                     !server);
                 }
@@ -220,10 +220,10 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                     assetFiles.delete(filePath);
                 }
                 for (const modified of result.modified) {
-                    (0, utils_2.updateResultRecord)(modified, result.files[modified], normalizePath, htmlIndexPath, generatedFiles, assetFiles, componentStyles);
+                    updateResultRecord(modified, result.files[modified], normalizePath, htmlIndexPath, generatedFiles, assetFiles, componentStyles);
                 }
                 for (const added of result.added) {
-                    (0, utils_2.updateResultRecord)(added, result.files[added], normalizePath, htmlIndexPath, generatedFiles, assetFiles, componentStyles);
+                    updateResultRecord(added, result.files[added], normalizePath, htmlIndexPath, generatedFiles, assetFiles, componentStyles);
                 }
                 break;
             case results_1.ResultKind.ComponentUpdate:
@@ -247,8 +247,8 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
         // To avoid disconnecting the array objects from the option, these arrays need to be mutated instead of replaced.
         if (result.detail?.['externalMetadata']) {
             const { implicitBrowser, implicitServer, explicit } = result.detail['externalMetadata'];
-            const implicitServerFiltered = implicitServer.filter((m) => !(0, node_module_1.isBuiltin)(m) && !(0, utils_2.isAbsoluteUrl)(m));
-            const implicitBrowserFiltered = implicitBrowser.filter((m) => !(0, utils_2.isAbsoluteUrl)(m));
+            const implicitServerFiltered = implicitServer.filter((m) => !(0, node_module_1.isBuiltin)(m) && !isAbsoluteUrl(m));
+            const implicitBrowserFiltered = implicitBrowser.filter((m) => !isAbsoluteUrl(m));
             // Empty Arrays to avoid growing unlimited with every re-build.
             externalMetadata.explicitBrowser.length = 0;
             externalMetadata.explicitServer.length = 0;
@@ -274,9 +274,9 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                     ...[...assetFiles.values()].map(({ source }) => source),
                 ]),
             ];
-            const updatedFiles = await (0, hmr_1.invalidateUpdatedFiles)(normalizePath, generatedFiles, assetFiles, server);
+            const updatedFiles = await invalidateUpdatedFiles(normalizePath, generatedFiles, assetFiles, server);
             if (needClientUpdate) {
-                (0, hmr_1.handleUpdate)(server, serverOptions, context.logger, componentStyles, updatedFiles);
+                handleUpdate(server, serverOptions, context.logger, componentStyles, updatedFiles);
             }
         }
         else {
@@ -315,7 +315,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                 });
             }
             // Setup server and start listening
-            const serverConfiguration = await (0, server_1.setupServer)(serverOptions, generatedFiles, assetFiles, browserOptions.preserveSymlinks, externalMetadata, ssrMode, prebundleTransformer, target, (0, internal_1.isZonelessApp)(polyfills), componentStyles, templateUpdates, browserOptions.loader, {
+            const serverConfiguration = await setupServer(serverOptions, generatedFiles, assetFiles, browserOptions.preserveSymlinks, externalMetadata, ssrMode, prebundleTransformer, target, (0, internal_1.isZonelessApp)(polyfills), componentStyles, templateUpdates, browserOptions.loader, {
                 ...browserOptions.define,
                 'ngJitMode': browserOptions.aot ? 'false' : 'true',
                 'ngHmrMode': browserOptions.templateUpdates ? 'true' : 'false',
@@ -393,4 +393,344 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
         };
     }
     await new Promise((resolve) => (deferred = resolve));
+}
+/**
+ * Invalidates any updated asset or generated files and resets their `updated` state.
+ * This function also clears the server application cache when necessary.
+ *
+ * @returns A list of files that were updated and invalidated.
+ */
+async function invalidateUpdatedFiles(normalizePath, generatedFiles, assetFiles, server) {
+    const updatedFiles = [];
+    // Invalidate any updated asset
+    for (const [file, record] of assetFiles) {
+        if (!record.updated) {
+            continue;
+        }
+        record.updated = false;
+        updatedFiles.push(file);
+    }
+    // Invalidate any updated files
+    let serverApplicationChanged = false;
+    for (const [file, record] of generatedFiles) {
+        if (!record.updated) {
+            continue;
+        }
+        record.updated = false;
+        updatedFiles.push(file);
+        serverApplicationChanged ||= record.type === internal_1.BuildOutputFileType.ServerApplication;
+        const updatedModules = server.moduleGraph.getModulesByFile(normalizePath((0, node_path_1.join)(server.config.root, file)));
+        updatedModules?.forEach((m) => server.moduleGraph.invalidateModule(m));
+    }
+    if (serverApplicationChanged) {
+        // Clear the server app cache and
+        // trigger module evaluation before reload to initiate dependency optimization.
+        const { ɵdestroyAngularServerApp } = (await server.ssrLoadModule('/main.server.mjs'));
+        ɵdestroyAngularServerApp();
+    }
+    return updatedFiles;
+}
+/**
+ * Handles updates for the client by sending HMR or full page reload commands
+ * based on the updated files. It also ensures proper tracking of component styles and determines if
+ * a full reload is needed.
+ */
+function handleUpdate(server, serverOptions, logger, componentStyles, updatedFiles) {
+    if (!updatedFiles.length) {
+        return;
+    }
+    if (serverOptions.hmr) {
+        if (updatedFiles.every((f) => f.endsWith('.css'))) {
+            let requiresReload = false;
+            const timestamp = Date.now();
+            const updates = updatedFiles.flatMap((filePath) => {
+                // For component styles, an HMR update must be sent for each one with the corresponding
+                // component identifier search parameter (`ngcomp`). The Vite client code will not keep
+                // the existing search parameters when it performs an update and each one must be
+                // specified explicitly. Typically, there is only one each though as specific style files
+                // are not typically reused across components.
+                const record = componentStyles.get(filePath);
+                if (record) {
+                    if (record.reload) {
+                        // Shadow DOM components currently require a full reload.
+                        // Vite's CSS hot replacement does not support shadow root searching.
+                        requiresReload = true;
+                        return [];
+                    }
+                    return Array.from(record.used ?? []).map((id) => {
+                        return {
+                            type: 'css-update',
+                            timestamp,
+                            path: `${filePath}?ngcomp` + (typeof id === 'string' ? `=${id}` : ''),
+                            acceptedPath: filePath,
+                        };
+                    });
+                }
+                return {
+                    type: 'css-update',
+                    timestamp,
+                    path: filePath,
+                    acceptedPath: filePath,
+                };
+            });
+            if (!requiresReload) {
+                server.ws.send({
+                    type: 'update',
+                    updates,
+                });
+                logger.info('Stylesheet update sent to client(s).');
+                return;
+            }
+        }
+    }
+    // Send reload command to clients
+    if (serverOptions.liveReload) {
+        // Clear used component tracking on full reload
+        componentStyles.forEach((record) => record.used?.clear());
+        server.ws.send({
+            type: 'full-reload',
+            path: '*',
+        });
+        logger.info('Page reload sent to client(s).');
+    }
+}
+function updateResultRecord(outputPath, file, normalizePath, htmlIndexPath, generatedFiles, assetFiles, componentStyles, initial = false) {
+    if (file.origin === 'disk') {
+        assetFiles.set('/' + normalizePath(outputPath), {
+            source: normalizePath(file.inputPath),
+            updated: !initial,
+        });
+        return;
+    }
+    let filePath;
+    if (outputPath === htmlIndexPath) {
+        // Convert custom index output path to standard index path for dev-server usage.
+        // This mimics the Webpack dev-server behavior.
+        filePath = '/index.html';
+    }
+    else {
+        filePath = '/' + normalizePath(outputPath);
+    }
+    const servable = file.type === internal_1.BuildOutputFileType.Browser || file.type === internal_1.BuildOutputFileType.Media;
+    // Skip analysis of sourcemaps
+    if (filePath.endsWith('.map')) {
+        generatedFiles.set(filePath, {
+            contents: file.contents,
+            servable,
+            size: file.contents.byteLength,
+            hash: file.hash,
+            type: file.type,
+            updated: false,
+        });
+        return;
+    }
+    // New or updated file
+    generatedFiles.set(filePath, {
+        contents: file.contents,
+        size: file.contents.byteLength,
+        hash: file.hash,
+        // Consider the files updated except on the initial build result
+        updated: !initial,
+        type: file.type,
+        servable,
+    });
+    // Record any external component styles
+    if (filePath.endsWith('.css') && /^\/[a-f0-9]{64}\.css$/.test(filePath)) {
+        const componentStyle = componentStyles.get(filePath);
+        if (componentStyle) {
+            componentStyle.rawContent = file.contents;
+        }
+        else {
+            componentStyles.set(filePath, {
+                rawContent: file.contents,
+            });
+        }
+    }
+}
+// eslint-disable-next-line max-lines-per-function
+async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks, externalMetadata, ssrMode, prebundleTransformer, target, zoneless, componentStyles, templateUpdates, prebundleLoaderExtensions, define, extensionMiddleware, indexHtmlTransformer, thirdPartySourcemaps = false) {
+    const proxy = await (0, utils_2.loadProxyConfiguration)(serverOptions.workspaceRoot, serverOptions.proxyConfig);
+    // dynamically import Vite for ESM compatibility
+    const { normalizePath } = await (0, load_esm_1.loadEsmModule)('vite');
+    // Path will not exist on disk and only used to provide separate path for Vite requests
+    const virtualProjectRoot = normalizePath((0, node_path_1.join)(serverOptions.workspaceRoot, `.angular/vite-root`, serverOptions.buildTarget.project));
+    // Files used for SSR warmup.
+    let ssrFiles;
+    switch (ssrMode) {
+        case plugins_1.ServerSsrMode.InternalSsrMiddleware:
+            ssrFiles = ['./main.server.mjs'];
+            break;
+        case plugins_1.ServerSsrMode.ExternalSsrMiddleware:
+            ssrFiles = ['./main.server.mjs', './server.mjs'];
+            break;
+    }
+    /**
+     * Required when using `externalDependencies` to prevent Vite load errors.
+     *
+     * @note Can be removed if Vite introduces native support for externals.
+     * @note Vite misresolves browser modules in SSR when accessing URLs with multiple segments
+     *       (e.g., 'foo/bar'), as they are not correctly re-based from the base href.
+     */
+    const preTransformRequests = externalMetadata.explicitBrowser.length === 0 && ssrMode === plugins_1.ServerSsrMode.NoSsr;
+    const cacheDir = (0, node_path_1.join)(serverOptions.cacheOptions.path, serverOptions.buildTarget.project, 'vite');
+    const configuration = {
+        configFile: false,
+        envFile: false,
+        cacheDir,
+        root: virtualProjectRoot,
+        publicDir: false,
+        esbuild: false,
+        mode: 'development',
+        // We use custom as we do not rely on Vite's htmlFallbackMiddleware and indexHtmlMiddleware.
+        appType: 'custom',
+        css: {
+            devSourcemap: true,
+        },
+        // Ensure custom 'file' loader build option entries are handled by Vite in application code that
+        // reference third-party libraries. Relative usage is handled directly by the build and not Vite.
+        // Only 'file' loader entries are currently supported directly by Vite.
+        assetsInclude: prebundleLoaderExtensions &&
+            Object.entries(prebundleLoaderExtensions)
+                .filter(([, value]) => value === 'file')
+                // Create a file extension glob for each key
+                .map(([key]) => '*' + key),
+        // Vite will normalize the `base` option by adding a leading slash.
+        base: serverOptions.servePath,
+        resolve: {
+            mainFields: ['es2020', 'browser', 'module', 'main'],
+            preserveSymlinks,
+        },
+        dev: {
+            preTransformRequests,
+        },
+        server: {
+            preTransformRequests,
+            warmup: {
+                ssrFiles,
+            },
+            port: serverOptions.port,
+            strictPort: true,
+            host: serverOptions.host,
+            open: serverOptions.open,
+            allowedHosts: serverOptions.allowedHosts,
+            headers: serverOptions.headers,
+            // Disable the websocket if live reload is disabled (false/undefined are the only valid values)
+            ws: serverOptions.liveReload === false && serverOptions.hmr === false ? false : undefined,
+            // When server-side rendering (SSR) is enabled togather with SSL and Express is being used,
+            // we must configure Vite to use HTTP/1.1.
+            // This is necessary because Express does not support HTTP/2.
+            // We achieve this by defining an empty proxy.
+            // See: https://github.com/vitejs/vite/blob/c4b532cc900bf988073583511f57bd581755d5e3/packages/vite/src/node/http.ts#L106
+            proxy: serverOptions.ssl && ssrMode === plugins_1.ServerSsrMode.ExternalSsrMiddleware
+                ? (proxy ?? {})
+                : proxy,
+            cors: {
+                // This will add the header `Access-Control-Allow-Origin: http://example.com`,
+                // where `http://example.com` is the requesting origin.
+                origin: true,
+                // Allow preflight requests to be proxied.
+                preflightContinue: true,
+            },
+            // File watching is handled by the build directly. `null` disables file watching for Vite.
+            watch: null,
+            fs: {
+                // Ensure cache directory, node modules, and all assets are accessible by the client.
+                // The first two are required for Vite to function in prebundling mode (the default) and to load
+                // the Vite client-side code for browser reloading. These would be available by default but when
+                // the `allow` option is explicitly configured, they must be included manually.
+                allow: [
+                    cacheDir,
+                    (0, node_path_1.join)(serverOptions.workspaceRoot, 'node_modules'),
+                    ...[...assets.values()].map(({ source }) => source),
+                ],
+            },
+        },
+        ssr: {
+            // Note: `true` and `/.*/` have different sematics. When true, the `external` option is ignored.
+            noExternal: /.*/,
+            // Exclude any Node.js built in module and provided dependencies (currently build defined externals)
+            external: externalMetadata.explicitServer,
+            optimizeDeps: (0, utils_1.getDepOptimizationConfig)({
+                // Only enable with caching since it causes prebundle dependencies to be cached
+                disabled: serverOptions.prebundle === false,
+                // Exclude any explicitly defined dependencies (currently build defined externals and node.js built-ins)
+                exclude: externalMetadata.explicitServer,
+                // Include all implict dependencies from the external packages internal option
+                include: externalMetadata.implicitServer,
+                ssr: true,
+                prebundleTransformer,
+                zoneless,
+                target,
+                loader: prebundleLoaderExtensions,
+                thirdPartySourcemaps,
+                define,
+            }),
+        },
+        plugins: [
+            (0, plugins_1.createAngularLocaleDataPlugin)(),
+            (0, plugins_1.createAngularSetupMiddlewaresPlugin)({
+                outputFiles,
+                assets,
+                indexHtmlTransformer,
+                extensionMiddleware,
+                componentStyles,
+                templateUpdates,
+                ssrMode,
+                resetComponentUpdates: () => templateUpdates.clear(),
+                projectRoot: serverOptions.projectRoot,
+            }),
+            (0, plugins_1.createRemoveIdPrefixPlugin)(externalMetadata.explicitBrowser),
+            await (0, plugins_1.createAngularSsrTransformPlugin)(serverOptions.workspaceRoot),
+            await (0, plugins_1.createAngularMemoryPlugin)({
+                virtualProjectRoot,
+                outputFiles,
+                templateUpdates,
+                external: externalMetadata.explicitBrowser,
+                disableViteTransport: !serverOptions.liveReload,
+            }),
+        ],
+        // Browser only optimizeDeps. (This does not run for SSR dependencies).
+        optimizeDeps: (0, utils_1.getDepOptimizationConfig)({
+            // Only enable with caching since it causes prebundle dependencies to be cached
+            disabled: serverOptions.prebundle === false,
+            // Exclude any explicitly defined dependencies (currently build defined externals)
+            exclude: externalMetadata.explicitBrowser,
+            // Include all implict dependencies from the external packages internal option
+            include: externalMetadata.implicitBrowser,
+            ssr: false,
+            prebundleTransformer,
+            target,
+            zoneless,
+            loader: prebundleLoaderExtensions,
+            thirdPartySourcemaps,
+            define,
+        }),
+    };
+    if (serverOptions.ssl) {
+        if (serverOptions.sslCert && serverOptions.sslKey) {
+            configuration.server ??= {};
+            // server configuration is defined above
+            configuration.server.https = {
+                cert: await (0, promises_1.readFile)(serverOptions.sslCert),
+                key: await (0, promises_1.readFile)(serverOptions.sslKey),
+            };
+        }
+        else {
+            const { default: basicSslPlugin } = await Promise.resolve().then(() => __importStar(require('@vitejs/plugin-basic-ssl')));
+            configuration.plugins ??= [];
+            configuration.plugins.push(basicSslPlugin());
+        }
+    }
+    return configuration;
+}
+/**
+ * Checks if the given value is an absolute URL.
+ *
+ * This function helps in avoiding Vite's prebundling from processing absolute URLs (http://, https://, //) as files.
+ *
+ * @param value - The URL or path to check.
+ * @returns `true` if the value is not an absolute URL; otherwise, `false`.
+ */
+function isAbsoluteUrl(value) {
+    return /^(?:https?:)?\/\//.test(value);
 }

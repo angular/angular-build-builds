@@ -15,14 +15,13 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     cacheOptions: import("../../utils/normalize-cache").NormalizedCachedOptions;
     buildTarget: import("@angular-devkit/architect").Target;
     include: string[];
-    exclude: string[] | undefined;
+    exclude: string[];
     runnerName: import("./schema").Runner;
     codeCoverage: {
         exclude: string[] | undefined;
         reporters: [string, Record<string, unknown>][] | undefined;
     } | undefined;
     tsConfig: string;
-    buildProgress: boolean | undefined;
     reporters: string[] | undefined;
     browsers: string[] | undefined;
     watch: boolean;

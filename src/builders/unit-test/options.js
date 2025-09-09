@@ -28,7 +28,7 @@ async function normalizeOptions(context, projectName, options) {
     // Target specifier defaults to the current project's build target using a development configuration
     const buildTargetSpecifier = options.buildTarget ?? `::development`;
     const buildTarget = (0, architect_1.targetFromTargetString)(buildTargetSpecifier, projectName, 'build');
-    const { tsConfig, runner, reporters, browsers, progress } = options;
+    const { tsConfig, runner, reporters, browsers } = options;
     return {
         // Project/workspace information
         workspaceRoot,
@@ -38,7 +38,7 @@ async function normalizeOptions(context, projectName, options) {
         // Target/configuration specified options
         buildTarget,
         include: options.include ?? ['**/*.spec.ts'],
-        exclude: options.exclude,
+        exclude: options.exclude ?? [],
         runnerName: runner,
         codeCoverage: options.codeCoverage
             ? {
@@ -49,7 +49,6 @@ async function normalizeOptions(context, projectName, options) {
             }
             : undefined,
         tsConfig,
-        buildProgress: progress,
         reporters,
         browsers,
         watch: options.watch ?? (0, tty_1.isTTY)(),

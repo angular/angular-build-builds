@@ -21,7 +21,7 @@ async function findTests(include, exclude, workspaceRoot, projectSourceRoot) {
     return [...new Set(files.flat())];
 }
 /** Generate unique bundle names for a set of test files. */
-function getTestEntrypoints(testFiles, { projectSourceRoot, workspaceRoot, removeTestExtension }) {
+function getTestEntrypoints(testFiles, { projectSourceRoot, workspaceRoot }) {
     const seen = new Set();
     return new Map(Array.from(testFiles, (testFile) => {
         const relativePath = removeRoots(testFile, [projectSourceRoot, workspaceRoot])
@@ -29,11 +29,7 @@ function getTestEntrypoints(testFiles, { projectSourceRoot, workspaceRoot, remov
             .replace(/^[./\\]+/, '')
             // Replace any path separators with dashes.
             .replace(/[/\\]/g, '-');
-        let fileName = (0, node_path_1.basename)(relativePath, (0, node_path_1.extname)(relativePath));
-        if (removeTestExtension) {
-            fileName = fileName.replace(/\.(spec|test)$/, '');
-        }
-        const baseName = `spec-${fileName}`;
+        const baseName = `spec-${(0, node_path_1.basename)(relativePath, (0, node_path_1.extname)(relativePath))}`;
         let uniqueName = baseName;
         let suffix = 2;
         while (seen.has(uniqueName)) {

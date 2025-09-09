@@ -46,7 +46,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.StylesheetPluginFactory = void 0;
 const node_assert_1 = __importDefault(require("node:assert"));
 const promises_1 = require("node:fs/promises");
-const node_module_1 = require("node:module");
 const node_path_1 = require("node:path");
 const tinyglobby_1 = require("tinyglobby");
 const error_1 = require("../../../utils/error");
@@ -144,15 +143,13 @@ class StylesheetPluginFactory {
         node_assert_1.default.equal(++this.initPostcssCallCount, 1, '`initPostcss` was called more than once.');
         const { options } = this;
         if (options.postcssConfiguration) {
-            const { config, configPath } = options.postcssConfiguration;
-            const postCssInstanceKey = JSON.stringify(config);
+            const postCssInstanceKey = JSON.stringify(options.postcssConfiguration);
             let postcssProcessor = postcssProcessors.get(postCssInstanceKey)?.deref();
             if (!postcssProcessor) {
                 postcss ??= (await Promise.resolve().then(() => __importStar(require('postcss')))).default;
                 postcssProcessor = postcss();
-                const postCssPluginRequire = (0, node_module_1.createRequire)((0, node_path_1.dirname)(configPath) + '/');
-                for (const [pluginName, pluginOptions] of config.plugins) {
-                    const plugin = postCssPluginRequire(pluginName);
+                for (const [pluginName, pluginOptions] of options.postcssConfiguration.plugins) {
+                    const { default: plugin } = await Promise.resolve(`${pluginName}`).then(s => __importStar(require(s)));
                     if (typeof plugin !== 'function' || plugin.postcss !== true) {
                         throw new Error(`Attempted to load invalid Postcss plugin: "${pluginName}"`);
                     }

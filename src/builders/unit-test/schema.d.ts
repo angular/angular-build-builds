@@ -44,10 +44,6 @@ export type Schema = {
      */
     include?: string[];
     /**
-     * Log progress to the console while building. Defaults to the build target's progress value.
-     */
-    progress?: boolean;
-    /**
      * TypeScript file that exports an array of Angular providers to use during test execution.
      * The array must be a default export.
      */

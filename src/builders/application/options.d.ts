@@ -177,10 +177,7 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
         file: string;
         package: string;
     } | undefined;
-    postcssConfiguration: {
-        configPath: string;
-        config: import("../../utils/postcss-configuration").PostcssConfiguration;
-    } | undefined;
+    postcssConfiguration: import("../../utils/postcss-configuration").PostcssConfiguration | undefined;
     i18nOptions: I18nOptions & {
         duplicateTranslationBehavior?: I18NTranslation;
         missingTranslationBehavior?: I18NTranslation;
