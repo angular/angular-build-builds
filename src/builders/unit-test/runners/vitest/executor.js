@@ -114,7 +114,7 @@ class VitestExecutor {
         return testSetupFiles;
     }
     createVitestPlugins(testSetupFiles, browserOptions) {
-        const { workspaceRoot, codeCoverage } = this.options;
+        const { workspaceRoot } = this.options;
         return [
             {
                 name: 'angular:project-init',
@@ -124,7 +124,7 @@ class VitestExecutor {
                     // Create a subproject that can be configured with plugins for browser mode.
                     // Plugins defined directly in the vite overrides will not be present in the
                     // browser specific Vite instance.
-                    const [project] = await context.injectTestProjects({
+                    await context.injectTestProjects({
                         test: {
                             name: this.projectName,
                             root: workspaceRoot,
