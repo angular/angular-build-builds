@@ -17,7 +17,6 @@ const error_1 = require("../../../../utils/error");
 const load_esm_1 = require("../../../../utils/load-esm");
 const path_1 = require("../../../../utils/path");
 const results_1 = require("../../../application/results");
-const test_discovery_1 = require("../../test-discovery");
 const browser_provider_1 = require("./browser-provider");
 const plugins_1 = require("./plugins");
 class VitestExecutor {
@@ -31,9 +30,15 @@ class VitestExecutor {
     // Example: `Map<'/path/to/src/app.spec.ts', 'spec-src-app-spec'>`
     testFileToEntryPoint = new Map();
     entryPointToTestFile = new Map();
-    constructor(projectName, options) {
+    constructor(projectName, options, testEntryPointMappings) {
         this.projectName = projectName;
         this.options = options;
+        if (testEntryPointMappings) {
+            for (const [entryPoint, testFile] of testEntryPointMappings) {
+                this.testFileToEntryPoint.set(testFile, entryPoint);
+                this.entryPointToTestFile.set(entryPoint + '.js', testFile);
+            }
+        }
     }
     async *execute(buildResult) {
         if (buildResult.kind === results_1.ResultKind.Full) {
@@ -48,24 +53,6 @@ class VitestExecutor {
             }
             for (const [path, file] of Object.entries(buildResult.files)) {
                 this.buildResultFiles.set(path, file);
-            }
-        }
-        // The `getTestEntrypoints` function is used here to create the same mapping
-        // that was used in `build-options.ts` to generate the build entry points.
-        // This is a deliberate duplication to avoid a larger refactoring of the
-        // builder's core interfaces to pass the entry points from the build setup
-        // phase to the execution phase.
-        if (this.testFileToEntryPoint.size === 0) {
-            const { include, exclude = [], workspaceRoot, projectSourceRoot } = this.options;
-            const testFiles = await (0, test_discovery_1.findTests)(include, exclude, workspaceRoot, projectSourceRoot);
-            const entryPoints = (0, test_discovery_1.getTestEntrypoints)(testFiles, {
-                projectSourceRoot,
-                workspaceRoot,
-                removeTestExtension: true,
-            });
-            for (const [entryPoint, testFile] of entryPoints) {
-                this.testFileToEntryPoint.set(testFile, entryPoint);
-                this.entryPointToTestFile.set(entryPoint + '.js', testFile);
             }
         }
         // Initialize Vitest if not already present.

@@ -97,5 +97,6 @@ async function getVitestBuildOptions(options, baseBuildOptions) {
         virtualFiles: {
             'angular:test-bed-init': testBedInitContents,
         },
+        testEntryPointMappings: entryPoints,
     };
 }

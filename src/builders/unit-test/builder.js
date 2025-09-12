@@ -178,13 +178,25 @@ async function* execute(options, context, extensions) {
         context.logger.warn(`NOTE: The "unit-test" builder is currently EXPERIMENTAL and not ready for production use.`);
         const normalizedOptions = await (0, options_1.normalizeOptions)(context, projectName, options);
         const runner = await loadTestRunner(normalizedOptions.runnerName);
-        const executor = __addDisposableResource(env_1, await runner.createExecutor(context, normalizedOptions), true);
         if (runner.isStandalone) {
-            yield* executor.execute({
-                kind: results_1.ResultKind.Full,
-                files: {},
-            });
-            return;
+            const env_2 = { stack: [], error: void 0, hasError: false };
+            try {
+                const executor = __addDisposableResource(env_2, await runner.createExecutor(context, normalizedOptions, undefined), true);
+                yield* executor.execute({
+                    kind: results_1.ResultKind.Full,
+                    files: {},
+                });
+                return;
+            }
+            catch (e_1) {
+                env_2.error = e_1;
+                env_2.hasError = true;
+            }
+            finally {
+                const result_1 = __disposeResources(env_2);
+                if (result_1)
+                    await result_1;
+            }
         }
         // Get base build options from the buildTarget
         let buildTargetOptions;
@@ -199,7 +211,8 @@ async function* execute(options, context, extensions) {
             return;
         }
         // Get runner-specific build options from the hook
-        const { buildOptions: runnerBuildOptions, virtualFiles } = await runner.getBuildOptions(normalizedOptions, buildTargetOptions);
+        const { buildOptions: runnerBuildOptions, virtualFiles, testEntryPointMappings, } = await runner.getBuildOptions(normalizedOptions, buildTargetOptions);
+        const executor = __addDisposableResource(env_1, await runner.createExecutor(context, normalizedOptions, testEntryPointMappings), true);
         const finalExtensions = prepareBuildExtensions(virtualFiles, normalizedOptions.projectSourceRoot, extensions);
         // Prepare and run the application build
         const applicationBuildOptions = {
@@ -211,13 +224,13 @@ async function* execute(options, context, extensions) {
         };
         yield* runBuildAndTest(executor, applicationBuildOptions, context, finalExtensions);
     }
-    catch (e_1) {
-        env_1.error = e_1;
+    catch (e_2) {
+        env_1.error = e_2;
         env_1.hasError = true;
     }
     finally {
-        const result_1 = __disposeResources(env_1);
-        if (result_1)
-            await result_1;
+        const result_2 = __disposeResources(env_1);
+        if (result_2)
+            await result_2;
     }
 }

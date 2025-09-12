@@ -21,10 +21,10 @@ const VitestTestRunner = {
     getBuildOptions(options, baseBuildOptions) {
         return (0, build_options_1.getVitestBuildOptions)(options, baseBuildOptions);
     },
-    async createExecutor(context, options) {
+    async createExecutor(context, options, testEntryPointMappings) {
         const projectName = context.target?.project;
         (0, node_assert_1.default)(projectName, 'The builder requires a target.');
-        return new executor_1.VitestExecutor(projectName, options);
+        return new executor_1.VitestExecutor(projectName, options, testEntryPointMappings);
     },
 };
 exports.default = VitestTestRunner;
