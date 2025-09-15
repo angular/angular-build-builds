@@ -17,6 +17,11 @@ const node_path_1 = __importDefault(require("node:path"));
 const normalize_cache_1 = require("../../utils/normalize-cache");
 const project_metadata_1 = require("../../utils/project-metadata");
 const tty_1 = require("../../utils/tty");
+function normalizeReporterOption(reporters) {
+    return reporters?.map((entry) => typeof entry === 'string'
+        ? [entry, {}]
+        : entry);
+}
 async function normalizeOptions(context, projectName, options) {
     // Setup base paths based on workspace root and project information
     const workspaceRoot = context.workspaceRoot;
@@ -28,7 +33,7 @@ async function normalizeOptions(context, projectName, options) {
     // Target specifier defaults to the current project's build target using a development configuration
     const buildTargetSpecifier = options.buildTarget ?? `::development`;
     const buildTarget = (0, architect_1.targetFromTargetString)(buildTargetSpecifier, projectName, 'build');
-    const { tsConfig, runner, reporters, browsers, progress } = options;
+    const { tsConfig, runner, browsers, progress } = options;
     return {
         // Project/workspace information
         workspaceRoot,
@@ -43,14 +48,12 @@ async function normalizeOptions(context, projectName, options) {
         codeCoverage: options.codeCoverage
             ? {
                 exclude: options.codeCoverageExclude,
-                reporters: options.codeCoverageReporters?.map((entry) => typeof entry === 'string'
-                    ? [entry, {}]
-                    : entry),
+                reporters: normalizeReporterOption(options.codeCoverageReporters),
             }
             : undefined,
         tsConfig,
         buildProgress: progress,
-        reporters,
+        reporters: normalizeReporterOption(options.reporters),
         browsers,
         watch: options.watch ?? (0, tty_1.isTTY)(),
         debug: options.debug ?? false,

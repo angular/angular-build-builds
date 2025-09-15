@@ -23,7 +23,7 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     } | undefined;
     tsConfig: string;
     buildProgress: boolean | undefined;
-    reporters: string[] | undefined;
+    reporters: [string, Record<string, unknown>][] | undefined;
     browsers: string[] | undefined;
     watch: boolean;
     debug: boolean;

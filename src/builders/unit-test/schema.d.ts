@@ -53,9 +53,12 @@ export type Schema = {
      */
     providersFile?: string;
     /**
-     * Test runner reporters to use. Directly passed to the test runner.
+     * Specifies the reporters to use during test execution. Each reporter can be a string
+     * representing its name, or a tuple containing the name and an options object. Built-in
+     * reporters include 'default', 'verbose', 'dots', 'json', 'junit', 'tap', 'tap-flat', and
+     * 'html'. You can also provide a path to a custom reporter.
      */
-    reporters?: string[];
+    reporters?: SchemaReporter[];
     /**
      * The name of the test runner to use for test execution.
      */
@@ -90,6 +93,10 @@ export declare enum CoverageReporters {
     Text = "text",
     TextSummary = "text-summary"
 }
+export type SchemaReporter = ReporterReporter[] | string;
+export type ReporterReporter = {
+    [key: string]: any;
+} | string;
 /**
  * The name of the test runner to use for test execution.
  */
