@@ -149,6 +149,7 @@ function prepareBuildExtensions(virtualFiles, projectSourceRoot, extensions) {
     return extensions;
 }
 async function* runBuildAndTest(executor, applicationBuildOptions, context, extensions) {
+    let consecutiveErrorCount = 0;
     for await (const buildResult of (0, application_1.buildApplicationInternal)(applicationBuildOptions, context, extensions)) {
         if (buildResult.kind === results_1.ResultKind.Failure) {
             yield { success: false };
@@ -160,77 +161,132 @@ async function* runBuildAndTest(executor, applicationBuildOptions, context, exte
         }
         (0, node_assert_1.default)(buildResult.files, 'Builder did not provide result files.');
         // Pass the build artifacts to the executor
-        yield* executor.execute(buildResult);
+        try {
+            yield* executor.execute(buildResult);
+            // Successful execution resets the failure counter
+            consecutiveErrorCount = 0;
+        }
+        catch (e) {
+            (0, error_1.assertIsError)(e);
+            context.logger.error(`An exception occurred during test execution:\n${e.stack ?? e.message}`);
+            yield { success: false };
+            consecutiveErrorCount++;
+        }
+        if (consecutiveErrorCount >= 3) {
+            context.logger.error('Test runner process has failed multiple times in a row. Please fix the configuration and restart the process.');
+            return;
+        }
     }
 }
 /**
  * @experimental Direct usage of this function is considered experimental.
  */
 async function* execute(options, context, extensions) {
-    const env_1 = { stack: [], error: void 0, hasError: false };
+    // Determine project name from builder context target
+    const projectName = context.target?.project;
+    if (!projectName) {
+        context.logger.error(`The builder requires a target to be specified.`);
+        return;
+    }
+    context.logger.warn(`NOTE: The "unit-test" builder is currently EXPERIMENTAL and not ready for production use.`);
+    // Initialize the test runner and normalize options
+    let runner;
+    let normalizedOptions;
     try {
-        // Determine project name from builder context target
-        const projectName = context.target?.project;
-        if (!projectName) {
-            context.logger.error(`The builder requires a target to be specified.`);
-            return;
-        }
-        context.logger.warn(`NOTE: The "unit-test" builder is currently EXPERIMENTAL and not ready for production use.`);
-        const normalizedOptions = await (0, options_1.normalizeOptions)(context, projectName, options);
-        const runner = await loadTestRunner(normalizedOptions.runnerName);
-        if (runner.isStandalone) {
-            const env_2 = { stack: [], error: void 0, hasError: false };
+        normalizedOptions = await (0, options_1.normalizeOptions)(context, projectName, options);
+        runner = await loadTestRunner(normalizedOptions.runnerName);
+    }
+    catch (e) {
+        (0, error_1.assertIsError)(e);
+        context.logger.error(`An exception occurred during initialization of the test runner:\n${e.stack ?? e.message}`);
+        yield { success: false };
+        return;
+    }
+    if (runner.isStandalone) {
+        try {
+            const env_1 = { stack: [], error: void 0, hasError: false };
             try {
-                const executor = __addDisposableResource(env_2, await runner.createExecutor(context, normalizedOptions, undefined), true);
+                const executor = __addDisposableResource(env_1, await runner.createExecutor(context, normalizedOptions, undefined), true);
                 yield* executor.execute({
                     kind: results_1.ResultKind.Full,
                     files: {},
                 });
-                return;
             }
             catch (e_1) {
-                env_2.error = e_1;
-                env_2.hasError = true;
+                env_1.error = e_1;
+                env_1.hasError = true;
             }
             finally {
-                const result_1 = __disposeResources(env_2);
+                const result_1 = __disposeResources(env_1);
                 if (result_1)
                     await result_1;
             }
         }
-        // Get base build options from the buildTarget
-        let buildTargetOptions;
-        try {
-            buildTargetOptions = (await context.validateOptions(await context.getTargetOptions(normalizedOptions.buildTarget), await context.getBuilderNameForTarget(normalizedOptions.buildTarget)));
-        }
         catch (e) {
             (0, error_1.assertIsError)(e);
-            context.logger.error(`Could not load build target options for "${(0, architect_1.targetStringFromTarget)(normalizedOptions.buildTarget)}".\n` +
-                `Please check your 'angular.json' configuration.\n` +
-                `Error: ${e.message}`);
-            return;
+            context.logger.error(`An exception occurred during standalone test execution:\n${e.stack ?? e.message}`);
+            yield { success: false };
         }
-        // Get runner-specific build options from the hook
-        const { buildOptions: runnerBuildOptions, virtualFiles, testEntryPointMappings, } = await runner.getBuildOptions(normalizedOptions, buildTargetOptions);
-        const executor = __addDisposableResource(env_1, await runner.createExecutor(context, normalizedOptions, testEntryPointMappings), true);
-        const finalExtensions = prepareBuildExtensions(virtualFiles, normalizedOptions.projectSourceRoot, extensions);
-        // Prepare and run the application build
-        const applicationBuildOptions = {
-            ...buildTargetOptions,
-            ...runnerBuildOptions,
-            watch: normalizedOptions.watch,
-            tsConfig: normalizedOptions.tsConfig,
-            progress: normalizedOptions.buildProgress ?? buildTargetOptions.progress,
-        };
-        yield* runBuildAndTest(executor, applicationBuildOptions, context, finalExtensions);
+        return;
     }
-    catch (e_2) {
-        env_1.error = e_2;
-        env_1.hasError = true;
+    // Get base build options from the buildTarget
+    let buildTargetOptions;
+    try {
+        buildTargetOptions = (await context.validateOptions(await context.getTargetOptions(normalizedOptions.buildTarget), await context.getBuilderNameForTarget(normalizedOptions.buildTarget)));
     }
-    finally {
-        const result_2 = __disposeResources(env_1);
-        if (result_2)
-            await result_2;
+    catch (e) {
+        (0, error_1.assertIsError)(e);
+        context.logger.error(`Could not load build target options for "${(0, architect_1.targetStringFromTarget)(normalizedOptions.buildTarget)}".\n` +
+            `Please check your 'angular.json' configuration.\n` +
+            `Error: ${e.message}`);
+        yield { success: false };
+        return;
+    }
+    // Get runner-specific build options
+    let runnerBuildOptions;
+    let virtualFiles;
+    let testEntryPointMappings;
+    try {
+        ({
+            buildOptions: runnerBuildOptions,
+            virtualFiles,
+            testEntryPointMappings,
+        } = await runner.getBuildOptions(normalizedOptions, buildTargetOptions));
+    }
+    catch (e) {
+        (0, error_1.assertIsError)(e);
+        context.logger.error(`An exception occurred while getting runner-specific build options:\n${e.stack ?? e.message}`);
+        yield { success: false };
+        return;
+    }
+    try {
+        const env_2 = { stack: [], error: void 0, hasError: false };
+        try {
+            const executor = __addDisposableResource(env_2, await runner.createExecutor(context, normalizedOptions, testEntryPointMappings), true);
+            const finalExtensions = prepareBuildExtensions(virtualFiles, normalizedOptions.projectSourceRoot, extensions);
+            // Prepare and run the application build
+            const applicationBuildOptions = {
+                ...buildTargetOptions,
+                ...runnerBuildOptions,
+                watch: normalizedOptions.watch,
+                tsConfig: normalizedOptions.tsConfig,
+                progress: normalizedOptions.buildProgress ?? buildTargetOptions.progress,
+            };
+            yield* runBuildAndTest(executor, applicationBuildOptions, context, finalExtensions);
+        }
+        catch (e_2) {
+            env_2.error = e_2;
+            env_2.hasError = true;
+        }
+        finally {
+            const result_2 = __disposeResources(env_2);
+            if (result_2)
+                await result_2;
+        }
+    }
+    catch (e) {
+        (0, error_1.assertIsError)(e);
+        context.logger.error(`An exception occurred while creating the test executor:\n${e.stack ?? e.message}`);
+        yield { success: false };
     }
 }
