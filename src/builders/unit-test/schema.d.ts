@@ -44,6 +44,11 @@ export type Schema = {
      */
     include?: string[];
     /**
+     * The file to output the test report to. If not specified, the test runner will output to
+     * the console.
+     */
+    outputFile?: string;
+    /**
      * Log progress to the console while building. Defaults to the build target's progress value.
      */
     progress?: boolean;

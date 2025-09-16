@@ -24,6 +24,7 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     tsConfig: string;
     buildProgress: boolean | undefined;
     reporters: [string, Record<string, unknown>][] | undefined;
+    outputFile: string | undefined;
     browsers: string[] | undefined;
     watch: boolean;
     debug: boolean;

@@ -54,6 +54,7 @@ async function normalizeOptions(context, projectName, options) {
         tsConfig,
         buildProgress: progress,
         reporters: normalizeReporterOption(options.reporters),
+        outputFile: options.outputFile,
         browsers,
         watch: options.watch ?? (0, tty_1.isTTY)(),
         debug: options.debug ?? false,

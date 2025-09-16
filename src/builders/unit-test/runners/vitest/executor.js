@@ -101,7 +101,7 @@ class VitestExecutor {
         return testSetupFiles;
     }
     async initializeVitest() {
-        const { codeCoverage, reporters, workspaceRoot, browsers, debug, watch } = this.options;
+        const { codeCoverage, reporters, outputFile, workspaceRoot, browsers, debug, watch } = this.options;
         let vitestNodeModule;
         try {
             vitestNodeModule = await (0, load_esm_1.loadEsmModule)('vitest/node');
@@ -145,6 +145,7 @@ class VitestExecutor {
             name: 'base',
             include: [],
             reporters: reporters ?? ['default'],
+            outputFile,
             watch,
             coverage: generateCoverageOption(codeCoverage),
             ...debugOptions,
