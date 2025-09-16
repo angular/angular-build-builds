@@ -15,7 +15,7 @@ var CoverageReporters;
     CoverageReporters["TextSummary"] = "text-summary";
 })(CoverageReporters || (exports.CoverageReporters = CoverageReporters = {}));
 /**
- * The name of the test runner to use for test execution.
+ * Specifies the test runner to use for test execution.
  */
 var Runner;
 (function (Runner) {

@@ -89,8 +89,26 @@ class KarmaExecutor {
             webWorkerTsConfig: buildTargetOptions.webWorkerTsConfig,
             aot: buildTargetOptions.aot,
         };
+        const transformOptions = {
+            karmaOptions: (options) => {
+                if (unitTestOptions.filter) {
+                    let filter = unitTestOptions.filter;
+                    if (filter[0] === '/' && filter.at(-1) === '/') {
+                        this.context.logger.warn('The `--filter` option is always a regular expression.' +
+                            'Leading and trailing `/` are not required and will be ignored.');
+                    }
+                    else {
+                        filter = `/${filter}/`;
+                    }
+                    options.client ??= {};
+                    options.client.args ??= [];
+                    options.client.args.push('--grep', filter);
+                }
+                return options;
+            },
+        };
         const { execute } = await Promise.resolve().then(() => __importStar(require('../../../karma')));
-        yield* execute(karmaOptions, context);
+        yield* execute(karmaOptions, context, transformOptions);
     }
     async [Symbol.asyncDispose]() {
         // The Karma builder handles its own teardown

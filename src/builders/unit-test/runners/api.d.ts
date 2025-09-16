@@ -50,6 +50,7 @@ export interface TestExecutor {
 export interface TestRunner {
     readonly name: string;
     readonly isStandalone?: boolean;
+    validateDependencies?(options: NormalizedUnitTestBuilderOptions): void | Promise<void>;
     getBuildOptions(options: NormalizedUnitTestBuilderOptions, baseBuildOptions: Partial<ApplicationBuilderInternalOptions>): RunnerOptions | Promise<RunnerOptions>;
     /**
      * Creates a stateful executor for a test session.

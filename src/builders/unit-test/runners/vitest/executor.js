@@ -144,6 +144,7 @@ class VitestExecutor {
             project: ['base', this.projectName],
             name: 'base',
             include: [],
+            testNamePattern: this.options.filter,
             reporters: reporters ?? ['default'],
             outputFile,
             watch,

@@ -16,6 +16,7 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     buildTarget: import("@angular-devkit/architect").Target;
     include: string[];
     exclude: string[] | undefined;
+    filter: string | undefined;
     runnerName: import("./schema").Runner;
     codeCoverage: {
         exclude: string[] | undefined;

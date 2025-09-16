@@ -103,6 +103,7 @@ const error_1 = require("../../utils/error");
 const application_1 = require("../application");
 const results_1 = require("../application/results");
 const options_1 = require("./options");
+const dependency_checker_1 = require("./runners/dependency-checker");
 async function loadTestRunner(runnerName) {
     // Harden against directory traversal
     if (!/^[a-zA-Z0-9-]+$/.test(runnerName)) {
@@ -195,10 +196,16 @@ async function* execute(options, context, extensions) {
     try {
         normalizedOptions = await (0, options_1.normalizeOptions)(context, projectName, options);
         runner = await loadTestRunner(normalizedOptions.runnerName);
+        await runner.validateDependencies?.(normalizedOptions);
     }
     catch (e) {
         (0, error_1.assertIsError)(e);
-        context.logger.error(`An exception occurred during initialization of the test runner:\n${e.stack ?? e.message}`);
+        if (e instanceof dependency_checker_1.MissingDependenciesError) {
+            context.logger.error(e.message);
+        }
+        else {
+            context.logger.error(`An exception occurred during initialization of the test runner:\n${e.stack ?? e.message}`);
+        }
         yield { success: false };
         return;
     }
