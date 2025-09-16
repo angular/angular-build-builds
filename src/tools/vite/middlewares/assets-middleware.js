@@ -8,6 +8,7 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createAngularAssetsMiddleware = createAngularAssetsMiddleware;
+exports.createBuildAssetsMiddleware = createBuildAssetsMiddleware;
 const mrmime_1 = require("mrmime");
 const node_crypto_1 = require("node:crypto");
 const node_fs_1 = require("node:fs");
@@ -170,4 +171,34 @@ function checkAndHandleEtag(req, res, etag) {
         return true;
     }
     return false;
+}
+function createBuildAssetsMiddleware(basePath, buildResultFiles, readHandler = node_fs_1.readFileSync) {
+    return function buildAssetsMiddleware(req, res, next) {
+        if (req.url === undefined || res.writableEnded) {
+            return;
+        }
+        // Parse the incoming request.
+        // The base of the URL is unused but required to parse the URL.
+        const pathname = (0, utils_1.pathnameWithoutBasePath)(req.url, basePath);
+        const extension = (0, node_path_1.extname)(pathname);
+        if (extension && !/\.[mc]?[jt]s(?:\.map)?$/.test(extension)) {
+            const outputFile = buildResultFiles.get(pathname.slice(1));
+            if (outputFile) {
+                const contents = outputFile.origin === 'memory' ? outputFile.contents : readHandler(outputFile.inputPath);
+                const etag = `W/${(0, node_crypto_1.createHash)('sha256').update(contents).digest('hex')}`;
+                if (checkAndHandleEtag(req, res, etag)) {
+                    return;
+                }
+                const mimeType = (0, mrmime_1.lookup)(extension);
+                if (mimeType) {
+                    res.setHeader('Content-Type', mimeType);
+                }
+                res.setHeader('ETag', etag);
+                res.setHeader('Cache-Control', 'no-cache');
+                res.end(contents);
+                return;
+            }
+        }
+        next();
+    };
 }

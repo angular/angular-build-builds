@@ -14,6 +14,7 @@ exports.createVitestPlugins = createVitestPlugins;
 const node_assert_1 = __importDefault(require("node:assert"));
 const promises_1 = require("node:fs/promises");
 const node_path_1 = __importDefault(require("node:path"));
+const assets_middleware_1 = require("../../../../tools/vite/middlewares/assets-middleware");
 const path_1 = require("../../../../utils/path");
 function createVitestPlugins(options, testSetupFiles, browserOptions, pluginOptions) {
     const { workspaceRoot, projectName, buildResultFiles, testFileToEntryPoint } = pluginOptions;
@@ -101,6 +102,9 @@ function createVitestPlugins(options, testSetupFiles, browserOptions, pluginOpti
                                         map: map ? JSON.parse(map) : undefined,
                                     };
                                 }
+                            },
+                            configureServer: (server) => {
+                                server.middlewares.use((0, assets_middleware_1.createBuildAssetsMiddleware)(server.config.base, buildResultFiles));
                             },
                         },
                         {
