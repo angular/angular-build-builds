@@ -49,6 +49,7 @@ const fs = __importStar(require("node:fs/promises"));
 const node_path_1 = __importDefault(require("node:path"));
 const web_1 = require("node:stream/web");
 const virtual_module_plugin_1 = require("../../tools/esbuild/virtual-module-plugin");
+const test_files_1 = require("../../utils/test-files");
 const index_1 = require("../application/index");
 const results_1 = require("../application/results");
 const schema_1 = require("../application/schema");
@@ -182,7 +183,7 @@ async function runEsbuild(buildOptions, context, projectSourceRoot) {
         throw new ApplicationBuildError('A full build result is required from the application builder.');
     }
     // Write test files
-    await (0, utils_1.writeTestFiles)(buildOutput.files, buildOptions.outputPath);
+    await (0, test_files_1.writeTestFiles)(buildOutput.files, buildOptions.outputPath);
     return [buildOutput, buildIterator];
 }
 async function configureKarma(karma, context, karmaOptions, options, buildOptions, buildOutput, mainName, transforms) {

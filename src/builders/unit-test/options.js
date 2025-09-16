@@ -63,6 +63,7 @@ async function normalizeOptions(context, projectName, options) {
         setupFiles: options.setupFiles
             ? options.setupFiles.map((setupFile) => node_path_1.default.join(workspaceRoot, setupFile))
             : [],
+        dumpVirtualFiles: options.dumpVirtualFiles,
     };
 }
 function injectTestingPolyfills(polyfills = []) {

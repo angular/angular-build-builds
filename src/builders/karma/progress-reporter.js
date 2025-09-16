@@ -8,8 +8,8 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.injectKarmaReporter = injectKarmaReporter;
+const test_files_1 = require("../../utils/test-files");
 const results_1 = require("../application/results");
-const utils_1 = require("./utils");
 const LATEST_BUILD_FILES_TOKEN = 'angularLatestBuildFiles';
 function injectKarmaReporter(buildOptions, buildIterator, karmaConfig, controller) {
     const reporterName = 'angular-progress-notifier';
@@ -46,7 +46,7 @@ function injectKarmaReporter(buildOptions, buildIterator, karmaConfig, controlle
                                 ...buildOutput.files,
                             };
                         }
-                        await (0, utils_1.writeTestFiles)(buildOutput.files, buildOptions.outputPath);
+                        await (0, test_files_1.writeTestFiles)(buildOutput.files, buildOptions.outputPath);
                         this.emitter.refreshFiles();
                     }
                 }

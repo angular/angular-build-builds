@@ -98,8 +98,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.execute = execute;
 const architect_1 = require("@angular-devkit/architect");
 const node_assert_1 = __importDefault(require("node:assert"));
+const promises_1 = require("node:fs/promises");
+const node_path_1 = __importDefault(require("node:path"));
 const virtual_module_plugin_1 = require("../../tools/esbuild/virtual-module-plugin");
 const error_1 = require("../../utils/error");
+const test_files_1 = require("../../utils/test-files");
 const application_1 = require("../application");
 const results_1 = require("../application/results");
 const options_1 = require("./options");
@@ -149,7 +152,7 @@ function prepareBuildExtensions(virtualFiles, projectSourceRoot, extensions) {
     }
     return extensions;
 }
-async function* runBuildAndTest(executor, applicationBuildOptions, context, extensions) {
+async function* runBuildAndTest(executor, applicationBuildOptions, context, dumpDirectory, extensions) {
     let consecutiveErrorCount = 0;
     for await (const buildResult of (0, application_1.buildApplicationInternal)(applicationBuildOptions, context, extensions)) {
         if (buildResult.kind === results_1.ResultKind.Failure) {
@@ -161,6 +164,20 @@ async function* runBuildAndTest(executor, applicationBuildOptions, context, exte
             node_assert_1.default.fail('A full and/or incremental build result is required from the application builder.');
         }
         (0, node_assert_1.default)(buildResult.files, 'Builder did not provide result files.');
+        if (dumpDirectory) {
+            if (buildResult.kind === results_1.ResultKind.Full) {
+                // Full build, so clean the directory
+                await (0, promises_1.rm)(dumpDirectory, { recursive: true, force: true });
+            }
+            else {
+                // Incremental build, so delete removed files
+                for (const file of buildResult.removed) {
+                    await (0, promises_1.rm)(node_path_1.default.join(dumpDirectory, file.path), { force: true });
+                }
+            }
+            await (0, test_files_1.writeTestFiles)(buildResult.files, dumpDirectory);
+            context.logger.info(`Build output files successfully dumped to '${dumpDirectory}'.`);
+        }
         // Pass the build artifacts to the executor
         try {
             yield* executor.execute(buildResult);
@@ -279,7 +296,10 @@ async function* execute(options, context, extensions) {
                 tsConfig: normalizedOptions.tsConfig,
                 progress: normalizedOptions.buildProgress ?? buildTargetOptions.progress,
             };
-            yield* runBuildAndTest(executor, applicationBuildOptions, context, finalExtensions);
+            const dumpDirectory = normalizedOptions.dumpVirtualFiles
+                ? node_path_1.default.join(normalizedOptions.cacheOptions.path, 'unit-test', 'output-files')
+                : undefined;
+            yield* runBuildAndTest(executor, applicationBuildOptions, context, dumpDirectory, finalExtensions);
         }
         catch (e_2) {
             env_2.error = e_2;

@@ -34,6 +34,10 @@ export type Schema = {
      */
     debug?: boolean;
     /**
+     * Dumps build output files to the `.angular/cache` directory for debugging purposes.
+     */
+    dumpVirtualFiles?: boolean;
+    /**
      * Specifies glob patterns of files to exclude from testing, relative to the project root.
      */
     exclude?: string[];
