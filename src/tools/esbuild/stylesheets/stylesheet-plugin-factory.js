@@ -152,7 +152,8 @@ class StylesheetPluginFactory {
                 postcssProcessor = postcss();
                 const postCssPluginRequire = (0, node_module_1.createRequire)((0, node_path_1.dirname)(configPath) + '/');
                 for (const [pluginName, pluginOptions] of config.plugins) {
-                    const plugin = postCssPluginRequire(pluginName);
+                    const pluginMod = postCssPluginRequire(pluginName);
+                    const plugin = pluginMod.__esModule ? pluginMod['default'] : pluginMod;
                     if (typeof plugin !== 'function' || plugin.postcss !== true) {
                         throw new Error(`Attempted to load invalid Postcss plugin: "${pluginName}"`);
                     }
