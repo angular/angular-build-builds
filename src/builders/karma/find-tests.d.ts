@@ -5,12 +5,4 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-export declare function findTests(include: string[], exclude: string[], workspaceRoot: string, projectSourceRoot: string): Promise<string[]>;
-interface TestEntrypointsOptions {
-    projectSourceRoot: string;
-    workspaceRoot: string;
-    removeTestExtension?: boolean;
-}
-/** Generate unique bundle names for a set of test files. */
-export declare function getTestEntrypoints(testFiles: string[], { projectSourceRoot, workspaceRoot, removeTestExtension }: TestEntrypointsOptions): Map<string, string>;
-export {};
+export { findTests, getTestEntrypoints } from '../unit-test/test-discovery';

@@ -107,6 +107,7 @@ const application_1 = require("../application");
 const results_1 = require("../application/results");
 const options_1 = require("./options");
 const dependency_checker_1 = require("./runners/dependency-checker");
+const test_discovery_1 = require("./test-discovery");
 async function loadTestRunner(runnerName) {
     // Harden against directory traversal
     if (!/^[a-zA-Z0-9-]+$/.test(runnerName)) {
@@ -224,6 +225,15 @@ async function* execute(options, context, extensions) {
             context.logger.error(`An exception occurred during initialization of the test runner:\n${e.stack ?? e.message}`);
         }
         yield { success: false };
+        return;
+    }
+    if (normalizedOptions.listTests) {
+        const testFiles = await (0, test_discovery_1.findTests)(normalizedOptions.include, normalizedOptions.exclude ?? [], normalizedOptions.workspaceRoot, normalizedOptions.projectSourceRoot);
+        context.logger.info('Discovered test files:');
+        for (const file of testFiles) {
+            context.logger.info(`  ${node_path_1.default.relative(normalizedOptions.workspaceRoot, file)}`);
+        }
+        yield { success: true };
         return;
     }
     if (runner.isStandalone) {

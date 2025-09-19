@@ -54,6 +54,11 @@ export type Schema = {
      */
     include?: string[];
     /**
+     * Lists all discovered test files and exits the process without building or executing the
+     * tests.
+     */
+    listTests?: boolean;
+    /**
      * Specifies a file path for the test report, applying only to the first reporter. To
      * configure output files for multiple reporters, use the tuple format `['reporter-name', {
      * outputFile: '...' }]` within the `reporters` option. When not provided, output is written
