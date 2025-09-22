@@ -148,7 +148,7 @@ class VitestExecutor {
             reporters: reporters ?? ['default'],
             outputFile,
             watch,
-            coverage: generateCoverageOption(codeCoverage),
+            coverage: generateCoverageOption(codeCoverage, this.projectName),
             ...debugOptions,
         }, {
             server: {
@@ -161,7 +161,7 @@ class VitestExecutor {
     }
 }
 exports.VitestExecutor = VitestExecutor;
-function generateCoverageOption(codeCoverage) {
+function generateCoverageOption(codeCoverage, projectName) {
     if (!codeCoverage) {
         return {
             enabled: false,
@@ -170,6 +170,7 @@ function generateCoverageOption(codeCoverage) {
     return {
         enabled: true,
         excludeAfterRemap: true,
+        reportsDirectory: (0, path_1.toPosixPath)(node_path_1.default.join('coverage', projectName)),
         // Special handling for `exclude`/`reporters` due to an undefined value causing upstream failures
         ...(codeCoverage.exclude ? { exclude: codeCoverage.exclude } : {}),
         ...(codeCoverage.reporters
