@@ -16,7 +16,8 @@ const path_1 = require("../../../../utils/path");
 const schema_1 = require("../../../application/schema");
 const options_1 = require("../../options");
 const test_discovery_1 = require("../../test-discovery");
-function createTestBedInitVirtualFile(providersFile, projectSourceRoot) {
+function createTestBedInitVirtualFile(providersFile, projectSourceRoot, polyfills = []) {
+    const usesZoneJS = polyfills.includes('zone.js');
     let providersImport = 'const providers = [];';
     if (providersFile) {
         const relativePath = node_path_1.default.relative(projectSourceRoot, providersFile);
@@ -26,7 +27,7 @@ function createTestBedInitVirtualFile(providersFile, projectSourceRoot) {
     }
     return `
     // Initialize the Angular testing environment
-    import { NgModule } from '@angular/core';
+    import { NgModule${usesZoneJS ? ', provideZoneChangeDetection' : ''} } from '@angular/core';
     import { getTestBed, ɵgetCleanupHook as getCleanupHook } from '@angular/core/testing';
     import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
     ${providersImport}
@@ -34,7 +35,7 @@ function createTestBedInitVirtualFile(providersFile, projectSourceRoot) {
     beforeEach(getCleanupHook(false));
     afterEach(getCleanupHook(true));
     @NgModule({
-      providers,
+      providers: [${usesZoneJS ? 'provideZoneChangeDetection(), ' : ''}...providers],
     })
     export class TestModule {}
     getTestBed().initTestEnvironment([BrowserTestingModule, TestModule], platformBrowserTesting(), {
@@ -91,7 +92,7 @@ async function getVitestBuildOptions(options, baseBuildOptions) {
         externalDependencies: ['vitest', '@vitest/browser/context'],
     };
     buildOptions.polyfills = (0, options_1.injectTestingPolyfills)(buildOptions.polyfills);
-    const testBedInitContents = createTestBedInitVirtualFile(providersFile, projectSourceRoot);
+    const testBedInitContents = createTestBedInitVirtualFile(providersFile, projectSourceRoot, buildOptions.polyfills);
     return {
         buildOptions,
         virtualFiles: {
