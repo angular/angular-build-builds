@@ -17,7 +17,7 @@ const tinyglobby_1 = require("tinyglobby");
 function createInstrumentationFilter(includedBasePath, excludedPaths) {
     return (request) => {
         return (!excludedPaths.has(request) &&
-            !/\.(e2e|spec)\.tsx?$|[\\/]node_modules[\\/]/.test(request) &&
+            !/\.(e2e|spec)\.tsx?$|[\\/]node_modules[\\/]|[\\/]\.angular[\\/]/.test(request) &&
             request.startsWith(includedBasePath));
     };
 }
