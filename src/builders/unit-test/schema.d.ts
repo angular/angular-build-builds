@@ -101,11 +101,11 @@ export type Schema = {
      */
     watch?: boolean;
 };
-export type SchemaCodeCoverageReporter = CodeCoverageReporterCodeCoverageReporter[] | CoverageReporters;
-export type CodeCoverageReporterCodeCoverageReporter = CoverageReporters | {
+export type SchemaCodeCoverageReporter = CodeCoverageReporterCodeCoverageReporterUnion[] | CodeCoverageReporterEnum;
+export type CodeCoverageReporterCodeCoverageReporterUnion = CodeCoverageReporterEnum | {
     [key: string]: any;
 };
-export declare enum CoverageReporters {
+export declare enum CodeCoverageReporterEnum {
     Cobertura = "cobertura",
     Html = "html",
     Json = "json",
