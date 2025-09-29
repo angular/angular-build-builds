@@ -6,6 +6,6 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 import type { createRequestHandler } from '@angular/ssr';
-import type { createNodeRequestHandler } from '@angular/ssr/node';
+import type { createNodeRequestHandler } from '@angular/ssr/node' with { 'resolution-mode': 'import' };
 export declare function isSsrNodeRequestHandler(value: unknown): value is ReturnType<typeof createNodeRequestHandler>;
 export declare function isSsrRequestHandler(value: unknown): value is ReturnType<typeof createRequestHandler>;
