@@ -57,10 +57,13 @@ function setupBrowserConfiguration(browsers, debug, projectSourceRoot) {
     if (errors) {
         return { errors };
     }
+    const isCI = !!process.env['CI'];
+    const headless = isCI || browsers.some((name) => name.toLowerCase().includes('headless'));
     const browser = {
         enabled: true,
         provider,
-        headless: browsers.some((name) => name.toLowerCase().includes('headless')),
+        headless,
+        ui: !headless,
         instances: browsers.map((browserName) => ({
             browser: normalizeBrowserName(browserName),
         })),
