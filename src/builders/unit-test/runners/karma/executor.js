@@ -56,6 +56,12 @@ class KarmaExecutor {
         if (unitTestOptions.setupFiles.length) {
             context.logger.warn('The "karma" test runner does not support the "setupFiles" option. The option will be ignored.');
         }
+        if (unitTestOptions.coverage?.all) {
+            context.logger.warn('The "karma" test runner does not support the "coverageAll" option. The option will be ignored.');
+        }
+        if (unitTestOptions.coverage?.include) {
+            context.logger.warn('The "karma" test runner does not support the "coverageInclude" option. The option will be ignored.');
+        }
         const buildTargetOptions = (await context.validateOptions(await context.getTargetOptions(unitTestOptions.buildTarget), await context.getBuilderNameForTarget(unitTestOptions.buildTarget)));
         const karmaOptions = {
             tsConfig: unitTestOptions.tsConfig ?? buildTargetOptions.tsConfig,
@@ -76,8 +82,8 @@ class KarmaExecutor {
             poll: buildTargetOptions.poll,
             preserveSymlinks: buildTargetOptions.preserveSymlinks,
             browsers: unitTestOptions.browsers?.join(','),
-            codeCoverage: !!unitTestOptions.codeCoverage,
-            codeCoverageExclude: unitTestOptions.codeCoverage?.exclude,
+            codeCoverage: !!unitTestOptions.coverage,
+            codeCoverageExclude: unitTestOptions.coverage?.exclude,
             fileReplacements: buildTargetOptions.fileReplacements,
             reporters: unitTestOptions.reporters?.map((reporter) => {
                 // Karma only supports string reporters.
@@ -103,6 +109,20 @@ class KarmaExecutor {
                     options.client ??= {};
                     options.client.args ??= [];
                     options.client.args.push('--grep', filter);
+                }
+                // Add coverage options
+                if (unitTestOptions.coverage) {
+                    const { thresholds, watermarks } = unitTestOptions.coverage;
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const coverageReporter = (options.coverageReporter ??= {});
+                    if (thresholds) {
+                        coverageReporter.check = thresholds.perFile
+                            ? { each: thresholds }
+                            : { global: thresholds };
+                    }
+                    if (watermarks) {
+                        coverageReporter.watermarks = watermarks;
+                    }
                 }
                 return options;
             },

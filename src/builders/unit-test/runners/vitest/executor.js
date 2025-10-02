@@ -101,7 +101,7 @@ class VitestExecutor {
         return testSetupFiles;
     }
     async initializeVitest() {
-        const { codeCoverage, reporters, outputFile, workspaceRoot, browsers, debug, watch } = this.options;
+        const { coverage, reporters, outputFile, workspaceRoot, browsers, debug, watch } = this.options;
         let vitestNodeModule;
         try {
             vitestNodeModule = await (0, load_esm_1.loadEsmModule)('vitest/node');
@@ -148,7 +148,7 @@ class VitestExecutor {
             reporters: reporters ?? ['default'],
             outputFile,
             watch,
-            coverage: generateCoverageOption(codeCoverage, this.projectName),
+            coverage: generateCoverageOption(coverage, this.projectName),
             ...debugOptions,
         }, {
             server: {
@@ -161,20 +161,24 @@ class VitestExecutor {
     }
 }
 exports.VitestExecutor = VitestExecutor;
-function generateCoverageOption(codeCoverage, projectName) {
-    if (!codeCoverage) {
+function generateCoverageOption(coverage, projectName) {
+    if (!coverage) {
         return {
             enabled: false,
         };
     }
     return {
         enabled: true,
+        all: coverage.all,
         excludeAfterRemap: true,
+        include: coverage.include,
         reportsDirectory: (0, path_1.toPosixPath)(node_path_1.default.join('coverage', projectName)),
+        thresholds: coverage.thresholds,
+        watermarks: coverage.watermarks,
         // Special handling for `exclude`/`reporters` due to an undefined value causing upstream failures
-        ...(codeCoverage.exclude ? { exclude: codeCoverage.exclude } : {}),
-        ...(codeCoverage.reporters
-            ? { reporter: codeCoverage.reporters }
+        ...(coverage.exclude ? { exclude: coverage.exclude } : {}),
+        ...(coverage.reporters
+            ? { reporter: coverage.reporters }
             : {}),
     };
 }

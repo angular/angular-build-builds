@@ -18,9 +18,18 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     exclude: string[] | undefined;
     filter: string | undefined;
     runnerName: import("./schema").Runner;
-    codeCoverage: {
+    coverage: {
+        all: boolean | undefined;
         exclude: string[] | undefined;
+        include: string[] | undefined;
         reporters: [string, Record<string, unknown>][] | undefined;
+        thresholds: import("./schema").CoverageThresholds | undefined;
+        watermarks: {
+            statements?: [number, number];
+            branches?: [number, number];
+            functions?: [number, number];
+            lines?: [number, number];
+        };
     } | undefined;
     tsConfig: string | undefined;
     buildProgress: boolean | undefined;

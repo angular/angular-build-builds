@@ -15,20 +15,39 @@ export type Schema = {
      */
     buildTarget: string;
     /**
-     * Enables code coverage reporting for tests.
+     * Enables coverage reporting for tests.
      */
-    codeCoverage?: boolean;
+    coverage?: boolean;
     /**
-     * Specifies glob patterns of files to exclude from the code coverage report.
+     * Includes all files that match the `coverageInclude` pattern in the coverage report, not
+     * just those touched by tests.
      */
-    codeCoverageExclude?: string[];
+    coverageAll?: boolean;
     /**
-     * Specifies the reporters to use for code coverage results. Each reporter can be a string
+     * Specifies glob patterns of files to exclude from the coverage report.
+     */
+    coverageExclude?: string[];
+    /**
+     * Specifies glob patterns of files to include in the coverage report.
+     */
+    coverageInclude?: string[];
+    /**
+     * Specifies the reporters to use for coverage results. Each reporter can be a string
      * representing its name, or a tuple containing the name and an options object. Built-in
      * reporters include 'html', 'lcov', 'lcovonly', 'text', 'text-summary', 'cobertura',
      * 'json', and 'json-summary'.
      */
-    codeCoverageReporters?: SchemaCodeCoverageReporter[];
+    coverageReporters?: SchemaCoverageReporter[];
+    /**
+     * Specifies minimum coverage thresholds that must be met. If thresholds are not met, the
+     * builder will exit with an error.
+     */
+    coverageThresholds?: CoverageThresholds;
+    /**
+     * Specifies coverage watermarks for the HTML reporter. These determine the color coding for
+     * high, medium, and low coverage.
+     */
+    coverageWatermarks?: CoverageWatermarks;
     /**
      * Enables debugging mode for tests, allowing the use of the Node Inspector.
      */
@@ -103,11 +122,11 @@ export type Schema = {
      */
     watch?: boolean;
 };
-export type SchemaCodeCoverageReporter = CodeCoverageReporterCodeCoverageReporterUnion[] | CodeCoverageReporterEnum;
-export type CodeCoverageReporterCodeCoverageReporterUnion = CodeCoverageReporterEnum | {
+export type SchemaCoverageReporter = CoverageReporterCoverageReporterUnion[] | CoverageReporterEnum;
+export type CoverageReporterCoverageReporterUnion = CoverageReporterEnum | {
     [key: string]: any;
 };
-export declare enum CodeCoverageReporterEnum {
+export declare enum CoverageReporterEnum {
     Cobertura = "cobertura",
     Html = "html",
     Json = "json",
@@ -117,6 +136,54 @@ export declare enum CodeCoverageReporterEnum {
     Text = "text",
     TextSummary = "text-summary"
 }
+/**
+ * Specifies minimum coverage thresholds that must be met. If thresholds are not met, the
+ * builder will exit with an error.
+ */
+export type CoverageThresholds = {
+    /**
+     * Minimum percentage of branches covered.
+     */
+    branches?: number;
+    /**
+     * Minimum percentage of functions covered.
+     */
+    functions?: number;
+    /**
+     * Minimum percentage of lines covered.
+     */
+    lines?: number;
+    /**
+     * When true, thresholds are enforced for each file individually.
+     */
+    perFile?: boolean;
+    /**
+     * Minimum percentage of statements covered.
+     */
+    statements?: number;
+};
+/**
+ * Specifies coverage watermarks for the HTML reporter. These determine the color coding for
+ * high, medium, and low coverage.
+ */
+export type CoverageWatermarks = {
+    /**
+     * The high and low watermarks for branches coverage. `[low, high]`
+     */
+    branches?: number[];
+    /**
+     * The high and low watermarks for functions coverage. `[low, high]`
+     */
+    functions?: number[];
+    /**
+     * The high and low watermarks for lines coverage. `[low, high]`
+     */
+    lines?: number[];
+    /**
+     * The high and low watermarks for statements coverage. `[low, high]`
+     */
+    statements?: number[];
+};
 export type SchemaReporter = ReporterReporter[] | string;
 export type ReporterReporter = {
     [key: string]: any;

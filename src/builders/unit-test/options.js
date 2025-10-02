@@ -70,10 +70,16 @@ async function normalizeOptions(context, projectName, options) {
         exclude: options.exclude,
         filter,
         runnerName: runner,
-        codeCoverage: options.codeCoverage
+        coverage: options.coverage
             ? {
-                exclude: options.codeCoverageExclude,
-                reporters: normalizeReporterOption(options.codeCoverageReporters),
+                all: options.coverageAll,
+                exclude: options.coverageExclude,
+                include: options.coverageInclude,
+                reporters: normalizeReporterOption(options.coverageReporters),
+                thresholds: options.coverageThresholds,
+                // The schema generation tool doesn't support tuple types for items, but the schema validation
+                // does ensure that the array has exactly two numbers.
+                watermarks: options.coverageWatermarks,
             }
             : undefined,
         tsConfig,

@@ -26,7 +26,7 @@ const KarmaTestRunner = {
                 checker.check(launcherName);
             }
         }
-        if (options.codeCoverage) {
+        if (options.coverage) {
             checker.check('karma-coverage');
         }
         checker.report();
