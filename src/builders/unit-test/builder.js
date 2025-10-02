@@ -266,7 +266,15 @@ async function* execute(options, context, extensions) {
     // Get base build options from the buildTarget
     let buildTargetOptions;
     try {
-        buildTargetOptions = (await context.validateOptions(await context.getTargetOptions(normalizedOptions.buildTarget), await context.getBuilderNameForTarget(normalizedOptions.buildTarget)));
+        const builderName = await context.getBuilderNameForTarget(normalizedOptions.buildTarget);
+        if (builderName !== '@angular/build:application' &&
+            // TODO: Add comprehensive support for ng-packagr.
+            builderName !== '@angular/build:ng-packagr') {
+            context.logger.warn(`The 'buildTarget' is configured to use '${builderName}', which is not supported. ` +
+                `The 'unit-test' builder is designed to work with '@angular/build:application'. ` +
+                'Unexpected behavior or build failures may occur.');
+        }
+        buildTargetOptions = (await context.validateOptions(await context.getTargetOptions(normalizedOptions.buildTarget), builderName));
     }
     catch (e) {
         (0, error_1.assertIsError)(e);
@@ -304,10 +312,8 @@ async function* execute(options, context, extensions) {
                 ...runnerBuildOptions,
                 watch: normalizedOptions.watch,
                 progress: normalizedOptions.buildProgress ?? buildTargetOptions.progress,
+                ...(normalizedOptions.tsConfig ? { tsConfig: normalizedOptions.tsConfig } : {}),
             };
-            if (normalizedOptions.tsConfig) {
-                applicationBuildOptions.tsConfig = normalizedOptions.tsConfig;
-            }
             const dumpDirectory = normalizedOptions.dumpVirtualFiles
                 ? node_path_1.default.join(normalizedOptions.cacheOptions.path, 'unit-test', 'output-files')
                 : undefined;

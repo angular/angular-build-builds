@@ -10,10 +10,11 @@ export type Schema = {
     browsers?: string[];
     /**
      * Specifies the build target to use for the unit test build in the format
-     * `project:target[:configuration]`. You can also pass a comma-separated list of
+     * `project:target[:configuration]`. This defaults to the `build` target of the current
+     * project with the `development` configuration. You can also pass a comma-separated list of
      * configurations. Example: `project:target:production,staging`.
      */
-    buildTarget: string;
+    buildTarget?: string;
     /**
      * Enables coverage reporting for tests.
      */
