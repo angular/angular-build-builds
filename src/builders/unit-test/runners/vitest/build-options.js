@@ -55,7 +55,7 @@ function adjustOutputHashing(hashing) {
     }
 }
 async function getVitestBuildOptions(options, baseBuildOptions) {
-    const { workspaceRoot, projectSourceRoot, include, exclude = [], watch, tsConfig, providersFile, } = options;
+    const { workspaceRoot, projectSourceRoot, include, exclude = [], watch, providersFile } = options;
     // Find test files
     const testFiles = await (0, test_discovery_1.findTests)(include, exclude, workspaceRoot, projectSourceRoot);
     if (testFiles.length === 0) {
@@ -87,7 +87,6 @@ async function getVitestBuildOptions(options, baseBuildOptions) {
         sourceMap: { scripts: true, vendor: false, styles: false },
         outputHashing: adjustOutputHashing(baseBuildOptions.outputHashing),
         optimization: false,
-        tsConfig,
         entryPoints,
         externalDependencies: ['vitest', '@vitest/browser/context'],
     };

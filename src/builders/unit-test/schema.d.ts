@@ -92,9 +92,11 @@ export type Schema = {
      */
     setupFiles?: string[];
     /**
-     * The path to the TypeScript configuration file, relative to the workspace root.
+     * The path to the TypeScript configuration file, relative to the workspace root. Defaults
+     * to `tsconfig.spec.json` in the project root if it exists. If not specified and the
+     * default does not exist, the `tsConfig` from the specified `buildTarget` will be used.
      */
-    tsConfig: string;
+    tsConfig?: string;
     /**
      * Enables watch mode, which re-runs tests when source files change. Defaults to `true` in
      * TTY environments and `false` otherwise.

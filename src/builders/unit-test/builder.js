@@ -303,9 +303,11 @@ async function* execute(options, context, extensions) {
                 ...buildTargetOptions,
                 ...runnerBuildOptions,
                 watch: normalizedOptions.watch,
-                tsConfig: normalizedOptions.tsConfig,
                 progress: normalizedOptions.buildProgress ?? buildTargetOptions.progress,
             };
+            if (normalizedOptions.tsConfig) {
+                applicationBuildOptions.tsConfig = normalizedOptions.tsConfig;
+            }
             const dumpDirectory = normalizedOptions.dumpVirtualFiles
                 ? node_path_1.default.join(normalizedOptions.cacheOptions.path, 'unit-test', 'output-files')
                 : undefined;

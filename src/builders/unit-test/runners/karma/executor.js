@@ -58,7 +58,7 @@ class KarmaExecutor {
         }
         const buildTargetOptions = (await context.validateOptions(await context.getTargetOptions(unitTestOptions.buildTarget), await context.getBuilderNameForTarget(unitTestOptions.buildTarget)));
         const karmaOptions = {
-            tsConfig: unitTestOptions.tsConfig,
+            tsConfig: unitTestOptions.tsConfig ?? buildTargetOptions.tsConfig,
             polyfills: buildTargetOptions.polyfills,
             assets: buildTargetOptions.assets,
             scripts: buildTargetOptions.scripts,

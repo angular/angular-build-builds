@@ -13,10 +13,20 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.normalizeOptions = normalizeOptions;
 exports.injectTestingPolyfills = injectTestingPolyfills;
 const architect_1 = require("@angular-devkit/architect");
+const node_fs_1 = require("node:fs");
 const node_path_1 = __importDefault(require("node:path"));
 const normalize_cache_1 = require("../../utils/normalize-cache");
 const project_metadata_1 = require("../../utils/project-metadata");
 const tty_1 = require("../../utils/tty");
+async function exists(path) {
+    try {
+        await node_fs_1.promises.access(path, node_fs_1.constants.F_OK);
+        return true;
+    }
+    catch {
+        return false;
+    }
+}
 function normalizeReporterOption(reporters) {
     return reporters?.map((entry) => typeof entry === 'string'
         ? [entry, {}]
@@ -33,7 +43,21 @@ async function normalizeOptions(context, projectName, options) {
     // Target specifier defaults to the current project's build target using a development configuration
     const buildTargetSpecifier = options.buildTarget ?? `::development`;
     const buildTarget = (0, architect_1.targetFromTargetString)(buildTargetSpecifier, projectName, 'build');
-    const { tsConfig, runner, browsers, progress, filter } = options;
+    const { runner, browsers, progress, filter } = options;
+    let tsConfig = options.tsConfig;
+    if (tsConfig) {
+        const fullTsConfigPath = node_path_1.default.join(workspaceRoot, tsConfig);
+        if (!(await exists(fullTsConfigPath))) {
+            throw new Error(`The specified tsConfig file '${tsConfig}' does not exist.`);
+        }
+    }
+    else {
+        const tsconfigSpecPath = node_path_1.default.join(projectRoot, 'tsconfig.spec.json');
+        if (await exists(tsconfigSpecPath)) {
+            // The application builder expects a path relative to the workspace root.
+            tsConfig = node_path_1.default.relative(workspaceRoot, tsconfigSpecPath);
+        }
+    }
     return {
         // Project/workspace information
         workspaceRoot,
