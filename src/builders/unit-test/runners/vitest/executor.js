@@ -148,7 +148,7 @@ class VitestExecutor {
             reporters: reporters ?? ['default'],
             outputFile,
             watch,
-            coverage: generateCoverageOption(coverage, this.projectName),
+            coverage: await generateCoverageOption(coverage, this.projectName),
             ...debugOptions,
         }, {
             server: {
@@ -161,11 +161,19 @@ class VitestExecutor {
     }
 }
 exports.VitestExecutor = VitestExecutor;
-function generateCoverageOption(coverage, projectName) {
+async function generateCoverageOption(coverage, projectName) {
     if (!coverage) {
         return {
             enabled: false,
         };
+    }
+    let defaultExcludes = [];
+    if (coverage.exclude) {
+        try {
+            const vitestConfig = await (0, load_esm_1.loadEsmModule)('vitest/config');
+            defaultExcludes = vitestConfig.coverageConfigDefaults.exclude;
+        }
+        catch { }
     }
     return {
         enabled: true,
@@ -176,7 +184,16 @@ function generateCoverageOption(coverage, projectName) {
         thresholds: coverage.thresholds,
         watermarks: coverage.watermarks,
         // Special handling for `exclude`/`reporters` due to an undefined value causing upstream failures
-        ...(coverage.exclude ? { exclude: coverage.exclude } : {}),
+        ...(coverage.exclude
+            ? {
+                exclude: [
+                    // Augment the default exclude https://vitest.dev/config/#coverage-exclude
+                    // with the user defined exclusions
+                    ...coverage.exclude,
+                    ...defaultExcludes,
+                ],
+            }
+            : {}),
         ...(coverage.reporters
             ? { reporter: coverage.reporters }
             : {}),
