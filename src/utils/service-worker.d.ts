@@ -5,7 +5,7 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-import type { Config, Filesystem } from '@angular/service-worker/config';
+import type { Config, Filesystem } from '@angular/service-worker/config' with { 'resolution-mode': 'import' };
 import { promises as fsPromises } from 'node:fs';
 import { BuildOutputFile } from '../tools/esbuild/bundler-context';
 import { BuildOutputAsset } from '../tools/esbuild/bundler-execution-result';
