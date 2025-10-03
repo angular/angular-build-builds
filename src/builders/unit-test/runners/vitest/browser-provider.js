@@ -28,7 +28,7 @@ function normalizeBrowserName(browserName) {
     const normalized = browserName.toLowerCase();
     return normalized.replace(/headless$/, '');
 }
-function setupBrowserConfiguration(browsers, debug, projectSourceRoot) {
+function setupBrowserConfiguration(browsers, debug, projectSourceRoot, viewport) {
     if (browsers === undefined) {
         return {};
     }
@@ -64,6 +64,7 @@ function setupBrowserConfiguration(browsers, debug, projectSourceRoot) {
         provider,
         headless,
         ui: !headless,
+        viewport,
         instances: browsers.map((browserName) => ({
             browser: normalizeBrowserName(browserName),
         })),

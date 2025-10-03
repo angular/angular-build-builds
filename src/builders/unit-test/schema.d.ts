@@ -3,6 +3,11 @@
  */
 export type Schema = {
     /**
+     * Specifies the browser viewport dimensions for browser-based tests in the format
+     * `widthxheight`.
+     */
+    browserViewport?: string;
+    /**
      * Specifies the browsers to use for test execution. When not specified, tests are run in a
      * Node.js environment using jsdom. For both Vitest and Karma, browser names ending with
      * 'Headless' (e.g., 'ChromeHeadless') will enable headless mode.

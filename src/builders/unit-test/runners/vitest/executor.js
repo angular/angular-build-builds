@@ -101,7 +101,7 @@ class VitestExecutor {
         return testSetupFiles;
     }
     async initializeVitest() {
-        const { coverage, reporters, outputFile, workspaceRoot, browsers, debug, watch } = this.options;
+        const { coverage, reporters, outputFile, workspaceRoot, browsers, debug, watch, browserViewport, } = this.options;
         let vitestNodeModule;
         try {
             vitestNodeModule = await (0, load_esm_1.loadEsmModule)('vitest/node');
@@ -115,7 +115,7 @@ class VitestExecutor {
         }
         const { startVitest } = vitestNodeModule;
         // Setup vitest browser options if configured
-        const browserOptions = (0, browser_provider_1.setupBrowserConfiguration)(browsers, debug, this.options.projectSourceRoot);
+        const browserOptions = (0, browser_provider_1.setupBrowserConfiguration)(browsers, debug, this.options.projectSourceRoot, browserViewport);
         if (browserOptions.errors?.length) {
             throw new Error(browserOptions.errors.join('\n'));
         }

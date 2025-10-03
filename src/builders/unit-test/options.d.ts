@@ -36,6 +36,10 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     reporters: [string, Record<string, unknown>][] | undefined;
     outputFile: string | undefined;
     browsers: string[] | undefined;
+    browserViewport: {
+        width: number;
+        height: number;
+    } | undefined;
     watch: boolean;
     debug: boolean;
     providersFile: string | undefined;

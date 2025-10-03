@@ -43,7 +43,8 @@ async function normalizeOptions(context, projectName, options) {
     // Target specifier defaults to the current project's build target using a development configuration
     const buildTargetSpecifier = options.buildTarget ?? `::development`;
     const buildTarget = (0, architect_1.targetFromTargetString)(buildTargetSpecifier, projectName, 'build');
-    const { runner, browsers, progress, filter } = options;
+    const { runner, browsers, progress, filter, browserViewport } = options;
+    const [width, height] = browserViewport?.split('x').map(Number) ?? [];
     let tsConfig = options.tsConfig;
     if (tsConfig) {
         const fullTsConfigPath = node_path_1.default.join(workspaceRoot, tsConfig);
@@ -87,6 +88,7 @@ async function normalizeOptions(context, projectName, options) {
         reporters: normalizeReporterOption(options.reporters),
         outputFile: options.outputFile,
         browsers,
+        browserViewport: width && height ? { width, height } : undefined,
         watch: options.watch ?? (0, tty_1.isTTY)(),
         debug: options.debug ?? false,
         providersFile: options.providersFile && node_path_1.default.join(workspaceRoot, options.providersFile),

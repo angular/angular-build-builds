@@ -50,6 +50,9 @@ class KarmaExecutor {
     }
     async *execute() {
         const { context, options: unitTestOptions } = this;
+        if (unitTestOptions.browserViewport) {
+            context.logger.warn('The "karma" test runner does not support the "browserViewport" option. The option will be ignored.');
+        }
         if (unitTestOptions.debug) {
             context.logger.warn('The "karma" test runner does not support the "debug" option. The option will be ignored.');
         }
