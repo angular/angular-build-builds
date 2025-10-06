@@ -11,6 +11,7 @@ import { NormalizedUnitTestBuilderOptions } from '../../options';
 import type { TestExecutor } from '../api';
 export declare class VitestExecutor implements TestExecutor {
     private vitest;
+    private normalizePath;
     private readonly projectName;
     private readonly options;
     private readonly buildResultFiles;
