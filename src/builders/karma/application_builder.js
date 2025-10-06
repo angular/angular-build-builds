@@ -45,6 +45,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.execute = execute;
 const node_crypto_1 = require("node:crypto");
+const node_fs_1 = require("node:fs");
 const fs = __importStar(require("node:fs/promises"));
 const node_path_1 = __importDefault(require("node:path"));
 const web_1 = require("node:stream/web");
@@ -105,8 +106,14 @@ function execute(options, context, transforms) {
 async function initializeApplication(options, context, karmaOptions, transforms) {
     const karma = await Promise.resolve().then(() => __importStar(require('karma')));
     const projectSourceRoot = await (0, utils_1.getProjectSourceRoot)(context);
+    // Setup temporary output path and ensure it is empty
     const outputPath = node_path_1.default.join(context.workspaceRoot, 'dist/test-out', (0, node_crypto_1.randomUUID)());
     await fs.rm(outputPath, { recursive: true, force: true });
+    // Setup exit cleanup for temporary directory
+    const handleProcessExit = () => (0, node_fs_1.rmSync)(outputPath, { recursive: true, force: true });
+    process.once('exit', handleProcessExit);
+    process.once('SIGINT', handleProcessExit);
+    process.once('uncaughtException', handleProcessExit);
     const { buildOptions, mainName } = await setupBuildOptions(options, context, projectSourceRoot, outputPath);
     const [buildOutput, buildIterator] = await runEsbuild(buildOptions, context, projectSourceRoot);
     const karmaConfig = await configureKarma(karma, context, karmaOptions, options, buildOptions, buildOutput, mainName, transforms);
