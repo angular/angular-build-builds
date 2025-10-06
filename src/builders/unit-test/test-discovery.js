@@ -48,6 +48,7 @@ async function findTests(include, exclude, workspaceRoot, projectSourceRoot) {
         const globMatches = await (0, tinyglobby_1.glob)(dynamicPatterns, {
             cwd: projectSourceRoot,
             absolute: true,
+            expandDirectories: false,
             ignore: ['**/node_modules/**', ...normalizedExcludes],
         });
         for (const match of globMatches) {
