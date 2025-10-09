@@ -155,3 +155,4 @@ async function extractLicenses(metafile, rootDirectory) {
     }
     return extractedLicenseContent;
 }
+//# sourceMappingURL=license-extractor.js.map

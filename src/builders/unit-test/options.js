@@ -102,3 +102,4 @@ async function normalizeOptions(context, projectName, options) {
 function injectTestingPolyfills(polyfills = []) {
     return polyfills.includes('zone.js') ? [...polyfills, 'zone.js/testing'] : polyfills;
 }
+//# sourceMappingURL=options.js.map

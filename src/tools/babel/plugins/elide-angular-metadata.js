@@ -107,3 +107,4 @@ function isSetClassDebugInfoCall(callArguments) {
 function isInlineFunction(path) {
     return path.isFunctionExpression() || path.isArrowFunctionExpression();
 }
+//# sourceMappingURL=elide-angular-metadata.js.map

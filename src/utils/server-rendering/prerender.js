@@ -265,3 +265,4 @@ function generateRedirectStaticPage(url) {
 </html>
 `.trim();
 }
+//# sourceMappingURL=prerender.js.map

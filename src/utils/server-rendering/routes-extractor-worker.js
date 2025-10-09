@@ -34,3 +34,4 @@ async function extractRoutes() {
     };
 }
 exports.default = extractRoutes;
+//# sourceMappingURL=routes-extractor-worker.js.map

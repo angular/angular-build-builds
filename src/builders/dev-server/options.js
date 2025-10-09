@@ -100,3 +100,4 @@ async function normalizeOptions(context, projectName, options) {
         allowedHosts: allowedHosts ? allowedHosts : [],
     };
 }
+//# sourceMappingURL=options.js.map

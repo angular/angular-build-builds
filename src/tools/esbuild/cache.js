@@ -97,3 +97,4 @@ class MemoryCache extends Cache {
     }
 }
 exports.MemoryCache = MemoryCache;
+//# sourceMappingURL=cache.js.map

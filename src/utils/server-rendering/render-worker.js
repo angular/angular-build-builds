@@ -35,3 +35,4 @@ async function initialize() {
     return renderPage;
 }
 exports.default = initialize();
+//# sourceMappingURL=render-worker.js.map

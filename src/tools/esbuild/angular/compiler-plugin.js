@@ -627,3 +627,4 @@ const POTENTIAL_METADATA_REGEX = /@angular\/core|@Component|@Directive|@Injectab
 function requiresAngularCompiler(contents) {
     return POTENTIAL_METADATA_REGEX.test(contents);
 }
+//# sourceMappingURL=compiler-plugin.js.map

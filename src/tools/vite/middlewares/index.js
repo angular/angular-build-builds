@@ -23,3 +23,4 @@ var component_middleware_1 = require("./component-middleware");
 Object.defineProperty(exports, "createAngularComponentMiddleware", { enumerable: true, get: function () { return component_middleware_1.createAngularComponentMiddleware; } });
 var chrome_devtools_middleware_1 = require("./chrome-devtools-middleware");
 Object.defineProperty(exports, "createChromeDevtoolsMiddleware", { enumerable: true, get: function () { return chrome_devtools_middleware_1.createChromeDevtoolsMiddleware; } });
+//# sourceMappingURL=index.js.map

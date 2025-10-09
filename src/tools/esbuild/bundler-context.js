@@ -396,3 +396,4 @@ function isInternalBundlerFile(file) {
     }
     return false;
 }
+//# sourceMappingURL=bundler-context.js.map

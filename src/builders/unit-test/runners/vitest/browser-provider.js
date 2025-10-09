@@ -71,3 +71,4 @@ function setupBrowserConfiguration(browsers, debug, projectSourceRoot, viewport)
     };
     return { browser };
 }
+//# sourceMappingURL=browser-provider.js.map

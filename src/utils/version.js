@@ -41,3 +41,4 @@ function assertCompatibleAngularVersion(projectRoot) {
         process.exit(3);
     }
 }
+//# sourceMappingURL=version.js.map

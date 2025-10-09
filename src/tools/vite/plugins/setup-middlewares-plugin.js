@@ -70,3 +70,4 @@ function createAngularSetupMiddlewaresPlugin(options) {
         },
     };
 }
+//# sourceMappingURL=setup-middlewares-plugin.js.map

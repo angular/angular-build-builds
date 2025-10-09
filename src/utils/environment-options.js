@@ -142,3 +142,4 @@ exports.useComponentTemplateHmr = parseTristate(process.env['NG_HMR_TEMPLATES'])
  * When `NG_BUILD_PARTIAL_SSR` is enabled, a partial server-side rendering build will be performed.
  */
 exports.usePartialSsrBuild = parseTristate(process.env['NG_BUILD_PARTIAL_SSR']) === true;
+//# sourceMappingURL=environment-options.js.map

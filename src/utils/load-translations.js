@@ -91,3 +91,4 @@ async function importParsers() {
         throw new Error(`Unable to load translation file parsers. Please ensure '@angular/localize' is installed.`);
     }
 }
+//# sourceMappingURL=load-translations.js.map

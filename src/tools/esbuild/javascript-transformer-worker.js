@@ -159,3 +159,4 @@ async function createLinkerPlugin(options) {
     });
     return linkerPlugin;
 }
+//# sourceMappingURL=javascript-transformer-worker.js.map

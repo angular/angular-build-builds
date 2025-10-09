@@ -129,3 +129,4 @@ function createVitestPlugins(options, testSetupFiles, browserOptions, pluginOpti
         },
     ];
 }
+//# sourceMappingURL=plugins.js.map

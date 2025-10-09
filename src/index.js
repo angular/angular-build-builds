@@ -22,3 +22,4 @@ var unit_test_1 = require("./builders/unit-test");
 Object.defineProperty(exports, "executeUnitTestBuilder", { enumerable: true, get: function () { return unit_test_1.execute; } });
 var karma_1 = require("./builders/karma");
 Object.defineProperty(exports, "executeKarmaBuilder", { enumerable: true, get: function () { return karma_1.execute; } });
+//# sourceMappingURL=index.js.map

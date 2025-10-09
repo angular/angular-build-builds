@@ -111,3 +111,4 @@ function handleUpdate(server, serverOptions, logger, componentStyles, updatedFil
         logger.info('Page reload sent to client(s).');
     }
 }
+//# sourceMappingURL=hmr.js.map

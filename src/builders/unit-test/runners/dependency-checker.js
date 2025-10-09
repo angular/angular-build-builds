@@ -80,3 +80,4 @@ class DependencyChecker {
     }
 }
 exports.DependencyChecker = DependencyChecker;
+//# sourceMappingURL=dependency-checker.js.map

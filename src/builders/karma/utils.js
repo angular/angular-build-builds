@@ -64,3 +64,4 @@ async function first(generator, { cancel }) {
     }
     throw new Error('Expected generator to emit at least once.');
 }
+//# sourceMappingURL=utils.js.map

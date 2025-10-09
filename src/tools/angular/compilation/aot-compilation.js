@@ -335,3 +335,4 @@ function findAffectedFiles(builder, { ignoreForDiagnostics }, includeTTC) {
     }
     return affectedFiles;
 }
+//# sourceMappingURL=aot-compilation.js.map

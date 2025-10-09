@@ -178,3 +178,4 @@ function elideImports(sourceFile, removedNodes, getTypeChecker, compilerOptions)
     }
     return importNodeRemovals;
 }
+//# sourceMappingURL=jit-bootstrap-transformer.js.map

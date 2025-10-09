@@ -100,3 +100,4 @@ async function getVitestBuildOptions(options, baseBuildOptions) {
         testEntryPointMappings: entryPoints,
     };
 }
+//# sourceMappingURL=build-options.js.map

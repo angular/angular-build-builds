@@ -114,3 +114,4 @@ async function loadViteClientCode(file, disableViteTransport = false) {
     }
     return updatedContents;
 }
+//# sourceMappingURL=angular-memory-plugin.js.map

@@ -211,3 +211,4 @@ function generateFullPath(filePath, type, outputOptions) {
 }
 const builder = (0, architect_1.createBuilder)(buildApplication);
 exports.default = builder;
+//# sourceMappingURL=index.js.map

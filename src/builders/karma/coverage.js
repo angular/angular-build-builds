@@ -29,3 +29,4 @@ function getInstrumentationExcludedPaths(root, excludedPaths) {
     }
     return excluded;
 }
+//# sourceMappingURL=coverage.js.map

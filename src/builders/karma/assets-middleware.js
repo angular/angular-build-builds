@@ -63,3 +63,4 @@ class AngularAssetsMiddleware {
     }
 }
 exports.AngularAssetsMiddleware = AngularAssetsMiddleware;
+//# sourceMappingURL=assets-middleware.js.map

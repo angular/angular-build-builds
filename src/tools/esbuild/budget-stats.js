@@ -64,3 +64,4 @@ function generateBudgetStats(metafile, outputFiles, initialFiles) {
     }
     return stats;
 }
+//# sourceMappingURL=budget-stats.js.map

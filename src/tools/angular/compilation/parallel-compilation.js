@@ -116,3 +116,4 @@ class ParallelCompilation extends angular_compilation_1.AngularCompilation {
     }
 }
 exports.ParallelCompilation = ParallelCompilation;
+//# sourceMappingURL=parallel-compilation.js.map

@@ -41,3 +41,4 @@ class WorkerPool extends piscina_1.Piscina {
     }
 }
 exports.WorkerPool = WorkerPool;
+//# sourceMappingURL=worker-pool.js.map

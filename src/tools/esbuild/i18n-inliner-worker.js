@@ -149,3 +149,4 @@ async function transformWithBabel(code, map, options) {
     }
     return { code: transformResult.code, map: outputMap && JSON.stringify(outputMap), diagnostics };
 }
+//# sourceMappingURL=i18n-inliner-worker.js.map

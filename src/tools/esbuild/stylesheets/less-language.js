@@ -158,3 +158,4 @@ function convertExceptionLocation(exception) {
         lineText: exception.extract && exception.extract[Math.trunc(exception.extract.length / 2)],
     };
 }
+//# sourceMappingURL=less-language.js.map

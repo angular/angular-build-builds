@@ -29,3 +29,4 @@ function getProjectRootPaths(workspaceRoot, projectMetadata) {
     const projectSourceRoot = normalizeDirectoryPath(rawSourceRoot === undefined ? (0, node_path_1.join)(projectRoot, 'src') : (0, node_path_1.join)(workspaceRoot, rawSourceRoot));
     return { projectRoot, projectSourceRoot };
 }
+//# sourceMappingURL=project-metadata.js.map

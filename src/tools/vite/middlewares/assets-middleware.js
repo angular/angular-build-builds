@@ -202,3 +202,4 @@ function createBuildAssetsMiddleware(basePath, buildResultFiles, readHandler = n
         next();
     };
 }
+//# sourceMappingURL=assets-middleware.js.map

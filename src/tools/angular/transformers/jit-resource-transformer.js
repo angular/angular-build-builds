@@ -184,3 +184,4 @@ function getDecoratorOrigin(decorator, typeChecker) {
     }
     return null;
 }
+//# sourceMappingURL=jit-resource-transformer.js.map

@@ -95,3 +95,4 @@ async function createAngularSsrExternalMiddleware(server, indexHtmlTransformer) 
         })().catch(next);
     };
 }
+//# sourceMappingURL=ssr-middleware.js.map

@@ -72,3 +72,4 @@ class AngularPolyfillsPlugin {
     }
 }
 exports.AngularPolyfillsPlugin = AngularPolyfillsPlugin;
+//# sourceMappingURL=polyfills-plugin.js.map

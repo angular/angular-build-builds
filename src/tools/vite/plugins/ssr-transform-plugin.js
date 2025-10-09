@@ -33,3 +33,4 @@ async function createAngularSsrTransformPlugin(workspaceRoot) {
         },
     };
 }
+//# sourceMappingURL=ssr-transform-plugin.js.map

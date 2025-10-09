@@ -150,3 +150,4 @@ function createGlobalScriptsBundleOptions(options, target, initial) {
         };
     };
 }
+//# sourceMappingURL=global-scripts.js.map

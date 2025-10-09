@@ -227,3 +227,4 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
     }
     return configuration;
 }
+//# sourceMappingURL=server.js.map

@@ -39,3 +39,4 @@ function createLoaderImportAttributePlugin() {
         },
     };
 }
+//# sourceMappingURL=loader-import-attribute-plugin.js.map

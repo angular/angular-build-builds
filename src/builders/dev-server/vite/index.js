@@ -394,3 +394,4 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
     }
     await new Promise((resolve) => (deferred = resolve));
 }
+//# sourceMappingURL=index.js.map

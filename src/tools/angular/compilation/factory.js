@@ -64,3 +64,4 @@ async function createAngularCompilation(jit, browserOnlyBuild, parallel = enviro
         return new AotCompilation(browserOnlyBuild);
     }
 }
+//# sourceMappingURL=factory.js.map

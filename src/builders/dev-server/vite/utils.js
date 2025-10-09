@@ -74,3 +74,4 @@ function updateResultRecord(outputPath, file, normalizePath, htmlIndexPath, gene
 function isAbsoluteUrl(value) {
     return /^(?:https?:)?\/\//.test(value);
 }
+//# sourceMappingURL=utils.js.map

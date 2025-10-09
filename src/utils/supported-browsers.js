@@ -54,3 +54,4 @@ function getBaselineDate() {
     // Unlike `npm_package`, `ts_project` which is used to run unit tests does not support substitutions.
     return BASELINE_DATE[0] === 'B' ? '2025-01-01' : BASELINE_DATE;
 }
+//# sourceMappingURL=supported-browsers.js.map

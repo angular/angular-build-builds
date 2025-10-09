@@ -19,3 +19,4 @@ Object.defineProperty(exports, "createAngularSetupMiddlewaresPlugin", { enumerab
 Object.defineProperty(exports, "ServerSsrMode", { enumerable: true, get: function () { return setup_middlewares_plugin_1.ServerSsrMode; } });
 var ssr_transform_plugin_1 = require("./ssr-transform-plugin");
 Object.defineProperty(exports, "createAngularSsrTransformPlugin", { enumerable: true, get: function () { return ssr_transform_plugin_1.createAngularSsrTransformPlugin; } });
+//# sourceMappingURL=index.js.map

@@ -32,3 +32,4 @@ async function resolveAssets(entries, root) {
     }
     return outputFiles;
 }
+//# sourceMappingURL=resolve-assets.js.map

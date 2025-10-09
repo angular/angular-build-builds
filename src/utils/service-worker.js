@@ -215,3 +215,4 @@ async function augmentAppWithServiceWorkerCore(config, serviceWorkerFilesystem, 
     }
     return result;
 }
+//# sourceMappingURL=service-worker.js.map

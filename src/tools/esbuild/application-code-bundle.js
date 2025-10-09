@@ -535,3 +535,4 @@ function getEsBuildCommonPolyfillsOptions(options, namespace, tryToResolvePolyfi
 function entryFileToWorkspaceRelative(workspaceRoot, entryFile) {
     return './' + (0, path_1.toPosixPath)((0, node_path_1.relative)(workspaceRoot, entryFile).replace(/.[mc]?ts$/, ''));
 }
+//# sourceMappingURL=application-code-bundle.js.map

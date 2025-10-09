@@ -35,3 +35,4 @@ const WINDOWS_PATH_SEPERATOR_REGEXP = /\\/g;
 function toPosixPath(path) {
     return node_process_1.platform === 'win32' ? path.replace(WINDOWS_PATH_SEPERATOR_REGEXP, node_path_1.posix.sep) : path;
 }
+//# sourceMappingURL=path.js.map

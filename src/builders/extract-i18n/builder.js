@@ -160,3 +160,4 @@ async function createSerializer(localizeToolsModule, format, sourceLocale, baseP
             });
     }
 }
+//# sourceMappingURL=builder.js.map

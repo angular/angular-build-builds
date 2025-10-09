@@ -47,3 +47,4 @@ function createAngularLocalizeInitWarningPlugin() {
         },
     };
 }
+//# sourceMappingURL=angular-localize-init-warning-plugin.js.map

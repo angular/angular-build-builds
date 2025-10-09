@@ -61,3 +61,4 @@ async function launchServer() {
     (0, node_assert_1.default)(typeof serverAddress !== 'string', 'Server address should not be a string.');
     return new URL(`http://localhost:${serverAddress.port}/`);
 }
+//# sourceMappingURL=launch-server.js.map

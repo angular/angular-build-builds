@@ -488,3 +488,4 @@ async function findFrameworkVersion(projectRoot) {
         throw new Error('Error: It appears that "@angular/core" is missing as a dependency. Please ensure it is included in your project.');
     }
 }
+//# sourceMappingURL=options.js.map

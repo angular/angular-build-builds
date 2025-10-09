@@ -51,3 +51,4 @@ async function* execute(options, context, transforms) {
 }
 const builder = (0, architect_1.createBuilder)(execute);
 exports.default = builder;
+//# sourceMappingURL=index.js.map

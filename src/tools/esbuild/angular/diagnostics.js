@@ -69,3 +69,4 @@ function convertTypeScriptDiagnostic(typescript, diagnostic) {
     }
     return message;
 }
+//# sourceMappingURL=diagnostics.js.map

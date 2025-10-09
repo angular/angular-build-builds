@@ -42,3 +42,4 @@ let globalSharedCompilationState;
 function getSharedCompilationState() {
     return (globalSharedCompilationState ??= new SharedTSCompilationState());
 }
+//# sourceMappingURL=compilation-state.js.map

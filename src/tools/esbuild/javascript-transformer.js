@@ -150,3 +150,4 @@ class JavaScriptTransformer {
     }
 }
 exports.JavaScriptTransformer = JavaScriptTransformer;
+//# sourceMappingURL=javascript-transformer.js.map

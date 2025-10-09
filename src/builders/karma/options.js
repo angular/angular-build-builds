@@ -41,3 +41,4 @@ function normalizeOptions(context, options) {
         exclude,
     };
 }
+//# sourceMappingURL=options.js.map

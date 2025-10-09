@@ -133,3 +133,4 @@ function handleProcessExit() {
 process.once('exit', handleProcessExit);
 process.once('SIGINT', handleProcessExit);
 process.once('uncaughtException', handleProcessExit);
+//# sourceMappingURL=loader-hooks.js.map

@@ -321,3 +321,4 @@ async function configureKarma(karma, context, karmaOptions, options, buildOption
     }
     return parsedKarmaConfig;
 }
+//# sourceMappingURL=application_builder.js.map

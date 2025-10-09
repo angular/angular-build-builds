@@ -25,3 +25,4 @@ function rewriteForBazel(path) {
     }
     return (0, node_path_1.join)(bazelExecRoot, fromBinDirectory);
 }
+//# sourceMappingURL=rewrite-bazel-paths.js.map

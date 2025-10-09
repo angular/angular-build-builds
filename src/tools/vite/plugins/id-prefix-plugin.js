@@ -43,3 +43,4 @@ function createRemoveIdPrefixPlugin(externals) {
         },
     };
 }
+//# sourceMappingURL=id-prefix-plugin.js.map

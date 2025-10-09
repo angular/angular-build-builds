@@ -101,3 +101,4 @@ function createComponentStyleBundler(options, target) {
         publicPath,
     }, inlineStyleLanguage, incremental);
 }
+//# sourceMappingURL=setup-bundling.js.map

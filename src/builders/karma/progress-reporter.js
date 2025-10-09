@@ -71,3 +71,4 @@ function injectKarmaReporter(buildOptions, buildIterator, karmaConfig, controlle
         ],
     });
 }
+//# sourceMappingURL=progress-reporter.js.map

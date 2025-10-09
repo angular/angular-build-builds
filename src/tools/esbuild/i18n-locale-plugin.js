@@ -118,3 +118,4 @@ function createAngularLocaleDataPlugin() {
         },
     };
 }
+//# sourceMappingURL=i18n-locale-plugin.js.map

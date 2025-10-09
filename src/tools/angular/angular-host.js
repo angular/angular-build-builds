@@ -161,3 +161,4 @@ function hasTemplateExtension(file) {
     }
     return false;
 }
+//# sourceMappingURL=angular-host.js.map

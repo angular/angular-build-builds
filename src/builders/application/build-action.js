@@ -352,3 +352,4 @@ function canBackgroundUpdate(file) {
     // except the service worker configuration which is special cased.
     return /(?:\.m?js|\.map)$/.test(file.path) || file.path === 'ngsw.json';
 }
+//# sourceMappingURL=build-action.js.map

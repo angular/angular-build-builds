@@ -88,3 +88,4 @@ async function generateIndexHtml(initialFiles, outputFiles, buildOptions, lang) 
         hints,
     });
 }
+//# sourceMappingURL=index-html-generator.js.map

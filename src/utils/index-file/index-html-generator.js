@@ -151,3 +151,4 @@ function addEventDispatchContractPlugin() {
 function addNgcmAttributePlugin() {
     return (html) => (0, ngcm_attribute_1.addNgcmAttribute)(html);
 }
+//# sourceMappingURL=index-html-generator.js.map

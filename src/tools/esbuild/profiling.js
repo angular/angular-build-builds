@@ -75,3 +75,4 @@ function profileSync(name, action, cumulative) {
         recordDuration(name, startTime, cumulative);
     }
 }
+//# sourceMappingURL=profiling.js.map

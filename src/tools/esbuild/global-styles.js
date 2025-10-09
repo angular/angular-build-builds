@@ -76,3 +76,4 @@ function createGlobalStylesBundleOptions(options, target, initial) {
         return buildOptions;
     };
 }
+//# sourceMappingURL=global-styles.js.map

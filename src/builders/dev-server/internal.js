@@ -25,3 +25,4 @@ var utils_2 = require("../../tools/esbuild/utils");
 Object.defineProperty(exports, "transformSupportedBrowsersToTargets", { enumerable: true, get: function () { return utils_2.transformSupportedBrowsersToTargets; } });
 var application_1 = require("../../builders/application");
 Object.defineProperty(exports, "buildApplicationInternal", { enumerable: true, get: function () { return application_1.buildApplicationInternal; } });
+//# sourceMappingURL=internal.js.map

@@ -98,3 +98,4 @@ async function emit() {
 function update(files) {
     sourceFileCache.invalidate(files);
 }
+//# sourceMappingURL=parallel-worker.js.map

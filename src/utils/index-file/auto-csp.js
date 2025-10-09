@@ -291,3 +291,4 @@ function createLoaderScript(srcList, enableTrustedTypes = false) {
     document.lastElementChild.appendChild(s);
   });\n`;
 }
+//# sourceMappingURL=auto-csp.js.map

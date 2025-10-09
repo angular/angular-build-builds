@@ -116,3 +116,4 @@ function createWatcher(options) {
         },
     };
 }
+//# sourceMappingURL=watcher.js.map
