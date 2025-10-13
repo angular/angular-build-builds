@@ -6,7 +6,11 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 /**
- * Finds all test files in the project.
+ * Finds all test files in the project. This function implements a special handling
+ * for static paths (non-globs) to improve developer experience. For example, if a
+ * user provides a path to a component, this function will find the corresponding
+ * test file. If a user provides a path to a directory, it will find all test
+ * files within that directory.
  *
  * @param include Glob patterns of files to include.
  * @param exclude Glob patterns of files to exclude.

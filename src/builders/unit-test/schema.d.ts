@@ -74,8 +74,8 @@ export type Schema = {
     filter?: string;
     /**
      * Specifies glob patterns of files to include for testing, relative to the project root.
-     * This option also has special handling for directory paths (includes all `.spec.ts` files
-     * within) and file paths (includes the corresponding `.spec` file if one exists).
+     * This option also has special handling for directory paths (includes all test files
+     * within) and file paths (includes the corresponding test file if one exists).
      */
     include?: string[];
     /**
