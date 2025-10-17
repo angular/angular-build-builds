@@ -61,3 +61,4 @@ export declare const useComponentTemplateHmr: boolean;
  * When `NG_BUILD_PARTIAL_SSR` is enabled, a partial server-side rendering build will be performed.
  */
 export declare const usePartialSsrBuild: boolean;
+export declare const bazelEsbuildPluginPath: string | undefined;
