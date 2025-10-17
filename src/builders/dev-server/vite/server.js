@@ -179,7 +179,6 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
         server: await createServerConfig(serverOptions, assets, ssrMode, preTransformRequests, cacheDir),
         ssr: createSsrConfig(externalMetadata, serverOptions, prebundleTransformer, zoneless, target, prebundleLoaderExtensions, thirdPartySourcemaps, define),
         plugins: [
-            (0, plugins_1.createAngularLocaleDataPlugin)(),
             (0, plugins_1.createAngularSetupMiddlewaresPlugin)({
                 outputFiles,
                 assets,
