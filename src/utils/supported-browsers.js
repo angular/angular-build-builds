@@ -13,7 +13,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getSupportedBrowsers = getSupportedBrowsers;
 const browserslist_1 = __importDefault(require("browserslist"));
 // The below is replaced by bazel `npm_package`.
-const BASELINE_DATE = '2025-08-20';
+const BASELINE_DATE = '2025-10-20';
 function getSupportedBrowsers(projectRoot, logger) {
     // Read the browserslist configuration containing Angular's browser support policy.
     const angularBrowserslist = (0, browserslist_1.default)(`baseline widely available on ${getBaselineDate()}`);
