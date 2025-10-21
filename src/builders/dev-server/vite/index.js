@@ -50,7 +50,6 @@ const node_path_1 = require("node:path");
 const plugins_1 = require("../../../tools/vite/plugins");
 const utils_1 = require("../../../utils");
 const environment_options_1 = require("../../../utils/environment-options");
-const load_esm_1 = require("../../../utils/load-esm");
 const results_1 = require("../../application/results");
 const schema_1 = require("../../application/schema");
 const internal_1 = require("../internal");
@@ -137,8 +136,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
     { sourcemap: true, jit: true, thirdPartySourcemaps }, 1);
     // The index HTML path will be updated from the build results if provided by the builder
     let htmlIndexPath = 'index.html';
-    // dynamically import Vite for ESM compatibility
-    const { createServer, normalizePath } = await (0, load_esm_1.loadEsmModule)('vite');
+    const { createServer, normalizePath } = await Promise.resolve().then(() => __importStar(require('vite')));
     let server;
     let serverUrl;
     let hadError = false;

@@ -48,7 +48,6 @@ const node_fs_1 = require("node:fs");
 const path = __importStar(require("node:path"));
 const bundler_context_1 = require("../tools/esbuild/bundler-context");
 const error_1 = require("./error");
-const load_esm_1 = require("./load-esm");
 const path_1 = require("./path");
 class CliFilesystem {
     fs;
@@ -191,12 +190,10 @@ async function augmentAppWithServiceWorkerEsbuild(workspaceRoot, configPath, bas
     return augmentAppWithServiceWorkerCore(config, new ResultFilesystem(outputFiles, assetFiles), baseHref);
 }
 async function augmentAppWithServiceWorkerCore(config, serviceWorkerFilesystem, baseHref) {
-    // Load ESM `@angular/service-worker/config` using the TypeScript dynamic import workaround.
-    // Once TypeScript provides support for keeping the dynamic import this workaround can be
-    // changed to a direct dynamic import.
-    const GeneratorConstructor = (await (0, load_esm_1.loadEsmModule)('@angular/service-worker/config')).Generator;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { Generator } = (await Promise.resolve(`${'@angular/service-worker/config'}`).then(s => __importStar(require(s))));
     // Generate the manifest
-    const generator = new GeneratorConstructor(serviceWorkerFilesystem, baseHref);
+    const generator = new Generator(serviceWorkerFilesystem, baseHref);
     const output = await generator.process(config);
     // Write the manifest
     const manifest = JSON.stringify(output, null, 2);

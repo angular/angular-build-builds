@@ -47,7 +47,6 @@ exports.VitestExecutor = void 0;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_path_1 = __importDefault(require("node:path"));
 const error_1 = require("../../../../utils/error");
-const load_esm_1 = require("../../../../utils/load-esm");
 const path_1 = require("../../../../utils/path");
 const results_1 = require("../../../application/results");
 const browser_provider_1 = require("./browser-provider");
@@ -139,7 +138,7 @@ class VitestExecutor {
         const { coverage, reporters, outputFile, workspaceRoot, browsers, debug, watch, browserViewport, } = this.options;
         let vitestNodeModule;
         try {
-            vitestNodeModule = await (0, load_esm_1.loadEsmModule)('vitest/node');
+            vitestNodeModule = await Promise.resolve().then(() => __importStar(require('vitest/node')));
         }
         catch (error) {
             (0, error_1.assertIsError)(error);
@@ -205,7 +204,7 @@ async function generateCoverageOption(coverage, projectName) {
     let defaultExcludes = [];
     if (coverage.exclude) {
         try {
-            const vitestConfig = await (0, load_esm_1.loadEsmModule)('vitest/config');
+            const vitestConfig = await Promise.resolve().then(() => __importStar(require('vitest/config')));
             defaultExcludes = vitestConfig.coverageConfigDefaults.exclude;
         }
         catch { }

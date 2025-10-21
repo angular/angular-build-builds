@@ -48,7 +48,6 @@ const core_1 = require("@babel/core");
 const node_fs_1 = __importDefault(require("node:fs"));
 const node_path_1 = __importDefault(require("node:path"));
 const piscina_1 = __importDefault(require("piscina"));
-const load_esm_1 = require("../../utils/load-esm");
 const textDecoder = new TextDecoder();
 const textEncoder = new TextEncoder();
 /**
@@ -123,7 +122,8 @@ async function requiresLinking(path, source) {
     return source.includes(LINKER_DECLARATION_PREFIX);
 }
 async function createLinkerPlugin(options) {
-    linkerPluginCreator ??= (await (0, load_esm_1.loadEsmModule)('@angular/compiler-cli/linker/babel')).createEs2015LinkerPlugin;
+    linkerPluginCreator ??= (await Promise.resolve().then(() => __importStar(require('@angular/compiler-cli/linker/babel'))))
+        .createEs2015LinkerPlugin;
     const linkerPlugin = linkerPluginCreator({
         linkerJitMode: options.jit,
         // This is a workaround until https://github.com/angular/angular/issues/42769 is fixed.

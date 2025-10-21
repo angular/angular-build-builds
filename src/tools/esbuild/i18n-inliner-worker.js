@@ -6,6 +6,39 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -17,7 +50,6 @@ const core_1 = require("@babel/core");
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_worker_threads_1 = require("node:worker_threads");
 const error_1 = require("../../utils/error");
-const load_esm_1 = require("../../utils/load-esm");
 // Extract the application files and common options used for inline requests from the Worker context
 // TODO: Evaluate overall performance difference of passing translations here as well
 const { files, missingTranslation, shouldOptimize } = (node_worker_threads_1.workerData || {});
@@ -69,7 +101,7 @@ async function loadLocalizeTools() {
     // Load ESM `@angular/localize/tools` using the TypeScript dynamic import workaround.
     // Once TypeScript provides support for keeping the dynamic import this workaround can be
     // changed to a direct dynamic import.
-    localizeToolsModule ??= await (0, load_esm_1.loadEsmModule)('@angular/localize/tools');
+    localizeToolsModule ??= await Promise.resolve().then(() => __importStar(require('@angular/localize/tools')));
     return localizeToolsModule;
 }
 /**
