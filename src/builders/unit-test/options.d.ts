@@ -19,7 +19,6 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     filter: string | undefined;
     runnerName: string;
     coverage: {
-        all: boolean | undefined;
         exclude: string[] | undefined;
         include: string[] | undefined;
         reporters: [string, Record<string, unknown>][] | undefined;

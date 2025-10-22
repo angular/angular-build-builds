@@ -149,7 +149,7 @@ class VitestExecutor {
         }
         const { startVitest } = vitestNodeModule;
         // Setup vitest browser options if configured
-        const browserOptions = (0, browser_provider_1.setupBrowserConfiguration)(browsers, debug, this.options.projectSourceRoot, browserViewport);
+        const browserOptions = await (0, browser_provider_1.setupBrowserConfiguration)(browsers, debug, this.options.projectSourceRoot, browserViewport);
         if (browserOptions.errors?.length) {
             throw new Error(browserOptions.errors.join('\n'));
         }
@@ -211,7 +211,6 @@ async function generateCoverageOption(coverage, projectName) {
     }
     return {
         enabled: true,
-        all: coverage.all,
         excludeAfterRemap: true,
         include: coverage.include,
         reportsDirectory: (0, path_1.toPosixPath)(node_path_1.default.join('coverage', projectName)),

@@ -25,11 +25,6 @@ export type Schema = {
      */
     coverage?: boolean;
     /**
-     * Includes all files that match the `coverageInclude` pattern in the coverage report, not
-     * just those touched by tests.
-     */
-    coverageAll?: boolean;
-    /**
      * Specifies glob patterns of files to exclude from the coverage report.
      */
     coverageExclude?: string[];

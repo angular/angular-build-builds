@@ -23,7 +23,6 @@ const VitestTestRunner = {
         const checker = new dependency_checker_1.DependencyChecker(options.projectSourceRoot);
         checker.check('vitest');
         if (options.browsers?.length) {
-            checker.check('@vitest/browser');
             checker.checkAny(['playwright', 'webdriverio'], 'The "browsers" option requires either "playwright" or "webdriverio" to be installed.');
         }
         else {

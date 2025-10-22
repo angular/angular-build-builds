@@ -59,9 +59,6 @@ class KarmaExecutor {
         if (unitTestOptions.setupFiles.length) {
             context.logger.warn('The "karma" test runner does not support the "setupFiles" option. The option will be ignored.');
         }
-        if (unitTestOptions.coverage?.all) {
-            context.logger.warn('The "karma" test runner does not support the "coverageAll" option. The option will be ignored.');
-        }
         if (unitTestOptions.coverage?.include) {
             context.logger.warn('The "karma" test runner does not support the "coverageInclude" option. The option will be ignored.');
         }
