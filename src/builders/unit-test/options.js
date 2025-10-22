@@ -70,7 +70,7 @@ async function normalizeOptions(context, projectName, options) {
         include: options.include ?? ['**/*.spec.ts'],
         exclude: options.exclude,
         filter,
-        runnerName: runner,
+        runnerName: runner ?? 'vitest',
         coverage: options.coverage
             ? {
                 all: options.coverageAll,

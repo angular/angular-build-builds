@@ -110,7 +110,7 @@ export type Schema = {
     /**
      * Specifies the test runner to use for test execution.
      */
-    runner: Runner;
+    runner?: Runner;
     /**
      * A list of paths to global setup files that are executed before the test files. The
      * application's polyfills and the Angular TestBed are always initialized before these files.

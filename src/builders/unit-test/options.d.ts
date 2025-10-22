@@ -17,7 +17,7 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     include: string[];
     exclude: string[] | undefined;
     filter: string | undefined;
-    runnerName: import("./schema").Runner;
+    runnerName: string;
     coverage: {
         all: boolean | undefined;
         exclude: string[] | undefined;
