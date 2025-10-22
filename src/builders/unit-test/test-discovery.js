@@ -188,13 +188,16 @@ async function resolveStaticPattern(pattern, projectSourceRoot) {
         const infixes = TEST_FILE_INFIXES.map((p) => p.substring(1)).join('|');
         return { resolved: [], unresolved: [`${pattern}/**/*.@(${infixes}).@(ts|tsx)`] };
     }
-    const fileExt = (0, node_path_1.extname)(pattern);
-    const baseName = (0, node_path_1.basename)(pattern, fileExt);
+    const fileExt = (0, node_path_1.extname)(fullPath);
+    const baseName = (0, node_path_1.basename)(fullPath, fileExt);
     for (const infix of TEST_FILE_INFIXES) {
-        const potentialSpec = (0, node_path_1.join)(projectSourceRoot, (0, node_path_1.dirname)(pattern), `${baseName}${infix}${fileExt}`);
+        const potentialSpec = (0, node_path_1.join)((0, node_path_1.dirname)(fullPath), `${baseName}${infix}${fileExt}`);
         if (await exists(potentialSpec)) {
             return { resolved: [potentialSpec], unresolved: [] };
         }
+    }
+    if (await exists(fullPath)) {
+        return { resolved: [fullPath], unresolved: [] };
     }
     return { resolved: [], unresolved: [pattern] };
 }
