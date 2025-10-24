@@ -135,7 +135,7 @@ class VitestExecutor {
         return testSetupFiles;
     }
     async initializeVitest() {
-        const { coverage, reporters, outputFile, workspaceRoot, browsers, debug, watch, browserViewport, } = this.options;
+        const { coverage, reporters, outputFile, workspaceRoot, browsers, debug, watch, browserViewport, ui, } = this.options;
         let vitestNodeModule;
         try {
             vitestNodeModule = await Promise.resolve().then(() => __importStar(require('vitest/node')));
@@ -182,6 +182,7 @@ class VitestExecutor {
             reporters: reporters ?? ['default'],
             outputFile,
             watch,
+            ui,
             coverage: await generateCoverageOption(coverage, this.projectName),
             ...debugOptions,
         }, {
