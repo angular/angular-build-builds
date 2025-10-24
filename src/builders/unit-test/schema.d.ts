@@ -118,6 +118,11 @@ export type Schema = {
      */
     tsConfig?: string;
     /**
+     * Enables the Vitest UI for interactive test execution. This option is only available for
+     * the Vitest runner.
+     */
+    ui?: boolean;
+    /**
      * Enables watch mode, which re-runs tests when source files change. Defaults to `true` in
      * TTY environments and `false` otherwise.
      */
