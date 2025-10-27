@@ -39,8 +39,13 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.KarmaExecutor = void 0;
+const promises_1 = __importDefault(require("node:fs/promises"));
+const node_path_1 = __importDefault(require("node:path"));
 class KarmaExecutor {
     context;
     options;
@@ -63,7 +68,24 @@ class KarmaExecutor {
             context.logger.warn('The "karma" test runner does not support the "coverageInclude" option. The option will be ignored.');
         }
         const buildTargetOptions = (await context.validateOptions(await context.getTargetOptions(unitTestOptions.buildTarget), await context.getBuilderNameForTarget(unitTestOptions.buildTarget)));
+        let karmaConfig;
+        if (typeof unitTestOptions.runnerConfig === 'string') {
+            karmaConfig = unitTestOptions.runnerConfig;
+            context.logger.info(`Using Karma configuration file: ${karmaConfig}`);
+        }
+        else if (unitTestOptions.runnerConfig) {
+            const potentialPath = node_path_1.default.join(unitTestOptions.projectRoot, 'karma.conf.js');
+            try {
+                await promises_1.default.access(potentialPath);
+                karmaConfig = potentialPath;
+                context.logger.info(`Using Karma configuration file: ${karmaConfig}`);
+            }
+            catch {
+                context.logger.info('No Karma configuration file found. Using default configuration.');
+            }
+        }
         const karmaOptions = {
+            karmaConfig,
             tsConfig: unitTestOptions.tsConfig ?? buildTargetOptions.tsConfig,
             polyfills: buildTargetOptions.polyfills,
             assets: buildTargetOptions.assets,

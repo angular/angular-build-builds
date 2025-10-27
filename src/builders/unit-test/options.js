@@ -43,7 +43,7 @@ async function normalizeOptions(context, projectName, options) {
     // Target specifier defaults to the current project's build target using a development configuration
     const buildTargetSpecifier = options.buildTarget ?? `::development`;
     const buildTarget = (0, architect_1.targetFromTargetString)(buildTargetSpecifier, projectName, 'build');
-    const { runner, browsers, progress, filter, browserViewport, ui } = options;
+    const { runner, browsers, progress, filter, browserViewport, ui, runnerConfig } = options;
     if (ui && runner !== 'vitest') {
         throw new Error('The "ui" option is only available for the "vitest" runner.');
     }
@@ -105,6 +105,7 @@ async function normalizeOptions(context, projectName, options) {
             : [],
         dumpVirtualFiles: options.dumpVirtualFiles,
         listTests: options.listTests,
+        runnerConfig: typeof runnerConfig === 'string' ? node_path_1.default.join(workspaceRoot, runnerConfig) : runnerConfig,
     };
 }
 function injectTestingPolyfills(polyfills = []) {
