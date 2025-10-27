@@ -107,6 +107,16 @@ export type Schema = {
      */
     runner?: Runner;
     /**
+     * Specifies the configuration file for the selected test runner. If a string is provided,
+     * it will be used as the path to the configuration file. If `true`, the builder will search
+     * for a default configuration file (e.g., `vitest.config.ts` or `karma.conf.js`). If
+     * `false`, no external configuration file will be used.\nFor Vitest, this enables advanced
+     * options and the use of custom plugins. Please note that while the file is loaded, the
+     * Angular team does not provide direct support for its specific contents or any third-party
+     * plugins used within it.
+     */
+    runnerConfig?: RunnerConfig;
+    /**
      * A list of paths to global setup files that are executed before the test files. The
      * application's polyfills and the Angular TestBed are always initialized before these files.
      */
@@ -201,3 +211,13 @@ export declare enum Runner {
     Karma = "karma",
     Vitest = "vitest"
 }
+/**
+ * Specifies the configuration file for the selected test runner. If a string is provided,
+ * it will be used as the path to the configuration file. If `true`, the builder will search
+ * for a default configuration file (e.g., `vitest.config.ts` or `karma.conf.js`). If
+ * `false`, no external configuration file will be used.\nFor Vitest, this enables advanced
+ * options and the use of custom plugins. Please note that while the file is loaded, the
+ * Angular team does not provide direct support for its specific contents or any third-party
+ * plugins used within it.
+ */
+export type RunnerConfig = boolean | string;
