@@ -207,7 +207,6 @@ async function* execute(options, context, extensions) {
         context.logger.error(`The builder requires a target to be specified.`);
         return;
     }
-    context.logger.warn(`NOTE: The "unit-test" builder is currently EXPERIMENTAL and not ready for production use.`);
     // Initialize the test runner and normalize options
     let runner;
     let normalizedOptions;
