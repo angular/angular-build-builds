@@ -44,6 +44,7 @@ const node_worker_threads_1 = require("node:worker_threads");
 const fetch_patch_1 = require("./fetch-patch");
 const launch_server_1 = require("./launch-server");
 const load_esm_from_memory_1 = require("./load-esm-from-memory");
+const utils_1 = require("./utils");
 /**
  * This is passed as workerData when setting up the worker via the `piscina` package.
  */
@@ -58,7 +59,11 @@ async function renderPage({ url }) {
         allowStaticRouteRender: true,
     });
     const response = await angularServerApp.handle(new Request(new URL(url, serverURL), { signal: AbortSignal.timeout(30_000) }));
-    return response ? response.text() : null;
+    if (!response) {
+        return null;
+    }
+    const location = response.headers.get('Location');
+    return location ? (0, utils_1.generateRedirectStaticPage)(location) : response.text();
 }
 async function initialize() {
     // Load the compiler because `@angular/ssr/node` depends on `@angular/` packages,
