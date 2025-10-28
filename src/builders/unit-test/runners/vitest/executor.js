@@ -46,6 +46,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.VitestExecutor = void 0;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_path_1 = __importDefault(require("node:path"));
+const picomatch_1 = require("picomatch");
 const error_1 = require("../../../../utils/error");
 const path_1 = require("../../../../utils/path");
 const results_1 = require("../../../application/results");
@@ -137,7 +138,9 @@ class VitestExecutor {
     async initializeVitest() {
         const { coverage, reporters, outputFile, workspaceRoot, browsers, debug, watch, browserViewport, ui, } = this.options;
         let vitestNodeModule;
+        let vitestCoverageModule;
         try {
+            vitestCoverageModule = await Promise.resolve().then(() => __importStar(require('vitest/coverage')));
             vitestNodeModule = await Promise.resolve().then(() => __importStar(require('vitest/node')));
         }
         catch (error) {
@@ -148,6 +151,21 @@ class VitestExecutor {
             throw new Error('The `vitest` package was not found. Please install the package and rerun the test command.');
         }
         const { startVitest } = vitestNodeModule;
+        // Augment BaseCoverageProvider to include logic to support the built virtual files.
+        // Temporary workaround to avoid the direct filesystem checks in the base provider that
+        // were introduced in v4. Also ensures that all built virtual files are available.
+        const builtVirtualFiles = this.buildResultFiles;
+        vitestCoverageModule.BaseCoverageProvider.prototype.isIncluded = function (filename) {
+            const relativeFilename = node_path_1.default.relative(workspaceRoot, filename);
+            if (!this.options.include || builtVirtualFiles.has(relativeFilename)) {
+                return !(0, picomatch_1.isMatch)(relativeFilename, this.options.exclude);
+            }
+            else {
+                return (0, picomatch_1.isMatch)(relativeFilename, this.options.include, {
+                    ignore: this.options.exclude,
+                });
+            }
+        };
         // Setup vitest browser options if configured
         const browserOptions = await (0, browser_provider_1.setupBrowserConfiguration)(browsers, debug, this.options.projectSourceRoot, browserViewport);
         if (browserOptions.errors?.length) {
