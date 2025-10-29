@@ -184,6 +184,8 @@ function injectKarmaReporter(buildOptions, buildIterator, karmaConfig, controlle
         emitter;
         latestBuildFiles;
         static $inject = ['emitter', LATEST_BUILD_FILES_TOKEN];
+        // Needed for the karma reporter interface, see https://github.com/angular/angular-cli/issues/31629
+        adapters = [];
         constructor(emitter, latestBuildFiles) {
             this.emitter = emitter;
             this.latestBuildFiles = latestBuildFiles;
