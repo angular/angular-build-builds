@@ -51,6 +51,7 @@ const error_1 = require("../../../../utils/error");
 const path_1 = require("../../../../utils/path");
 const results_1 = require("../../../application/results");
 const browser_provider_1 = require("./browser-provider");
+const configuration_1 = require("./configuration");
 const plugins_1 = require("./plugins");
 class VitestExecutor {
     vitest;
@@ -189,8 +190,11 @@ class VitestExecutor {
                 fileParallelism: false,
             }
             : {};
+        const runnerConfig = this.options.runnerConfig;
         return startVitest('test', undefined, {
-            config: this.options.runnerConfig === true ? undefined : this.options.runnerConfig,
+            config: runnerConfig === true
+                ? await (0, configuration_1.findVitestBaseConfig)([this.options.projectRoot, this.options.workspaceRoot])
+                : runnerConfig,
             root: workspaceRoot,
             project: ['base', this.projectName],
             name: 'base',
