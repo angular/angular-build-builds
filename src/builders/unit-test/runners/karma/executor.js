@@ -104,8 +104,8 @@ class KarmaExecutor {
             poll: buildTargetOptions.poll,
             preserveSymlinks: buildTargetOptions.preserveSymlinks,
             browsers: unitTestOptions.browsers?.join(','),
-            codeCoverage: !!unitTestOptions.coverage,
-            codeCoverageExclude: unitTestOptions.coverage?.exclude,
+            codeCoverage: unitTestOptions.coverage.enabled,
+            codeCoverageExclude: unitTestOptions.coverage.exclude,
             fileReplacements: buildTargetOptions.fileReplacements,
             reporters: unitTestOptions.reporters?.map((reporter) => {
                 // Karma only supports string reporters.
@@ -133,7 +133,7 @@ class KarmaExecutor {
                     options.client.args.push('--grep', filter);
                 }
                 // Add coverage options
-                if (unitTestOptions.coverage) {
+                if (unitTestOptions.coverage.enabled) {
                     const { thresholds, watermarks } = unitTestOptions.coverage;
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const coverageReporter = (options.coverageReporter ??= {});

@@ -29,7 +29,7 @@ const VitestTestRunner = {
             // JSDOM is used when no browsers are specified
             checker.check('jsdom');
         }
-        if (options.coverage) {
+        if (options.coverage.enabled) {
             checker.check('@vitest/coverage-v8');
         }
         checker.report();
