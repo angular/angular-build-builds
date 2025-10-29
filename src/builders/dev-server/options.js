@@ -73,7 +73,7 @@ async function normalizeOptions(context, projectName, options) {
         }
     }
     // Initial options to keep
-    const { host, port, poll, open, verbose, watch, liveReload, hmr, headers, proxyConfig, servePath, ssl, sslCert, sslKey, prebundle, allowedHosts, } = options;
+    const { host, port, poll, open, verbose, define, watch, liveReload, hmr, headers, proxyConfig, servePath, ssl, sslCert, sslKey, prebundle, allowedHosts, } = options;
     // Return all the normalized options
     return {
         buildTarget,
@@ -82,6 +82,7 @@ async function normalizeOptions(context, projectName, options) {
         poll,
         open,
         verbose,
+        define,
         watch,
         liveReload: !!liveReload,
         hmr: hmr ?? !!liveReload,

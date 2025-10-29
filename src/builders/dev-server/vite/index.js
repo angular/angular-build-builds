@@ -60,7 +60,7 @@ const utils_2 = require("./utils");
  * Build options that are also present on the dev server but are only passed
  * to the build.
  */
-const CONVENIENCE_BUILD_OPTIONS = ['watch', 'poll', 'verbose'];
+const CONVENIENCE_BUILD_OPTIONS = ['watch', 'poll', 'verbose', 'define'];
 // eslint-disable-next-line max-lines-per-function
 async function* serveWithVite(serverOptions, builderName, builderAction, context, transformers, extensions) {
     // Get the browser configuration from the target name.
@@ -71,7 +71,16 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
     for (const optionName of CONVENIENCE_BUILD_OPTIONS) {
         const optionValue = serverOptions[optionName];
         if (optionValue !== undefined) {
-            rawBrowserOptions[optionName] = optionValue;
+            if (optionName === 'define' && rawBrowserOptions[optionName]) {
+                // Define has merging behavior within the application
+                for (const [key, value] of Object.entries(optionValue)) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    rawBrowserOptions[optionName][key] = value;
+                }
+            }
+            else {
+                rawBrowserOptions[optionName] = optionValue;
+            }
         }
     }
     // TODO: Adjust architect to not force a JsonObject derived return type
