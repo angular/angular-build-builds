@@ -78,7 +78,7 @@ async function setupBrowserConfiguration(browsers, debug, projectSourceRoot, vie
     if (providerName) {
         const providerPackage = `@vitest/browser-${providerName}`;
         try {
-            const providerModule = await Promise.resolve(`${providerPackage}`).then(s => __importStar(require(s)));
+            const providerModule = await Promise.resolve(`${projectResolver(providerPackage)}`).then(s => __importStar(require(s)));
             // Validate that the imported module has the expected structure
             const providerFactory = providerModule[providerName];
             if (typeof providerFactory === 'function') {
