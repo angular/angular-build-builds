@@ -216,11 +216,6 @@ class VitestExecutor {
 }
 exports.VitestExecutor = VitestExecutor;
 async function generateCoverageOption(coverage, projectName) {
-    if (!coverage) {
-        return {
-            enabled: false,
-        };
-    }
     let defaultExcludes = [];
     if (coverage.exclude) {
         try {
@@ -230,7 +225,7 @@ async function generateCoverageOption(coverage, projectName) {
         catch { }
     }
     return {
-        enabled: true,
+        enabled: coverage.enabled,
         excludeAfterRemap: true,
         include: coverage.include,
         reportsDirectory: (0, path_1.toPosixPath)(node_path_1.default.join('coverage', projectName)),

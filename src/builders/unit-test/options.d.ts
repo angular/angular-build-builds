@@ -19,6 +19,7 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     filter: string | undefined;
     runnerName: string;
     coverage: {
+        enabled: boolean | undefined;
         exclude: string[] | undefined;
         include: string[] | undefined;
         reporters: [string, Record<string, unknown>][] | undefined;
@@ -29,7 +30,7 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
             functions?: [number, number];
             lines?: [number, number];
         };
-    } | undefined;
+    };
     tsConfig: string | undefined;
     buildProgress: boolean | undefined;
     reporters: [string, Record<string, unknown>][] | undefined;
