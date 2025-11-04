@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "21.0.0-rc.0+sha-5d30887",
+  "version": "21.0.0-rc.0+sha-62938e7",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -23,7 +23,7 @@
   "builders": "builders.json",
   "dependencies": {
     "@ampproject/remapping": "2.3.0",
-    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#5d30887",
+    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#62938e7",
     "@babel/core": "7.28.4",
     "@babel/helper-annotate-as-pure": "7.27.3",
     "@babel/helper-split-export-declaration": "7.24.7",
@@ -60,7 +60,7 @@
     "@angular/platform-browser": "^21.0.0-next.0",
     "@angular/platform-server": "^21.0.0-next.0",
     "@angular/service-worker": "^21.0.0-next.0",
-    "@angular/ssr": "github:angular/angular-ssr-builds#5d30887",
+    "@angular/ssr": "github:angular/angular-ssr-builds#62938e7",
     "karma": "^6.4.0",
     "less": "^4.2.0",
     "ng-packagr": "^21.0.0-next.0",
@@ -68,7 +68,7 @@
     "tailwindcss": "^2.0.0 || ^3.0.0 || ^4.0.0",
     "tslib": "^2.3.0",
     "typescript": ">=5.9 <6.0",
-    "vitest": "^4.0.0"
+    "vitest": "^4.0.6"
   },
   "peerDependenciesMeta": {
     "@angular/core": {
