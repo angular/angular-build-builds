@@ -63,9 +63,9 @@ var OutputHashing;
     OutputHashing["None"] = "none";
 })(OutputHashing || (exports.OutputHashing = OutputHashing = {}));
 /**
- * Defines the build output target. 'static': Generates a static site for deployment on any
- * static hosting service. 'server': Produces an application designed for deployment on a
- * server that supports server-side rendering (SSR).
+ * Defines the type of build output artifact. 'static': Generates a static site build
+ * artifact for deployment on any static hosting service. 'server': Generates a server
+ * application build artifact, required for applications using hybrid rendering or APIs.
  */
 var OutputMode;
 (function (OutputMode) {
