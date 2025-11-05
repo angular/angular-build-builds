@@ -23,7 +23,13 @@ const VitestTestRunner = {
         const checker = new dependency_checker_1.DependencyChecker(options.projectSourceRoot);
         checker.check('vitest');
         if (options.browsers?.length) {
-            checker.checkAny(['playwright', 'webdriverio'], 'The "browsers" option requires either "playwright" or "webdriverio" to be installed.');
+            if (process.versions.webcontainer) {
+                checker.check('@vitest/browser-preview');
+            }
+            else {
+                checker.checkAny(['@vitest/browser-playwright', '@vitest/browser-webdriverio', '@vitest/browser-preview'], 'The "browsers" option requires either ' +
+                    '"@vitest/browser-playwright", "@vitest/browser-webdriverio", or "@vitest/browser-preview" to be installed.');
+            }
         }
         else {
             // JSDOM is used when no browsers are specified
@@ -40,6 +46,9 @@ const VitestTestRunner = {
     async createExecutor(context, options, testEntryPointMappings) {
         const projectName = context.target?.project;
         (0, node_assert_1.default)(projectName, 'The builder requires a target.');
+        if (!!process.versions.webcontainer && options.browsers?.length) {
+            context.logger.info(`Webcontainer environment detected. Using '@vitest/browser-preview' for browser-based tests.`);
+        }
         if (typeof options.runnerConfig === 'string') {
             context.logger.info(`Using Vitest configuration file: ${options.runnerConfig}`);
         }
