@@ -6,16 +6,83 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.createVitestConfigPlugin = createVitestConfigPlugin;
 exports.createVitestPlugins = createVitestPlugins;
 const node_assert_1 = __importDefault(require("node:assert"));
 const promises_1 = require("node:fs/promises");
 const node_path_1 = __importDefault(require("node:path"));
 const assets_middleware_1 = require("../../../../tools/vite/middlewares/assets-middleware");
 const path_1 = require("../../../../utils/path");
+function createVitestConfigPlugin(options) {
+    const { include, browser, projectName, reporters, setupFiles, projectPlugins } = options;
+    return {
+        name: 'angular:vitest-configuration',
+        async config(config) {
+            const testConfig = config.test;
+            const projectConfig = {
+                test: {
+                    ...testConfig,
+                    name: projectName,
+                    setupFiles,
+                    include,
+                    globals: testConfig?.globals ?? true,
+                    ...(browser ? { browser } : {}),
+                    // If the user has not specified an environment, use `jsdom`.
+                    ...(!testConfig?.environment ? { environment: 'jsdom' } : {}),
+                },
+                optimizeDeps: {
+                    noDiscovery: true,
+                },
+                plugins: projectPlugins,
+            };
+            return {
+                test: {
+                    coverage: await generateCoverageOption(options.coverage, projectName),
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    ...(reporters ? { reporters } : {}),
+                    projects: [projectConfig],
+                },
+            };
+        },
+    };
+}
 function createVitestPlugins(pluginOptions) {
     const { workspaceRoot, buildResultFiles, testFileToEntryPoint } = pluginOptions;
     return [
@@ -112,5 +179,37 @@ function createVitestPlugins(pluginOptions) {
             },
         },
     ];
+}
+async function generateCoverageOption(coverage, projectName) {
+    let defaultExcludes = [];
+    if (coverage.exclude) {
+        try {
+            const vitestConfig = await Promise.resolve().then(() => __importStar(require('vitest/config')));
+            defaultExcludes = vitestConfig.coverageConfigDefaults.exclude;
+        }
+        catch { }
+    }
+    return {
+        enabled: coverage.enabled,
+        excludeAfterRemap: true,
+        include: coverage.include,
+        reportsDirectory: (0, path_1.toPosixPath)(node_path_1.default.join('coverage', projectName)),
+        thresholds: coverage.thresholds,
+        watermarks: coverage.watermarks,
+        // Special handling for `exclude`/`reporters` due to an undefined value causing upstream failures
+        ...(coverage.exclude
+            ? {
+                exclude: [
+                    // Augment the default exclude https://vitest.dev/config/#coverage-exclude
+                    // with the user defined exclusions
+                    ...coverage.exclude,
+                    ...defaultExcludes,
+                ],
+            }
+            : {}),
+        ...(coverage.reporters
+            ? { reporter: coverage.reporters }
+            : {}),
+    };
 }
 //# sourceMappingURL=plugins.js.map
