@@ -47,7 +47,6 @@ exports.VitestExecutor = void 0;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_path_1 = __importDefault(require("node:path"));
 const error_1 = require("../../../../utils/error");
-const path_1 = require("../../../../utils/path");
 const results_1 = require("../../../application/results");
 const browser_provider_1 = require("./browser-provider");
 const configuration_1 = require("./configuration");
@@ -104,7 +103,7 @@ class VitestExecutor {
                 if (source) {
                     modifiedSourceFiles.add(source);
                 }
-                vitest.invalidateFile((0, path_1.toPosixPath)(node_path_1.default.join(this.options.workspaceRoot, modifiedFile)));
+                vitest.invalidateFile(this.normalizePath(node_path_1.default.join(this.options.workspaceRoot, modifiedFile)));
             }
             const specsToRerun = [];
             for (const file of modifiedSourceFiles) {
@@ -137,6 +136,7 @@ class VitestExecutor {
     }
     async initializeVitest() {
         const { coverage, reporters, outputFile, workspaceRoot, browsers, debug, watch, browserViewport, ui, } = this.options;
+        const projectName = this.projectName;
         let vitestNodeModule;
         try {
             vitestNodeModule = await Promise.resolve().then(() => __importStar(require('vitest/node')));
@@ -156,12 +156,10 @@ class VitestExecutor {
         }
         (0, node_assert_1.default)(this.buildResultFiles.size > 0, 'buildResult must be available before initializing vitest');
         const testSetupFiles = this.prepareSetupFiles();
-        const plugins = (0, plugins_1.createVitestPlugins)({
+        const projectPlugins = (0, plugins_1.createVitestPlugins)({
             workspaceRoot,
             projectSourceRoot: this.options.projectSourceRoot,
-            projectName: this.projectName,
-            include: this.options.include,
-            exclude: this.options.exclude,
+            projectName,
             buildResultFiles: this.buildResultFiles,
             testFileToEntryPoint: this.testFileToEntryPoint,
         });
@@ -176,7 +174,6 @@ class VitestExecutor {
         const externalConfigPath = runnerConfig === true
             ? await (0, configuration_1.findVitestBaseConfig)([this.options.projectRoot, this.options.workspaceRoot])
             : runnerConfig;
-        const projectName = this.projectName;
         return startVitest('test', undefined, {
             config: externalConfigPath,
             root: workspaceRoot,
@@ -187,68 +184,24 @@ class VitestExecutor {
             ui,
             ...debugOptions,
         }, {
-            test: {
-                coverage: await generateCoverageOption(coverage, this.projectName),
-                ...(reporters ? { reporters } : {}),
-                projects: [
-                    {
-                        extends: externalConfigPath || true,
-                        test: {
-                            name: projectName,
-                            globals: true,
-                            setupFiles: testSetupFiles,
-                            ...(this.options.exclude ? { exclude: this.options.exclude } : {}),
-                            browser: browserOptions.browser,
-                            // Use `jsdom` if no browsers are explicitly configured.
-                            ...(browserOptions.browser ? {} : { environment: 'jsdom' }),
-                            ...(this.options.include ? { include: this.options.include } : {}),
-                        },
-                        optimizeDeps: {
-                            noDiscovery: true,
-                        },
-                        plugins,
-                    },
-                ],
-            },
             server: {
                 // Disable the actual file watcher. The boolean watch option above should still
                 // be enabled as it controls other internal behavior related to rerunning tests.
                 watch: null,
             },
+            plugins: [
+                (0, plugins_1.createVitestConfigPlugin)({
+                    browser: browserOptions.browser,
+                    coverage,
+                    projectName,
+                    reporters,
+                    setupFiles: testSetupFiles,
+                    projectPlugins,
+                    include: [...this.testFileToEntryPoint.keys()],
+                }),
+            ],
         });
     }
 }
 exports.VitestExecutor = VitestExecutor;
-async function generateCoverageOption(coverage, projectName) {
-    let defaultExcludes = [];
-    if (coverage.exclude) {
-        try {
-            const vitestConfig = await Promise.resolve().then(() => __importStar(require('vitest/config')));
-            defaultExcludes = vitestConfig.coverageConfigDefaults.exclude;
-        }
-        catch { }
-    }
-    return {
-        enabled: coverage.enabled,
-        excludeAfterRemap: true,
-        include: coverage.include,
-        reportsDirectory: (0, path_1.toPosixPath)(node_path_1.default.join('coverage', projectName)),
-        thresholds: coverage.thresholds,
-        watermarks: coverage.watermarks,
-        // Special handling for `exclude`/`reporters` due to an undefined value causing upstream failures
-        ...(coverage.exclude
-            ? {
-                exclude: [
-                    // Augment the default exclude https://vitest.dev/config/#coverage-exclude
-                    // with the user defined exclusions
-                    ...coverage.exclude,
-                    ...defaultExcludes,
-                ],
-            }
-            : {}),
-        ...(coverage.reporters
-            ? { reporter: coverage.reporters }
-            : {}),
-    };
-}
 //# sourceMappingURL=executor.js.map
