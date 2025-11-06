@@ -188,6 +188,12 @@ async function* runBuildAndTest(executor, applicationBuildOptions, context, dump
         catch (e) {
             (0, error_1.assertIsError)(e);
             context.logger.error(`An exception occurred during test execution:\n${e.stack ?? e.message}`);
+            if (e instanceof AggregateError) {
+                e.errors.forEach((inner) => {
+                    (0, error_1.assertIsError)(inner);
+                    context.logger.error(inner.stack ?? inner.message);
+                });
+            }
             yield { success: false };
             consecutiveErrorCount++;
         }
