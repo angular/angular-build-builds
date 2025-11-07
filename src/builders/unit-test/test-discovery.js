@@ -6,10 +6,14 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.findTests = findTests;
 exports.getTestEntrypoints = getTestEntrypoints;
 const node_fs_1 = require("node:fs");
+const node_os_1 = __importDefault(require("node:os"));
 const node_path_1 = require("node:path");
 const tinyglobby_1 = require("tinyglobby");
 const path_1 = require("../../utils/path");
@@ -125,14 +129,31 @@ function generateNameFromPath(testFile, roots, removeTestExtension) {
     }
     return result;
 }
-/** Removes a leading slash from a path. */
-const removeLeadingSlash = (path) => {
-    return path.startsWith('/') ? path.substring(1) : path;
-};
-/** Removes a prefix from the beginning of a string. */
-const removePrefix = (str, prefix) => {
-    return str.startsWith(prefix) ? str.substring(prefix.length) : str;
-};
+/**
+ * Whether the current operating system's filesystem is case-insensitive.
+ */
+const isCaseInsensitiveFilesystem = node_os_1.default.platform() === 'win32' || node_os_1.default.platform() === 'darwin';
+/**
+ * Removes a prefix from the beginning of a string, with conditional case-insensitivity
+ * based on the operating system's filesystem characteristics.
+ *
+ * @param text The string to remove the prefix from.
+ * @param prefix The prefix to remove.
+ * @returns The string with the prefix removed, or the original string if the prefix was not found.
+ */
+function removePrefix(text, prefix) {
+    if (isCaseInsensitiveFilesystem) {
+        if (text.toLowerCase().startsWith(prefix.toLowerCase())) {
+            return text.substring(prefix.length);
+        }
+    }
+    else {
+        if (text.startsWith(prefix)) {
+            return text.substring(prefix.length);
+        }
+    }
+    return text;
+}
 /**
  * Removes potential root paths from a file path, returning a relative path.
  * If no root path matches, it returns the file's basename.
@@ -143,8 +164,10 @@ const removePrefix = (str, prefix) => {
  */
 function removeRoots(path, roots) {
     for (const root of roots) {
-        if (path.startsWith(root)) {
-            return path.substring(root.length);
+        const result = removePrefix(path, root);
+        // If the prefix was removed, the result will be a different string.
+        if (result !== path) {
+            return result;
         }
     }
     return (0, node_path_1.basename)(path);
@@ -158,13 +181,15 @@ function removeRoots(path, roots) {
  * @returns A normalized glob pattern.
  */
 function normalizePattern(pattern, projectRootPrefix) {
-    let normalizedPattern = (0, path_1.toPosixPath)(pattern);
-    normalizedPattern = removeLeadingSlash(normalizedPattern);
-    // Some IDEs and tools may provide patterns relative to the workspace root.
-    // To ensure the glob operates correctly within the project's source root,
-    // we remove the project's relative path from the front of the pattern.
-    normalizedPattern = removePrefix(normalizedPattern, projectRootPrefix);
-    return normalizedPattern;
+    const posixPattern = (0, path_1.toPosixPath)(pattern);
+    // Do not modify absolute paths. The globber will handle them correctly.
+    if ((0, node_path_1.isAbsolute)(posixPattern)) {
+        return posixPattern;
+    }
+    // For relative paths, ensure they are correctly relative to the project source root.
+    // This involves removing the project root prefix if the user provided a workspace-relative path.
+    const normalizedRelative = removePrefix(posixPattern, projectRootPrefix);
+    return normalizedRelative;
 }
 /**
  * Resolves a static (non-glob) path.

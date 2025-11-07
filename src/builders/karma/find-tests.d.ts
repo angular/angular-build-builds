@@ -5,4 +5,5 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-export { findTests, getTestEntrypoints } from '../unit-test/test-discovery';
+export { getTestEntrypoints } from '../unit-test/test-discovery';
+export declare function findTests(include: string[], exclude: string[], workspaceRoot: string, projectSourceRoot: string): Promise<string[]>;
