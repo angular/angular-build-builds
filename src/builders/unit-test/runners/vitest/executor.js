@@ -194,6 +194,7 @@ class VitestExecutor {
                     browser: browserOptions.browser,
                     coverage,
                     projectName,
+                    projectSourceRoot: this.options.projectSourceRoot,
                     reporters,
                     setupFiles: testSetupFiles,
                     projectPlugins,
