@@ -47,15 +47,27 @@ exports.createVitestConfigPlugin = createVitestConfigPlugin;
 exports.createVitestPlugins = createVitestPlugins;
 const node_assert_1 = __importDefault(require("node:assert"));
 const promises_1 = require("node:fs/promises");
+const node_module_1 = require("node:module");
 const node_path_1 = __importDefault(require("node:path"));
 const assets_middleware_1 = require("../../../../tools/vite/middlewares/assets-middleware");
 const path_1 = require("../../../../utils/path");
+async function findTestEnvironment(projectResolver) {
+    try {
+        projectResolver('happy-dom');
+        return 'happy-dom';
+    }
+    catch {
+        // happy-dom is not installed, fallback to jsdom
+        return 'jsdom';
+    }
+}
 function createVitestConfigPlugin(options) {
-    const { include, browser, projectName, reporters, setupFiles, projectPlugins } = options;
+    const { include, browser, projectName, reporters, setupFiles, projectPlugins, projectSourceRoot, } = options;
     return {
         name: 'angular:vitest-configuration',
         async config(config) {
             const testConfig = config.test;
+            const projectResolver = (0, node_module_1.createRequire)(projectSourceRoot + '/').resolve;
             const projectConfig = {
                 test: {
                     ...testConfig,
@@ -64,8 +76,10 @@ function createVitestConfigPlugin(options) {
                     include,
                     globals: testConfig?.globals ?? true,
                     ...(browser ? { browser } : {}),
-                    // If the user has not specified an environment, use `jsdom`.
-                    ...(!testConfig?.environment ? { environment: 'jsdom' } : {}),
+                    // If the user has not specified an environment, use a smart default.
+                    ...(!testConfig?.environment
+                        ? { environment: await findTestEnvironment(projectResolver) }
+                        : {}),
                 },
                 optimizeDeps: {
                     noDiscovery: true,

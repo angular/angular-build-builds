@@ -20,6 +20,7 @@ interface VitestConfigPluginOptions {
     browser: BrowserConfigOptions | undefined;
     coverage: NormalizedUnitTestBuilderOptions['coverage'];
     projectName: string;
+    projectSourceRoot: string;
     reporters?: string[] | [string, object][];
     setupFiles: string[];
     projectPlugins: VitestPlugins;
