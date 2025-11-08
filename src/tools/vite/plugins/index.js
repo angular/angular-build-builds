@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createAngularSsrTransformPlugin = exports.ServerSsrMode = exports.createAngularSetupMiddlewaresPlugin = exports.createRemoveIdPrefixPlugin = exports.createAngularMemoryPlugin = void 0;
+exports.createAngularServerSideSSLPlugin = exports.createAngularSsrTransformPlugin = exports.ServerSsrMode = exports.createAngularSetupMiddlewaresPlugin = exports.createRemoveIdPrefixPlugin = exports.createAngularMemoryPlugin = void 0;
 var angular_memory_plugin_1 = require("./angular-memory-plugin");
 Object.defineProperty(exports, "createAngularMemoryPlugin", { enumerable: true, get: function () { return angular_memory_plugin_1.createAngularMemoryPlugin; } });
 var id_prefix_plugin_1 = require("./id-prefix-plugin");
@@ -17,4 +17,6 @@ Object.defineProperty(exports, "createAngularSetupMiddlewaresPlugin", { enumerab
 Object.defineProperty(exports, "ServerSsrMode", { enumerable: true, get: function () { return setup_middlewares_plugin_1.ServerSsrMode; } });
 var ssr_transform_plugin_1 = require("./ssr-transform-plugin");
 Object.defineProperty(exports, "createAngularSsrTransformPlugin", { enumerable: true, get: function () { return ssr_transform_plugin_1.createAngularSsrTransformPlugin; } });
+var ssr_ssl_plugin_1 = require("./ssr-ssl-plugin");
+Object.defineProperty(exports, "createAngularServerSideSSLPlugin", { enumerable: true, get: function () { return ssr_ssl_plugin_1.createAngularServerSideSSLPlugin; } });
 //# sourceMappingURL=index.js.map

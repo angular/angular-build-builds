@@ -9,3 +9,4 @@ export { createAngularMemoryPlugin } from './angular-memory-plugin';
 export { createRemoveIdPrefixPlugin } from './id-prefix-plugin';
 export { createAngularSetupMiddlewaresPlugin, ServerSsrMode } from './setup-middlewares-plugin';
 export { createAngularSsrTransformPlugin } from './ssr-transform-plugin';
+export { createAngularServerSideSSLPlugin } from './ssr-ssl-plugin';
