@@ -67,12 +67,45 @@ function createVitestConfigPlugin(options) {
         name: 'angular:vitest-configuration',
         async config(config) {
             const testConfig = config.test;
+            if (testConfig?.projects?.length) {
+                this.warn('The "test.projects" option in the Vitest configuration file is not supported. ' +
+                    'The Angular CLI Test system will construct its own project configuration.');
+                delete testConfig.projects;
+            }
+            if (testConfig?.include) {
+                this.warn('The "test.include" option in the Vitest configuration file is not supported. ' +
+                    'The Angular CLI Test system will manage test file discovery.');
+                delete testConfig.include;
+            }
+            // The user's setup files should be appended to the CLI's setup files.
+            const combinedSetupFiles = [...setupFiles];
+            if (testConfig?.setupFiles) {
+                if (typeof testConfig.setupFiles === 'string') {
+                    combinedSetupFiles.push(testConfig.setupFiles);
+                }
+                else if (Array.isArray(testConfig.setupFiles)) {
+                    combinedSetupFiles.push(...testConfig.setupFiles);
+                }
+                delete testConfig.setupFiles;
+            }
+            // Merge user-defined plugins from the Vitest config with the CLI's internal plugins.
+            if (config.plugins) {
+                const userPlugins = config.plugins.filter((plugin) => 
+                // Only inspect objects with a `name` property as these would be the internal injected plugins
+                !plugin ||
+                    typeof plugin !== 'object' ||
+                    !('name' in plugin) ||
+                    (!plugin.name.startsWith('angular:') && !plugin.name.startsWith('vitest')));
+                if (userPlugins.length > 0) {
+                    projectPlugins.push(...userPlugins);
+                }
+            }
             const projectResolver = (0, node_module_1.createRequire)(projectSourceRoot + '/').resolve;
             const projectConfig = {
                 test: {
                     ...testConfig,
                     name: projectName,
-                    setupFiles,
+                    setupFiles: combinedSetupFiles,
                     include,
                     globals: testConfig?.globals ?? true,
                     ...(browser ? { browser } : {}),
@@ -91,6 +124,7 @@ function createVitestConfigPlugin(options) {
                     coverage: await generateCoverageOption(options.coverage, projectName),
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     ...(reporters ? { reporters } : {}),
+                    ...(browser ? { browser } : {}),
                     projects: [projectConfig],
                 },
             };
