@@ -15,6 +15,7 @@ export declare class VitestExecutor implements TestExecutor {
     private readonly projectName;
     private readonly options;
     private readonly buildResultFiles;
+    private readonly externalMetadata;
     private readonly testFileToEntryPoint;
     private readonly entryPointToTestFile;
     constructor(projectName: string, options: NormalizedUnitTestBuilderOptions, testEntryPointMappings: Map<string, string> | undefined);
