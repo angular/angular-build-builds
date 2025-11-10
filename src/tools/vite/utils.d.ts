@@ -6,6 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 import type { DepOptimizationConfig } from 'vite';
+import type { ExternalResultMetadata } from '../esbuild/bundler-execution-result';
 import { JavaScriptTransformer } from '../esbuild/javascript-transformer';
 export type AngularMemoryOutputFiles = Map<string, {
     contents: Uint8Array;
@@ -30,3 +31,15 @@ export declare function getDepOptimizationConfig({ disabled, exclude, include, t
     thirdPartySourcemaps: boolean;
     define: Record<string, string> | undefined;
 }): DepOptimizationConfig;
+export interface DevServerExternalResultMetadata {
+    implicitBrowser: string[];
+    implicitServer: string[];
+    explicitBrowser: string[];
+    explicitServer: string[];
+}
+export declare function isAbsoluteUrl(url: string): boolean;
+export declare function updateExternalMetadata(result: {
+    detail?: {
+        externalMetadata?: ExternalResultMetadata;
+    };
+}, externalMetadata: DevServerExternalResultMetadata, externalDependencies: string[] | undefined, explicitPackagesOnly?: boolean): void;

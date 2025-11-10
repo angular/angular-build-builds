@@ -46,6 +46,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.VitestExecutor = void 0;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_path_1 = __importDefault(require("node:path"));
+const utils_1 = require("../../../../tools/vite/utils");
 const error_1 = require("../../../../utils/error");
 const results_1 = require("../../../application/results");
 const browser_provider_1 = require("./browser-provider");
@@ -57,6 +58,12 @@ class VitestExecutor {
     projectName;
     options;
     buildResultFiles = new Map();
+    externalMetadata = {
+        implicitBrowser: [],
+        implicitServer: [],
+        explicitBrowser: [],
+        explicitServer: [],
+    };
     // This is a reverse map of the entry points created in `build-options.ts`.
     // It is used by the in-memory provider plugin to map the requested test file
     // path back to its bundled output path.
@@ -89,6 +96,7 @@ class VitestExecutor {
                 this.buildResultFiles.set(this.normalizePath(path), file);
             }
         }
+        (0, utils_1.updateExternalMetadata)(buildResult, this.externalMetadata, undefined, true);
         // Initialize Vitest if not already present.
         this.vitest ??= await this.initializeVitest();
         const vitest = this.vitest;
@@ -195,10 +203,13 @@ class VitestExecutor {
                     coverage,
                     projectName,
                     projectSourceRoot: this.options.projectSourceRoot,
+                    optimizeDepsInclude: this.externalMetadata.explicitBrowser,
                     reporters,
                     setupFiles: testSetupFiles,
                     projectPlugins,
-                    include: [...this.testFileToEntryPoint.keys()],
+                    include: [...this.testFileToEntryPoint.keys()].filter(
+                    // Filter internal entries
+                    (entry) => !entry.startsWith('angular:')),
                 }),
             ],
         });

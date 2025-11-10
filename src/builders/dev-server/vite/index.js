@@ -45,17 +45,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.serveWithVite = serveWithVite;
 const node_assert_1 = __importDefault(require("node:assert"));
-const node_module_1 = require("node:module");
 const node_path_1 = require("node:path");
 const plugins_1 = require("../../../tools/vite/plugins");
-const utils_1 = require("../../../utils");
+const utils_1 = require("../../../tools/vite/utils");
+const utils_2 = require("../../../utils");
 const environment_options_1 = require("../../../utils/environment-options");
 const results_1 = require("../../application/results");
 const schema_1 = require("../../application/schema");
 const internal_1 = require("../internal");
 const hmr_1 = require("./hmr");
 const server_1 = require("./server");
-const utils_2 = require("./utils");
+const utils_3 = require("./utils");
 /**
  * Build options that are also present on the dev server but are only passed
  * to the build.
@@ -118,7 +118,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
         // When localization is enabled with a single locale, force a flat path to maintain behavior with the existing Webpack-based dev server.
         browserOptions.forceI18nFlatOutput = true;
     }
-    const { vendor: thirdPartySourcemaps, scripts: scriptsSourcemaps } = (0, utils_1.normalizeSourceMaps)(browserOptions.sourceMap ?? false);
+    const { vendor: thirdPartySourcemaps, scripts: scriptsSourcemaps } = (0, utils_2.normalizeSourceMaps)(browserOptions.sourceMap ?? false);
     if (scriptsSourcemaps && browserOptions.server) {
         // https://nodejs.org/api/process.html#processsetsourcemapsenabledval
         process.setSourceMapsEnabled(true);
@@ -210,7 +210,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                 componentStyles.clear();
                 generatedFiles.clear();
                 for (const [outputPath, file] of Object.entries(result.files)) {
-                    (0, utils_2.updateResultRecord)(outputPath, file, normalizePath, htmlIndexPath, generatedFiles, assetFiles, componentStyles, 
+                    (0, utils_3.updateResultRecord)(outputPath, file, normalizePath, htmlIndexPath, generatedFiles, assetFiles, componentStyles, 
                     // The initial build will not yet have a server setup
                     !server);
                 }
@@ -227,10 +227,10 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                     assetFiles.delete(filePath);
                 }
                 for (const modified of result.modified) {
-                    (0, utils_2.updateResultRecord)(modified, result.files[modified], normalizePath, htmlIndexPath, generatedFiles, assetFiles, componentStyles);
+                    (0, utils_3.updateResultRecord)(modified, result.files[modified], normalizePath, htmlIndexPath, generatedFiles, assetFiles, componentStyles);
                 }
                 for (const added of result.added) {
-                    (0, utils_2.updateResultRecord)(added, result.files[added], normalizePath, htmlIndexPath, generatedFiles, assetFiles, componentStyles);
+                    (0, utils_3.updateResultRecord)(added, result.files[added], normalizePath, htmlIndexPath, generatedFiles, assetFiles, componentStyles);
                 }
                 break;
             case results_1.ResultKind.ComponentUpdate:
@@ -252,27 +252,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                 continue;
         }
         // To avoid disconnecting the array objects from the option, these arrays need to be mutated instead of replaced.
-        if (result.detail?.['externalMetadata']) {
-            const { implicitBrowser, implicitServer, explicit } = result.detail['externalMetadata'];
-            const implicitServerFiltered = implicitServer.filter((m) => !(0, node_module_1.isBuiltin)(m) && !(0, utils_2.isAbsoluteUrl)(m));
-            const implicitBrowserFiltered = implicitBrowser.filter((m) => !(0, utils_2.isAbsoluteUrl)(m));
-            // Empty Arrays to avoid growing unlimited with every re-build.
-            externalMetadata.explicitBrowser.length = 0;
-            externalMetadata.explicitServer.length = 0;
-            externalMetadata.implicitServer.length = 0;
-            externalMetadata.implicitBrowser.length = 0;
-            const externalDeps = browserOptions.externalDependencies ?? [];
-            externalMetadata.explicitBrowser.push(...explicit, ...externalDeps);
-            externalMetadata.explicitServer.push(...explicit, ...externalDeps, ...node_module_1.builtinModules);
-            externalMetadata.implicitServer.push(...implicitServerFiltered);
-            externalMetadata.implicitBrowser.push(...implicitBrowserFiltered);
-            // The below needs to be sorted as Vite uses these options are part of the hashing invalidation algorithm.
-            // See: https://github.com/vitejs/vite/blob/0873bae0cfe0f0718ad2f5743dd34a17e4ab563d/packages/vite/src/node/optimizer/index.ts#L1203-L1239
-            externalMetadata.explicitBrowser.sort();
-            externalMetadata.explicitServer.sort();
-            externalMetadata.implicitServer.sort();
-            externalMetadata.implicitBrowser.sort();
-        }
+        (0, utils_1.updateExternalMetadata)(result, externalMetadata, browserOptions.externalDependencies);
         if (server) {
             // Update fs allow list to include any new assets from the build option.
             server.config.server.fs.allow = [
