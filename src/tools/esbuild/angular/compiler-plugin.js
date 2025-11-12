@@ -70,8 +70,8 @@ function createCompilerPlugin(pluginOptions, compilationOrFactory, stylesheetBun
             let cacheStore;
             if (pluginOptions.sourceFileCache?.persistentCachePath && !process.versions.webcontainer) {
                 try {
-                    const { LmbdCacheStore } = await Promise.resolve().then(() => __importStar(require('../lmdb-cache-store')));
-                    cacheStore = new LmbdCacheStore(path.join(pluginOptions.sourceFileCache.persistentCachePath, 'angular-compiler.db'));
+                    const { LmdbCacheStore } = await Promise.resolve().then(() => __importStar(require('../lmdb-cache-store')));
+                    cacheStore = new LmdbCacheStore(path.join(pluginOptions.sourceFileCache.persistentCachePath, 'angular-compiler.db'));
                 }
                 catch (e) {
                     setupWarnings.push({

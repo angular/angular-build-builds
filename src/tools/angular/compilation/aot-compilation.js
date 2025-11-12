@@ -131,12 +131,14 @@ class AotCompilation extends angular_compilation_1.AngularCompilation {
             }
         }
         const affectedFiles = (0, profiling_1.profileSync)('NG_FIND_AFFECTED', () => findAffectedFiles(typeScriptProgram, angularCompiler, usingBuildInfo));
+        const componentResourcesDependencies = new Map();
         // Get all files referenced in the TypeScript/Angular program including component resources
         const referencedFiles = typeScriptProgram
             .getSourceFiles()
             .filter((sourceFile) => !angularCompiler.ignoreForEmit.has(sourceFile))
             .flatMap((sourceFile) => {
             const resourceDependencies = angularCompiler.getResourceDependencies(sourceFile);
+            componentResourcesDependencies.set(sourceFile.fileName, resourceDependencies);
             // Also invalidate Angular diagnostics for a source file if component resources are modified
             if (this.#state && hostOptions.modifiedFiles?.size) {
                 for (const resourceDependency of resourceDependencies) {
@@ -156,6 +158,7 @@ class AotCompilation extends angular_compilation_1.AngularCompilation {
             referencedFiles,
             externalStylesheets: hostOptions.externalStylesheets,
             templateUpdates,
+            componentResourcesDependencies,
         };
     }
     *collectDiagnostics(modes) {
