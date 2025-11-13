@@ -29,7 +29,6 @@ export declare function initialize(request: InitRequest): Promise<{
         sourceMap: boolean | undefined;
         inlineSourceMap: boolean | undefined;
     };
-    componentResourcesDependencies: ReadonlyMap<string, readonly string[]> | undefined;
 }>;
 export declare function diagnose(modes: DiagnosticModes): Promise<{
     errors?: PartialMessage[];

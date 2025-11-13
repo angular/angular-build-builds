@@ -35,7 +35,7 @@ async function initialize(request) {
             stylesheetRequests.get(requestId)?.[0](value);
         }
     });
-    const { compilerOptions, referencedFiles, externalStylesheets, templateUpdates, componentResourcesDependencies, } = await compilation.initialize(request.tsconfig, {
+    const { compilerOptions, referencedFiles, externalStylesheets, templateUpdates } = await compilation.initialize(request.tsconfig, {
         fileReplacements: request.fileReplacements,
         sourceFileCache,
         modifiedFiles: sourceFileCache.modifiedFiles,
@@ -83,7 +83,6 @@ async function initialize(request) {
             sourceMap: compilerOptions.sourceMap,
             inlineSourceMap: compilerOptions.inlineSourceMap,
         },
-        componentResourcesDependencies,
     };
 }
 async function diagnose(modes) {

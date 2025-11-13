@@ -198,7 +198,7 @@ class VitestExecutor {
                 watch: null,
             },
             plugins: [
-                await (0, plugins_1.createVitestConfigPlugin)({
+                (0, plugins_1.createVitestConfigPlugin)({
                     browser: browserOptions.browser,
                     coverage,
                     projectName,

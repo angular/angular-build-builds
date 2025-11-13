@@ -27,6 +27,6 @@ interface VitestConfigPluginOptions {
     include: string[];
     optimizeDepsInclude: string[];
 }
-export declare function createVitestConfigPlugin(options: VitestConfigPluginOptions): Promise<VitestPlugins[0]>;
+export declare function createVitestConfigPlugin(options: VitestConfigPluginOptions): VitestPlugins[0];
 export declare function createVitestPlugins(pluginOptions: PluginOptions): VitestPlugins;
 export {};

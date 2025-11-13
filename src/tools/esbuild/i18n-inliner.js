@@ -251,8 +251,8 @@ class I18nInliner {
         }
         // Initialize a persistent cache for i18n transformations.
         try {
-            const { LmdbCacheStore } = await Promise.resolve().then(() => __importStar(require('./lmdb-cache-store')));
-            this.#cache = new LmdbCacheStore((0, node_path_1.join)(persistentCachePath, 'angular-i18n.db'));
+            const { LmbdCacheStore } = await Promise.resolve().then(() => __importStar(require('./lmdb-cache-store')));
+            this.#cache = new LmbdCacheStore((0, node_path_1.join)(persistentCachePath, 'angular-i18n.db'));
         }
         catch {
             this.#cacheInitFailed = true;
