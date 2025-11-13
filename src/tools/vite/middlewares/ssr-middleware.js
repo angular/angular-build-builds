@@ -57,11 +57,6 @@ function createAngularSsrInternalMiddleware(server, indexHtmlTransformer) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             '@angular/ssr/node'}`).then(s => __importStar(require(s))));
             const { ɵgetOrCreateAngularServerApp } = (await server.ssrLoadModule('/main.server.mjs'));
-            // `ɵgetOrCreateAngularServerApp` can be undefined right after an error.
-            // See: https://github.com/angular/angular-cli/issues/29907
-            if (!ɵgetOrCreateAngularServerApp) {
-                return next();
-            }
             const angularServerApp = ɵgetOrCreateAngularServerApp({
                 allowStaticRouteRender: true,
             });
