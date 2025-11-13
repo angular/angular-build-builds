@@ -120,7 +120,6 @@ async function setupBrowserConfiguration(browsers, debug, projectSourceRoot, vie
         provider,
         headless,
         ui: !headless,
-        isolate: debug,
         viewport,
         instances: browsers.map((browserName) => ({
             browser: normalizeBrowserName(browserName),
