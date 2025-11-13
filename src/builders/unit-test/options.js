@@ -104,7 +104,7 @@ async function normalizeOptions(context, projectName, options) {
             : [],
         dumpVirtualFiles: options.dumpVirtualFiles,
         listTests: options.listTests,
-        runnerConfig: typeof runnerConfig === 'string' ? node_path_1.default.join(workspaceRoot, runnerConfig) : runnerConfig,
+        runnerConfig: typeof runnerConfig === 'string' ? node_path_1.default.resolve(workspaceRoot, runnerConfig) : runnerConfig,
     };
 }
 function injectTestingPolyfills(polyfills = []) {
