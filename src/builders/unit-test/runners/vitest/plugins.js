@@ -96,8 +96,7 @@ async function createVitestConfigPlugin(options) {
                 test: {
                     setupFiles,
                     globals: true,
-                    // Default to `false` to align with the Karma/Jasmine experience.
-                    isolate: false,
+                    // Allow Vitest to manage test isolation by its default behavior.
                     sequence: { setupFiles: 'list' },
                 },
                 optimizeDeps: {
