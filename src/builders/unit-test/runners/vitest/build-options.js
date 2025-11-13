@@ -16,20 +16,6 @@ const path_1 = require("../../../../utils/path");
 const schema_1 = require("../../../application/schema");
 const options_1 = require("../../options");
 const test_discovery_1 = require("../../test-discovery");
-/**
- * A list of Angular related packages that should be marked as external.
- * This allows Vite to pre-bundle them, improving performance.
- */
-const ANGULAR_PACKAGES_TO_EXTERNALIZE = [
-    '@angular/core',
-    '@angular/common',
-    '@angular/platform-browser',
-    '@angular/compiler',
-    '@angular/router',
-    '@angular/forms',
-    '@angular/animations',
-    'rxjs',
-];
 function createTestBedInitVirtualFile(providersFile, projectSourceRoot, polyfills = []) {
     const usesZoneJS = polyfills.includes('zone.js');
     let providersImport = 'const providers = [];';
@@ -96,10 +82,10 @@ async function getVitestBuildOptions(options, baseBuildOptions) {
         removeTestExtension: true,
     });
     entryPoints.set('init-testbed', 'angular:test-bed-init');
-    const externalDependencies = new Set(['vitest']);
-    ANGULAR_PACKAGES_TO_EXTERNALIZE.forEach((dep) => externalDependencies.add(dep));
+    // The 'vitest' package is always external for testing purposes
+    const externalDependencies = ['vitest'];
     if (baseBuildOptions.externalDependencies) {
-        baseBuildOptions.externalDependencies.forEach((dep) => externalDependencies.add(dep));
+        externalDependencies.push(...baseBuildOptions.externalDependencies);
     }
     const buildOptions = {
         ...baseBuildOptions,
@@ -119,7 +105,10 @@ async function getVitestBuildOptions(options, baseBuildOptions) {
         outputHashing: adjustOutputHashing(baseBuildOptions.outputHashing),
         optimization: false,
         entryPoints,
-        externalDependencies: [...externalDependencies],
+        // Enable support for vitest browser prebundling. Excludes can be controlled with a runnerConfig
+        // and the `optimizeDeps.exclude` option.
+        externalPackages: true,
+        externalDependencies,
     };
     buildOptions.polyfills = (0, options_1.injectTestingPolyfills)(buildOptions.polyfills);
     const testBedInitContents = createTestBedInitVirtualFile(providersFile, projectSourceRoot, buildOptions.polyfills);
