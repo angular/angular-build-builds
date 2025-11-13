@@ -423,9 +423,10 @@ async function invalidateUpdatedFiles(normalizePath, generatedFiles, assetFiles,
         updatedModules?.forEach((m) => server.moduleGraph.invalidateModule(m));
     }
     if (serverApplicationChanged) {
-        // Clear the server app cache and
-        // trigger module evaluation before reload to initiate dependency optimization.
-        const { ɵdestroyAngularServerApp } = (await server.ssrLoadModule('/main.server.mjs'));
+        // Clear the server app cache and trigger module evaluation before reload to initiate dependency optimization.
+        // The querystring is needed as a workaround for:
+        // `ɵgetOrCreateAngularServerApp` can be undefined right after an error.
+        const { ɵdestroyAngularServerApp } = (await server.ssrLoadModule(`/main.server.mjs?timestamp=${Date.now()}`));
         ɵdestroyAngularServerApp();
     }
     return updatedFiles;
