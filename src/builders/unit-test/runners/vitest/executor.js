@@ -143,7 +143,7 @@ class VitestExecutor {
         return testSetupFiles;
     }
     async initializeVitest() {
-        const { coverage, reporters, outputFile, workspaceRoot, browsers, debug, watch, browserViewport, ui, projectRoot, runnerConfig, projectSourceRoot, cacheOptions, } = this.options;
+        const { coverage, reporters, outputFile, workspaceRoot, browsers, debug, watch, browserViewport, ui, } = this.options;
         const projectName = this.projectName;
         let vitestNodeModule;
         try {
@@ -158,7 +158,7 @@ class VitestExecutor {
         }
         const { startVitest } = vitestNodeModule;
         // Setup vitest browser options if configured
-        const browserOptions = await (0, browser_provider_1.setupBrowserConfiguration)(browsers, debug, projectSourceRoot, browserViewport);
+        const browserOptions = await (0, browser_provider_1.setupBrowserConfiguration)(browsers, debug, this.options.projectSourceRoot, browserViewport);
         if (browserOptions.errors?.length) {
             throw new Error(browserOptions.errors.join('\n'));
         }
@@ -166,7 +166,7 @@ class VitestExecutor {
         const testSetupFiles = this.prepareSetupFiles();
         const projectPlugins = (0, plugins_1.createVitestPlugins)({
             workspaceRoot,
-            projectSourceRoot,
+            projectSourceRoot: this.options.projectSourceRoot,
             projectName,
             buildResultFiles: this.buildResultFiles,
             testFileToEntryPoint: this.testFileToEntryPoint,
@@ -178,22 +178,20 @@ class VitestExecutor {
                 fileParallelism: false,
             }
             : {};
+        const runnerConfig = this.options.runnerConfig;
         const externalConfigPath = runnerConfig === true
-            ? await (0, configuration_1.findVitestBaseConfig)([projectRoot, workspaceRoot])
+            ? await (0, configuration_1.findVitestBaseConfig)([this.options.projectRoot, this.options.workspaceRoot])
             : runnerConfig;
         return startVitest('test', undefined, {
             config: externalConfigPath,
             root: workspaceRoot,
             project: projectName,
             outputFile,
-            cache: cacheOptions.enabled ? undefined : false,
             testNamePattern: this.options.filter,
             watch,
             ui,
             ...debugOptions,
         }, {
-            // Note `.vitest` is auto appended to the path.
-            cacheDir: cacheOptions.path,
             server: {
                 // Disable the actual file watcher. The boolean watch option above should still
                 // be enabled as it controls other internal behavior related to rerunning tests.
@@ -204,7 +202,7 @@ class VitestExecutor {
                     browser: browserOptions.browser,
                     coverage,
                     projectName,
-                    projectSourceRoot,
+                    projectSourceRoot: this.options.projectSourceRoot,
                     optimizeDepsInclude: this.externalMetadata.implicitBrowser,
                     reporters,
                     setupFiles: testSetupFiles,
