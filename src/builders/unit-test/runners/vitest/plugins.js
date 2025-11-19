@@ -48,6 +48,7 @@ exports.createVitestPlugins = createVitestPlugins;
 const node_assert_1 = __importDefault(require("node:assert"));
 const promises_1 = require("node:fs/promises");
 const node_module_1 = require("node:module");
+const node_os_1 = require("node:os");
 const node_path_1 = __importDefault(require("node:path"));
 const assets_middleware_1 = require("../../../../tools/vite/middlewares/assets-middleware");
 const path_1 = require("../../../../utils/path");
@@ -146,6 +147,7 @@ async function loadResultFile(file) {
 }
 function createVitestPlugins(pluginOptions) {
     const { workspaceRoot, buildResultFiles, testFileToEntryPoint } = pluginOptions;
+    const isWindows = (0, node_os_1.platform)() === 'win32';
     return [
         {
             name: 'angular:test-in-memory-provider',
@@ -154,6 +156,29 @@ function createVitestPlugins(pluginOptions) {
                 // Fast path for test entry points.
                 if (testFileToEntryPoint.has(id)) {
                     return id;
+                }
+                // Workaround for Vitest in Windows when a fully qualified absolute path is provided with
+                // a superfluous leading slash. This can currently occur with the `@vitest/coverage-v8` provider
+                // when it uses `removeStartsWith(url, FILE_PROTOCOL)` to convert a file URL resulting in
+                // `/D:/tmp_dir/...` instead of `D:/tmp_dir/...`.
+                if (id[0] === '/' && isWindows) {
+                    const slicedId = id.slice(1);
+                    if (node_path_1.default.isAbsolute(slicedId)) {
+                        return slicedId;
+                    }
+                }
+                if (importer && (id[0] === '.' || id[0] === '/')) {
+                    let fullPath;
+                    if (testFileToEntryPoint.has(importer)) {
+                        fullPath = (0, path_1.toPosixPath)(node_path_1.default.join(workspaceRoot, id));
+                    }
+                    else {
+                        fullPath = (0, path_1.toPosixPath)(node_path_1.default.join(node_path_1.default.dirname(importer), id));
+                    }
+                    const relativePath = node_path_1.default.relative(workspaceRoot, fullPath);
+                    if (buildResultFiles.has((0, path_1.toPosixPath)(relativePath))) {
+                        return fullPath;
+                    }
                 }
                 // Determine the base directory for resolution.
                 let baseDir;
