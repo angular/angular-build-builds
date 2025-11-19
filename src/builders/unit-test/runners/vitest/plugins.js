@@ -138,6 +138,12 @@ async function createVitestConfigPlugin(options) {
         },
     };
 }
+async function loadResultFile(file) {
+    if (file.origin === 'memory') {
+        return new TextDecoder('utf-8').decode(file.contents);
+    }
+    return (0, promises_1.readFile)(file.inputPath, 'utf-8');
+}
 function createVitestPlugins(pluginOptions) {
     const { workspaceRoot, buildResultFiles, testFileToEntryPoint } = pluginOptions;
     return [
@@ -145,27 +151,30 @@ function createVitestPlugins(pluginOptions) {
             name: 'angular:test-in-memory-provider',
             enforce: 'pre',
             resolveId: (id, importer) => {
-                if (importer && (id[0] === '.' || id[0] === '/')) {
-                    let fullPath;
-                    if (testFileToEntryPoint.has(importer)) {
-                        fullPath = (0, path_1.toPosixPath)(node_path_1.default.join(workspaceRoot, id));
-                    }
-                    else {
-                        fullPath = (0, path_1.toPosixPath)(node_path_1.default.join(node_path_1.default.dirname(importer), id));
-                    }
-                    const relativePath = node_path_1.default.relative(workspaceRoot, fullPath);
-                    if (buildResultFiles.has((0, path_1.toPosixPath)(relativePath))) {
-                        return fullPath;
-                    }
-                }
+                // Fast path for test entry points.
                 if (testFileToEntryPoint.has(id)) {
                     return id;
                 }
-                (0, node_assert_1.default)(buildResultFiles.size > 0, 'buildResult must be available for resolving.');
-                const relativePath = node_path_1.default.relative(workspaceRoot, id);
-                if (buildResultFiles.has((0, path_1.toPosixPath)(relativePath))) {
-                    return id;
+                // Determine the base directory for resolution.
+                let baseDir;
+                if (importer) {
+                    // If the importer is a test entry point, resolve relative to the workspace root.
+                    // Otherwise, resolve relative to the importer's directory.
+                    baseDir = testFileToEntryPoint.has(importer) ? workspaceRoot : node_path_1.default.dirname(importer);
                 }
+                else {
+                    // If there's no importer, assume the id is relative to the workspace root.
+                    baseDir = workspaceRoot;
+                }
+                // Construct the full, absolute path and normalize it to POSIX format.
+                const fullPath = (0, path_1.toPosixPath)(node_path_1.default.join(baseDir, id));
+                // Check if the resolved path corresponds to a known build artifact.
+                const relativePath = node_path_1.default.relative(workspaceRoot, fullPath);
+                if (buildResultFiles.has((0, path_1.toPosixPath)(relativePath))) {
+                    return fullPath;
+                }
+                // If the module cannot be resolved from the build artifacts, let other plugins handle it.
+                return undefined;
             },
             load: async (id) => {
                 (0, node_assert_1.default)(buildResultFiles.size > 0, 'buildResult must be available for in-memory loading.');
@@ -187,16 +196,10 @@ function createVitestPlugins(pluginOptions) {
                 }
                 const outputFile = buildResultFiles.get(outputPath);
                 if (outputFile) {
+                    const code = await loadResultFile(outputFile);
                     const sourceMapPath = outputPath + '.map';
                     const sourceMapFile = buildResultFiles.get(sourceMapPath);
-                    const code = outputFile.origin === 'memory'
-                        ? Buffer.from(outputFile.contents).toString('utf-8')
-                        : await (0, promises_1.readFile)(outputFile.inputPath, 'utf-8');
-                    const sourceMapText = sourceMapFile
-                        ? sourceMapFile.origin === 'memory'
-                            ? Buffer.from(sourceMapFile.contents).toString('utf-8')
-                            : await (0, promises_1.readFile)(sourceMapFile.inputPath, 'utf-8')
-                        : undefined;
+                    const sourceMapText = sourceMapFile ? await loadResultFile(sourceMapFile) : undefined;
                     // Vitest will include files in the coverage report if the sourcemap contains no sources.
                     // For builder-internal generated code chunks, which are typically helper functions,
                     // a virtual source is added to the sourcemap to prevent them from being incorrectly

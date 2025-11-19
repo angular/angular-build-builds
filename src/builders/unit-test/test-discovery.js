@@ -61,7 +61,7 @@ async function findTests(include, exclude, workspaceRoot, projectSourceRoot) {
             ignore: ['**/node_modules/**', ...normalizedExcludes],
         });
         for (const match of globMatches) {
-            resolvedTestFiles.add(match);
+            resolvedTestFiles.add((0, path_1.toPosixPath)(match));
         }
     }
     // 3. Combine and de-duplicate results
@@ -218,13 +218,13 @@ async function resolveStaticPattern(pattern, projectSourceRoot) {
     for (const infix of TEST_FILE_INFIXES) {
         const potentialSpec = (0, node_path_1.join)((0, node_path_1.dirname)(fullPath), `${baseName}${infix}${fileExt}`);
         if (await exists(potentialSpec)) {
-            return { resolved: [potentialSpec], unresolved: [] };
+            return { resolved: [(0, path_1.toPosixPath)(potentialSpec)], unresolved: [] };
         }
     }
     if (await exists(fullPath)) {
-        return { resolved: [fullPath], unresolved: [] };
+        return { resolved: [(0, path_1.toPosixPath)(fullPath)], unresolved: [] };
     }
-    return { resolved: [], unresolved: [pattern] };
+    return { resolved: [], unresolved: [(0, path_1.toPosixPath)(pattern)] };
 }
 /** Checks if a path exists and is a directory. */
 async function isDirectory(path) {
