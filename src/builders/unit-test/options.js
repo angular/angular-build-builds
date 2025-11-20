@@ -18,6 +18,7 @@ const node_path_1 = __importDefault(require("node:path"));
 const normalize_cache_1 = require("../../utils/normalize-cache");
 const project_metadata_1 = require("../../utils/project-metadata");
 const tty_1 = require("../../utils/tty");
+const schema_1 = require("./schema");
 async function exists(path) {
     try {
         await node_fs_1.promises.access(path, node_fs_1.constants.F_OK);
@@ -44,7 +45,7 @@ async function normalizeOptions(context, projectName, options) {
     const buildTargetSpecifier = options.buildTarget ?? `::development`;
     const buildTarget = (0, architect_1.targetFromTargetString)(buildTargetSpecifier, projectName, 'build');
     const { runner, browsers, progress, filter, browserViewport, ui, runnerConfig } = options;
-    if (ui && runner !== 'vitest') {
+    if (ui && runner !== schema_1.Runner.Vitest) {
         throw new Error('The "ui" option is only available for the "vitest" runner.');
     }
     const [width, height] = browserViewport?.split('x').map(Number) ?? [];
@@ -78,7 +79,7 @@ async function normalizeOptions(context, projectName, options) {
         include: options.include ?? ['**/*.spec.ts'],
         exclude: options.exclude,
         filter,
-        runnerName: runner ?? 'vitest',
+        runnerName: runner ?? schema_1.Runner.Vitest,
         coverage: {
             enabled: options.coverage,
             exclude: options.coverageExclude,
