@@ -17,7 +17,7 @@ const node_path_1 = require("node:path");
  * @returns A normalized path string.
  */
 function normalizeDirectoryPath(path) {
-    const last = path[path.length - 1];
+    const last = path.at(-1);
     if (last === '/' || last === '\\') {
         return path.slice(0, -1);
     }
