@@ -25,7 +25,7 @@ function createAngularAssetsMiddleware(server, assets, outputFiles, componentSty
         // The base of the URL is unused but required to parse the URL.
         const pathname = (0, utils_1.pathnameWithoutBasePath)(req.url, server.config.base);
         const extension = (0, node_path_1.extname)(pathname);
-        const pathnameHasTrailingSlash = pathname[pathname.length - 1] === '/';
+        const pathnameHasTrailingSlash = pathname.at(-1) === '/';
         // Rewrite all build assets to a vite raw fs URL
         const asset = assets.get(pathname);
         if (asset) {

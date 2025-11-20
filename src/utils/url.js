@@ -28,7 +28,7 @@ exports.joinUrlParts = joinUrlParts;
  */
 function stripTrailingSlash(url) {
     // Check if the last character of the URL is a slash
-    return url.length > 1 && url[url.length - 1] === '/' ? url.slice(0, -1) : url;
+    return url.length > 1 && url.at(-1) === '/' ? url.slice(0, -1) : url;
 }
 /**
  * Removes the leading slash from a URL if it exists.
@@ -78,7 +78,7 @@ function addLeadingSlash(url) {
  */
 function addTrailingSlash(url) {
     // Check if the URL already end with a slash
-    return url[url.length - 1] === '/' ? url : `${url}/`;
+    return url.at(-1) === '/' ? url : `${url}/`;
 }
 /**
  * Joins URL parts into a single URL string.
@@ -108,7 +108,7 @@ function joinUrlParts(...parts) {
         if (part[0] === '/') {
             normalizedPart = normalizedPart.slice(1);
         }
-        if (part[part.length - 1] === '/') {
+        if (part.at(-1) === '/') {
             normalizedPart = normalizedPart.slice(0, -1);
         }
         if (normalizedPart !== '') {

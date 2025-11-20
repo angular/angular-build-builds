@@ -202,9 +202,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                     const baseHref = result.detail['htmlBaseHref'];
                     // Remove trailing slash
                     serverOptions.servePath =
-                        baseHref !== './' && baseHref[baseHref.length - 1] === '/'
-                            ? baseHref.slice(0, -1)
-                            : baseHref;
+                        baseHref !== './' && baseHref.at(-1) === '/' ? baseHref.slice(0, -1) : baseHref;
                 }
                 assetFiles.clear();
                 componentStyles.clear();
