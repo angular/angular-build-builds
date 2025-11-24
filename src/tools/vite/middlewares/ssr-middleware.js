@@ -53,9 +53,7 @@ function createAngularSsrInternalMiddleware(server, indexHtmlTransformer) {
             // Load the compiler because `@angular/ssr/node` depends on `@angular/` packages,
             // which must be processed by the runtime linker, even if they are not used.
             await Promise.resolve().then(() => __importStar(require('@angular/compiler')));
-            const { writeResponseToNodeResponse, createWebRequestFromNodeRequest } = (await Promise.resolve(`${
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            '@angular/ssr/node'}`).then(s => __importStar(require(s))));
+            const { writeResponseToNodeResponse, createWebRequestFromNodeRequest } = (await Promise.resolve(`${'@angular/ssr/node'}`).then(s => __importStar(require(s))));
             const { ɵgetOrCreateAngularServerApp } = (await server.ssrLoadModule('/main.server.mjs'));
             const angularServerApp = ɵgetOrCreateAngularServerApp({
                 allowStaticRouteRender: true,
@@ -86,9 +84,7 @@ async function createAngularSsrExternalMiddleware(server, indexHtmlTransformer) 
     // Load the compiler because `@angular/ssr/node` depends on `@angular/` packages,
     // which must be processed by the runtime linker, even if they are not used.
     await Promise.resolve().then(() => __importStar(require('@angular/compiler')));
-    const { createWebRequestFromNodeRequest, writeResponseToNodeResponse } = (await Promise.resolve(`${
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    '@angular/ssr/node'}`).then(s => __importStar(require(s))));
+    const { createWebRequestFromNodeRequest, writeResponseToNodeResponse } = (await Promise.resolve(`${'@angular/ssr/node'}`).then(s => __importStar(require(s))));
     return function angularSsrExternalMiddleware(req, res, next) {
         (async () => {
             const { reqHandler, AngularAppEngine } = (await server.ssrLoadModule('./server.mjs'));

@@ -57,9 +57,7 @@ exports.DEFAULT_URL = new URL('http://ng-localhost/');
  */
 async function launchServer() {
     const { reqHandler } = await (0, load_esm_from_memory_1.loadEsmModuleFromMemory)('./server.mjs');
-    const { createWebRequestFromNodeRequest, writeResponseToNodeResponse } = (await Promise.resolve(`${
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    '@angular/ssr/node'}`).then(s => __importStar(require(s))));
+    const { createWebRequestFromNodeRequest, writeResponseToNodeResponse } = (await Promise.resolve(`${'@angular/ssr/node'}`).then(s => __importStar(require(s))));
     if (!(0, utils_1.isSsrNodeRequestHandler)(reqHandler) && !(0, utils_1.isSsrRequestHandler)(reqHandler)) {
         return exports.DEFAULT_URL;
     }
