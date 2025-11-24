@@ -35,6 +35,7 @@ export declare function createCompilerPlugin(pluginOptions: CompilerPluginOption
     inlineStyleLanguage: string;
 }): import('esbuild').Plugin;
 export type { AngularCompilation } from './tools/angular/compilation';
+export { DiagnosticModes } from './tools/angular/compilation';
 export { createAngularCompilation };
 export { ComponentStylesheetBundler } from './tools/esbuild/angular/component-stylesheets';
 export * from './utils/bundle-calculator';
