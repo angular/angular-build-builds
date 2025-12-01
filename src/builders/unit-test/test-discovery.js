@@ -12,6 +12,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.findTests = findTests;
 exports.getTestEntrypoints = getTestEntrypoints;
+exports.generateNameFromPath = generateNameFromPath;
+const node_crypto_1 = require("node:crypto");
 const node_fs_1 = require("node:fs");
 const node_os_1 = __importDefault(require("node:os"));
 const node_path_1 = require("node:path");
@@ -22,6 +24,8 @@ const path_1 = require("../../utils/path");
  * For example, `.spec` in `app.component.spec.ts`.
  */
 const TEST_FILE_INFIXES = ['.spec', '.test'];
+/** Maximum length for a generated test entrypoint name. */
+const MAX_FILENAME_LENGTH = 128;
 /**
  * Finds all test files in the project. This function implements a special handling
  * for static paths (non-globs) to improve developer experience. For example, if a
@@ -127,7 +131,26 @@ function generateNameFromPath(testFile, roots, removeTestExtension) {
         const char = relativePath[i];
         result += char === '/' || char === '\\' ? '-' : char;
     }
-    return result;
+    return truncateName(result, relativePath);
+}
+/**
+ * Truncates a generated name if it exceeds the maximum allowed filename length.
+ * If truncation occurs, the name will be shortened by replacing a middle segment
+ * with an 8-character SHA256 hash of the original full path to maintain uniqueness.
+ *
+ * @param name The generated name to potentially truncate.
+ * @param originalPath The original full path from which the name was derived. Used for hashing.
+ * @returns The original name if within limits, or a truncated name with a hash.
+ */
+function truncateName(name, originalPath) {
+    if (name.length <= MAX_FILENAME_LENGTH) {
+        return name;
+    }
+    const hash = (0, node_crypto_1.createHash)('sha256').update(originalPath).digest('hex').substring(0, 8);
+    const availableLength = MAX_FILENAME_LENGTH - hash.length - 2; // 2 for '-' separators
+    const prefixLength = Math.floor(availableLength / 2);
+    const suffixLength = availableLength - prefixLength;
+    return `${name.substring(0, prefixLength)}-${hash}-${name.substring(name.length - suffixLength)}`;
 }
 /**
  * Whether the current operating system's filesystem is case-insensitive.

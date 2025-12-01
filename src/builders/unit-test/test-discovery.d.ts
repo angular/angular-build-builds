@@ -33,4 +33,14 @@ interface TestEntrypointsOptions {
  * @returns A map where keys are the generated unique bundle names and values are the original file paths.
  */
 export declare function getTestEntrypoints(testFiles: string[], { projectSourceRoot, workspaceRoot, removeTestExtension }: TestEntrypointsOptions): Map<string, string>;
+/**
+ * Generates a unique, dash-delimited name from a file path. This is used to
+ * create a consistent and readable bundle name for a given test file.
+ *
+ * @param testFile The absolute path to the test file.
+ * @param roots An array of root paths to remove from the beginning of the test file path.
+ * @param removeTestExtension Whether to remove the test file infix and extension from the result.
+ * @returns A dash-cased name derived from the relative path of the test file.
+ */
+export declare function generateNameFromPath(testFile: string, roots: string[], removeTestExtension: boolean): string;
 export {};
