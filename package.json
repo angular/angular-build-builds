@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "21.0.1+sha-e09d9a5",
+  "version": "21.0.1+sha-6e25bde",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -23,7 +23,7 @@
   "builders": "builders.json",
   "dependencies": {
     "@ampproject/remapping": "2.3.0",
-    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#e09d9a5",
+    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#6e25bde",
     "@babel/core": "7.28.4",
     "@babel/helper-annotate-as-pure": "7.27.3",
     "@babel/helper-split-export-declaration": "7.24.7",
@@ -61,7 +61,7 @@
     "@angular/platform-browser": "^21.0.0",
     "@angular/platform-server": "^21.0.0",
     "@angular/service-worker": "^21.0.0",
-    "@angular/ssr": "github:angular/angular-ssr-builds#e09d9a5",
+    "@angular/ssr": "github:angular/angular-ssr-builds#6e25bde",
     "karma": "^6.4.0",
     "less": "^4.2.0",
     "ng-packagr": "^21.0.0",
@@ -113,7 +113,7 @@
     "type": "git",
     "url": "https://github.com/angular/angular-cli.git"
   },
-  "packageManager": "pnpm@10.23.0",
+  "packageManager": "pnpm@10.24.0",
   "engines": {
     "node": "^20.19.0 || ^22.12.0 || >=24.0.0",
     "npm": "^6.11.0 || ^7.5.6 || >=8.0.0",
