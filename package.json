@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "21.1.0-next.1+sha-9033d94",
+  "version": "21.1.0-next.1+sha-7038ea1",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -23,7 +23,7 @@
   "builders": "builders.json",
   "dependencies": {
     "@ampproject/remapping": "2.3.0",
-    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#9033d94",
+    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#7038ea1",
     "@babel/core": "7.28.5",
     "@babel/helper-annotate-as-pure": "7.27.3",
     "@babel/helper-split-export-declaration": "7.24.7",
@@ -31,7 +31,7 @@
     "@vitejs/plugin-basic-ssl": "2.1.0",
     "beasties": "0.3.5",
     "browserslist": "^4.26.0",
-    "esbuild": "0.27.0",
+    "esbuild": "0.27.1",
     "https-proxy-agent": "7.0.6",
     "istanbul-lib-instrument": "6.0.3",
     "jsonc-parser": "3.3.1",
@@ -41,7 +41,7 @@
     "parse5-html-rewriting-stream": "8.0.0",
     "picomatch": "4.0.3",
     "piscina": "5.1.4",
-    "rolldown": "1.0.0-beta.52",
+    "rolldown": "1.0.0-beta.53",
     "sass": "1.94.2",
     "semver": "7.7.3",
     "source-map-support": "0.5.21",
@@ -61,7 +61,7 @@
     "@angular/platform-browser": "^21.0.0 || ^21.1.0-next.0",
     "@angular/platform-server": "^21.0.0 || ^21.1.0-next.0",
     "@angular/service-worker": "^21.0.0 || ^21.1.0-next.0",
-    "@angular/ssr": "github:angular/angular-ssr-builds#9033d94",
+    "@angular/ssr": "github:angular/angular-ssr-builds#7038ea1",
     "karma": "^6.4.0",
     "less": "^4.2.0",
     "ng-packagr": "^21.0.0 || ^21.1.0-next.0",
