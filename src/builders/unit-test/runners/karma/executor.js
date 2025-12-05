@@ -46,6 +46,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.KarmaExecutor = void 0;
 const promises_1 = __importDefault(require("node:fs/promises"));
 const node_path_1 = __importDefault(require("node:path"));
+const options_1 = require("../../options");
 class KarmaExecutor {
     context;
     options;
@@ -87,7 +88,7 @@ class KarmaExecutor {
         const karmaOptions = {
             karmaConfig,
             tsConfig: unitTestOptions.tsConfig ?? buildTargetOptions.tsConfig,
-            polyfills: buildTargetOptions.polyfills,
+            polyfills: (0, options_1.injectTestingPolyfills)(buildTargetOptions.polyfills),
             assets: buildTargetOptions.assets,
             scripts: buildTargetOptions.scripts,
             styles: buildTargetOptions.styles,
