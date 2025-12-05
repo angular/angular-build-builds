@@ -449,9 +449,14 @@ function getLocaleBaseHref(baseHref = '', i18n, locale) {
         return undefined;
     }
     const baseHrefSuffix = localeData.baseHref ?? localeData.subPath + '/';
-    return baseHrefSuffix !== ''
-        ? (0, url_1.addTrailingSlash)((0, url_1.joinUrlParts)(baseHref, baseHrefSuffix))
-        : undefined;
+    let joinedBaseHref;
+    if (baseHrefSuffix !== '') {
+        joinedBaseHref = (0, url_1.addTrailingSlash)((0, url_1.joinUrlParts)(baseHref, baseHrefSuffix));
+        if (baseHref && baseHref[0] !== '/') {
+            joinedBaseHref = (0, url_1.stripLeadingSlash)(joinedBaseHref);
+        }
+    }
+    return joinedBaseHref;
 }
 /**
  * Normalizes an array of external dependency paths by ensuring that
