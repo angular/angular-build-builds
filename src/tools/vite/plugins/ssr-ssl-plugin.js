@@ -41,6 +41,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createAngularServerSideSSLPlugin = createAngularServerSideSSLPlugin;
+const promises_1 = require("node:fs/promises");
 const node_tls_1 = require("node:tls");
 function createAngularServerSideSSLPlugin() {
     return {
@@ -61,15 +62,25 @@ function createAngularServerSideSSLPlugin() {
                 // See: https://github.com/nodejs/node/blob/b8b4350ed3b73d225eb9e628d69151df56eaf298/lib/internal/http2/core.js#L3351
                 httpServer.ALPNProtocols = ['http/1.1'];
             }
-            // TODO(alanagius): Replace `undici` with `tls.setDefaultCACertificates` once we only support Node.js 22.18.0+ and 24.5.0+.
-            // See: https://nodejs.org/api/tls.html#tlssetdefaultcacertificatescerts
+            const { cert } = https;
+            const additionalCerts = Array.isArray(cert) ? cert : [cert];
+            // TODO(alanagius): Remove the `if` check once we only support Node.js 22.18.0+ and 24.5.0+.
+            if (node_tls_1.getCACertificates && node_tls_1.setDefaultCACertificates) {
+                const currentCerts = (0, node_tls_1.getCACertificates)('default');
+                (0, node_tls_1.setDefaultCACertificates)([...currentCerts, ...additionalCerts]);
+                return;
+            }
+            // TODO(alanagius): Remove the below and `undici` dependency once we only support Node.js 22.18.0+ and 24.5.0+.
             const { getGlobalDispatcher, setGlobalDispatcher, Agent } = await Promise.resolve().then(() => __importStar(require('undici')));
             const originalDispatcher = getGlobalDispatcher();
-            const { cert } = https;
-            const certificates = Array.isArray(cert) ? cert : [cert];
+            const ca = [...node_tls_1.rootCertificates, ...additionalCerts];
+            const extraNodeCerts = process.env['NODE_EXTRA_CA_CERTS'];
+            if (extraNodeCerts) {
+                ca.push(await (0, promises_1.readFile)(extraNodeCerts));
+            }
             setGlobalDispatcher(new Agent({
                 connect: {
-                    ca: [...node_tls_1.rootCertificates, ...certificates],
+                    ca,
                 },
             }));
             httpServer?.on('close', () => {
