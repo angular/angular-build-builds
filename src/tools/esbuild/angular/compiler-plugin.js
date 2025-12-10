@@ -451,6 +451,7 @@ function createCompilerPlugin(pluginOptions, compilationOrFactory, stylesheetBun
             build.onDispose(() => {
                 sharedTSCompilationState?.dispose();
                 void compilation.close?.();
+                void javascriptTransformer.close();
                 void cacheStore?.close();
             });
             /**
