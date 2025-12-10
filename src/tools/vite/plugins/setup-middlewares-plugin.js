@@ -89,6 +89,7 @@ function createAngularSetupMiddlewaresPlugin(options) {
             // before the built-in HTML middleware
             // eslint-disable-next-line @typescript-eslint/no-misused-promises
             return async () => {
+                (0, middlewares_1.patchHostValidationMiddleware)(server.middlewares);
                 if (ssrMode === ServerSsrMode.ExternalSsrMiddleware) {
                     server.middlewares.use(await (0, middlewares_1.createAngularSsrExternalMiddleware)(server, indexHtmlTransformer));
                     return;
