@@ -98,7 +98,7 @@ async function normalizeOptions(context, projectName, options) {
         browserViewport: width && height ? { width, height } : undefined,
         watch,
         debug: options.debug ?? false,
-        ui: options.ui ?? false,
+        ui: process.env['CI'] ? false : ui,
         providersFile: options.providersFile && node_path_1.default.join(workspaceRoot, options.providersFile),
         setupFiles: options.setupFiles
             ? options.setupFiles.map((setupFile) => node_path_1.default.join(workspaceRoot, setupFile))

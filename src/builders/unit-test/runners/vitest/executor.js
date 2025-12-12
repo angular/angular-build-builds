@@ -189,7 +189,7 @@ class VitestExecutor {
             cache: cacheOptions.enabled ? undefined : false,
             testNamePattern: this.options.filter,
             watch,
-            ui,
+            ...(typeof ui === 'boolean' ? { ui } : {}),
             ...debugOptions,
         }, {
             // Note `.vitest` is auto appended to the path.
