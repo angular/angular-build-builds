@@ -21,7 +21,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.loadPostcssConfiguration = exports.generateSearchDirectories = exports.findTailwindConfiguration = exports.getTestEntrypoints = exports.findTests = exports.assertCompatibleAngularVersion = exports.getSupportedBrowsers = exports.generateBuildStatsTable = exports.augmentAppWithServiceWorker = exports.purgeStaleBuildCache = exports.createTranslationLoader = exports.loadProxyConfiguration = exports.InlineCriticalCssProcessor = exports.IndexHtmlGenerator = exports.loadTranslations = exports.createI18nOptions = exports.deleteOutputDir = exports.checkPort = exports.ComponentStylesheetBundler = exports.createAngularCompilation = exports.DiagnosticModes = exports.JavaScriptTransformer = exports.createJitResourceTransformer = exports.LmdbCacheStore = exports.Cache = exports.SourceFileCache = exports.SassWorkerImplementation = exports.transformSupportedBrowsersToTargets = exports.emitFilesToDisk = exports.serveWithVite = exports.ResultKind = exports.buildApplicationInternal = void 0;
+exports.loadPostcssConfiguration = exports.generateSearchDirectories = exports.findTailwindConfiguration = exports.getTestEntrypoints = exports.findTests = exports.assertCompatibleAngularVersion = exports.getSupportedBrowsers = exports.generateBuildStatsTable = exports.augmentAppWithServiceWorker = exports.purgeStaleBuildCache = exports.createTranslationLoader = exports.loadProxyConfiguration = exports.InlineCriticalCssProcessor = exports.IndexHtmlGenerator = exports.loadTranslations = exports.createI18nOptions = exports.deleteOutputDir = exports.checkPort = exports.ComponentStylesheetBundler = exports.createAngularCompilation = exports.DiagnosticModes = exports.JavaScriptTransformer = exports.createJitResourceTransformer = exports.Cache = exports.SourceFileCache = exports.SassWorkerImplementation = exports.transformSupportedBrowsersToTargets = exports.emitFilesToDisk = exports.serveWithVite = exports.ResultKind = exports.buildApplicationInternal = void 0;
 exports.createCompilerPlugin = createCompilerPlugin;
 /**
  * @fileoverview
@@ -52,8 +52,6 @@ var source_file_cache_1 = require("./tools/esbuild/angular/source-file-cache");
 Object.defineProperty(exports, "SourceFileCache", { enumerable: true, get: function () { return source_file_cache_1.SourceFileCache; } });
 var cache_1 = require("./tools/esbuild/cache");
 Object.defineProperty(exports, "Cache", { enumerable: true, get: function () { return cache_1.Cache; } });
-var lmdb_cache_store_1 = require("./tools/esbuild/lmdb-cache-store");
-Object.defineProperty(exports, "LmdbCacheStore", { enumerable: true, get: function () { return lmdb_cache_store_1.LmdbCacheStore; } });
 var jit_resource_transformer_1 = require("./tools/angular/transformers/jit-resource-transformer");
 Object.defineProperty(exports, "createJitResourceTransformer", { enumerable: true, get: function () { return jit_resource_transformer_1.createJitResourceTransformer; } });
 var javascript_transformer_1 = require("./tools/esbuild/javascript-transformer");
