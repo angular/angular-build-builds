@@ -104,7 +104,7 @@ class VitestExecutor {
         if (buildResult.kind === results_1.ResultKind.Incremental) {
             // To rerun tests, Vitest needs the original test file paths, not the output paths.
             const modifiedSourceFiles = new Set();
-            for (const modifiedFile of buildResult.modified) {
+            for (const modifiedFile of [...buildResult.modified, ...buildResult.added]) {
                 // The `modified` files in the build result are the output paths.
                 // We need to find the original source file path to pass to Vitest.
                 const source = this.entryPointToTestFile.get(modifiedFile);
