@@ -79,26 +79,28 @@ function createAngularSetupMiddlewaresPlugin(options) {
         enforce: 'pre',
         async configureServer(server) {
             const { indexHtmlTransformer, outputFiles, extensionMiddleware, assets, componentStyles, templateUpdates, ssrMode, resetComponentUpdates, } = options;
+            const middlewares = server.middlewares;
             // Headers, assets and resources get handled first
-            server.middlewares.use((0, middlewares_1.createAngularHeadersMiddleware)(server));
-            server.middlewares.use((0, middlewares_1.createAngularComponentMiddleware)(server, templateUpdates));
-            server.middlewares.use((0, middlewares_1.createAngularAssetsMiddleware)(server, assets, outputFiles, componentStyles, await createEncapsulateStyle()));
-            server.middlewares.use((0, middlewares_1.createChromeDevtoolsMiddleware)(server.config.cacheDir, options.projectRoot));
-            extensionMiddleware?.forEach((middleware) => server.middlewares.use(middleware));
+            middlewares.use((0, middlewares_1.createAngularHeadersMiddleware)(server));
+            middlewares.use((0, middlewares_1.createAngularComponentMiddleware)(server, templateUpdates));
+            middlewares.use((0, middlewares_1.createAngularAssetsMiddleware)(server, assets, outputFiles, componentStyles, await createEncapsulateStyle()));
+            middlewares.use((0, middlewares_1.createChromeDevtoolsMiddleware)(server.config.cacheDir, options.projectRoot));
+            extensionMiddleware?.forEach((middleware) => middlewares.use(middleware));
             // Returning a function, installs middleware after the main transform middleware but
             // before the built-in HTML middleware
             // eslint-disable-next-line @typescript-eslint/no-misused-promises
             return async () => {
                 (0, middlewares_1.patchHostValidationMiddleware)(server.middlewares);
                 if (ssrMode === ServerSsrMode.ExternalSsrMiddleware) {
-                    server.middlewares.use(await (0, middlewares_1.createAngularSsrExternalMiddleware)(server, indexHtmlTransformer));
+                    (0, middlewares_1.patchBaseMiddleware)(server.middlewares, server.config.base);
+                    middlewares.use(await (0, middlewares_1.createAngularSsrExternalMiddleware)(server, indexHtmlTransformer));
                     return;
                 }
                 if (ssrMode === ServerSsrMode.InternalSsrMiddleware) {
-                    server.middlewares.use((0, middlewares_1.createAngularSsrInternalMiddleware)(server, indexHtmlTransformer));
+                    middlewares.use((0, middlewares_1.createAngularSsrInternalMiddleware)(server, indexHtmlTransformer));
                 }
-                server.middlewares.use(middlewares_1.angularHtmlFallbackMiddleware);
-                server.middlewares.use((0, middlewares_1.createAngularIndexHtmlMiddleware)(server, outputFiles, resetComponentUpdates, indexHtmlTransformer));
+                middlewares.use(middlewares_1.angularHtmlFallbackMiddleware);
+                middlewares.use((0, middlewares_1.createAngularIndexHtmlMiddleware)(server, outputFiles, resetComponentUpdates, indexHtmlTransformer));
             };
         },
     };
