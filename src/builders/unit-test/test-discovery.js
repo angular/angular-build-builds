@@ -105,7 +105,7 @@ function getTestEntrypoints(testFiles, { projectSourceRoot, workspaceRoot, remov
  * @returns A dash-cased name derived from the relative path of the test file.
  */
 function generateNameFromPath(testFile, roots, removeTestExtension) {
-    const relativePath = removeRoots(testFile, roots);
+    const relativePath = removeRoots(testFile, roots.map(path_1.toPosixPath));
     let startIndex = 0;
     // Skip leading dots and slashes
     while (startIndex < relativePath.length && /^[./\\]$/.test(relativePath[startIndex])) {

@@ -193,6 +193,9 @@ function createVitestPlugins(pluginOptions) {
                 }
                 // Construct the full, absolute path and normalize it to POSIX format.
                 const fullPath = (0, path_1.toPosixPath)(node_path_1.default.join(baseDir, id));
+                if (testFileToEntryPoint.has(fullPath)) {
+                    return fullPath;
+                }
                 // Check if the resolved path corresponds to a known build artifact.
                 const relativePath = node_path_1.default.relative(workspaceRoot, fullPath);
                 if (buildResultFiles.has((0, path_1.toPosixPath)(relativePath))) {
