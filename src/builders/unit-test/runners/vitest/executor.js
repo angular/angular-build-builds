@@ -57,6 +57,7 @@ class VitestExecutor {
     normalizePath;
     projectName;
     options;
+    logger;
     buildResultFiles = new Map();
     externalMetadata = {
         implicitBrowser: [],
@@ -70,9 +71,10 @@ class VitestExecutor {
     // Example: `Map<'/path/to/src/app.spec.ts', 'spec-src-app-spec'>`
     testFileToEntryPoint = new Map();
     entryPointToTestFile = new Map();
-    constructor(projectName, options, testEntryPointMappings) {
+    constructor(projectName, options, testEntryPointMappings, logger) {
         this.projectName = projectName;
         this.options = options;
+        this.logger = logger;
         if (testEntryPointMappings) {
             for (const [entryPoint, testFile] of testEntryPointMappings) {
                 this.testFileToEntryPoint.set(testFile, entryPoint);
@@ -181,10 +183,19 @@ class VitestExecutor {
         const externalConfigPath = runnerConfig === true
             ? await (0, configuration_1.findVitestBaseConfig)([projectRoot, workspaceRoot])
             : runnerConfig;
+        let project = projectName;
+        if (debug && browserOptions.browser?.instances) {
+            if (browserOptions.browser.instances.length > 1) {
+                this.logger.warn('Multiple browsers are configured, but only the first browser will be used for debugging.');
+            }
+            // When running browser tests, Vitest appends the browser name to the project identifier.
+            // The project name must match this augmented name to ensure the correct project is targeted.
+            project = `${projectName} (${browserOptions.browser.instances[0].browser})`;
+        }
         return startVitest('test', undefined, {
             config: externalConfigPath,
             root: workspaceRoot,
-            project: projectName,
+            project,
             outputFile,
             cache: cacheOptions.enabled ? undefined : false,
             testNamePattern: this.options.filter,
