@@ -92,6 +92,11 @@ async function createVitestConfigPlugin(options) {
                 }
                 delete config.plugins;
             }
+            // Add browser source map support
+            if (browser || testConfig?.browser?.enabled) {
+                projectPlugins.unshift(createSourcemapSupportPlugin());
+                setupFiles.unshift('virtual:source-map-support');
+            }
             const projectResolver = (0, node_module_1.createRequire)(projectSourceRoot + '/').resolve;
             const projectDefaults = {
                 test: {
@@ -265,6 +270,30 @@ function createVitestPlugins(pluginOptions) {
             },
         },
     ];
+}
+function createSourcemapSupportPlugin() {
+    return {
+        name: 'angular:source-map-support',
+        enforce: 'pre',
+        resolveId(source) {
+            if (source.includes('virtual:source-map-support')) {
+                return '\0source-map-support';
+            }
+        },
+        async load(id) {
+            if (id !== '\0source-map-support') {
+                return;
+            }
+            const packageResolve = (0, node_module_1.createRequire)(__filename).resolve;
+            const supportPath = packageResolve('source-map-support/browser-source-map-support.js');
+            const content = await (0, promises_1.readFile)(supportPath, 'utf-8');
+            // The `source-map-support` library currently relies on `this` being defined in the global scope.
+            // However, when running in an ESM environment, `this` is undefined.
+            // To workaround this, we patch the library to use `globalThis` instead of `this`.
+            return (content.replaceAll(/this\.(define|sourceMapSupport|base64js)/g, 'globalThis.$1') +
+                '\n;globalThis.sourceMapSupport.install();');
+        },
+    };
 }
 async function generateCoverageOption(optionsCoverage, configCoverage, projectName) {
     let defaultExcludes = [];
