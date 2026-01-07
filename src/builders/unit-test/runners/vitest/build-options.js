@@ -16,7 +16,7 @@ const path_1 = require("../../../../utils/path");
 const schema_1 = require("../../../application/schema");
 const options_1 = require("../../options");
 const test_discovery_1 = require("../../test-discovery");
-function createTestBedInitVirtualFile(providersFile, projectSourceRoot, polyfills = []) {
+function createTestBedInitVirtualFile(providersFile, projectSourceRoot, teardown, polyfills = []) {
     const usesZoneJS = polyfills.includes('zone.js');
     let providersImport = 'const providers = [];';
     if (providersFile) {
@@ -55,6 +55,7 @@ function createTestBedInitVirtualFile(providersFile, projectSourceRoot, polyfill
       getTestBed().initTestEnvironment([BrowserTestingModule, TestModule], platformBrowserTesting(), {
         errorOnUnknownElements: true,
         errorOnUnknownProperties: true,
+        ${teardown === false ? 'teardown: { destroyAfterEach: false },' : ''}
       });
     }
   `;
@@ -114,7 +115,7 @@ async function getVitestBuildOptions(options, baseBuildOptions) {
         externalDependencies,
     };
     buildOptions.polyfills = (0, options_1.injectTestingPolyfills)(buildOptions.polyfills);
-    const testBedInitContents = createTestBedInitVirtualFile(providersFile, projectSourceRoot, buildOptions.polyfills);
+    const testBedInitContents = createTestBedInitVirtualFile(providersFile, projectSourceRoot, !options.debug, buildOptions.polyfills);
     return {
         buildOptions,
         virtualFiles: {

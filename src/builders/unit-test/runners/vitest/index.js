@@ -55,7 +55,7 @@ const VitestTestRunner = {
         else if (options.runnerConfig) {
             context.logger.info('Automatically searching for and using Vitest configuration file.');
         }
-        return new executor_1.VitestExecutor(projectName, options, testEntryPointMappings);
+        return new executor_1.VitestExecutor(projectName, options, testEntryPointMappings, context.logger);
     },
 };
 exports.default = VitestTestRunner;
