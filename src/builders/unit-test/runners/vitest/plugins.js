@@ -314,8 +314,10 @@ async function generateCoverageOption(optionsCoverage, configCoverage, projectNa
         ...(optionsCoverage.include
             ? { include: ['spec-*.js', 'chunk-*.js', ...optionsCoverage.include] }
             : {}),
-        thresholds: optionsCoverage.thresholds,
-        watermarks: optionsCoverage.watermarks,
+        // The 'in' operator is used here because 'configCoverage' is a union type and
+        // not all coverage providers support thresholds or watermarks.
+        thresholds: mergeCoverageObjects(configCoverage && 'thresholds' in configCoverage ? configCoverage.thresholds : undefined, optionsCoverage.thresholds),
+        watermarks: mergeCoverageObjects(configCoverage && 'watermarks' in configCoverage ? configCoverage.watermarks : undefined, optionsCoverage.watermarks),
         // Special handling for `exclude`/`reporters` due to an undefined value causing upstream failures
         ...(optionsCoverage.exclude
             ? {
@@ -331,5 +333,22 @@ async function generateCoverageOption(optionsCoverage, configCoverage, projectNa
             ? { reporter: optionsCoverage.reporters }
             : {}),
     };
+}
+/**
+ * Merges coverage related objects while ignoring any `undefined` values.
+ * This ensures that Angular CLI options correctly override Vitest configuration
+ * only when explicitly provided.
+ */
+function mergeCoverageObjects(configValue, optionsValue) {
+    if (optionsValue === undefined) {
+        return configValue;
+    }
+    const result = { ...(configValue ?? {}) };
+    for (const [key, value] of Object.entries(optionsValue)) {
+        if (value !== undefined) {
+            result[key] = value;
+        }
+    }
+    return Object.keys(result).length > 0 ? result : undefined;
 }
 //# sourceMappingURL=plugins.js.map
