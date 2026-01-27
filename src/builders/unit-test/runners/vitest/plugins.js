@@ -92,8 +92,9 @@ async function createVitestConfigPlugin(options) {
                 }
                 delete config.plugins;
             }
-            // Add browser source map support
-            if (browser || testConfig?.browser?.enabled) {
+            // Add browser source map support if coverage is enabled
+            if ((browser || testConfig?.browser?.enabled) &&
+                (options.coverage.enabled || testConfig?.coverage?.enabled)) {
                 projectPlugins.unshift(createSourcemapSupportPlugin());
                 setupFiles.unshift('virtual:source-map-support');
             }
@@ -153,10 +154,14 @@ async function loadResultFile(file) {
 function createVitestPlugins(pluginOptions) {
     const { workspaceRoot, buildResultFiles, testFileToEntryPoint } = pluginOptions;
     const isWindows = (0, node_os_1.platform)() === 'win32';
+    let vitestConfig;
     return [
         {
             name: 'angular:test-in-memory-provider',
             enforce: 'pre',
+            configureVitest(context) {
+                vitestConfig = context.vitest.config;
+            },
             resolveId: (id, importer) => {
                 // Fast path for test entry points.
                 if (testFileToEntryPoint.has(id)) {
@@ -209,18 +214,21 @@ function createVitestPlugins(pluginOptions) {
                 // If the module cannot be resolved from the build artifacts, let other plugins handle it.
                 return undefined;
             },
-            load: async (id) => {
+            async load(id) {
                 (0, node_assert_1.default)(buildResultFiles.size > 0, 'buildResult must be available for in-memory loading.');
                 // Attempt to load as a source test file.
                 const entryPoint = testFileToEntryPoint.get(id);
                 let outputPath;
                 if (entryPoint) {
                     outputPath = entryPoint + '.js';
-                    // To support coverage exclusion of the actual test file, the virtual
-                    // test entry point only references the built and bundled intermediate file.
-                    return {
-                        code: `import "./${outputPath}";`,
-                    };
+                    if (vitestConfig.coverage.enabled) {
+                        // To support coverage exclusion of the actual test file, the virtual
+                        // test entry point only references the built and bundled intermediate file.
+                        // If vitest supported an "excludeOnlyAfterRemap" option, this could be removed completely.
+                        return {
+                            code: `import "./${outputPath}";`,
+                        };
+                    }
                 }
                 else {
                     // Attempt to load as a built artifact.
@@ -241,6 +249,16 @@ function createVitestPlugins(pluginOptions) {
                     if (map) {
                         if (!map.sources?.length && !map.sourcesContent?.length && !map.mappings) {
                             map.sources = ['virtual:builder'];
+                        }
+                        else if (!vitestConfig.coverage.enabled && Array.isArray(map.sources)) {
+                            map.sources = map.sources.map((source) => {
+                                if (source.startsWith('angular:')) {
+                                    return source;
+                                }
+                                // source is relative to the workspace root because the output file is at the root of the output.
+                                const absoluteSource = node_path_1.default.join(workspaceRoot, source);
+                                return (0, path_1.toPosixPath)(node_path_1.default.relative(node_path_1.default.dirname(id), absoluteSource));
+                            });
                         }
                     }
                     return {
