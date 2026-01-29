@@ -145,9 +145,10 @@ async function createVitestConfigPlugin(options) {
         },
     };
 }
+const textDecoder = new TextDecoder('utf-8');
 async function loadResultFile(file) {
     if (file.origin === 'memory') {
-        return new TextDecoder('utf-8').decode(file.contents);
+        return textDecoder.decode(file.contents);
     }
     return (0, promises_1.readFile)(file.inputPath, 'utf-8');
 }
@@ -175,19 +176,6 @@ function createVitestPlugins(pluginOptions) {
                     const slicedId = id.slice(1);
                     if (node_path_1.default.isAbsolute(slicedId)) {
                         return slicedId;
-                    }
-                }
-                if (importer && (id[0] === '.' || id[0] === '/')) {
-                    let fullPath;
-                    if (testFileToEntryPoint.has(importer)) {
-                        fullPath = (0, path_1.toPosixPath)(node_path_1.default.join(workspaceRoot, id));
-                    }
-                    else {
-                        fullPath = (0, path_1.toPosixPath)(node_path_1.default.join(node_path_1.default.dirname(importer), id));
-                    }
-                    const relativePath = node_path_1.default.relative(workspaceRoot, fullPath);
-                    if (buildResultFiles.has((0, path_1.toPosixPath)(relativePath))) {
-                        return fullPath;
                     }
                 }
                 // Determine the base directory for resolution.
@@ -221,7 +209,7 @@ function createVitestPlugins(pluginOptions) {
                 let outputPath;
                 if (entryPoint) {
                     outputPath = entryPoint + '.js';
-                    if (vitestConfig.coverage.enabled) {
+                    if (vitestConfig?.coverage?.enabled) {
                         // To support coverage exclusion of the actual test file, the virtual
                         // test entry point only references the built and bundled intermediate file.
                         // If vitest supported an "excludeOnlyAfterRemap" option, this could be removed completely.
@@ -241,25 +229,9 @@ function createVitestPlugins(pluginOptions) {
                     const sourceMapPath = outputPath + '.map';
                     const sourceMapFile = buildResultFiles.get(sourceMapPath);
                     const sourceMapText = sourceMapFile ? await loadResultFile(sourceMapFile) : undefined;
-                    // Vitest will include files in the coverage report if the sourcemap contains no sources.
-                    // For builder-internal generated code chunks, which are typically helper functions,
-                    // a virtual source is added to the sourcemap to prevent them from being incorrectly
-                    // included in the final coverage report.
                     const map = sourceMapText ? JSON.parse(sourceMapText) : undefined;
                     if (map) {
-                        if (!map.sources?.length && !map.sourcesContent?.length && !map.mappings) {
-                            map.sources = ['virtual:builder'];
-                        }
-                        else if (!vitestConfig.coverage.enabled && Array.isArray(map.sources)) {
-                            map.sources = map.sources.map((source) => {
-                                if (source.startsWith('angular:')) {
-                                    return source;
-                                }
-                                // source is relative to the workspace root because the output file is at the root of the output.
-                                const absoluteSource = node_path_1.default.join(workspaceRoot, source);
-                                return (0, path_1.toPosixPath)(node_path_1.default.relative(node_path_1.default.dirname(id), absoluteSource));
-                            });
-                        }
+                        adjustSourcemapSources(map, !vitestConfig?.coverage?.enabled, workspaceRoot, id);
                     }
                     return {
                         code,
@@ -288,6 +260,33 @@ function createVitestPlugins(pluginOptions) {
             },
         },
     ];
+}
+/**
+ * Adjusts the sources field in a sourcemap to ensure correct source mapping and coverage reporting.
+ *
+ * @param map The raw sourcemap to adjust.
+ * @param rebaseSources Whether to rebase the source paths relative to the test file.
+ * @param workspaceRoot The root directory of the workspace.
+ * @param id The ID (path) of the file being loaded.
+ */
+function adjustSourcemapSources(map, rebaseSources, workspaceRoot, id) {
+    if (!map.sources?.length && !map.sourcesContent?.length && !map.mappings) {
+        // Vitest will include files in the coverage report if the sourcemap contains no sources.
+        // For builder-internal generated code chunks, which are typically helper functions,
+        // a virtual source is added to the sourcemap to prevent them from being incorrectly
+        // included in the final coverage report.
+        map.sources = ['virtual:builder'];
+    }
+    else if (rebaseSources && map.sources) {
+        map.sources = map.sources.map((source) => {
+            if (!source || source.startsWith('angular:')) {
+                return source;
+            }
+            // source is relative to the workspace root because the output file is at the root of the output.
+            const absoluteSource = node_path_1.default.join(workspaceRoot, source);
+            return (0, path_1.toPosixPath)(node_path_1.default.relative(node_path_1.default.dirname(id), absoluteSource));
+        });
+    }
 }
 function createSourcemapSupportPlugin() {
     return {
