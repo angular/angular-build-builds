@@ -173,9 +173,14 @@ class VitestExecutor {
         }
         const { startVitest } = vitestNodeModule;
         // Setup vitest browser options if configured
-        const browserOptions = await (0, browser_provider_1.setupBrowserConfiguration)(browsers, debug, projectSourceRoot, browserViewport);
+        const browserOptions = await (0, browser_provider_1.setupBrowserConfiguration)(browsers, this.options.headless, debug, projectSourceRoot, browserViewport);
         if (browserOptions.errors?.length) {
             throw new Error(browserOptions.errors.join('\n'));
+        }
+        if (browserOptions.messages?.length) {
+            for (const message of browserOptions.messages) {
+                this.logger.info(message);
+            }
         }
         (0, node_assert_1.default)(this.buildResultFiles.size > 0, 'buildResult must be available before initializing vitest');
         const testSetupFiles = this.prepareSetupFiles();
@@ -205,6 +210,12 @@ class VitestExecutor {
             // The project name must match this augmented name to ensure the correct project is targeted.
             project = `${projectName} (${browserOptions.browser.instances[0].browser})`;
         }
+        // Filter internal entries and setup files from the include list
+        const internalEntries = ['angular:'];
+        const setupFileSet = new Set(testSetupFiles);
+        const include = [...this.testFileToEntryPoint.keys()].filter((entry) => {
+            return (!internalEntries.some((internal) => entry.startsWith(internal)) && !setupFileSet.has(entry));
+        });
         return startVitest('test', undefined, {
             config: externalConfigPath,
             root: workspaceRoot,
@@ -233,9 +244,7 @@ class VitestExecutor {
                     reporters,
                     setupFiles: testSetupFiles,
                     projectPlugins,
-                    include: [...this.testFileToEntryPoint.keys()].filter(
-                    // Filter internal entries
-                    (entry) => !entry.startsWith('angular:')),
+                    include,
                 }),
             ],
         });
