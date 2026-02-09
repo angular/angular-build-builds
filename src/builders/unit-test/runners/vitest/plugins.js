@@ -197,7 +197,18 @@ function createVitestPlugins(pluginOptions) {
                     baseDir = workspaceRoot;
                 }
                 // Construct the full, absolute path and normalize it to POSIX format.
-                const fullPath = (0, path_1.toPosixPath)(node_path_1.default.join(baseDir, id));
+                let fullPath;
+                if (node_path_1.default.isAbsolute(id)) {
+                    const relativeId = node_path_1.default.relative(baseDir, id);
+                    fullPath =
+                        !relativeId.startsWith('..') && !node_path_1.default.isAbsolute(relativeId)
+                            ? id
+                            : node_path_1.default.join(baseDir, id);
+                }
+                else {
+                    fullPath = node_path_1.default.join(baseDir, id);
+                }
+                fullPath = (0, path_1.toPosixPath)(fullPath);
                 if (testFileToEntryPoint.has(fullPath)) {
                     return fullPath;
                 }
