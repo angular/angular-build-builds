@@ -97,6 +97,7 @@ async function getVitestBuildOptions(options, baseBuildOptions) {
         }
     }
     entryPoints.set('init-testbed', 'angular:test-bed-init');
+    entryPoints.set('vitest-mock-patch', 'angular:vitest-mock-patch');
     // The 'vitest' package is always external for testing purposes
     const externalDependencies = ['vitest'];
     if (baseBuildOptions.externalDependencies) {
@@ -127,10 +128,21 @@ async function getVitestBuildOptions(options, baseBuildOptions) {
     };
     buildOptions.polyfills = (0, options_1.injectTestingPolyfills)(buildOptions.polyfills);
     const testBedInitContents = createTestBedInitVirtualFile(providersFile, projectSourceRoot, !options.debug, buildOptions.polyfills);
+    const mockPatchContents = `
+    import { vi } from 'vitest';
+    const error = new Error(
+    'The "vi.mock" and related methods are not supported with the Angular unit-test system. Please use Angular TestBed for mocking.');
+    vi.mock = () => { throw error; };
+    vi.doMock = () => { throw error; };
+    vi.importMock = () => { throw error; };
+    vi.unmock = () => { throw error; };
+    vi.doUnmock = () => { throw error; };
+  `;
     return {
         buildOptions,
         virtualFiles: {
             'angular:test-bed-init': testBedInitContents,
+            'angular:vitest-mock-patch': mockPatchContents,
         },
         testEntryPointMappings: entryPoints,
     };
