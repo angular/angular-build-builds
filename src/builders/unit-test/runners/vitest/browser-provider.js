@@ -103,6 +103,18 @@ async function setupBrowserConfiguration(browsers, headless, debug, projectSourc
                         launchOptions: {
                             executablePath: process.env.CHROME_BIN,
                         },
+                        contextOptions: {
+                            // Enables `prefer-color-scheme` for Vitest browser instead of `light`
+                            colorScheme: null,
+                        },
+                    });
+                }
+                else if (providerName === 'playwright') {
+                    provider = providerFactory({
+                        contextOptions: {
+                            // Enables `prefer-color-scheme` for Vitest browser instead of `light`
+                            colorScheme: null,
+                        },
                     });
                 }
                 else {
