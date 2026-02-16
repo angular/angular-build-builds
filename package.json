@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "21.2.0-next.2+sha-737095b",
+  "version": "21.2.0-next.2+sha-853130f",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -23,7 +23,7 @@
   "builders": "builders.json",
   "dependencies": {
     "@ampproject/remapping": "2.3.0",
-    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#737095b",
+    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#853130f",
     "@babel/core": "7.29.0",
     "@babel/helper-annotate-as-pure": "7.27.3",
     "@babel/helper-split-export-declaration": "7.24.7",
@@ -31,7 +31,7 @@
     "@vitejs/plugin-basic-ssl": "2.1.4",
     "beasties": "0.4.1",
     "browserslist": "^4.26.0",
-    "esbuild": "0.27.2",
+    "esbuild": "0.27.3",
     "https-proxy-agent": "7.0.6",
     "istanbul-lib-instrument": "6.0.3",
     "jsonc-parser": "3.3.1",
@@ -41,12 +41,12 @@
     "parse5-html-rewriting-stream": "8.0.0",
     "picomatch": "4.0.3",
     "piscina": "5.1.4",
-    "rolldown": "1.0.0-rc.3",
+    "rolldown": "1.0.0-rc.4",
     "sass": "1.97.3",
-    "semver": "7.7.3",
+    "semver": "7.7.4",
     "source-map-support": "0.5.21",
     "tinyglobby": "0.2.15",
-    "undici": "7.20.0",
+    "undici": "7.22.0",
     "vite": "7.3.1",
     "watchpack": "2.5.1"
   },
@@ -61,7 +61,7 @@
     "@angular/platform-browser": "^21.0.0 || ^21.2.0-next.0",
     "@angular/platform-server": "^21.0.0 || ^21.2.0-next.0",
     "@angular/service-worker": "^21.0.0 || ^21.2.0-next.0",
-    "@angular/ssr": "github:angular/angular-ssr-builds#737095b",
+    "@angular/ssr": "github:angular/angular-ssr-builds#853130f",
     "karma": "^6.4.0",
     "less": "^4.2.0",
     "ng-packagr": "^21.0.0 || ^21.2.0-next.0",
@@ -113,7 +113,7 @@
     "type": "git",
     "url": "https://github.com/angular/angular-cli.git"
   },
-  "packageManager": "pnpm@10.29.2",
+  "packageManager": "pnpm@10.29.3",
   "engines": {
     "node": "^20.19.0 || ^22.12.0 || >=24.0.0",
     "npm": "^6.11.0 || ^7.5.6 || >=8.0.0",
