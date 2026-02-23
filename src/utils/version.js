@@ -11,6 +11,9 @@ exports.assertCompatibleAngularVersion = assertCompatibleAngularVersion;
 /* eslint-disable no-console */
 const node_module_1 = require("node:module");
 const semver_1 = require("semver");
+// Matches exactly '0.0.0' or any string ending in '.0.0-next.0'
+// This allows FW to bump the package.json to a new major version without requiring a new CLI version.
+const angularVersionRegex = /^0\.0\.0$|\.0\.0-next\.0$/;
 function assertCompatibleAngularVersion(projectRoot) {
     let angularPkgJson;
     // Create a custom require function for ESM compliance.
@@ -29,7 +32,8 @@ function assertCompatibleAngularVersion(projectRoot) {
         process.exit(2);
     }
     const supportedAngularSemver = '^21.0.0';
-    if (angularPkgJson['version'] === '0.0.0' || supportedAngularSemver.startsWith('0.0.0')) {
+    if (angularVersionRegex.test(angularPkgJson['version']) ||
+        supportedAngularSemver.startsWith('0.0.0')) {
         // Internal CLI and FW testing version.
         return;
     }
