@@ -30,7 +30,7 @@ function assertCompatibleAngularVersion(projectRoot) {
     }
     const angularCoreSemVer = new semver_1.SemVer(angularPkgJson['version']);
     const { version, build, raw } = angularCoreSemVer;
-    const supportedAngularSemver = '^21.0.0 || ^21.2.0-next.0';
+    const supportedAngularSemver = '^21.0.0';
     if (version.startsWith('0.0.0') || supportedAngularSemver.startsWith('0.0.0')) {
         // Internal CLI and FW testing version.
         return;

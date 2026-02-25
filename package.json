@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "21.2.0-rc.2+sha-54bd6e3",
+  "version": "21.2.0-rc.2+sha-481e40d",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -23,7 +23,7 @@
   "builders": "builders.json",
   "dependencies": {
     "@ampproject/remapping": "2.3.0",
-    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#54bd6e3",
+    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#481e40d",
     "@babel/core": "7.29.0",
     "@babel/helper-annotate-as-pure": "7.27.3",
     "@babel/helper-split-export-declaration": "7.24.7",
@@ -54,17 +54,17 @@
     "lmdb": "3.5.1"
   },
   "peerDependencies": {
-    "@angular/compiler": "^21.0.0 || ^21.2.0-next.0",
-    "@angular/compiler-cli": "^21.0.0 || ^21.2.0-next.0",
-    "@angular/core": "^21.0.0 || ^21.2.0-next.0",
-    "@angular/localize": "^21.0.0 || ^21.2.0-next.0",
-    "@angular/platform-browser": "^21.0.0 || ^21.2.0-next.0",
-    "@angular/platform-server": "^21.0.0 || ^21.2.0-next.0",
-    "@angular/service-worker": "^21.0.0 || ^21.2.0-next.0",
-    "@angular/ssr": "github:angular/angular-ssr-builds#54bd6e3",
+    "@angular/compiler": "^21.0.0",
+    "@angular/compiler-cli": "^21.0.0",
+    "@angular/core": "^21.0.0",
+    "@angular/localize": "^21.0.0",
+    "@angular/platform-browser": "^21.0.0",
+    "@angular/platform-server": "^21.0.0",
+    "@angular/service-worker": "^21.0.0",
+    "@angular/ssr": "github:angular/angular-ssr-builds#481e40d",
     "karma": "^6.4.0",
     "less": "^4.2.0",
-    "ng-packagr": "^21.0.0 || ^21.2.0-next.0",
+    "ng-packagr": "^21.0.0",
     "postcss": "^8.4.0",
     "tailwindcss": "^2.0.0 || ^3.0.0 || ^4.0.0",
     "tslib": "^2.3.0",
