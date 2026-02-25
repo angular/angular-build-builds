@@ -169,7 +169,7 @@ class VitestExecutor {
             if (error.code !== 'ERR_MODULE_NOT_FOUND') {
                 throw error;
             }
-            throw new Error('The `vitest` package was not found. Please install the package and rerun the test command.');
+            throw new Error('The `vitest` package was not found. Please install the package and rerun the test command.', { cause: error });
         }
         const { startVitest } = vitestNodeModule;
         // Setup vitest browser options if configured

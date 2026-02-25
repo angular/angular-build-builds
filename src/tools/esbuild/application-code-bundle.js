@@ -499,7 +499,6 @@ function getEsBuildCommonPolyfillsOptions(options, namespace, tryToResolvePolyfi
         cache: loadResultCache,
         loadContent: async (_, build) => {
             let polyfillPaths = polyfills;
-            let warnings;
             if (tryToResolvePolyfillsAsRelative) {
                 polyfillPaths = await Promise.all(polyfills.map(async (path) => {
                     if (path.startsWith('zone.js') || !(0, node_path_1.extname)(path)) {
@@ -527,7 +526,6 @@ function getEsBuildCommonPolyfillsOptions(options, namespace, tryToResolvePolyfi
             return {
                 contents,
                 loader: 'js',
-                warnings,
                 resolveDir: workspaceRoot,
             };
         },

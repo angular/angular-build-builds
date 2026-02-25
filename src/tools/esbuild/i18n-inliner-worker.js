@@ -155,7 +155,9 @@ async function transformWithBabel(code, map, options) {
         // Which makes it hard to find the actual error message.
         const index = error.message.indexOf(')\n');
         const msg = index !== -1 ? error.message.slice(0, index + 1) : error.message;
-        throw new Error(`${msg}\nAn error occurred inlining file "${options.filename}"`);
+        throw new Error(`${msg}\nAn error occurred inlining file "${options.filename}"`, {
+            cause: error,
+        });
     }
     if (!ast) {
         throw new Error(`Unknown error occurred inlining file "${options.filename}"`);

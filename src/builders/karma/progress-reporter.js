@@ -27,11 +27,9 @@ function injectKarmaReporter(buildOptions, buildIterator, karmaConfig, controlle
         startWatchingBuild() {
             void (async () => {
                 // This is effectively "for await of but skip what's already consumed".
-                let isDone = false; // to mark the loop condition as "not constant".
-                while (!isDone) {
+                while (true) {
                     const { done, value: buildOutput } = await buildIterator.next();
                     if (done) {
-                        isDone = true;
                         break;
                     }
                     if (buildOutput.kind === results_1.ResultKind.Failure) {

@@ -149,7 +149,7 @@ async function augmentAppWithServiceWorker(appRoot, workspaceRoot, outputPath, b
         if (error.code === 'ENOENT') {
             throw new Error('Error: Expected to find an ngsw-config.json configuration file' +
                 ` in the ${appRoot} folder. Either provide one or` +
-                ' disable Service Worker in the angular.json configuration file.');
+                ' disable Service Worker in the angular.json configuration file.', { cause: error });
         }
         else {
             throw error;
@@ -181,7 +181,7 @@ async function augmentAppWithServiceWorkerEsbuild(workspaceRoot, configPath, bas
         if (error.code === 'ENOENT') {
             // TODO: Generate an error object that can be consumed by the esbuild-based builder
             const message = `Service worker configuration file "${path.relative(workspaceRoot, configPath)}" could not be found.`;
-            throw new Error(message);
+            throw new Error(message, { cause: error });
         }
         else {
             throw error;

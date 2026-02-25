@@ -120,10 +120,9 @@ async function loadTestRunner(runnerName) {
     catch (e) {
         (0, error_1.assertIsError)(e);
         if (e.code === 'ERR_MODULE_NOT_FOUND') {
-            throw new Error(`Unknown test runner "${runnerName}".`);
+            throw new Error(`Unknown test runner "${runnerName}".`, { cause: e });
         }
-        throw new Error(`Failed to load the '${runnerName}' test runner. The package may be corrupted or improperly installed.\n` +
-            `Error: ${e.message}`);
+        throw new Error(`Failed to load the '${runnerName}' test runner. The package may be corrupted or improperly installed.`, { cause: e });
     }
     const runner = runnerModule.default;
     if (!runner ||
@@ -363,7 +362,9 @@ async function transformNgPackagrOptions(context, options, projectRoot) {
     }
     catch (e) {
         (0, error_1.assertIsError)(e);
-        throw new Error(`Could not read ng-package.json at ${ngPackagePath}: ${e.message}`);
+        throw new Error(`Could not read ng-package.json at ${ngPackagePath}`, {
+            cause: e,
+        });
     }
     const lib = ngPackageJson['lib'] || {};
     const styleIncludePaths = lib['styleIncludePaths'] || [];

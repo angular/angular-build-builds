@@ -75,7 +75,7 @@ function normalizeAssetPatterns(assetPatterns, workspaceRoot, projectRoot, proje
                 throw new Error(`The ${assetPattern} asset path must be within the workspace root.`);
             }
             let glob, input;
-            let isDirectory = false;
+            let isDirectory;
             try {
                 isDirectory = (0, node_fs_1.statSync)(resolvedAssetPath).isDirectory();
             }
