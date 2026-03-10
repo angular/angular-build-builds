@@ -576,10 +576,8 @@ export type SsrClass = {
      * making the bundle more portable.
      *
      * Please note that this feature does not provide polyfills for Node.js modules.
-     * Additionally, it is experimental, and the schematics may undergo changes in future
-     * versions.
      */
-    experimentalPlatform?: ExperimentalPlatform;
+    platform?: Platform;
 };
 /**
  * Specifies the platform for which the server bundle is generated. This affects the APIs
@@ -591,10 +589,8 @@ export type SsrClass = {
  * making the bundle more portable.
  *
  * Please note that this feature does not provide polyfills for Node.js modules.
- * Additionally, it is experimental, and the schematics may undergo changes in future
- * versions.
  */
-export declare enum ExperimentalPlatform {
+export declare enum Platform {
     Neutral = "neutral",
     Node = "node"
 }

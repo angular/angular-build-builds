@@ -156,10 +156,10 @@ async function normalizeOptions(context, projectName, options, extensions) {
         ssrOptions = {};
     }
     else if (typeof options.ssr === 'object') {
-        const { entry, experimentalPlatform = schema_1.ExperimentalPlatform.Node } = options.ssr;
+        const { entry, platform = schema_1.Platform.Node } = options.ssr;
         ssrOptions = {
             entry: entry && node_path_1.default.join(workspaceRoot, entry),
-            platform: experimentalPlatform,
+            platform,
         };
     }
     let appShellOptions;
