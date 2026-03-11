@@ -129,6 +129,7 @@ async function renderPages(baseHref, sourcemap, serializableRouteTreeNode, maxTh
         },
         execArgv: workerExecArgv,
         env: {
+            ...process.env,
             'NG_ALLOWED_HOSTS': 'localhost',
         },
     });
@@ -211,6 +212,7 @@ async function getAllRoutes(workspaceRoot, baseHref, outputFilesForWorker, asset
         },
         execArgv: workerExecArgv,
         env: {
+            ...process.env,
             'NG_ALLOWED_HOSTS': 'localhost',
         },
     });
