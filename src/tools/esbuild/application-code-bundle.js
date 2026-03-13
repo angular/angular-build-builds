@@ -459,15 +459,16 @@ function getEsBuildCommonOptions(options) {
     };
 }
 function getEsBuildCommonPolyfillsOptions(options, namespace, tryToResolvePolyfillsAsRelative, loadResultCache) {
-    const { jit, workspaceRoot, i18nOptions } = options;
+    const { jit, workspaceRoot, i18nOptions, externalPackages } = options;
+    let polyfills = options.polyfills ? [...options.polyfills] : [];
     const buildOptions = getEsBuildCommonOptions({
         ...options,
-        externalPackages: false,
+        // If any polyfills are local files, disable external packages for the polyfills build.
+        // This ensures that local files are properly bundled.
+        externalPackages: polyfills.some(isLocalFile) ? false : externalPackages,
     });
-    buildOptions.packages = 'bundle';
     buildOptions.splitting = false;
     buildOptions.plugins ??= [];
-    let polyfills = options.polyfills ? [...options.polyfills] : [];
     // Angular JIT mode requires the runtime compiler
     if (jit) {
         polyfills.unshift('@angular/compiler');
@@ -536,5 +537,18 @@ function getEsBuildCommonPolyfillsOptions(options, namespace, tryToResolvePolyfi
 }
 function entryFileToWorkspaceRelative(workspaceRoot, entryFile) {
     return './' + (0, path_1.toPosixPath)((0, node_path_1.relative)(workspaceRoot, entryFile).replace(/.[mc]?ts$/, ''));
+}
+/**
+ * Determines if a polyfill path is a local file.
+ * A local file is defined as a path starting with a `.` or having a TypeScript/JavaScript extension.
+ * `zone.js` and its subpaths are specifically excluded and treated as packages.
+ * @param path The polyfill path to check.
+ * @returns true if the path is a local file; false otherwise.
+ */
+function isLocalFile(path) {
+    if (path.startsWith('zone.js')) {
+        return false;
+    }
+    return path[0] === '.' || /\.[mc]?[jt]sx?$/.test(path);
 }
 //# sourceMappingURL=application-code-bundle.js.map
