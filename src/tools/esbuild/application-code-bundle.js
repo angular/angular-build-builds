@@ -131,7 +131,12 @@ function createServerPolyfillBundleOptions(options, target, loadResultCache) {
     if (isNodePlatform) {
         // Note: Needed as esbuild does not provide require shims / proxy from ESModules.
         // See: https://github.com/evanw/esbuild/issues/1921.
-        jsBanner.push(`import { createRequire } from 'node:module';`, `globalThis['require'] ??= createRequire(import.meta.url);`);
+        // Use an alias to avoid colliding with any `createRequire` import that may
+        // already exist in the bundled user code. ESBuild processes banner content
+        // as raw text outside of its module graph, so it cannot deduplicate or
+        // rename banner imports the way it does for user imports. Without the alias,
+        // a duplicate `import { createRequire }` binding would cause a runtime error.
+        jsBanner.push(`import { createRequire as __ngCreateRequire } from 'node:module';`, `globalThis['require'] ??= __ngCreateRequire(import.meta.url);`);
     }
     const buildOptions = {
         ...polyfillBundleOptions,
@@ -268,7 +273,12 @@ function createSsrEntryCodeBundleOptions(options, target, sourceFileCache, style
         if (isNodePlatform) {
             // Note: Needed as esbuild does not provide require shims / proxy from ESModules.
             // See: https://github.com/evanw/esbuild/issues/1921.
-            jsBanner.push(`import { createRequire } from 'node:module';`, `globalThis['require'] ??= createRequire(import.meta.url);`);
+            // Use an alias to avoid colliding with any `createRequire` import that may
+            // already exist in the bundled user code. ESBuild processes banner content
+            // as raw text outside of its module graph, so it cannot deduplicate or
+            // rename banner imports the way it does for user imports. Without the alias,
+            // a duplicate `import { createRequire }` binding would cause a runtime error.
+            jsBanner.push(`import { createRequire as __ngCreateRequire } from 'node:module';`, `globalThis['require'] ??= __ngCreateRequire(import.meta.url);`);
         }
         const buildOptions = {
             ...getEsBuildServerCommonOptions(options),
