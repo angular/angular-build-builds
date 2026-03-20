@@ -79,6 +79,11 @@ async function createVitestConfigPlugin(options) {
                     'The Angular CLI Test system will manage test file discovery.');
                 delete testConfig.include;
             }
+            if (testConfig?.watch !== undefined && testConfig.watch !== options.watch) {
+                this.warn(`The "test.watch" option in the Vitest configuration file is overridden by the builder's ` +
+                    `watch option. Please use the Angular CLI "--watch" option to enable or disable watch mode.`);
+                delete testConfig.watch;
+            }
             // Merge user-defined plugins from the Vitest config with the CLI's internal plugins.
             if (config.plugins) {
                 const userPlugins = config.plugins.filter((plugin) => 
