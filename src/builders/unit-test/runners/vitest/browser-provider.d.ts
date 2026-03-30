@@ -11,6 +11,11 @@ export interface BrowserConfiguration {
     errors?: string[];
     messages?: string[];
 }
+export interface BrowserInstanceConfiguration {
+    browser: string;
+    headless: boolean;
+    provider?: import('vitest/node').BrowserProviderOption;
+}
 export declare function setupBrowserConfiguration(browsers: string[] | undefined, headless: boolean | undefined, debug: boolean, projectSourceRoot: string, viewport: {
     width: number;
     height: number;
