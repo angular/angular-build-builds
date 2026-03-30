@@ -86,6 +86,7 @@ async function setupBrowserConfiguration(browsers, headless, debug, projectSourc
         errors.push('The "browsers" option requires either "playwright" or "webdriverio" to be installed within the project.' +
             ' Please install one of these packages and rerun the test command.');
     }
+    const instances = browsers.map(normalizeBrowserName);
     let provider;
     if (providerName) {
         const providerPackage = `@vitest/browser-${providerName}`;
@@ -96,17 +97,23 @@ async function setupBrowserConfiguration(browsers, headless, debug, projectSourc
             if (typeof providerFactory === 'function') {
                 if (providerName === 'playwright') {
                     const executablePath = process.env['CHROME_BIN'];
-                    provider = providerFactory({
-                        launchOptions: executablePath
-                            ? {
-                                executablePath,
-                            }
-                            : undefined,
+                    const baseOptions = {
                         contextOptions: {
                             // Enables `prefer-color-scheme` for Vitest browser instead of `light`
                             colorScheme: null,
                         },
-                    });
+                    };
+                    provider = providerFactory(baseOptions);
+                    if (executablePath) {
+                        for (const instance of instances) {
+                            if (instance.browser === 'chrome' || instance.browser === 'chromium') {
+                                instance.provider = providerFactory({
+                                    ...baseOptions,
+                                    launchOptions: { executablePath },
+                                });
+                            }
+                        }
+                    }
                 }
                 else {
                     provider = providerFactory();
@@ -135,7 +142,6 @@ async function setupBrowserConfiguration(browsers, headless, debug, projectSourc
         return { errors };
     }
     const isCI = !!process.env['CI'];
-    const instances = browsers.map(normalizeBrowserName);
     const messages = [];
     if (providerName === 'preview') {
         instances.forEach((instance) => {
