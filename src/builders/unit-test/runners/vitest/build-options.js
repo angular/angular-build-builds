@@ -11,11 +11,24 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getVitestBuildOptions = getVitestBuildOptions;
+/**
+ * @fileoverview
+ * Provides Vitest-specific build options and virtual file contents for Angular unit testing.
+ */
 const node_module_1 = require("node:module");
 const node_path_1 = __importDefault(require("node:path"));
 const path_1 = require("../../../../utils/path");
 const schema_1 = require("../../../application/schema");
 const test_discovery_1 = require("../../test-discovery");
+/**
+ * Creates the virtual file contents to initialize the Angular testing environment (TestBed).
+ *
+ * @param providersFile Optional path to a file that exports default providers.
+ * @param projectSourceRoot The root directory of the project source.
+ * @param teardown Whether to configure TestBed to destroy after each test.
+ * @param zoneTestingStrategy How zone.js should be loaded during initialization.
+ * @returns The string content of the virtual initialization file.
+ */
 function createTestBedInitVirtualFile(providersFile, projectSourceRoot, teardown, zoneTestingStrategy) {
     let providersImport = 'const providers = [];';
     if (providersFile) {
@@ -23,6 +36,17 @@ function createTestBedInitVirtualFile(providersFile, projectSourceRoot, teardown
         const { dir, name } = node_path_1.default.parse(relativePath);
         const importPath = (0, path_1.toPosixPath)(node_path_1.default.join(dir, name));
         providersImport = `import providers from './${importPath}';`;
+    }
+    let zoneTestingSnippet = '';
+    if (zoneTestingStrategy === 'static') {
+        zoneTestingSnippet = `import 'zone.js/testing';`;
+    }
+    else if (zoneTestingStrategy === 'dynamic') {
+        zoneTestingSnippet = `if (typeof Zone !== 'undefined') {
+      // 'zone.js/testing' is used to initialize the ZoneJS testing environment.
+      // It must be imported dynamically to avoid a static dependency on 'zone.js'.
+      await import('zone.js/testing');
+    }`;
     }
     return `
     // Initialize the Angular testing environment
@@ -32,16 +56,7 @@ function createTestBedInitVirtualFile(providersFile, projectSourceRoot, teardown
     import { afterEach, beforeEach } from 'vitest';
     ${providersImport}
 
-    ${zoneTestingStrategy === 'static'
-        ? `import 'zone.js/testing';`
-        : zoneTestingStrategy === 'dynamic'
-            ? `
-    if (typeof Zone !== 'undefined') {
-      // 'zone.js/testing' is used to initialize the ZoneJS testing environment.
-      // It must be imported dynamically to avoid a static dependency on 'zone.js'.
-      await import('zone.js/testing');
-    }`
-            : ''}
+    ${zoneTestingSnippet}
 
     // The beforeEach and afterEach hooks are registered outside the globalThis guard.
     // This ensures that the hooks are always applied, even in non-isolated browser environments.
@@ -73,6 +88,13 @@ function createTestBedInitVirtualFile(providersFile, projectSourceRoot, teardown
     }
   `;
 }
+/**
+ * Adjusts output hashing settings for testing purposes. For example, ensuring media
+ * is continued to be hashed to avoid overwriting assets, but turning off JavaScript hashing.
+ *
+ * @param hashing The original OutputHashing configuration.
+ * @returns The adjusted OutputHashing configuration.
+ */
 function adjustOutputHashing(hashing) {
     switch (hashing) {
         case schema_1.OutputHashing.All:
@@ -83,6 +105,39 @@ function adjustOutputHashing(hashing) {
             return schema_1.OutputHashing.None;
     }
 }
+/**
+ * Resolves the Zone.js testing strategy by inspecting polyfills and resolving zone.js package.
+ *
+ * @param buildOptions The partial application builder options.
+ * @param projectSourceRoot The root directory of the project source.
+ * @returns The resolved zone testing strategy ('none', 'static', 'dynamic').
+ */
+function getZoneTestingStrategy(buildOptions, projectSourceRoot) {
+    if (buildOptions.polyfills?.includes('zone.js/testing')) {
+        return 'none';
+    }
+    if (buildOptions.polyfills?.includes('zone.js')) {
+        return 'static';
+    }
+    try {
+        const projectRequire = (0, node_module_1.createRequire)(node_path_1.default.join(projectSourceRoot, 'package.json'));
+        projectRequire.resolve('zone.js');
+        return 'dynamic';
+    }
+    catch {
+        return 'none';
+    }
+}
+/**
+ * Generates options and virtual files for the Vitest test runner.
+ *
+ * Discovers specs matchers, creates entry points, decides polyfills strategy, and orchestrates
+ * internal ApplicationBuilder options.
+ *
+ * @param options The normalized unit test builder options.
+ * @param baseBuildOptions The base build config to derive testing config from.
+ * @returns An async RunnerOptions configuration.
+ */
 async function getVitestBuildOptions(options, baseBuildOptions) {
     const { workspaceRoot, projectSourceRoot, include, exclude = [], watch, providersFile } = options;
     // Find test files
@@ -140,23 +195,7 @@ async function getVitestBuildOptions(options, baseBuildOptions) {
         externalDependencies,
     };
     // Inject the zone.js testing polyfill if Zone.js is installed.
-    let zoneTestingStrategy;
-    if (buildOptions.polyfills?.includes('zone.js/testing')) {
-        zoneTestingStrategy = 'none';
-    }
-    else if (buildOptions.polyfills?.includes('zone.js')) {
-        zoneTestingStrategy = 'static';
-    }
-    else {
-        try {
-            const projectRequire = (0, node_module_1.createRequire)(node_path_1.default.join(projectSourceRoot, 'package.json'));
-            projectRequire.resolve('zone.js');
-            zoneTestingStrategy = 'dynamic';
-        }
-        catch {
-            zoneTestingStrategy = 'none';
-        }
-    }
+    const zoneTestingStrategy = getZoneTestingStrategy(buildOptions, projectSourceRoot);
     const testBedInitContents = createTestBedInitVirtualFile(providersFile, projectSourceRoot, !options.debug, zoneTestingStrategy);
     const mockPatchContents = `
     import { vi } from 'vitest';
