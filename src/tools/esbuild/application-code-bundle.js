@@ -437,7 +437,11 @@ function getEsBuildCommonOptions(options) {
         conditions,
         resolveExtensions: ['.ts', '.tsx', '.mjs', '.js', '.cjs'],
         metafile: true,
-        legalComments: options.extractLicenses ? 'none' : 'eof',
+        legalComments: options.extractLicenses
+            ? 'none'
+            : optimizationOptions.scripts
+                ? 'eof'
+                : 'inline',
         logLevel: options.verbose && !jsonLogs ? 'debug' : 'silent',
         minifyIdentifiers: optimizationOptions.scripts && environment_options_1.allowMangle,
         minifySyntax: optimizationOptions.scripts,
