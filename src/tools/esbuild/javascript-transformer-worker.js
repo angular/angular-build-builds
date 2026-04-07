@@ -46,6 +46,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = transformJavaScript;
 const core_1 = require("@babel/core");
 const node_fs_1 = __importDefault(require("node:fs"));
+const node_module_1 = require("node:module");
 const node_path_1 = __importDefault(require("node:path"));
 const piscina_1 = __importDefault(require("piscina"));
 const textDecoder = new TextDecoder();
@@ -74,8 +75,26 @@ async function transformWithBabel(filename, data, options) {
         (!!options.thirdPartySourcemaps || !/[\\/]node_modules[\\/]/.test(filename));
     const plugins = [];
     if (options.instrumentForCoverage) {
-        const { default: coveragePlugin } = await Promise.resolve().then(() => __importStar(require('../babel/plugins/add-code-coverage.js')));
-        plugins.push(coveragePlugin);
+        try {
+            let resolvedPath = 'istanbul-lib-instrument';
+            try {
+                const requireFn = (0, node_module_1.createRequire)(filename);
+                resolvedPath = requireFn.resolve('istanbul-lib-instrument');
+            }
+            catch {
+                // Fallback to pool worker import traversal
+            }
+            const istanbul = await Promise.resolve(`${resolvedPath}`).then(s => __importStar(require(s)));
+            const programVisitor = istanbul.programVisitor ?? istanbul.default?.programVisitor;
+            if (!programVisitor) {
+                throw new Error('programVisitor is not available in istanbul-lib-instrument.');
+            }
+            const { default: coveragePluginFactory } = await Promise.resolve().then(() => __importStar(require('../babel/plugins/add-code-coverage.js')));
+            plugins.push(coveragePluginFactory(programVisitor));
+        }
+        catch (error) {
+            throw new Error(`The 'istanbul-lib-instrument' package is required for code coverage but was not found. Please install the package.`, { cause: error });
+        }
     }
     if (shouldLink) {
         // Lazy load the linker plugin only when linking is required

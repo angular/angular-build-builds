@@ -11,4 +11,4 @@ import { PluginObj } from '@babel/core';
  *
  * @returns A babel plugin object instance.
  */
-export default function (): PluginObj;
+export default function (programVisitor: typeof import('istanbul-lib-instrument').programVisitor): PluginObj;
