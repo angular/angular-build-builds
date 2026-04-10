@@ -21,6 +21,11 @@ export declare const shouldBeautify: boolean;
  */
 export declare const allowMinify: boolean;
 /**
+ * Allows using Rolldown for chunk optimization instead of Rollup.
+ * This is useful for debugging and testing scenarios.
+ */
+export declare const useRolldownChunks: boolean;
+/**
  * The maximum number of workers to use for parallel processing.
  * This can be controlled by the `NG_BUILD_MAX_WORKERS` environment variable.
  */
@@ -45,10 +50,7 @@ export declare const useTypeChecking: boolean;
  * When `NG_BUILD_LOGS_JSON` is enabled, build logs will be output in JSON format.
  */
 export declare const useJSONBuildLogs: boolean;
-/**
- * When `NG_BUILD_OPTIMIZE_CHUNKS` is enabled, the build will optimize chunks.
- */
-export declare const shouldOptimizeChunks: boolean;
+export declare const optimizeChunksThreshold: number;
 /**
  * When `NG_HMR_CSTYLES` is enabled, component styles will be hot-reloaded.
  */

@@ -6,23 +6,58 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.optimizeChunks = optimizeChunks;
 const node_assert_1 = __importDefault(require("node:assert"));
-const rolldown_1 = require("rolldown");
+const rollup_1 = require("rollup");
 const bundler_context_1 = require("../../tools/esbuild/bundler-context");
 const utils_1 = require("../../tools/esbuild/utils");
+const environment_options_1 = require("../../utils/environment-options");
 const error_1 = require("../../utils/error");
+const path_1 = require("../../utils/path");
 /**
- * Converts the output of a rolldown build into an esbuild-compatible metafile.
- * @param rolldownOutput The output of a rolldown build.
+ * Converts the output of a bundle build into an esbuild-compatible metafile.
+ * @param bundleOutput The output of a bundle build.
  * @param originalMetafile The original esbuild metafile from the build.
  * @returns An esbuild-compatible metafile.
  */
-function rolldownToEsbuildMetafile(rolldownOutput, originalMetafile) {
+function bundleOutputToEsbuildMetafile(bundleOutput, originalMetafile) {
     const newMetafile = {
         inputs: originalMetafile.inputs,
         outputs: {},
@@ -31,7 +66,7 @@ function rolldownToEsbuildMetafile(rolldownOutput, originalMetafile) {
     for (const [path, output] of Object.entries(originalMetafile.outputs)) {
         intermediateChunkSizes[path] = Object.values(output.inputs).reduce((s, i) => s + i.bytesInOutput, 0);
     }
-    for (const chunk of rolldownOutput) {
+    for (const chunk of bundleOutput) {
         if (chunk.type === 'asset') {
             newMetafile.outputs[chunk.fileName] = {
                 bytes: typeof chunk.source === 'string'
@@ -74,14 +109,22 @@ function rolldownToEsbuildMetafile(rolldownOutput, originalMetafile) {
             ...chunk.imports.map((path) => ({ path, kind: 'import-statement' })),
             ...(chunk.dynamicImports?.map((path) => ({ path, kind: 'dynamic-import' })) ?? []),
         ];
+        let entryPoint;
+        if (chunk.facadeModuleId) {
+            const posixFacadeModuleId = (0, path_1.toPosixPath)(chunk.facadeModuleId);
+            for (const [outputPath, output] of Object.entries(originalMetafile.outputs)) {
+                if (posixFacadeModuleId.endsWith(outputPath)) {
+                    entryPoint = output.entryPoint;
+                    break;
+                }
+            }
+        }
         newMetafile.outputs[chunk.fileName] = {
             bytes: Buffer.byteLength(chunk.code, 'utf8'),
             inputs: newOutputInputs,
             imports,
             exports: chunk.exports ?? [],
-            entryPoint: chunk.isEntry && chunk.facadeModuleId
-                ? originalMetafile.outputs[chunk.facadeModuleId]?.entryPoint
-                : undefined,
+            entryPoint,
         };
     }
     return newMetafile;
@@ -133,6 +176,7 @@ function createChunkOptimizationFailureMessage(message) {
  * @param sourcemap A boolean or 'hidden' to control sourcemap generation.
  * @returns A promise that resolves to the updated build result with optimized chunks.
  */
+// eslint-disable-next-line max-lines-per-function
 async function optimizeChunks(original, sourcemap) {
     // Failed builds cannot be optimized
     if (original.errors) {
@@ -171,38 +215,53 @@ async function optimizeChunks(original, sourcemap) {
     let bundle;
     let optimizedOutput;
     try {
-        bundle = await (0, rolldown_1.rolldown)({
-            input: mainFile,
-            plugins: [
-                {
-                    name: 'angular-bundle',
-                    resolveId(source) {
-                        // Remove leading `./` if present
-                        const file = source[0] === '.' && source[1] === '/' ? source.slice(2) : source;
-                        if (chunks[file]) {
-                            return file;
-                        }
-                        // All other identifiers are considered external to maintain behavior
-                        return { id: source, external: true };
-                    },
-                    load(id) {
-                        (0, node_assert_1.default)(chunks[id], `Angular chunk content should always be present in chunk optimizer [${id}].`);
-                        usedChunks.add(id);
-                        const result = {
-                            code: chunks[id].text,
-                            map: maps[id]?.text,
-                        };
-                        return result;
-                    },
+        const plugins = [
+            {
+                name: 'angular-bundle',
+                resolveId(source) {
+                    // Remove leading `./` if present
+                    const file = source[0] === '.' && source[1] === '/' ? source.slice(2) : source;
+                    if (chunks[file]) {
+                        return file;
+                    }
+                    // All other identifiers are considered external to maintain behavior
+                    return { id: source, external: true };
                 },
-            ],
-        });
-        const result = await bundle.generate({
-            minify: { mangle: false, compress: false },
-            sourcemap,
-            chunkFileNames: (chunkInfo) => `${chunkInfo.name.replace(/-[a-zA-Z0-9]{8}$/, '')}-[hash].js`,
-        });
-        optimizedOutput = result.output;
+                load(id) {
+                    (0, node_assert_1.default)(chunks[id], `Angular chunk content should always be present in chunk optimizer [${id}].`);
+                    usedChunks.add(id);
+                    const result = {
+                        code: chunks[id].text,
+                        map: maps[id]?.text,
+                    };
+                    return result;
+                },
+            },
+        ];
+        if (environment_options_1.useRolldownChunks) {
+            const { rolldown } = await Promise.resolve().then(() => __importStar(require('rolldown')));
+            bundle = await rolldown({
+                input: mainFile,
+                plugins,
+            });
+            const result = await bundle.generate({
+                minify: { mangle: false, compress: false },
+                sourcemap,
+                chunkFileNames: (chunkInfo) => `${chunkInfo.name.replace(/-[a-zA-Z0-9]{8}$/, '')}-[hash].js`,
+            });
+            optimizedOutput = result.output;
+        }
+        else {
+            bundle = await (0, rollup_1.rollup)({
+                input: mainFile,
+                plugins: plugins,
+            });
+            const result = await bundle.generate({
+                sourcemap,
+                chunkFileNames: (chunkInfo) => `${chunkInfo.name.replace(/-[a-zA-Z0-9]{8}$/, '')}-[hash].js`,
+            });
+            optimizedOutput = result.output;
+        }
     }
     catch (e) {
         (0, error_1.assertIsError)(e);
@@ -215,7 +274,7 @@ async function optimizeChunks(original, sourcemap) {
         await bundle?.close();
     }
     // Update metafile
-    const newMetafile = rolldownToEsbuildMetafile(optimizedOutput, original.metafile);
+    const newMetafile = bundleOutputToEsbuildMetafile(optimizedOutput, original.metafile);
     // Add back the outputs that were not part of the optimization
     for (const [path, output] of Object.entries(original.metafile.outputs)) {
         if (usedChunks.has(path)) {

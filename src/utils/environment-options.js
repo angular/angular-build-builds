@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.bazelEsbuildPluginPath = exports.usePartialSsrBuild = exports.useComponentTemplateHmr = exports.useComponentStyleHmr = exports.shouldOptimizeChunks = exports.useJSONBuildLogs = exports.useTypeChecking = exports.shouldWatchRoot = exports.debugPerformance = exports.useParallelTs = exports.maxWorkers = exports.allowMinify = exports.shouldBeautify = exports.allowMangle = void 0;
+exports.bazelEsbuildPluginPath = exports.usePartialSsrBuild = exports.useComponentTemplateHmr = exports.useComponentStyleHmr = exports.optimizeChunksThreshold = exports.useJSONBuildLogs = exports.useTypeChecking = exports.shouldWatchRoot = exports.debugPerformance = exports.useParallelTs = exports.maxWorkers = exports.useRolldownChunks = exports.allowMinify = exports.shouldBeautify = exports.allowMangle = void 0;
 const node_os_1 = require("node:os");
 /** A set of strings that are considered "truthy" when parsing environment variables. */
 const TRUTHY_VALUES = new Set(['1', 'true']);
@@ -90,6 +90,11 @@ exports.shouldBeautify = debugOptimize.beautify;
  */
 exports.allowMinify = debugOptimize.minify;
 /**
+ * Allows using Rolldown for chunk optimization instead of Rollup.
+ * This is useful for debugging and testing scenarios.
+ */
+exports.useRolldownChunks = parseTristate(process.env['NG_BUILD_CHUNKS_ROLLDOWN']) ?? false;
+/**
  * Some environments, like CircleCI which use Docker report a number of CPUs by the host and not the count of available.
  * This cause `Error: Call retries were exceeded` errors when trying to use them.
  *
@@ -129,7 +134,28 @@ exports.useJSONBuildLogs = parseTristate(process.env['NG_BUILD_LOGS_JSON']) === 
 /**
  * When `NG_BUILD_OPTIMIZE_CHUNKS` is enabled, the build will optimize chunks.
  */
-exports.shouldOptimizeChunks = parseTristate(process.env['NG_BUILD_OPTIMIZE_CHUNKS']) === true;
+/**
+ * The threshold of lazy chunks required to enable the chunk optimization pass.
+ * Can be configured via the `NG_BUILD_OPTIMIZE_CHUNKS` environment variable.
+ * - `false` or `0` disables the feature.
+ * - `true` or `1` forces the feature on (threshold 0).
+ * - A number sets the specific threshold.
+ * - Default is 3.
+ */
+const optimizeChunksEnv = process.env['NG_BUILD_OPTIMIZE_CHUNKS'];
+exports.optimizeChunksThreshold = (() => {
+    if (optimizeChunksEnv === undefined) {
+        return 3;
+    }
+    if (optimizeChunksEnv === 'false' || optimizeChunksEnv === '0') {
+        return Infinity;
+    }
+    if (optimizeChunksEnv === 'true' || optimizeChunksEnv === '1') {
+        return 0;
+    }
+    const num = Number.parseInt(optimizeChunksEnv, 10);
+    return Number.isNaN(num) || num < 0 ? 3 : num;
+})();
 /**
  * When `NG_HMR_CSTYLES` is enabled, component styles will be hot-reloaded.
  */

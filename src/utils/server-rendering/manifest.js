@@ -14,7 +14,6 @@ const node_path_1 = require("node:path");
 const node_vm_1 = require("node:vm");
 const bundler_context_1 = require("../../tools/esbuild/bundler-context");
 const utils_1 = require("../../tools/esbuild/utils");
-const environment_options_1 = require("../environment-options");
 exports.SERVER_APP_MANIFEST_FILENAME = 'angular-app-manifest.mjs';
 exports.SERVER_APP_ENGINE_MANIFEST_FILENAME = 'angular-app-engine-manifest.mjs';
 const MAIN_SERVER_OUTPUT_FILENAME = 'main.server.mjs';
@@ -128,8 +127,7 @@ function generateAngularServerAppManifest(additionalHtmlOutputFiles, outputFiles
         }
     }
     // When routes have been extracted, mappings are no longer needed, as preloads will be included in the metadata.
-    // When shouldOptimizeChunks is enabled the metadata is no longer correct and thus we cannot generate the mappings.
-    const entryPointToBrowserMapping = routes?.length || environment_options_1.shouldOptimizeChunks
+    const entryPointToBrowserMapping = routes?.length
         ? undefined
         : generateLazyLoadedFilesMappings(metafile, initialFiles, publicPath);
     const manifestContent = `
