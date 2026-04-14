@@ -16,6 +16,7 @@ export interface BrowserInstanceConfiguration {
     headless: boolean;
     provider?: BrowserProviderOption;
 }
+export declare function normalizeBrowserName(browserName: string): BrowserInstanceConfiguration;
 /**
  * Mutates the provided browser instances to apply standard headless execution
  * constraints based on the chosen provider, user options, and CI environment presence.
