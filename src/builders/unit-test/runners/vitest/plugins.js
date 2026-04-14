@@ -52,6 +52,7 @@ const node_os_1 = require("node:os");
 const node_path_1 = __importDefault(require("node:path"));
 const assets_middleware_1 = require("../../../../tools/vite/middlewares/assets-middleware");
 const path_1 = require("../../../../utils/path");
+const browser_provider_1 = require("./browser-provider");
 async function findTestEnvironment(projectResolver) {
     try {
         projectResolver('happy-dom');
@@ -113,6 +114,8 @@ async function createVitestConfigPlugin(options) {
             // Add browser source map support if coverage is enabled
             if ((browser || testConfig?.browser?.enabled) &&
                 (options.coverage.enabled || testConfig?.coverage?.enabled)) {
+                // Validate that enabled browsers support V8 coverage
+                validateBrowserCoverage(browser, testConfig?.browser);
                 projectPlugins.unshift(createSourcemapSupportPlugin());
                 setupFiles.unshift('virtual:source-map-support');
             }
@@ -340,6 +343,38 @@ function createSourcemapSupportPlugin() {
                 '\n;globalThis.sourceMapSupport.install();');
         },
     };
+}
+/**
+ * Validates that all enabled browsers support V8 coverage when coverage is enabled.
+ * Throws an error if an unsupported browser is detected.
+ */
+function validateBrowserCoverage(browser, testConfigBrowser) {
+    const browsersToCheck = [];
+    // 1. Check browsers passed by the Angular CLI options
+    const cliBrowser = browser;
+    if (cliBrowser?.instances) {
+        browsersToCheck.push(...cliBrowser.instances.map((i) => i.browser));
+    }
+    // 2. Check browsers defined in the user's vitest.config.ts
+    const userBrowser = testConfigBrowser;
+    if (userBrowser) {
+        if (userBrowser.instances) {
+            browsersToCheck.push(...userBrowser.instances.map((i) => i.browser));
+        }
+        if (userBrowser.name) {
+            browsersToCheck.push(userBrowser.name);
+        }
+    }
+    // Normalize and filter unsupported browsers
+    const unsupportedBrowsers = browsersToCheck
+        .map((b) => (0, browser_provider_1.normalizeBrowserName)(b).browser)
+        .filter((b) => !['chrome', 'chromium', 'edge'].includes(b));
+    if (unsupportedBrowsers.length > 0) {
+        throw new Error(`Code coverage is enabled, but the following configured browsers do not support the V8 coverage provider: ` +
+            `${unsupportedBrowsers.join(', ')}. ` +
+            `V8 coverage is only supported on Chromium-based browsers (e.g., Chrome, Chromium, Edge). ` +
+            `Please disable coverage or remove the unsupported browsers.`);
+    }
 }
 async function generateCoverageOption(optionsCoverage, configCoverage, projectName) {
     let defaultExcludes = [];

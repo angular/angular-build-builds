@@ -40,6 +40,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.normalizeBrowserName = normalizeBrowserName;
 exports.applyHeadlessConfiguration = applyHeadlessConfiguration;
 exports.setupBrowserConfiguration = setupBrowserConfiguration;
 const node_module_1 = require("node:module");
