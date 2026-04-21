@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "22.0.0-next.5+sha-8b62c18",
+  "version": "22.0.0-next.5+sha-bc4abf9",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -23,11 +23,11 @@
   "builders": "builders.json",
   "dependencies": {
     "@ampproject/remapping": "2.3.0",
-    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#8b62c18",
+    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#bc4abf9",
     "@babel/core": "7.29.0",
     "@babel/helper-annotate-as-pure": "7.27.3",
     "@babel/helper-split-export-declaration": "7.24.7",
-    "@inquirer/confirm": "6.0.11",
+    "@inquirer/confirm": "6.0.12",
     "@vitejs/plugin-basic-ssl": "2.3.0",
     "beasties": "0.4.2",
     "browserslist": "^4.26.0",
@@ -37,10 +37,10 @@
     "listr2": "10.2.1",
     "magic-string": "0.30.21",
     "mrmime": "2.0.1",
-    "parse5-html-rewriting-stream": "8.0.0",
+    "parse5-html-rewriting-stream": "8.0.1",
     "picomatch": "4.0.4",
     "piscina": "5.1.4",
-    "rollup": "4.60.1",
+    "rollup": "4.60.2",
     "sass": "1.99.0",
     "semver": "7.7.4",
     "source-map-support": "0.5.21",
@@ -49,7 +49,7 @@
     "watchpack": "2.5.1"
   },
   "optionalDependencies": {
-    "lmdb": "3.5.3"
+    "lmdb": "3.5.4"
   },
   "peerDependencies": {
     "@angular/compiler": "^22.0.0-next.0",
@@ -59,7 +59,7 @@
     "@angular/platform-browser": "^22.0.0-next.0",
     "@angular/platform-server": "^22.0.0-next.0",
     "@angular/service-worker": "^22.0.0-next.0",
-    "@angular/ssr": "github:angular/angular-ssr-builds#8b62c18",
+    "@angular/ssr": "github:angular/angular-ssr-builds#bc4abf9",
     "istanbul-lib-instrument": "^6.0.0",
     "karma": "^6.4.0",
     "less": "^4.2.0",
