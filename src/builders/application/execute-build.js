@@ -256,7 +256,7 @@ async function executeBuild(options, context, rebuildState) {
     if (options.stats) {
         executionResult.addOutputFile('stats.json', JSON.stringify(metafile, null, 2), bundler_context_1.BuildOutputFileType.Root);
     }
-    if (!jsonLogs) {
+    if (!jsonLogs && !options.quiet) {
         const changedFiles = rebuildState && executionResult.findChangedFiles(rebuildState.previousOutputInfo);
         executionResult.addLog((0, utils_1.logBuildStats)(metafile, outputFiles, initialFiles, budgetFailures, colors, changedFiles, estimatedTransferSizes, !!ssrOptions, verbose));
     }

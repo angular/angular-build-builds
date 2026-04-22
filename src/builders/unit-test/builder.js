@@ -321,6 +321,7 @@ async function* execute(options, context, extensions) {
                 ...runnerBuildOptions,
                 watch: normalizedOptions.watch,
                 progress: normalizedOptions.buildProgress ?? buildTargetOptions.progress,
+                quiet: normalizedOptions.quiet,
                 ...(normalizedOptions.tsConfig ? { tsConfig: normalizedOptions.tsConfig } : {}),
             };
             const dumpDirectory = normalizedOptions.dumpVirtualFiles

@@ -85,6 +85,10 @@ interface InternalOptions {
      * Used exclusively for tests and shouldn't be used for other kinds of builds.
      */
     instrumentForCoverage?: (filename: string) => boolean;
+    /**
+     * Suppress build summary and stats table.
+     */
+    quiet?: boolean;
 }
 /** Full set of options for `application` builder. */
 export type ApplicationBuilderInternalOptions = Omit<ApplicationBuilderOptions & InternalOptions, 'browser'> & {
@@ -191,6 +195,7 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     plugins: Plugin[] | undefined;
     loaderExtensions: Record<string, "file" | "base64" | "binary" | "text" | "dataurl"> | undefined;
     jsonLogs: boolean;
+    quiet: boolean | undefined;
     colors: boolean;
     clearScreen: boolean | undefined;
     define: {

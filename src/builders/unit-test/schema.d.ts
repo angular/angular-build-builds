@@ -104,6 +104,11 @@ export type Schema = {
      */
     providersFile?: string;
     /**
+     * Suppresses the verbose build summary and stats table on each rebuild. Defaults to `true`
+     * locally and `false` in CI environments.
+     */
+    quiet?: boolean;
+    /**
      * Specifies the reporters to use during test execution. Each reporter can be a string
      * representing its name, or a tuple containing the name and an options object. Built-in
      * reporters include 'default', 'verbose', 'dots', 'json', 'junit', 'tap', 'tap-flat', and
