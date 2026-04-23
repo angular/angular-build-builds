@@ -43,7 +43,7 @@ const VitestTestRunner = {
             checker.checkAny(['jsdom', 'happy-dom'], 'A DOM environment is required for non-browser tests. Please install either "jsdom" or "happy-dom".');
         }
         if (options.coverage.enabled) {
-            checker.check('@vitest/coverage-v8');
+            checker.checkAny(['@vitest/coverage-v8', '@vitest/coverage-istanbul'], 'Code coverage requires either "@vitest/coverage-v8" or "@vitest/coverage-istanbul" to be installed.');
         }
         checker.report();
     },

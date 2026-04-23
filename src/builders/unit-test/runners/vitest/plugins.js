@@ -63,6 +63,62 @@ async function findTestEnvironment(projectResolver) {
         return 'jsdom';
     }
 }
+function determineCoverageProvider(browser, testConfig, optionsCoverageEnabled, projectSourceRoot) {
+    let determinedProvider = testConfig?.coverage?.provider;
+    if (!determinedProvider && (optionsCoverageEnabled || testConfig?.coverage?.enabled)) {
+        const browsersToCheck = getBrowsersToCheck(browser, testConfig?.browser);
+        const hasNonChromium = browsersToCheck.some((b) => !['chrome', 'chromium', 'edge'].includes((0, browser_provider_1.normalizeBrowserName)(b).browser));
+        if (hasNonChromium) {
+            determinedProvider = 'istanbul';
+        }
+        else {
+            const projectRequire = (0, node_module_1.createRequire)(projectSourceRoot + '/');
+            const checkInstalled = (pkg) => {
+                try {
+                    projectRequire.resolve(pkg);
+                    return true;
+                }
+                catch {
+                    return false;
+                }
+            };
+            const hasIstanbul = checkInstalled('@vitest/coverage-istanbul');
+            const hasV8 = checkInstalled('@vitest/coverage-v8');
+            if (hasIstanbul && !hasV8) {
+                determinedProvider = 'istanbul';
+            }
+            else {
+                determinedProvider = 'v8';
+            }
+        }
+    }
+    return determinedProvider;
+}
+function getBrowsersToCheck(browser, testConfigBrowser) {
+    const browsersToCheck = [];
+    const cliBrowser = browser;
+    const userBrowser = testConfigBrowser;
+    // 1. CLI options override the Vitest configuration completely.
+    if (cliBrowser) {
+        if (cliBrowser.instances) {
+            browsersToCheck.push(...cliBrowser.instances.map((i) => i.browser));
+        }
+        if (cliBrowser.name) {
+            browsersToCheck.push(cliBrowser.name);
+        }
+        return browsersToCheck;
+    }
+    // 2. Fall back to Vitest configuration ONLY if browser testing is enabled.
+    if (userBrowser && userBrowser.enabled !== false) {
+        if (userBrowser.instances) {
+            browsersToCheck.push(...userBrowser.instances.map((i) => i.browser));
+        }
+        if (userBrowser.name) {
+            browsersToCheck.push(userBrowser.name);
+        }
+    }
+    return browsersToCheck;
+}
 async function createVitestConfigPlugin(options) {
     const { include, browser, projectName, reporters, setupFiles, projectPlugins, projectSourceRoot, } = options;
     const { mergeConfig } = await Promise.resolve().then(() => __importStar(require('vitest/config')));
@@ -70,6 +126,7 @@ async function createVitestConfigPlugin(options) {
         name: 'angular:vitest-configuration',
         async config(config) {
             const testConfig = config.test;
+            const determinedProvider = determineCoverageProvider(browser, testConfig, options.coverage.enabled, projectSourceRoot);
             if (reporters !== undefined) {
                 delete testConfig?.reporters;
             }
@@ -114,8 +171,8 @@ async function createVitestConfigPlugin(options) {
             // Add browser source map support if coverage is enabled
             if ((browser || testConfig?.browser?.enabled) &&
                 (options.coverage.enabled || testConfig?.coverage?.enabled)) {
-                // Validate that enabled browsers support V8 coverage
-                validateBrowserCoverage(browser, testConfig?.browser);
+                // Validate that enabled browsers support the selected coverage provider
+                validateBrowserCoverage(browser, testConfig?.browser, determinedProvider);
                 projectPlugins.unshift(createSourcemapSupportPlugin());
                 setupFiles.unshift('virtual:source-map-support');
             }
@@ -157,7 +214,7 @@ async function createVitestConfigPlugin(options) {
             const projectConfig = mergeConfig(projectBase, projectOverrides);
             return {
                 test: {
-                    coverage: await generateCoverageOption(options.coverage, testConfig?.coverage, projectName),
+                    coverage: await generateCoverageOption(options.coverage, testConfig?.coverage, projectName, determinedProvider),
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     ...(reporters ? { reporters } : {}),
                     projects: [projectConfig],
@@ -348,23 +405,11 @@ function createSourcemapSupportPlugin() {
  * Validates that all enabled browsers support V8 coverage when coverage is enabled.
  * Throws an error if an unsupported browser is detected.
  */
-function validateBrowserCoverage(browser, testConfigBrowser) {
-    const browsersToCheck = [];
-    // 1. Check browsers passed by the Angular CLI options
-    const cliBrowser = browser;
-    if (cliBrowser?.instances) {
-        browsersToCheck.push(...cliBrowser.instances.map((i) => i.browser));
+function validateBrowserCoverage(browser, testConfigBrowser, provider) {
+    if (provider === 'istanbul') {
+        return;
     }
-    // 2. Check browsers defined in the user's vitest.config.ts
-    const userBrowser = testConfigBrowser;
-    if (userBrowser) {
-        if (userBrowser.instances) {
-            browsersToCheck.push(...userBrowser.instances.map((i) => i.browser));
-        }
-        if (userBrowser.name) {
-            browsersToCheck.push(userBrowser.name);
-        }
-    }
+    const browsersToCheck = getBrowsersToCheck(browser, testConfigBrowser);
     // Normalize and filter unsupported browsers
     const unsupportedBrowsers = browsersToCheck
         .map((b) => (0, browser_provider_1.normalizeBrowserName)(b).browser)
@@ -376,7 +421,7 @@ function validateBrowserCoverage(browser, testConfigBrowser) {
             `Please disable coverage or remove the unsupported browsers.`);
     }
 }
-async function generateCoverageOption(optionsCoverage, configCoverage, projectName) {
+async function generateCoverageOption(optionsCoverage, configCoverage, projectName, provider) {
     let defaultExcludes = [];
     // When a coverage exclude option is provided, Vitest's default coverage excludes
     // will be overridden. To retain them, we manually fetch the defaults to append to the
@@ -389,6 +434,7 @@ async function generateCoverageOption(optionsCoverage, configCoverage, projectNa
         catch { }
     }
     return {
+        provider,
         excludeAfterRemap: true,
         reportsDirectory: configCoverage?.reportsDirectory ?? (0, path_1.toPosixPath)(node_path_1.default.join('coverage', projectName)),
         ...(optionsCoverage.enabled !== undefined ? { enabled: optionsCoverage.enabled } : {}),
