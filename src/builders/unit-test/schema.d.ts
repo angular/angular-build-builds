@@ -82,6 +82,12 @@ export type Schema = {
      */
     include?: string[];
     /**
+     * Enables isolation for test execution. When true, Vitest runs tests in separate threads or
+     * processes. This option is only available for the Vitest runner. Defaults to false to
+     * align with the Karma/Jasmine experience.
+     */
+    isolate?: boolean;
+    /**
      * Lists all discovered test files and exits the process without building or executing the
      * tests.
      */

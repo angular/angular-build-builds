@@ -44,9 +44,12 @@ async function normalizeOptions(context, projectName, options) {
     // Target specifier defaults to the current project's build target using a development configuration
     const buildTargetSpecifier = options.buildTarget ?? `::development`;
     const buildTarget = (0, architect_1.targetFromTargetString)(buildTargetSpecifier, projectName, 'build');
-    const { runner, browsers, progress, filter, browserViewport, ui, runnerConfig } = options;
+    const { runner, browsers, progress, filter, browserViewport, ui, runnerConfig, isolate } = options;
     if (ui && runner !== schema_1.Runner.Vitest) {
         throw new Error('The "ui" option is only available for the "vitest" runner.');
+    }
+    if (isolate && runner !== schema_1.Runner.Vitest) {
+        throw new Error('The "isolate" option is only available for the "vitest" runner.');
     }
     const [width, height] = browserViewport?.split('x').map(Number) ?? [];
     let tsConfig = options.tsConfig;
@@ -100,6 +103,7 @@ async function normalizeOptions(context, projectName, options) {
         watch,
         debug: options.debug ?? false,
         ui: process.env['CI'] ? false : ui,
+        isolate: isolate ?? false,
         quiet: options.quiet ?? (process.env['CI'] ? false : true),
         providersFile: options.providersFile && node_path_1.default.join(workspaceRoot, options.providersFile),
         setupFiles: options.setupFiles

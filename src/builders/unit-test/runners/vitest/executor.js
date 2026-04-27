@@ -306,6 +306,7 @@ class VitestExecutor {
                     projectPlugins,
                     include,
                     watch,
+                    isolate: this.options.isolate,
                 }),
             ],
         };
