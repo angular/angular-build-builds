@@ -48,11 +48,15 @@ function createTestBedInitVirtualFile(providersFile, projectSourceRoot, teardown
       await import('zone.js/testing');
     }`;
     }
+    // The DynamicDOMTestComponentRenderer is used to avoid stale document references
+    // when running Vitest in non-isolated mode with JSDOM. It looks up the
+    // document dynamically on every operation instead of caching it.
     return `
     // Initialize the Angular testing environment
     import { NgModule, provideZoneChangeDetection } from '@angular/core';
-    import { getTestBed, ɵgetCleanupHook as getCleanupHook } from '@angular/core/testing';
+    import { getTestBed, ɵgetCleanupHook as getCleanupHook, TestComponentRenderer } from '@angular/core/testing';
     import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
+    import { ɵgetDOM } from '@angular/common';
     import { afterEach, beforeEach } from 'vitest';
     ${providersImport}
 
@@ -63,6 +67,31 @@ function createTestBedInitVirtualFile(providersFile, projectSourceRoot, teardown
     // Same as https://github.com/angular/angular/blob/05a03d3f975771bb59c7eefd37c01fa127ee2229/packages/core/testing/srcs/test_hooks.ts#L21-L29
     beforeEach(getCleanupHook(false));
     afterEach(getCleanupHook(true));
+
+    class DynamicDOMTestComponentRenderer extends TestComponentRenderer {
+      insertRootElement(rootElId, tagName = 'div') {
+        this.removeAllRootElements();
+
+        const dom = ɵgetDOM();
+        const doc = dom.getDefaultDocument();
+        if (doc && doc.body) {
+          const rootElement = doc.createElement(tagName);
+          rootElement.setAttribute('id', rootElId);
+          doc.body.appendChild(rootElement);
+        }
+      }
+
+      removeAllRootElements() {
+        const dom = ɵgetDOM();
+        const doc = dom.getDefaultDocument();
+        if (doc && typeof doc.querySelectorAll === 'function') {
+          const oldRoots = doc.querySelectorAll('[id^=root]');
+          for (let i = 0; i < oldRoots.length; i++) {
+            dom.remove(oldRoots[i]);
+          }
+        }
+      }
+    }
 
     const ANGULAR_TESTBED_SETUP = Symbol.for('@angular/cli/testbed-setup');
     if (!globalThis[ANGULAR_TESTBED_SETUP]) {
@@ -76,6 +105,7 @@ function createTestBedInitVirtualFile(providersFile, projectSourceRoot, teardown
         providers: [
           ...(typeof Zone !== 'undefined' ? [provideZoneChangeDetection()] : []),
           ...providers,
+          { provide: TestComponentRenderer, useClass: DynamicDOMTestComponentRenderer },
         ],
       })
       class TestModule {}
