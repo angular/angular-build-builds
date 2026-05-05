@@ -53,7 +53,7 @@ const valid_self_closing_tags_1 = require("./valid-self-closing-tags");
  */
 // eslint-disable-next-line max-lines-per-function
 async function augmentIndexHtml(params) {
-    const { loadOutputFile, files, entrypoints, sri, deployUrl, lang, baseHref, html, imageDomains } = params;
+    const { loadOutputFile, files, entrypoints, sri, deployUrl, lang, baseHref, html, imageDomains, chunksIntegrity, } = params;
     const warnings = [];
     const errors = [];
     let { crossOrigin = 'none' } = params;
@@ -106,8 +106,23 @@ async function augmentIndexHtml(params) {
         }
         scriptTags.push(`<script ${attrs.join(' ')}></script>`);
     }
+    let subResourceIntegrityTag;
     let headerLinkTags = [];
     let bodyLinkTags = [];
+    // Emit an integrity-only import map so the browser can validate lazy chunks
+    // resolved via dynamic `import()` (which otherwise carry no SRI metadata).
+    // The block is placed first inside `<head>` so it precedes any module
+    // script, as required by the import-map spec.
+    if (sri && chunksIntegrity?.size) {
+        const integrity = {};
+        // Stable iteration order for reproducible builds.
+        const sortedEntries = [...chunksIntegrity.entries()].sort(([keyA], [keyB]) => keyA.localeCompare(keyB));
+        for (const [url, integrityHash] of sortedEntries) {
+            integrity[generateUrl(url, deployUrl)] = integrityHash;
+        }
+        const importMapJson = JSON.stringify({ integrity }).replace(/</g, '\\u003c');
+        subResourceIntegrityTag = `<script type="importmap">${importMapJson}</script>`;
+    }
     for (const src of stylesheets) {
         const attrs = [`rel="stylesheet"`, `href="${generateUrl(src, deployUrl)}"`];
         if (crossOrigin !== 'none') {
@@ -178,6 +193,9 @@ async function augmentIndexHtml(params) {
                 if (!baseTagExists && isString(baseHref)) {
                     rewriter.emitStartTag(tag);
                     rewriter.emitRaw(`<base href="${baseHref}">`);
+                    if (subResourceIntegrityTag) {
+                        rewriter.emitRaw(subResourceIntegrityTag);
+                    }
                     return;
                 }
                 break;
@@ -185,6 +203,9 @@ async function augmentIndexHtml(params) {
                 // Adjust base href if specified
                 if (isString(baseHref)) {
                     updateAttribute(tag, 'href', baseHref);
+                }
+                if (subResourceIntegrityTag) {
+                    rewriter.emitRaw(subResourceIntegrityTag);
                 }
                 break;
             case 'link':
