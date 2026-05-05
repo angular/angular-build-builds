@@ -7,9 +7,18 @@
  */
 import type { Metafile } from 'esbuild';
 import { NormalizedApplicationBuildOptions } from '../../builders/application/options';
-import { type BuildOutputFile } from '../../tools/esbuild/bundler-context';
+import { type BuildOutputFile } from '../../tools/esbuild/bundler-files';
 export declare const SERVER_APP_MANIFEST_FILENAME = "angular-app-manifest.mjs";
 export declare const SERVER_APP_ENGINE_MANIFEST_FILENAME = "angular-app-engine-manifest.mjs";
+/**
+ * A set of server-generated dependencies that are treated as external.
+ *
+ * These dependencies are marked as external because they are produced by a
+ * separate bundling process and are not included in the primary bundle. This
+ * ensures that these generated files are resolved from an external source rather
+ * than being part of the main bundle.
+ */
+export declare const SERVER_GENERATED_EXTERNALS: Set<string>;
 /**
  * Generates the server manifest for the App Engine environment.
  *

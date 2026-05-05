@@ -46,6 +46,7 @@ const source_file_cache_1 = require("../../tools/esbuild/angular/source-file-cac
 const budget_stats_1 = require("../../tools/esbuild/budget-stats");
 const bundler_context_1 = require("../../tools/esbuild/bundler-context");
 const bundler_execution_result_1 = require("../../tools/esbuild/bundler-execution-result");
+const bundler_files_1 = require("../../tools/esbuild/bundler-files");
 const commonjs_checker_1 = require("../../tools/esbuild/commonjs-checker");
 const license_extractor_1 = require("../../tools/esbuild/license-extractor");
 const profiling_1 = require("../../tools/esbuild/profiling");
@@ -221,7 +222,7 @@ async function executeBuild(options, context, rebuildState) {
     }
     // Extract and write licenses for used packages
     if (options.extractLicenses) {
-        executionResult.addOutputFile('3rdpartylicenses.txt', await (0, license_extractor_1.extractLicenses)(metafile, workspaceRoot), bundler_context_1.BuildOutputFileType.Root);
+        executionResult.addOutputFile('3rdpartylicenses.txt', await (0, license_extractor_1.extractLicenses)(metafile, workspaceRoot), bundler_files_1.BuildOutputFileType.Root);
     }
     // Watch input index HTML file if configured
     if (options.indexHtmlOptions) {
@@ -231,7 +232,7 @@ async function executeBuild(options, context, rebuildState) {
     }
     // Create server app engine manifest
     if (serverEntryPoint) {
-        executionResult.addOutputFile(manifest_1.SERVER_APP_ENGINE_MANIFEST_FILENAME, (0, manifest_1.generateAngularServerAppEngineManifest)(i18nOptions, security.allowedHosts, baseHref), bundler_context_1.BuildOutputFileType.ServerRoot);
+        executionResult.addOutputFile(manifest_1.SERVER_APP_ENGINE_MANIFEST_FILENAME, (0, manifest_1.generateAngularServerAppEngineManifest)(i18nOptions, security.allowedHosts, baseHref), bundler_files_1.BuildOutputFileType.ServerRoot);
     }
     // Perform i18n translation inlining if enabled
     if (i18nOptions.shouldInline) {
@@ -251,10 +252,10 @@ async function executeBuild(options, context, rebuildState) {
         executionResult.outputFiles.push(...result.additionalOutputFiles);
         executionResult.assetFiles.push(...result.additionalAssets);
     }
-    executionResult.addOutputFile('prerendered-routes.json', JSON.stringify({ routes: executionResult.prerenderedRoutes }, null, 2), bundler_context_1.BuildOutputFileType.Root);
+    executionResult.addOutputFile('prerendered-routes.json', JSON.stringify({ routes: executionResult.prerenderedRoutes }, null, 2), bundler_files_1.BuildOutputFileType.Root);
     // Write metafile if stats option is enabled
     if (options.stats) {
-        executionResult.addOutputFile('stats.json', JSON.stringify(metafile, null, 2), bundler_context_1.BuildOutputFileType.Root);
+        executionResult.addOutputFile('stats.json', JSON.stringify(metafile, null, 2), bundler_files_1.BuildOutputFileType.Root);
     }
     if (!jsonLogs && !options.quiet) {
         const changedFiles = rebuildState && executionResult.findChangedFiles(rebuildState.previousOutputInfo);

@@ -49,7 +49,7 @@ const architect_1 = require("@angular-devkit/architect");
 const node_assert_1 = __importDefault(require("node:assert"));
 const promises_1 = __importDefault(require("node:fs/promises"));
 const node_path_1 = __importDefault(require("node:path"));
-const bundler_context_1 = require("../../tools/esbuild/bundler-context");
+const bundler_files_1 = require("../../tools/esbuild/bundler-files");
 const utils_1 = require("../../tools/esbuild/utils");
 const color_1 = require("../../utils/color");
 const delete_output_dir_1 = require("../../utils/delete-output-dir");
@@ -185,8 +185,8 @@ async function* buildApplication(options, context, extensions) {
         const directoryExists = new Set();
         await (0, utils_1.emitFilesToDisk)(Object.entries(result.files), async ([filePath, file]) => {
             if (outputOptions.ignoreServer &&
-                (file.type === bundler_context_1.BuildOutputFileType.ServerApplication ||
-                    file.type === bundler_context_1.BuildOutputFileType.ServerRoot)) {
+                (file.type === bundler_files_1.BuildOutputFileType.ServerApplication ||
+                    file.type === bundler_files_1.BuildOutputFileType.ServerRoot)) {
                 return;
             }
             const fullFilePath = generateFullPath(filePath, file.type, outputOptions);
@@ -221,19 +221,19 @@ async function* buildApplication(options, context, extensions) {
 function generateFullPath(filePath, type, outputOptions) {
     let typeDirectory;
     switch (type) {
-        case bundler_context_1.BuildOutputFileType.Browser:
-        case bundler_context_1.BuildOutputFileType.Media:
+        case bundler_files_1.BuildOutputFileType.Browser:
+        case bundler_files_1.BuildOutputFileType.Media:
             typeDirectory = outputOptions.browser;
             break;
-        case bundler_context_1.BuildOutputFileType.ServerApplication:
-        case bundler_context_1.BuildOutputFileType.ServerRoot:
+        case bundler_files_1.BuildOutputFileType.ServerApplication:
+        case bundler_files_1.BuildOutputFileType.ServerRoot:
             typeDirectory = outputOptions.server;
             break;
-        case bundler_context_1.BuildOutputFileType.Root:
+        case bundler_files_1.BuildOutputFileType.Root:
             typeDirectory = '';
             break;
         default:
-            throw new Error(`Unhandled write for file "${filePath}" with type "${bundler_context_1.BuildOutputFileType[type]}".`);
+            throw new Error(`Unhandled write for file "${filePath}" with type "${bundler_files_1.BuildOutputFileType[type]}".`);
     }
     // NOTE: 'base' is a fully resolved path at this point
     const fullFilePath = node_path_1.default.join(outputOptions.base, typeDirectory, filePath);

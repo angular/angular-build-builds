@@ -46,8 +46,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.optimizeChunks = optimizeChunks;
 const node_assert_1 = __importDefault(require("node:assert"));
 const rollup_1 = require("rollup");
-const bundler_context_1 = require("../../tools/esbuild/bundler-context");
-const utils_1 = require("../../tools/esbuild/utils");
+const bundler_files_1 = require("../../tools/esbuild/bundler-files");
 const environment_options_1 = require("../../utils/environment-options");
 const error_1 = require("../../utils/error");
 const path_1 = require("../../utils/path");
@@ -200,7 +199,7 @@ async function optimizeChunks(original, sourcemap) {
     const chunks = {};
     const maps = {};
     for (const originalFile of original.outputFiles) {
-        if (originalFile.type !== bundler_context_1.BuildOutputFileType.Browser) {
+        if (originalFile.type !== bundler_files_1.BuildOutputFileType.Browser) {
             continue;
         }
         if (originalFile.path.endsWith('.js')) {
@@ -299,9 +298,9 @@ async function optimizeChunks(original, sourcemap) {
             continue;
         }
         importsPerFile[optimizedFile.fileName] = optimizedFile.imports;
-        original.outputFiles.push((0, utils_1.createOutputFile)(optimizedFile.fileName, optimizedFile.code, bundler_context_1.BuildOutputFileType.Browser));
+        original.outputFiles.push((0, bundler_files_1.createOutputFile)(optimizedFile.fileName, optimizedFile.code, bundler_files_1.BuildOutputFileType.Browser));
         if (optimizedFile.map && optimizedFile.sourcemapFileName) {
-            original.outputFiles.push((0, utils_1.createOutputFile)(optimizedFile.sourcemapFileName, optimizedFile.map.toString(), bundler_context_1.BuildOutputFileType.Browser));
+            original.outputFiles.push((0, bundler_files_1.createOutputFile)(optimizedFile.sourcemapFileName, optimizedFile.map.toString(), bundler_files_1.BuildOutputFileType.Browser));
         }
     }
     // Update initial files to reflect optimized chunks

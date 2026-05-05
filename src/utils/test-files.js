@@ -46,7 +46,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.writeTestFiles = writeTestFiles;
 const fs = __importStar(require("node:fs/promises"));
 const node_path_1 = __importDefault(require("node:path"));
-const bundler_context_1 = require("../tools/esbuild/bundler-context");
+const bundler_files_1 = require("../tools/esbuild/bundler-files");
 const utils_1 = require("../tools/esbuild/utils");
 /**
  * Writes a collection of build result files to a specified directory.
@@ -60,7 +60,7 @@ async function writeTestFiles(files, testDir) {
     const directoryExists = new Set();
     // Writes the test related output files to disk and ensures the containing directories are present
     await (0, utils_1.emitFilesToDisk)(Object.entries(files), async ([filePath, file]) => {
-        if (file.type !== bundler_context_1.BuildOutputFileType.Browser && file.type !== bundler_context_1.BuildOutputFileType.Media) {
+        if (file.type !== bundler_files_1.BuildOutputFileType.Browser && file.type !== bundler_files_1.BuildOutputFileType.Media) {
             return;
         }
         const fullFilePath = node_path_1.default.join(testDir, filePath);

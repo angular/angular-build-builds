@@ -14,7 +14,7 @@ exports.generateIndexHtml = generateIndexHtml;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_path_1 = __importDefault(require("node:path"));
 const index_html_generator_1 = require("../../utils/index-file/index-html-generator");
-const bundler_context_1 = require("./bundler-context");
+const bundler_files_1 = require("./bundler-files");
 /**
  * The maximum number of module preload link elements that should be added for
  * initial scripts.
@@ -48,7 +48,7 @@ async function generateIndexHtml(initialFiles, outputFiles, buildOptions, lang) 
         hints.push(...modulePreloads.slice(0, MODULE_PRELOAD_MAX));
     }
     /** Virtual output path to support reading in-memory files. */
-    const browserOutputFiles = outputFiles.filter(({ type }) => type === bundler_context_1.BuildOutputFileType.Browser);
+    const browserOutputFiles = outputFiles.filter(({ type }) => type === bundler_files_1.BuildOutputFileType.Browser);
     const virtualOutputPath = '/';
     const readAsset = async function (filePath) {
         // Remove leading directory separator

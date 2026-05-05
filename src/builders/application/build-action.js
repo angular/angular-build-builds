@@ -46,7 +46,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.runEsBuildBuildAction = runEsBuildBuildAction;
 const node_fs_1 = require("node:fs");
 const node_path_1 = __importDefault(require("node:path"));
-const bundler_context_1 = require("../../tools/esbuild/bundler-context");
+const bundler_files_1 = require("../../tools/esbuild/bundler-files");
 const sass_language_1 = require("../../tools/esbuild/stylesheets/sass-language");
 const utils_1 = require("../../tools/esbuild/utils");
 const environment_options_1 = require("../../utils/environment-options");
@@ -208,7 +208,7 @@ function* emitOutputResults({ outputFiles, assetFiles, errors, warnings, externa
         };
         for (const file of assetFiles) {
             result.files[file.destination] = {
-                type: bundler_context_1.BuildOutputFileType.Browser,
+                type: bundler_files_1.BuildOutputFileType.Browser,
                 inputPath: file.source,
                 origin: 'disk',
             };
@@ -292,7 +292,7 @@ function* emitOutputResults({ outputFiles, assetFiles, errors, warnings, externa
         }
         hasCssUpdates ||= destination.endsWith('.css');
         incrementalResult.files[destination] = {
-            type: bundler_context_1.BuildOutputFileType.Browser,
+            type: bundler_files_1.BuildOutputFileType.Browser,
             inputPath: source,
             origin: 'disk',
         };
@@ -311,7 +311,7 @@ function* emitOutputResults({ outputFiles, assetFiles, errors, warnings, externa
         type,
     })), ...Array.from(removedAssetFiles.values(), (file) => ({
         path: file,
-        type: bundler_context_1.BuildOutputFileType.Browser,
+        type: bundler_files_1.BuildOutputFileType.Browser,
     })));
     yield incrementalResult;
     // If there are template updates and the incremental update was background only, a component
@@ -345,7 +345,7 @@ function isCssFilePath(filePath) {
 function canBackgroundUpdate(file) {
     // Files in the output root are not served and do not affect the
     // application available with the development server.
-    if (file.type === bundler_context_1.BuildOutputFileType.Root) {
+    if (file.type === bundler_files_1.BuildOutputFileType.Root) {
         return true;
     }
     // Updates to non-JS files must signal an update with the dev server

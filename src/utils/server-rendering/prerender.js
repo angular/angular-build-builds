@@ -11,7 +11,7 @@ exports.prerenderPages = prerenderPages;
 const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
 const schema_1 = require("../../builders/application/schema");
-const bundler_context_1 = require("../../tools/esbuild/bundler-context");
+const bundler_files_1 = require("../../tools/esbuild/bundler-files");
 const error_1 = require("../error");
 const path_1 = require("../path");
 const url_1 = require("../url");
@@ -26,7 +26,7 @@ async function prerenderPages(workspaceRoot, baseHref, appShellOptions, prerende
     const warnings = [];
     const errors = [];
     for (const { text, path, type } of outputFiles) {
-        if (type !== bundler_context_1.BuildOutputFileType.ServerApplication && type !== bundler_context_1.BuildOutputFileType.ServerRoot) {
+        if (type !== bundler_files_1.BuildOutputFileType.ServerApplication && type !== bundler_files_1.BuildOutputFileType.ServerRoot) {
             continue;
         }
         // Contains the server runnable application code

@@ -7,15 +7,27 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SERVER_APP_ENGINE_MANIFEST_FILENAME = exports.SERVER_APP_MANIFEST_FILENAME = void 0;
+exports.SERVER_GENERATED_EXTERNALS = exports.SERVER_APP_ENGINE_MANIFEST_FILENAME = exports.SERVER_APP_MANIFEST_FILENAME = void 0;
 exports.generateAngularServerAppEngineManifest = generateAngularServerAppEngineManifest;
 exports.generateAngularServerAppManifest = generateAngularServerAppManifest;
 const node_path_1 = require("node:path");
 const node_vm_1 = require("node:vm");
-const bundler_context_1 = require("../../tools/esbuild/bundler-context");
-const utils_1 = require("../../tools/esbuild/utils");
+const bundler_files_1 = require("../../tools/esbuild/bundler-files");
 exports.SERVER_APP_MANIFEST_FILENAME = 'angular-app-manifest.mjs';
 exports.SERVER_APP_ENGINE_MANIFEST_FILENAME = 'angular-app-engine-manifest.mjs';
+/**
+ * A set of server-generated dependencies that are treated as external.
+ *
+ * These dependencies are marked as external because they are produced by a
+ * separate bundling process and are not included in the primary bundle. This
+ * ensures that these generated files are resolved from an external source rather
+ * than being part of the main bundle.
+ */
+exports.SERVER_GENERATED_EXTERNALS = new Set([
+    './polyfills.server.mjs',
+    './' + exports.SERVER_APP_MANIFEST_FILENAME,
+    './' + exports.SERVER_APP_ENGINE_MANIFEST_FILENAME,
+]);
 const MAIN_SERVER_OUTPUT_FILENAME = 'main.server.mjs';
 /**
  * A mapping of unsafe characters to their escaped Unicode equivalents.
@@ -118,7 +130,7 @@ function generateAngularServerAppManifest(additionalHtmlOutputFiles, outputFiles
         if (extension === '.html' || (inlineCriticalCss && extension === '.css')) {
             const jsChunkFilePath = `assets-chunks/${file.path.replace(/[./]/g, '_')}.mjs`;
             const escapedContent = escapeUnsafeChars(file.text);
-            serverAssetsChunks.push((0, utils_1.createOutputFile)(jsChunkFilePath, `export default \`${escapedContent}\`;`, bundler_context_1.BuildOutputFileType.ServerApplication));
+            serverAssetsChunks.push((0, bundler_files_1.createOutputFile)(jsChunkFilePath, `export default \`${escapedContent}\`;`, bundler_files_1.BuildOutputFileType.ServerApplication));
             // This is needed because JavaScript engines script parser convert `\r\n` to `\n` in template literals,
             // which can result in an incorrect byte length.
             const size = (0, node_vm_1.runInThisContext)(`new TextEncoder().encode(\`${escapedContent}\`).byteLength`);

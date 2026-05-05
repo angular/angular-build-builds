@@ -10,21 +10,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BundlerContext = exports.BuildOutputFileType = void 0;
+exports.BundlerContext = void 0;
 const esbuild_1 = require("esbuild");
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_module_1 = require("node:module");
 const node_path_1 = require("node:path");
+const manifest_1 = require("../../utils/server-rendering/manifest");
+const bundler_files_1 = require("./bundler-files");
 const load_result_cache_1 = require("./load-result-cache");
-const utils_1 = require("./utils");
-var BuildOutputFileType;
-(function (BuildOutputFileType) {
-    BuildOutputFileType[BuildOutputFileType["Browser"] = 0] = "Browser";
-    BuildOutputFileType[BuildOutputFileType["Media"] = 1] = "Media";
-    BuildOutputFileType[BuildOutputFileType["ServerApplication"] = 2] = "ServerApplication";
-    BuildOutputFileType[BuildOutputFileType["ServerRoot"] = 3] = "ServerRoot";
-    BuildOutputFileType[BuildOutputFileType["Root"] = 4] = "Root";
-})(BuildOutputFileType || (exports.BuildOutputFileType = BuildOutputFileType = {}));
 /**
  * Determines if an unknown value is an esbuild BuildFailure error object thrown by esbuild.
  * @param value A potential esbuild BuildFailure error object.
@@ -280,7 +273,7 @@ class BundlerContext {
         for (const { imports } of Object.values(result.metafile.outputs)) {
             for (const { external, kind, path } of imports) {
                 if (!external ||
-                    utils_1.SERVER_GENERATED_EXTERNALS.has(path) ||
+                    manifest_1.SERVER_GENERATED_EXTERNALS.has(path) ||
                     isInternalAngularFile(path) ||
                     (kind !== 'import-statement' && kind !== 'dynamic-import' && kind !== 'require-call')) {
                     continue;
@@ -293,21 +286,21 @@ class BundlerContext {
             let fileType;
             // All files that are not JS, CSS, WASM, or sourcemaps for them are considered media
             if (!/\.([cm]?js|css|wasm)(\.map)?$/i.test(file.path)) {
-                fileType = BuildOutputFileType.Media;
+                fileType = bundler_files_1.BuildOutputFileType.Media;
             }
             else if (isPlatformServer) {
                 fileType = isSsrEntryBundle
-                    ? BuildOutputFileType.ServerRoot
-                    : BuildOutputFileType.ServerApplication;
+                    ? bundler_files_1.BuildOutputFileType.ServerRoot
+                    : bundler_files_1.BuildOutputFileType.ServerApplication;
             }
             else {
-                fileType = BuildOutputFileType.Browser;
+                fileType = bundler_files_1.BuildOutputFileType.Browser;
             }
-            return (0, utils_1.convertOutputFile)(file, fileType);
+            return (0, bundler_files_1.convertOutputFile)(file, fileType);
         });
         let externalConfiguration = this.#esbuildOptions.external;
         if (isPlatformServer && externalConfiguration) {
-            externalConfiguration = externalConfiguration.filter((dep) => !utils_1.SERVER_GENERATED_EXTERNALS.has(dep));
+            externalConfiguration = externalConfiguration.filter((dep) => !manifest_1.SERVER_GENERATED_EXTERNALS.has(dep));
             if (!externalConfiguration.length) {
                 externalConfiguration = undefined;
             }

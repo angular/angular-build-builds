@@ -46,7 +46,7 @@ exports.augmentAppWithServiceWorkerCore = augmentAppWithServiceWorkerCore;
 const crypto = __importStar(require("node:crypto"));
 const node_fs_1 = require("node:fs");
 const path = __importStar(require("node:path"));
-const bundler_context_1 = require("../tools/esbuild/bundler-context");
+const bundler_files_1 = require("../tools/esbuild/bundler-files");
 const error_1 = require("./error");
 const path_1 = require("./path");
 class CliFilesystem {
@@ -97,7 +97,7 @@ class ResultFilesystem {
     fileReaders = new Map();
     constructor(outputFiles, assetFiles) {
         for (const file of outputFiles) {
-            if (file.type === bundler_context_1.BuildOutputFileType.Media || file.type === bundler_context_1.BuildOutputFileType.Browser) {
+            if (file.type === bundler_files_1.BuildOutputFileType.Media || file.type === bundler_files_1.BuildOutputFileType.Browser) {
                 this.fileReaders.set('/' + (0, path_1.toPosixPath)(file.path), async () => file.contents);
             }
         }

@@ -5,7 +5,8 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-import { BuildOptions, Message, Metafile, OutputFile } from 'esbuild';
+import { BuildOptions, Message, Metafile } from 'esbuild';
+import { type BuildOutputFile, type InitialFileRecord } from './bundler-files';
 import { LoadResultCache } from './load-result-cache';
 export type BundleContextResult = {
     errors: Message[];
@@ -22,26 +23,6 @@ export type BundleContextResult = {
     };
     externalConfiguration?: string[];
 };
-export interface InitialFileRecord {
-    entrypoint: boolean;
-    name?: string;
-    type: 'script' | 'style';
-    external?: boolean;
-    serverFile: boolean;
-    depth: number;
-}
-export declare enum BuildOutputFileType {
-    Browser = 0,
-    Media = 1,
-    ServerApplication = 2,
-    ServerRoot = 3,
-    Root = 4
-}
-export interface BuildOutputFile extends OutputFile {
-    type: BuildOutputFileType;
-    readonly size: number;
-    clone: () => BuildOutputFile;
-}
 export type BundlerOptionsFactory<T extends BuildOptions = BuildOptions> = (loadCache: LoadResultCache | undefined) => T;
 export declare class BundlerContext {
     #private;

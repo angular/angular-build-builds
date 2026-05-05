@@ -9,7 +9,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ExecutionResult = void 0;
 const node_path_1 = require("node:path");
-const utils_1 = require("./utils");
+const bundler_files_1 = require("./bundler-files");
 /**
  * Represents the result of a single builder execute call.
  */
@@ -35,7 +35,7 @@ class ExecutionResult {
         this.templateUpdates = templateUpdates;
     }
     addOutputFile(path, content, type) {
-        this.outputFiles.push((0, utils_1.createOutputFile)(path, content, type));
+        this.outputFiles.push((0, bundler_files_1.createOutputFile)(path, content, type));
     }
     addAssets(assets) {
         this.assetFiles.push(...assets);

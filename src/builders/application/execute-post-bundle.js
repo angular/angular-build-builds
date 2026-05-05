@@ -12,9 +12,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.executePostBundleSteps = executePostBundleSteps;
 const node_assert_1 = __importDefault(require("node:assert"));
-const bundler_context_1 = require("../../tools/esbuild/bundler-context");
+const bundler_files_1 = require("../../tools/esbuild/bundler-files");
 const index_html_generator_1 = require("../../tools/esbuild/index-html-generator");
-const utils_1 = require("../../tools/esbuild/utils");
 const environment_options_1 = require("../../utils/environment-options");
 const manifest_1 = require("../../utils/server-rendering/manifest");
 const models_1 = require("../../utils/server-rendering/models");
@@ -50,16 +49,16 @@ async function executePostBundleSteps(metafile, options, outputFiles, assetFiles
         const { csrContent, ssrContent, errors, warnings } = await (0, index_html_generator_1.generateIndexHtml)(initialFiles, outputFiles, options, locale);
         allErrors.push(...errors);
         allWarnings.push(...warnings);
-        additionalHtmlOutputFiles.set(indexHtmlOptions.output, (0, utils_1.createOutputFile)(indexHtmlOptions.output, csrContent, bundler_context_1.BuildOutputFileType.Browser));
+        additionalHtmlOutputFiles.set(indexHtmlOptions.output, (0, bundler_files_1.createOutputFile)(indexHtmlOptions.output, csrContent, bundler_files_1.BuildOutputFileType.Browser));
         if (ssrContent) {
-            additionalHtmlOutputFiles.set(options_1.INDEX_HTML_SERVER, (0, utils_1.createOutputFile)(options_1.INDEX_HTML_SERVER, ssrContent, bundler_context_1.BuildOutputFileType.ServerApplication));
+            additionalHtmlOutputFiles.set(options_1.INDEX_HTML_SERVER, (0, bundler_files_1.createOutputFile)(options_1.INDEX_HTML_SERVER, ssrContent, bundler_files_1.BuildOutputFileType.ServerApplication));
         }
     }
     // Create server manifest
     const initialFilesPaths = new Set(initialFiles.keys());
     if (serverEntryPoint && (outputMode || prerenderOptions || appShellOptions || ssrOptions)) {
         const { manifestContent, serverAssetsChunks } = (0, manifest_1.generateAngularServerAppManifest)(additionalHtmlOutputFiles, outputFiles, optimizationOptions.styles.inlineCritical ?? false, undefined, locale, baseHref, initialFilesPaths, metafile, publicPath);
-        additionalOutputFiles.push(...serverAssetsChunks, (0, utils_1.createOutputFile)(manifest_1.SERVER_APP_MANIFEST_FILENAME, manifestContent, bundler_context_1.BuildOutputFileType.ServerApplication));
+        additionalOutputFiles.push(...serverAssetsChunks, (0, bundler_files_1.createOutputFile)(manifest_1.SERVER_APP_MANIFEST_FILENAME, manifestContent, bundler_files_1.BuildOutputFileType.ServerApplication));
     }
     // Pre-render (SSG) and App-shell
     // If localization is enabled, prerendering is handled in the inlining process.
@@ -84,7 +83,7 @@ async function executePostBundleSteps(metafile, options, outputFiles, assetFiles
                     filePath = indexHtmlOptions.output;
                 }
             }
-            additionalHtmlOutputFiles.set(filePath, (0, utils_1.createOutputFile)(filePath, content, bundler_context_1.BuildOutputFileType.Browser));
+            additionalHtmlOutputFiles.set(filePath, (0, bundler_files_1.createOutputFile)(filePath, content, bundler_files_1.BuildOutputFileType.Browser));
         }
         const serializableRouteTreeNodeForManifest = [];
         for (const metadata of serializableRouteTreeNode) {
@@ -118,7 +117,7 @@ async function executePostBundleSteps(metafile, options, outputFiles, assetFiles
             const serviceWorkerResult = await (0, service_worker_1.augmentAppWithServiceWorkerEsbuild)(workspaceRoot, serviceWorker, baseHref, options.indexHtmlOptions?.output, 
             // Ensure additional files recently added are used
             [...outputFiles, ...additionalOutputFiles], assetFiles);
-            additionalOutputFiles.push((0, utils_1.createOutputFile)('ngsw.json', serviceWorkerResult.manifest, bundler_context_1.BuildOutputFileType.Browser));
+            additionalOutputFiles.push((0, bundler_files_1.createOutputFile)('ngsw.json', serviceWorkerResult.manifest, bundler_files_1.BuildOutputFileType.Browser));
             additionalAssets.push(...serviceWorkerResult.assetFiles);
         }
         catch (error) {

@@ -48,8 +48,7 @@ const node_assert_1 = __importDefault(require("node:assert"));
 const node_crypto_1 = require("node:crypto");
 const node_path_1 = require("node:path");
 const worker_pool_1 = require("../../utils/worker-pool");
-const bundler_context_1 = require("./bundler-context");
-const utils_1 = require("./utils");
+const bundler_files_1 = require("./bundler-files");
 /**
  * A keyword used to indicate if a JavaScript file may require inlining of translations.
  * This keyword is used to avoid processing files that would not otherwise need i18n processing.
@@ -75,7 +74,7 @@ class I18nInliner {
         const files = new Map();
         const pendingMaps = [];
         for (const file of outputFiles) {
-            if (file.type === bundler_context_1.BuildOutputFileType.Root || file.type === bundler_context_1.BuildOutputFileType.ServerRoot) {
+            if (file.type === bundler_files_1.BuildOutputFileType.Root || file.type === bundler_files_1.BuildOutputFileType.ServerRoot) {
                 // Skip also the server entry-point.
                 // Skip stats and similar files.
                 continue;
@@ -179,9 +178,9 @@ class I18nInliner {
             ...rawResults.flatMap(({ file, code, map, messages }) => {
                 const type = this.#localizeFiles.get(file)?.type;
                 (0, node_assert_1.default)(type !== undefined, 'localized file should always have a type' + file);
-                const resultFiles = [(0, utils_1.createOutputFile)(file, code, type)];
+                const resultFiles = [(0, bundler_files_1.createOutputFile)(file, code, type)];
                 if (map) {
-                    resultFiles.push((0, utils_1.createOutputFile)(file + '.map', map, type));
+                    resultFiles.push((0, bundler_files_1.createOutputFile)(file + '.map', map, type));
                 }
                 for (const message of messages) {
                     if (message.type === 'error') {
