@@ -56,7 +56,7 @@ function getDepOptimizationConfig({ disabled, exclude, include, target, zoneless
         esbuildOptions: {
             // Set esbuild supported targets.
             target,
-            supported: (0, utils_1.getFeatureSupport)(target, zoneless),
+            supported: (0, utils_1.getFeatureSupport)(zoneless),
             plugins,
             loader,
             define: {

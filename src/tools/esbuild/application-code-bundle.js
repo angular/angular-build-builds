@@ -51,7 +51,7 @@ function createBrowserCodeBundleOptions(options, target, sourceFileCache, styles
             entryNames: outputNames.bundles,
             entryPoints,
             target,
-            supported: (0, utils_1.getFeatureSupport)(target, zoneless),
+            supported: (0, utils_1.getFeatureSupport)(zoneless),
         };
         buildOptions.plugins ??= [];
         buildOptions.plugins.push((0, wasm_plugin_1.createWasmPlugin)({ allowAsync: zoneless, cache: loadCache }), (0, angular_localize_init_warning_plugin_1.createAngularLocalizeInitWarningPlugin)(), (0, compiler_plugin_1.createCompilerPlugin)(
@@ -185,7 +185,7 @@ function createServerMainCodeBundleOptions(options, target, sourceFileCache, sty
                 js: `import './polyfills.server.mjs';`,
             },
             entryPoints,
-            supported: (0, utils_1.getFeatureSupport)(target, zoneless),
+            supported: (0, utils_1.getFeatureSupport)(zoneless),
         };
         buildOptions.plugins ??= [];
         buildOptions.plugins.push((0, wasm_plugin_1.createWasmPlugin)({ allowAsync: zoneless, cache: loadResultCache }), (0, angular_localize_init_warning_plugin_1.createAngularLocalizeInitWarningPlugin)(), (0, compiler_plugin_1.createCompilerPlugin)(
@@ -289,7 +289,7 @@ function createSsrEntryCodeBundleOptions(options, target, sourceFileCache, style
             entryPoints: {
                 'server': ssrEntryNamespace,
             },
-            supported: (0, utils_1.getFeatureSupport)(target, true),
+            supported: (0, utils_1.getFeatureSupport)(true),
         };
         buildOptions.plugins ??= [];
         buildOptions.plugins.push((0, angular_localize_init_warning_plugin_1.createAngularLocalizeInitWarningPlugin)(), (0, compiler_plugin_1.createCompilerPlugin)(
