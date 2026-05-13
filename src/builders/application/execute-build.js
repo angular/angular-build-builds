@@ -140,7 +140,9 @@ async function executeBuild(options, context, rebuildState) {
         const lazyChunksCount = Object.keys(metafile.outputs).filter((path) => path.endsWith('.js') && !initialFiles.has(path)).length;
         // Only run if the number of lazy chunks meets the configured threshold.
         // This avoids overhead for small projects with few chunks.
-        if (lazyChunksCount >= environment_options_1.optimizeChunksThreshold) {
+        // TODO: Remove this log once chunk optimization is supported for server builds as this
+        // causes the file to be renamed and thus causes incorrect preloading.
+        if (!options.serverEntryPoint && lazyChunksCount >= environment_options_1.optimizeChunksThreshold) {
             const { optimizeChunks } = await Promise.resolve().then(() => __importStar(require('./chunk-optimizer')));
             const optimizationResult = await (0, profiling_1.profileAsync)('OPTIMIZE_CHUNKS', () => optimizeChunks(bundlingResult, options.sourcemapOptions.scripts ? !options.sourcemapOptions.hidden || 'hidden' : false));
             if (optimizationResult.errors) {
