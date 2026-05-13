@@ -17,13 +17,12 @@ export declare function calculateEstimatedTransferSizes(outputFiles: OutputFile[
 export declare function withSpinner<T>(text: string, action: () => T | Promise<T>): Promise<T>;
 export declare function withNoProgress<T>(text: string, action: () => T | Promise<T>): Promise<T>;
 /**
- * Generates a syntax feature object map for Angular applications based on a list of targets.
+ * Generates a syntax feature object map for Angular applications.
  * A full set of feature names can be found here: https://esbuild.github.io/api/#supported
- * @param target An array of browser/engine targets in the format accepted by the esbuild `target` option.
  * @param nativeAsyncAwait Indicate whether to support native async/await.
  * @returns An object that can be used with the esbuild build `supported` option.
  */
-export declare function getFeatureSupport(target: string[], nativeAsyncAwait: boolean): BuildOptions['supported'];
+export declare function getFeatureSupport(nativeAsyncAwait: boolean): BuildOptions['supported'];
 export declare function emitFilesToDisk<T = BuildOutputAsset | BuildOutputFile>(files: T[], writeFileCallback: (file: T) => Promise<void>): Promise<void>;
 /**
  * Transform browserlists result to esbuild target.
