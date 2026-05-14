@@ -13,7 +13,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.BundlerContext = void 0;
 const esbuild_1 = require("esbuild");
 const node_assert_1 = __importDefault(require("node:assert"));
-const node_module_1 = require("node:module");
 const node_path_1 = require("node:path");
 const manifest_1 = require("../../utils/server-rendering/manifest");
 const bundler_files_1 = require("./bundler-files");
@@ -381,11 +380,9 @@ function isInternalBundlerFile(file) {
     if (file[0] === '<' && file.at(-1) === '>') {
         return true;
     }
-    const DISABLED_BUILTIN = '(disabled):';
-    // Disabled node builtins such as "/some/path/(disabled):fs"
-    const disabledIndex = file.indexOf(DISABLED_BUILTIN);
-    if (disabledIndex >= 0) {
-        return node_module_1.builtinModules.includes(file.slice(disabledIndex + DISABLED_BUILTIN.length));
+    // Any (disabled): path is a virtual esbuild entry that doesn't exist on disk
+    if (file.includes('(disabled):')) {
+        return true;
     }
     return false;
 }
