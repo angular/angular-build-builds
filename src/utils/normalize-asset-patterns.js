@@ -47,6 +47,7 @@ exports.normalizeAssetPatterns = normalizeAssetPatterns;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_fs_1 = require("node:fs");
 const path = __importStar(require("node:path"));
+const path_1 = require("./path");
 function normalizeAssetPatterns(assetPatterns, workspaceRoot, projectRoot, projectSourceRoot) {
     if (assetPatterns.length === 0) {
         return [];
@@ -99,6 +100,9 @@ function normalizeAssetPatterns(assetPatterns, workspaceRoot, projectRoot, proje
             assetPattern = { glob, input, output };
         }
         else {
+            if (!(0, path_1.isSubDirectory)(workspaceRoot, assetPattern.input)) {
+                throw new Error(`The ${assetPattern.input} asset path must be within the workspace root.`);
+            }
             assetPattern.output = path.join('.', assetPattern.output ?? '');
         }
         (0, node_assert_1.default)(assetPattern.output !== undefined);

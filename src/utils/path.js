@@ -8,6 +8,7 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.toPosixPath = toPosixPath;
+exports.isSubDirectory = isSubDirectory;
 const node_path_1 = require("node:path");
 const node_process_1 = require("node:process");
 const WINDOWS_PATH_SEPERATOR_REGEXP = /\\/g;
@@ -34,5 +35,17 @@ const WINDOWS_PATH_SEPERATOR_REGEXP = /\\/g;
  */
 function toPosixPath(path) {
     return node_process_1.platform === 'win32' ? path.replace(WINDOWS_PATH_SEPERATOR_REGEXP, node_path_1.posix.sep) : path;
+}
+/**
+ * Determines if a path is a subdirectory or file within a parent directory.
+ *
+ * @param parent - The parent directory path.
+ * @param child - The child path to check.
+ * @returns `true` if the child path is within the parent directory, `false` otherwise.
+ */
+function isSubDirectory(parent, child) {
+    const normalizedParent = (0, node_path_1.normalize)(parent);
+    const resolvedChild = (0, node_path_1.resolve)(parent, child);
+    return resolvedChild.startsWith(normalizedParent);
 }
 //# sourceMappingURL=path.js.map
