@@ -27,3 +27,11 @@
  * ```
  */
 export declare function toPosixPath(path: string): string;
+/**
+ * Determines if a path is a subdirectory or file within a parent directory.
+ *
+ * @param parent - The parent directory path.
+ * @param child - The child path to check.
+ * @returns `true` if the child path is within the parent directory, `false` otherwise.
+ */
+export declare function isSubDirectory(parent: string, child: string): boolean;
