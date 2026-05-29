@@ -158,15 +158,11 @@ class BundlerContext {
                 // Rebuild using the existing incremental build context
                 result = await this.#esbuildContext.rebuild();
             }
-            else if (this.incremental) {
-                // Create an incremental build context and perform the first build.
+            else {
+                // Create a build context and perform the build.
                 // Context creation does not perform a build.
                 this.#esbuildContext = await (0, esbuild_1.context)(this.#esbuildOptions);
                 result = await this.#esbuildContext.rebuild();
-            }
-            else {
-                // For non-incremental builds, perform a single build
-                result = await (0, esbuild_1.build)(this.#esbuildOptions);
             }
         }
         catch (failure) {

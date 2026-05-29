@@ -82,51 +82,60 @@ async function* runEsBuildBuildAction(action, options) {
             (0, sass_language_1.shutdownSassWorkerPool)();
         }
     }
-    // Setup watcher if watch mode enabled
     let watcher;
-    if (watch) {
-        if (progress) {
-            logger.info('Watch mode enabled. Watching for file changes...');
-        }
-        const ignored = [
-            // Ignore the output and cache paths to avoid infinite rebuild cycles
-            outputOptions.base,
-            cacheOptions.basePath,
-            `${(0, path_1.toPosixPath)(workspaceRoot)}/**/.*/**`,
-        ];
-        // Setup a watcher
-        const { createWatcher } = await Promise.resolve().then(() => __importStar(require('../../tools/esbuild/watcher')));
-        watcher = createWatcher({
-            polling: typeof poll === 'number',
-            interval: poll,
-            followSymlinks: preserveSymlinks,
-            ignored,
-        });
-        // Setup abort support
-        options.signal?.addEventListener('abort', () => void watcher?.close());
-        // Watch the entire project root if 'NG_BUILD_WATCH_ROOT' environment variable is set
-        if (environment_options_1.shouldWatchRoot) {
-            if (!preserveSymlinks) {
-                // Ignore all node modules directories to avoid excessive file watchers.
-                // Package changes are handled below by watching manifest and lock files.
-                // NOTE: this is not enable when preserveSymlinks is true as this would break `npm link` usages.
-                ignored.push('**/node_modules/**');
-                watcher.add(packageWatchFiles
-                    .map((file) => node_path_1.default.join(workspaceRoot, file))
-                    .filter((file) => (0, node_fs_1.existsSync)(file)));
+    let watchLoopStarted = false;
+    try {
+        // Setup watcher if watch mode enabled
+        if (watch) {
+            if (progress) {
+                logger.info('Watch mode enabled. Watching for file changes...');
             }
-            watcher.add(projectRoot);
+            const ignored = [
+                // Ignore the output and cache paths to avoid infinite rebuild cycles
+                outputOptions.base,
+                cacheOptions.basePath,
+                `${(0, path_1.toPosixPath)(workspaceRoot)}/**/.*/**`,
+            ];
+            // Setup a watcher
+            const { createWatcher } = await Promise.resolve().then(() => __importStar(require('../../tools/esbuild/watcher')));
+            watcher = createWatcher({
+                polling: typeof poll === 'number',
+                interval: poll,
+                followSymlinks: preserveSymlinks,
+                ignored,
+            });
+            // Setup abort support
+            options.signal?.addEventListener('abort', () => void watcher?.close());
+            // Watch the entire project root if 'NG_BUILD_WATCH_ROOT' environment variable is set
+            if (environment_options_1.shouldWatchRoot) {
+                if (!preserveSymlinks) {
+                    // Ignore all node modules directories to avoid excessive file watchers.
+                    // Package changes are handled below by watching manifest and lock files.
+                    // NOTE: this is not enable when preserveSymlinks is true as this would break `npm link` usages.
+                    ignored.push('**/node_modules/**');
+                    watcher.add(packageWatchFiles
+                        .map((file) => node_path_1.default.join(workspaceRoot, file))
+                        .filter((file) => (0, node_fs_1.existsSync)(file)));
+                }
+                watcher.add(projectRoot);
+            }
+            // Watch locations provided by the initial build result
+            watcher.add(result.watchFiles);
         }
-        // Watch locations provided by the initial build result
-        watcher.add(result.watchFiles);
+        // Output the first build results after setting up the watcher to ensure that any code executed
+        // higher in the iterator call stack will trigger the watcher. This is particularly relevant for
+        // unit tests which execute the builder and modify the file system programmatically.
+        yield* emitOutputResults(result, outputOptions);
+        // Finish if watch mode is not enabled
+        if (!watcher) {
+            return;
+        }
+        watchLoopStarted = true;
     }
-    // Output the first build results after setting up the watcher to ensure that any code executed
-    // higher in the iterator call stack will trigger the watcher. This is particularly relevant for
-    // unit tests which execute the builder and modify the file system programmatically.
-    yield* emitOutputResults(result, outputOptions);
-    // Finish if watch mode is not enabled
-    if (!watcher) {
-        return;
+    finally {
+        if (!watchLoopStarted && result) {
+            await result.dispose();
+        }
     }
     // Used to force a full result on next rebuild if there were initial errors.
     // This ensures at least one full result is emitted.
