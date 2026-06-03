@@ -81,8 +81,8 @@ function updateExternalMetadata(result, externalMetadata, externalDependencies, 
         return;
     }
     const { implicitBrowser, implicitServer, explicit } = result.detail['externalMetadata'];
-    const implicitServerFiltered = implicitServer.filter((m) => !(0, node_module_1.isBuiltin)(m) && !isAbsoluteUrl(m));
-    const implicitBrowserFiltered = implicitBrowser.filter((m) => !isAbsoluteUrl(m));
+    const implicitServerFiltered = implicitServer.filter((m) => !(0, node_module_1.isBuiltin)(m) && !isAbsoluteUrl(m) && !m.endsWith('.json'));
+    const implicitBrowserFiltered = implicitBrowser.filter((m) => !isAbsoluteUrl(m) && !m.endsWith('.json'));
     const explicitBrowserFiltered = explicitPackagesOnly
         ? explicit.filter((m) => !isAbsoluteUrl(m))
         : explicit;
