@@ -103,7 +103,7 @@ async function normalizeOptions(context, projectName, options) {
         watch,
         debug: options.debug ?? false,
         ui: process.env['CI'] ? false : ui,
-        isolate: isolate ?? false,
+        isolate,
         quiet: options.quiet ?? (process.env['CI'] ? false : true),
         providersFile: options.providersFile && node_path_1.default.join(workspaceRoot, options.providersFile),
         setupFiles: options.setupFiles
