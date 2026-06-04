@@ -27,7 +27,7 @@ interface VitestConfigPluginOptions {
     include: string[];
     optimizeDepsInclude: string[];
     watch: boolean;
-    isolate: boolean;
+    isolate: boolean | undefined;
 }
 export declare function createVitestConfigPlugin(options: VitestConfigPluginOptions): Promise<VitestPlugins[0]>;
 export declare function createVitestPlugins(pluginOptions: PluginOptions): VitestPlugins;

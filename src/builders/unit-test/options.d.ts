@@ -44,7 +44,7 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     watch: boolean;
     debug: boolean;
     ui: boolean | undefined;
-    isolate: boolean;
+    isolate: boolean | undefined;
     quiet: boolean;
     providersFile: string | undefined;
     setupFiles: string[];
