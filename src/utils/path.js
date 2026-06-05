@@ -44,8 +44,9 @@ function toPosixPath(path) {
  * @returns `true` if the child path is within the parent directory, `false` otherwise.
  */
 function isSubDirectory(parent, child) {
-    const normalizedParent = (0, node_path_1.normalize)(parent);
+    const resolvedParent = (0, node_path_1.resolve)(parent);
     const resolvedChild = (0, node_path_1.resolve)(parent, child);
-    return resolvedChild.startsWith(normalizedParent);
+    const relativePath = toPosixPath((0, node_path_1.relative)(resolvedParent, resolvedChild));
+    return relativePath !== '..' && !relativePath.startsWith('../') && !(0, node_path_1.isAbsolute)(relativePath);
 }
 //# sourceMappingURL=path.js.map
