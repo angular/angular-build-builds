@@ -39,6 +39,7 @@ export interface CacheStore<V> {
  * to use a cache.
  */
 export declare class Cache<V, S extends CacheStore<V> = CacheStore<V>> {
+    #private;
     protected readonly store: S;
     readonly namespace?: string | undefined;
     constructor(store: S, namespace?: string | undefined);
@@ -70,6 +71,10 @@ export declare class Cache<V, S extends CacheStore<V> = CacheStore<V>> {
      * @param value A value to put in the cache.
      */
     put(key: string, value: V): Promise<void>;
+    /**
+     * Clears the base class internal state (requests, write counts, and pending gets).
+     */
+    protected clearInternal(): void;
 }
 /**
  * A lightweight in-memory cache implementation based on a JavaScript Map object.

@@ -32,6 +32,8 @@ class BundlerContext {
     #esbuildContext;
     #esbuildOptions;
     #esbuildResult;
+    #activeBundlePromise;
+    #disposed = false;
     #optionsFactory;
     #shouldCacheResult;
     #loadCache;
@@ -127,7 +129,16 @@ class BundlerContext {
         if (!force && this.#esbuildResult) {
             return this.#esbuildResult;
         }
-        const result = await this.#performBundle();
+        if (!force && this.#activeBundlePromise) {
+            return this.#activeBundlePromise;
+        }
+        const bundlePromise = this.#performBundle().finally(() => {
+            if (this.#activeBundlePromise === bundlePromise) {
+                this.#activeBundlePromise = undefined;
+            }
+        });
+        this.#activeBundlePromise = bundlePromise;
+        const result = await bundlePromise;
         if (this.#shouldCacheResult) {
             this.#esbuildResult = result;
         }
@@ -154,7 +165,12 @@ class BundlerContext {
             else {
                 // Create a build context and perform the build.
                 // Context creation does not perform a build.
-                this.#esbuildContext = await (0, esbuild_1.context)(this.#esbuildOptions);
+                const esbuildContext = await (0, esbuild_1.context)(this.#esbuildOptions);
+                if (this.#disposed) {
+                    await esbuildContext.dispose();
+                    throw new Error('BundlerContext was disposed during build.');
+                }
+                this.#esbuildContext = esbuildContext;
                 result = await this.#esbuildContext.rebuild();
             }
         }
@@ -356,9 +372,11 @@ class BundlerContext {
      * @returns A promise that resolves when disposal is complete.
      */
     async dispose() {
+        this.#disposed = true;
         try {
             this.#esbuildOptions = undefined;
             this.#esbuildResult = undefined;
+            this.#activeBundlePromise = undefined;
             this.#loadCache = undefined;
             await this.#esbuildContext?.dispose();
         }
