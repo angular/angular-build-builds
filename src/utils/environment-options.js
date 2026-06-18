@@ -93,7 +93,7 @@ exports.allowMinify = debugOptimize.minify;
  * Allows using Rolldown for chunk optimization instead of Rollup.
  * This is useful for debugging and testing scenarios.
  */
-exports.useRolldownChunks = parseTristate(process.env['NG_BUILD_CHUNKS_ROLLDOWN']) ?? false;
+exports.useRolldownChunks = parseTristate(process.env['NG_BUILD_CHUNKS_ROLLDOWN']) ?? true;
 /**
  * Some environments, like CircleCI which use Docker report a number of CPUs by the host and not the count of available.
  * This cause `Error: Call retries were exceeded` errors when trying to use them.

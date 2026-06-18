@@ -45,7 +45,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.optimizeChunks = optimizeChunks;
 const node_assert_1 = __importDefault(require("node:assert"));
-const rollup_1 = require("rollup");
 const bundler_files_1 = require("../../tools/esbuild/bundler-files");
 const environment_options_1 = require("../../utils/environment-options");
 const error_1 = require("../../utils/error");
@@ -251,7 +250,15 @@ async function optimizeChunks(original, sourcemap) {
             optimizedOutput = result.output;
         }
         else {
-            bundle = await (0, rollup_1.rollup)({
+            let rollup;
+            try {
+                rollup = (await Promise.resolve().then(() => __importStar(require('rollup')))).rollup;
+            }
+            catch {
+                throw new Error(`Rollup is required when 'NG_BUILD_CHUNKS_ROLLDOWN' is set to false. ` +
+                    `Please install 'rollup' manually (e.g. 'npm install rollup --save-dev') to use this fallback.`);
+            }
+            bundle = await rollup({
                 input: mainFile,
                 plugins: plugins,
             });
