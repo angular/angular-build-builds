@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "22.0.3+sha-b30b9d3",
+  "version": "22.0.3+sha-a1ec745",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -23,7 +23,7 @@
   "builders": "builders.json",
   "dependencies": {
     "@ampproject/remapping": "2.3.0",
-    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#b30b9d3",
+    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#a1ec745",
     "@babel/core": "7.29.0",
     "@babel/helper-annotate-as-pure": "7.27.3",
     "@babel/helper-split-export-declaration": "7.24.7",
@@ -39,7 +39,7 @@
     "mrmime": "2.0.1",
     "parse5-html-rewriting-stream": "8.0.1",
     "picomatch": "4.0.4",
-    "piscina": "5.1.4",
+    "piscina": "5.2.0",
     "rollup": "4.60.2",
     "sass": "1.99.0",
     "semver": "7.7.4",
@@ -59,7 +59,7 @@
     "@angular/platform-browser": "^22.0.0",
     "@angular/platform-server": "^22.0.0",
     "@angular/service-worker": "^22.0.0",
-    "@angular/ssr": "github:angular/angular-ssr-builds#b30b9d3",
+    "@angular/ssr": "github:angular/angular-ssr-builds#a1ec745",
     "istanbul-lib-instrument": "^6.0.0",
     "karma": "^6.4.0",
     "less": "^4.2.0",
