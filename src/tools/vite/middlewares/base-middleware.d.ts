@@ -5,7 +5,9 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-import type { Connect } from 'vite';
+import type { Connect } from 'vite' with {
+    'resolution-mode': 'import'
+};
 /**
  * Patches the Vite base middleware to correctly handle the Angular application's base href.
  * This is necessary because Vite's default base middleware might not align with Angular's

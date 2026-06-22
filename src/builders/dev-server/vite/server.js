@@ -124,7 +124,7 @@ function createSsrConfig(externalMetadata, serverOptions, prebundleTransformer, 
     };
 }
 async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks, externalMetadata, ssrMode, prebundleTransformer, target, zoneless, componentStyles, templateUpdates, prebundleLoaderExtensions, define, extensionMiddleware, indexHtmlTransformer, thirdPartySourcemaps = false) {
-    const { normalizePath } = await Promise.resolve().then(() => __importStar(require('vite')));
+    const { normalizePath } = (await Promise.resolve(`${'vite'}`).then(s => __importStar(require(s))));
     // Path will not exist on disk and only used to provide separate path for Vite requests
     const virtualProjectRoot = normalizePath((0, node_path_1.join)(serverOptions.workspaceRoot, `.angular/vite-root`, serverOptions.buildTarget.project));
     /**
@@ -142,7 +142,7 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
         cacheDir,
         root: virtualProjectRoot,
         publicDir: false,
-        esbuild: false,
+        oxc: false,
         mode: 'development',
         // We use custom as we do not rely on Vite's htmlFallbackMiddleware and indexHtmlMiddleware.
         appType: 'custom',

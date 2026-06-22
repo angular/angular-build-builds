@@ -7,7 +7,9 @@
  */
 import type { BuilderContext } from '@angular-devkit/architect';
 import type { Plugin } from 'esbuild';
-import type { Connect } from 'vite';
+import type * as Vite from 'vite' with {
+    'resolution-mode': 'import'
+};
 import { Result } from '../../application/results';
 import { type ApplicationBuilderInternalOptions } from '../internal';
 import type { NormalizedDevServerOptions } from '../options';
@@ -16,6 +18,6 @@ export type BuilderAction = (options: ApplicationBuilderInternalOptions, context
 export declare function serveWithVite(serverOptions: NormalizedDevServerOptions, builderName: string, builderAction: BuilderAction, context: BuilderContext, transformers?: {
     indexHtml?: (content: string) => Promise<string>;
 }, extensions?: {
-    middleware?: Connect.NextHandleFunction[];
+    middleware?: Vite.Connect.NextHandleFunction[];
     buildPlugins?: Plugin[];
 }): AsyncIterableIterator<DevServerBuilderOutput>;

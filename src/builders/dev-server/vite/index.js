@@ -155,7 +155,7 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
     { sourcemap: true, jit: true, thirdPartySourcemaps }, 1);
     // The index HTML path will be updated from the build results if provided by the builder
     let htmlIndexPath = 'index.html';
-    const { createServer, normalizePath } = await Promise.resolve().then(() => __importStar(require('vite')));
+    const { createServer, normalizePath } = (await Promise.resolve(`${'vite'}`).then(s => __importStar(require(s))));
     let server;
     let serverUrl;
     let hadError = false;

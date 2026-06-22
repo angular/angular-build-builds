@@ -6,7 +6,9 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 import type { BuilderContext } from '@angular-devkit/architect';
-import type { ViteDevServer } from 'vite';
+import type { ViteDevServer } from 'vite' with {
+    'resolution-mode': 'import'
+};
 import type { ComponentStyleRecord } from '../../../tools/vite/middlewares';
 import type { NormalizedDevServerOptions } from '../options';
 import type { OutputAssetRecord, OutputFileRecord } from './utils';

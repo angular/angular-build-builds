@@ -5,7 +5,9 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-import type { DepOptimizationConfig } from 'vite';
+import type { DepOptimizationConfig } from 'vite' with {
+    'resolution-mode': 'import'
+};
 import type { ExternalResultMetadata } from '../esbuild/bundler-execution-result';
 import { JavaScriptTransformer } from '../esbuild/javascript-transformer';
 export type AngularMemoryOutputFiles = Map<string, {

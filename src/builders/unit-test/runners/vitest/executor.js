@@ -104,7 +104,7 @@ class VitestExecutor {
     }
     async *execute(buildResult) {
         this.debugLog(DebugLogLevel.Info, `Executing test run (kind: ${buildResult.kind}).`);
-        this.normalizePath ??= (await Promise.resolve().then(() => __importStar(require('vite')))).normalizePath;
+        this.normalizePath ??= (await Promise.resolve(`${'vite'}`).then(s => __importStar(require(s)))).normalizePath;
         if (buildResult.kind === results_1.ResultKind.Full) {
             this.buildResultFiles.clear();
             for (const [path, file] of Object.entries(buildResult.files)) {

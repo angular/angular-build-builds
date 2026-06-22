@@ -46,7 +46,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createAngularSsrTransformPlugin = createAngularSsrTransformPlugin;
 const remapping_1 = __importDefault(require("@ampproject/remapping"));
 async function createAngularSsrTransformPlugin(workspaceRoot) {
-    const { normalizePath } = await Promise.resolve().then(() => __importStar(require('vite')));
+    const { normalizePath } = (await Promise.resolve(`${'vite'}`).then(s => __importStar(require(s))));
     return {
         name: 'vite:angular-ssr-transform',
         enforce: 'post',

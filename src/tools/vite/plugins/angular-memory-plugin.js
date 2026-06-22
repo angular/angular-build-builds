@@ -53,7 +53,7 @@ const VITE_FS_PREFIX = '/@fs/';
 const FILE_PROTOCOL = 'file:';
 async function createAngularMemoryPlugin(options) {
     const { virtualProjectRoot, outputFiles, external } = options;
-    const { normalizePath } = await Promise.resolve().then(() => __importStar(require('vite')));
+    const { normalizePath } = (await Promise.resolve(`${'vite'}`).then(s => __importStar(require(s))));
     return {
         name: 'vite:angular-memory',
         // Ensures plugin hooks run before built-in Vite hooks
