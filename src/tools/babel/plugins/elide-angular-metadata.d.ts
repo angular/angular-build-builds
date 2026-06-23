@@ -5,7 +5,7 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-import type { types as BabelTypes, PluginObj } from '@babel/core';
+import type { types as BabelTypes, PluginObject } from '@babel/core';
 /**
  * Provides one or more keywords that if found within the content of a source file indicate
  * that this plugin should be used with a source file.
@@ -20,4 +20,4 @@ export declare function getKeywords(): Iterable<string>;
  */
 export default function ({ types: t }: {
     types: typeof BabelTypes;
-}): PluginObj;
+}): PluginObject;

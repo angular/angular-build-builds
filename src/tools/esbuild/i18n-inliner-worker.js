@@ -114,13 +114,11 @@ async function createI18nPlugins(locale, translation) {
     const { Diagnostics, makeEs2015TranslatePlugin } = await loadLocalizeTools();
     const plugins = [];
     const diagnostics = new Diagnostics();
-    plugins.push(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    makeEs2015TranslatePlugin(diagnostics, (translation || {}), {
+    plugins.push(makeEs2015TranslatePlugin(diagnostics, translation || {}, {
         missingTranslation: translation === undefined ? 'ignore' : missingTranslation,
     }));
     // Create a plugin to replace the locale specifier constant inject by the build system with the actual specifier
-    plugins.push({
+    plugins.push(() => ({
         visitor: {
             StringLiteral(path) {
                 if (path.node.value === '___NG_LOCALE_INSERT___') {
@@ -128,7 +126,7 @@ async function createI18nPlugins(locale, translation) {
                 }
             },
         },
-    });
+    }));
     return { diagnostics, plugins };
 }
 /**

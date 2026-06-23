@@ -34,6 +34,7 @@ export declare function initialize(request: InitRequest): Promise<{
 export declare function diagnose(modes: DiagnosticModes): Promise<{
     errors?: PartialMessage[];
     warnings?: PartialMessage[];
+    timings?: Record<string, number[]>;
 }>;
 export declare function emit(): Promise<import("./angular-compilation").EmitFileResult[]>;
 export declare function update(files: Set<string>): void;
