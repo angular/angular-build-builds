@@ -214,7 +214,6 @@ async function createVitestConfigPlugin(options) {
             return {
                 test: {
                     coverage: await generateCoverageOption(options.coverage, testConfig?.coverage, projectName, determinedProvider),
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     ...(reporters ? { reporters } : {}),
                     projects: [projectConfig],
                 },

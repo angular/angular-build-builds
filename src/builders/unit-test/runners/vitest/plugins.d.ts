@@ -5,7 +5,7 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-import type { BrowserConfigOptions, UserWorkspaceConfig, VitestPlugin } from 'vitest/node';
+import type { BrowserConfigOptions, Vite, VitestPlugin } from 'vitest/node';
 import type { ResultFile } from '../../../application/results';
 import type { NormalizedUnitTestBuilderOptions } from '../../options';
 type VitestPlugins = Awaited<ReturnType<typeof VitestPlugin>>;
@@ -23,7 +23,7 @@ interface VitestConfigPluginOptions {
     projectSourceRoot: string;
     reporters?: string[] | [string, object][];
     setupFiles: string[];
-    projectPlugins: Exclude<UserWorkspaceConfig['plugins'], undefined>;
+    projectPlugins: Vite.PluginOption[];
     include: string[];
     optimizeDepsInclude: string[];
     watch: boolean;
