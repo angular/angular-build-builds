@@ -289,11 +289,15 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
             const { root = '' } = await context.getProjectMetadata(projectName);
             const projectRoot = (0, node_path_1.join)(context.workspaceRoot, root);
             const browsers = (0, internal_1.getSupportedBrowsers)(projectRoot, context.logger);
-            const target = (0, internal_1.transformSupportedBrowsersToTargets)(browsers);
             // Needed for browser-esbuild as polyfills can be a string.
             const polyfills = Array.isArray((browserOptions.polyfills ??= []))
                 ? browserOptions.polyfills
                 : [browserOptions.polyfills];
+            const target = (0, internal_1.transformSupportedBrowsersToTargets)(browsers);
+            if (!(0, internal_1.isZonelessApp)(polyfills)) {
+                // Rolldown doesn't have an option to support Zone.js/async-await, so we need to support es2016.
+                target.push('es2016');
+            }
             let ssrMode = plugins_1.ServerSsrMode.NoSsr;
             if (browserOptions.outputMode &&
                 typeof browserOptions.ssr === 'object' &&
@@ -309,9 +313,19 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                     process.kill(process.pid);
                 });
             }
+            // Copy the loader and modify the file extension to be asset
+            const loader = browserOptions.loader ? { ...browserOptions.loader } : undefined;
+            if (loader) {
+                for (const [key, value] of Object.entries(loader)) {
+                    if (value === 'file') {
+                        loader[key] = 'asset';
+                    }
+                }
+            }
             // Setup server and start listening
-            const serverConfiguration = await (0, server_1.setupServer)(serverOptions, generatedFiles, assetFiles, browserOptions.preserveSymlinks, externalMetadata, ssrMode, prebundleTransformer, target, (0, internal_1.isZonelessApp)(polyfills), componentStyles, templateUpdates, browserOptions.loader, {
+            const serverConfiguration = await (0, server_1.setupServer)(serverOptions, generatedFiles, assetFiles, browserOptions.preserveSymlinks, externalMetadata, ssrMode, prebundleTransformer, target, componentStyles, templateUpdates, loader, {
                 ...browserOptions.define,
+                'ngServerMode': 'false',
                 'ngJitMode': browserOptions.aot ? 'false' : 'true',
                 'ngHmrMode': browserOptions.templateUpdates ? 'true' : 'false',
             }, extensions?.middleware, transformers?.indexHtml, thirdPartySourcemaps);

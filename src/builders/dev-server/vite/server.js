@@ -90,17 +90,19 @@ async function createServerConfig(serverOptions, assets, ssrMode, preTransformRe
             ],
         },
     };
-    if (serverOptions.ssl) {
-        if (serverOptions.sslCert && serverOptions.sslKey) {
-            server.https = {
-                cert: await (0, promises_1.readFile)(serverOptions.sslCert),
-                key: await (0, promises_1.readFile)(serverOptions.sslKey),
-            };
-        }
+    if (serverOptions.ssl && serverOptions.sslCert && serverOptions.sslKey) {
+        const [cert, key] = await Promise.all([
+            (0, promises_1.readFile)(serverOptions.sslCert),
+            (0, promises_1.readFile)(serverOptions.sslKey),
+        ]);
+        server.https = {
+            cert,
+            key,
+        };
     }
     return server;
 }
-function createSsrConfig(externalMetadata, serverOptions, prebundleTransformer, zoneless, target, prebundleLoaderExtensions, thirdPartySourcemaps, define) {
+function createSsrConfig(externalMetadata, serverOptions, prebundleTransformer, prebundleLoaderExtensions, thirdPartySourcemaps, define) {
     return {
         // Note: `true` and `/.*/` have different sematics. When true, the `external` option is ignored.
         noExternal: /.*/,
@@ -113,17 +115,17 @@ function createSsrConfig(externalMetadata, serverOptions, prebundleTransformer, 
             exclude: externalMetadata.explicitServer,
             // Include all implict dependencies from the external packages internal option
             include: externalMetadata.implicitServer,
-            ssr: true,
             prebundleTransformer,
-            zoneless,
-            target,
             loader: prebundleLoaderExtensions,
             thirdPartySourcemaps,
-            define,
+            define: {
+                ...define,
+                'ngServerMode': 'true',
+            },
         }),
     };
 }
-async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks, externalMetadata, ssrMode, prebundleTransformer, target, zoneless, componentStyles, templateUpdates, prebundleLoaderExtensions, define, extensionMiddleware, indexHtmlTransformer, thirdPartySourcemaps = false) {
+async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks, externalMetadata, ssrMode, prebundleTransformer, target, componentStyles, templateUpdates, prebundleLoaderExtensions, define, extensionMiddleware, indexHtmlTransformer, thirdPartySourcemaps = false) {
     const { normalizePath } = (await Promise.resolve(`${'vite'}`).then(s => __importStar(require(s))));
     // Path will not exist on disk and only used to provide separate path for Vite requests
     const virtualProjectRoot = normalizePath((0, node_path_1.join)(serverOptions.workspaceRoot, `.angular/vite-root`, serverOptions.buildTarget.project));
@@ -154,7 +156,7 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
         // Only 'file' loader entries are currently supported directly by Vite.
         assetsInclude: prebundleLoaderExtensions &&
             Object.entries(prebundleLoaderExtensions)
-                .filter(([, value]) => value === 'file')
+                .filter(([, value]) => value === 'asset')
                 // Create a file extension glob for each key
                 .map(([key]) => '*' + key),
         // Vite will normalize the `base` option by adding a leading slash.
@@ -167,9 +169,12 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
             preTransformRequests,
         },
         server: await createServerConfig(serverOptions, assets, ssrMode, preTransformRequests, cacheDir),
+        build: {
+            target,
+        },
         ssr: ssrMode === plugins_1.ServerSsrMode.NoSsr
             ? undefined
-            : createSsrConfig(externalMetadata, serverOptions, prebundleTransformer, zoneless, target, prebundleLoaderExtensions, thirdPartySourcemaps, define),
+            : createSsrConfig(externalMetadata, serverOptions, prebundleTransformer, prebundleLoaderExtensions, thirdPartySourcemaps, define),
         plugins: [
             (0, plugins_1.createAngularSetupMiddlewaresPlugin)({
                 outputFiles,
@@ -200,10 +205,7 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
             exclude: externalMetadata.explicitBrowser,
             // Include all implict dependencies from the external packages internal option
             include: externalMetadata.implicitBrowser,
-            ssr: false,
             prebundleTransformer,
-            target,
-            zoneless,
             loader: prebundleLoaderExtensions,
             thirdPartySourcemaps,
             define,
