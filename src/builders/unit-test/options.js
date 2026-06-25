@@ -111,6 +111,7 @@ async function normalizeOptions(context, projectName, options) {
             : [],
         dumpVirtualFiles: options.dumpVirtualFiles,
         listTests: options.listTests,
+        preserveSymlinks: undefined,
         runnerConfig: typeof runnerConfig === 'string'
             ? runnerConfig.length === 0
                 ? true

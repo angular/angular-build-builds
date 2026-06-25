@@ -42,6 +42,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.executeBuild = executeBuild;
 const compilation_1 = require("../../tools/angular/compilation");
+const compilation_state_1 = require("../../tools/esbuild/angular/compilation-state");
 const source_file_cache_1 = require("../../tools/esbuild/angular/source-file-cache");
 const budget_stats_1 = require("../../tools/esbuild/budget-stats");
 const bundler_context_1 = require("../../tools/esbuild/bundler-context");
@@ -75,50 +76,57 @@ async function executeBuild(options, context, rebuildState) {
     let codeBundleCache;
     let bundlingResult;
     let templateUpdates;
-    if (rebuildState) {
-        bundlerContexts = rebuildState.rebuildContexts;
-        componentStyleBundler = rebuildState.componentStyleBundler;
-        codeBundleCache = rebuildState.codeBundleCache;
-        templateUpdates = rebuildState.templateUpdates;
-        // Reset template updates for new rebuild
-        templateUpdates?.clear();
-        const allFileChanges = rebuildState.fileChanges.all;
-        // Bundle all contexts that do not require TypeScript changed file checks.
-        // These will automatically use cached results based on the changed files.
-        bundlingResult = await bundler_context_1.BundlerContext.bundleAll(bundlerContexts.otherContexts, allFileChanges);
-        // Check the TypeScript code bundling cache for changes. If invalid, force a rebundle of
-        // all TypeScript related contexts.
-        const forceTypeScriptRebuild = codeBundleCache?.invalidate(allFileChanges);
-        const typescriptResults = [];
-        for (const typescriptContext of bundlerContexts.typescriptContexts) {
-            typescriptContext.invalidate(allFileChanges);
-            const result = await typescriptContext.bundle(forceTypeScriptRebuild);
-            typescriptResults.push(result);
+    let angularCompilationContext;
+    try {
+        if (rebuildState) {
+            bundlerContexts = rebuildState.rebuildContexts;
+            componentStyleBundler = rebuildState.componentStyleBundler;
+            codeBundleCache = rebuildState.codeBundleCache;
+            templateUpdates = rebuildState.templateUpdates;
+            // Reset template updates for new rebuild
+            templateUpdates?.clear();
+            const allFileChanges = rebuildState.fileChanges.all;
+            // Bundle all contexts that do not require TypeScript changed file checks.
+            // These will automatically use cached results based on the changed files.
+            bundlingResult = await bundler_context_1.BundlerContext.bundleAll(bundlerContexts.otherContexts, allFileChanges);
+            // Check the TypeScript code bundling cache for changes. If invalid, force a rebundle of
+            // all TypeScript related contexts.
+            const forceTypeScriptRebuild = codeBundleCache?.invalidate(allFileChanges);
+            const typescriptResults = [];
+            for (const typescriptContext of bundlerContexts.typescriptContexts) {
+                typescriptContext.invalidate(allFileChanges);
+                const result = await typescriptContext.bundle(forceTypeScriptRebuild);
+                typescriptResults.push(result);
+            }
+            bundlingResult = bundler_context_1.BundlerContext.mergeResults([bundlingResult, ...typescriptResults]);
         }
-        bundlingResult = bundler_context_1.BundlerContext.mergeResults([bundlingResult, ...typescriptResults]);
-    }
-    else {
-        const target = (0, utils_1.transformSupportedBrowsersToTargets)(browsers);
-        codeBundleCache = new source_file_cache_1.SourceFileCache(cacheOptions.enabled ? cacheOptions.path : undefined);
-        componentStyleBundler = (0, setup_bundling_1.createComponentStyleBundler)(options, target);
-        if (options.templateUpdates) {
-            templateUpdates = new Map();
+        else {
+            const target = (0, utils_1.transformSupportedBrowsersToTargets)(browsers);
+            codeBundleCache = new source_file_cache_1.SourceFileCache(cacheOptions.enabled ? cacheOptions.path : undefined);
+            componentStyleBundler = (0, setup_bundling_1.createComponentStyleBundler)(options, target);
+            if (options.templateUpdates) {
+                templateUpdates = new Map();
+            }
+            const angularCompilation = await (0, compilation_1.createAngularCompilation)(!!options.jit, !options.serverEntryPoint);
+            angularCompilationContext = new compilation_state_1.AngularCompilationContext(angularCompilation);
+            bundlerContexts = (0, setup_bundling_1.setupBundlerContexts)(options, target, codeBundleCache, componentStyleBundler, angularCompilationContext, templateUpdates);
+            // Bundle everything on initial build
+            bundlingResult = await bundler_context_1.BundlerContext.bundleAll([
+                ...bundlerContexts.typescriptContexts,
+                ...bundlerContexts.otherContexts,
+            ]);
         }
-        bundlerContexts = (0, setup_bundling_1.setupBundlerContexts)(options, target, codeBundleCache, componentStyleBundler, 
-        // Create new reusable compilation for the appropriate mode based on the `jit` plugin option
-        await (0, compilation_1.createAngularCompilation)(!!options.jit, !options.serverEntryPoint), templateUpdates);
-        // Bundle everything on initial build
-        bundlingResult = await bundler_context_1.BundlerContext.bundleAll([
-            ...bundlerContexts.typescriptContexts,
-            ...bundlerContexts.otherContexts,
-        ]);
+        // Update any external component styles if enabled and rebuilding.
+        // TODO: Only attempt rebundling of invalidated styles once incremental build results are supported.
+        if (rebuildState && options.externalRuntimeStyles) {
+            componentStyleBundler.invalidate(rebuildState.fileChanges.all);
+            const componentResults = await componentStyleBundler.bundleAllFiles(true, true);
+            bundlingResult = bundler_context_1.BundlerContext.mergeResults([bundlingResult, ...componentResults]);
+        }
     }
-    // Update any external component styles if enabled and rebuilding.
-    // TODO: Only attempt rebundling of invalidated styles once incremental build results are supported.
-    if (rebuildState && options.externalRuntimeStyles) {
-        componentStyleBundler.invalidate(rebuildState.fileChanges.all);
-        const componentResults = await componentStyleBundler.bundleAllFiles(true, true);
-        bundlingResult = bundler_context_1.BundlerContext.mergeResults([bundlingResult, ...componentResults]);
+    catch (error) {
+        await angularCompilationContext?.dispose();
+        throw error;
     }
     const executionResult = new bundler_execution_result_1.ExecutionResult(bundlerContexts, componentStyleBundler, codeBundleCache, templateUpdates);
     executionResult.addWarnings(bundlingResult.warnings);

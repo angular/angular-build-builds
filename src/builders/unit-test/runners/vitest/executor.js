@@ -307,6 +307,7 @@ class VitestExecutor {
                     include,
                     watch,
                     isolate: this.options.isolate,
+                    preserveSymlinks: this.options.preserveSymlinks,
                 }),
             ],
         };

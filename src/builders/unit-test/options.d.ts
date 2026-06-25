@@ -50,6 +50,7 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     setupFiles: string[];
     dumpVirtualFiles: boolean | undefined;
     listTests: boolean | undefined;
+    preserveSymlinks: boolean | undefined;
     runnerConfig: string | boolean | undefined;
 }>;
 export declare function injectTestingPolyfills(polyfills?: string[]): string[];

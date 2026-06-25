@@ -22,7 +22,6 @@ const schema_1 = require("../../builders/application/schema");
 const environment_options_1 = require("../../utils/environment-options");
 const path_1 = require("../../utils/path");
 const manifest_1 = require("../../utils/server-rendering/manifest");
-const compilation_1 = require("../angular/compilation");
 const compiler_plugin_1 = require("./angular/compiler-plugin");
 const angular_localize_init_warning_plugin_1 = require("./angular-localize-init-warning-plugin");
 const compiler_plugin_options_1 = require("./compiler-plugin-options");
@@ -35,7 +34,7 @@ const sourcemap_ignorelist_plugin_1 = require("./sourcemap-ignorelist-plugin");
 const utils_1 = require("./utils");
 const virtual_module_plugin_1 = require("./virtual-module-plugin");
 const wasm_plugin_1 = require("./wasm-plugin");
-function createBrowserCodeBundleOptions(options, target, sourceFileCache, stylesheetBundler, angularCompilation, templateUpdates) {
+function createBrowserCodeBundleOptions(options, target, sourceFileCache, stylesheetBundler, angularCompilationContext, templateUpdates) {
     return (loadCache) => {
         const { entryPoints, outputNames, polyfills } = options;
         const zoneless = (0, utils_1.isZonelessApp)(polyfills);
@@ -56,7 +55,7 @@ function createBrowserCodeBundleOptions(options, target, sourceFileCache, styles
         buildOptions.plugins ??= [];
         buildOptions.plugins.push((0, wasm_plugin_1.createWasmPlugin)({ allowAsync: zoneless, cache: loadCache }), (0, angular_localize_init_warning_plugin_1.createAngularLocalizeInitWarningPlugin)(), (0, compiler_plugin_1.createCompilerPlugin)(
         // JS/TS options
-        pluginOptions, angularCompilation, 
+        pluginOptions, angularCompilationContext, 
         // Component stylesheet bundler
         stylesheetBundler));
         if (options.plugins) {
@@ -65,7 +64,7 @@ function createBrowserCodeBundleOptions(options, target, sourceFileCache, styles
         return buildOptions;
     };
 }
-function createBrowserPolyfillBundleOptions(options, target, sourceFileCache, stylesheetBundler) {
+function createBrowserPolyfillBundleOptions(options, target, sourceFileCache, stylesheetBundler, angularCompilationContext) {
     const namespace = 'angular:polyfills';
     const polyfillBundleOptions = getEsBuildCommonPolyfillsOptions(options, namespace, true, sourceFileCache.loadResultCache);
     if (!polyfillBundleOptions) {
@@ -93,9 +92,7 @@ function createBrowserPolyfillBundleOptions(options, target, sourceFileCache, st
         const pluginOptions = (0, compiler_plugin_options_1.createCompilerPluginOptions)(options, sourceFileCache);
         buildOptions.plugins.push((0, compiler_plugin_1.createCompilerPlugin)(
         // JS/TS options
-        pluginOptions, 
-        // Browser compilation handles the actual Angular code compilation
-        new compilation_1.NoopCompilation(), 
+        pluginOptions, angularCompilationContext, 
         // Component stylesheet options are unused for polyfills but required by the plugin
         stylesheetBundler));
     }
@@ -160,7 +157,7 @@ function createServerPolyfillBundleOptions(options, target, loadResultCache) {
     buildOptions.plugins.push((0, server_bundle_metadata_plugin_1.createServerBundleMetadata)());
     return () => buildOptions;
 }
-function createServerMainCodeBundleOptions(options, target, sourceFileCache, stylesheetBundler) {
+function createServerMainCodeBundleOptions(options, target, sourceFileCache, stylesheetBundler, angularCompilationContext) {
     const { serverEntryPoint: mainServerEntryPoint, workspaceRoot, outputMode, externalPackages, ssrOptions, polyfills, } = options;
     (0, node_assert_1.default)(mainServerEntryPoint, 'createServerCodeBundleOptions should not be called without a defined serverEntryPoint.');
     return (loadResultCache) => {
@@ -190,9 +187,7 @@ function createServerMainCodeBundleOptions(options, target, sourceFileCache, sty
         buildOptions.plugins ??= [];
         buildOptions.plugins.push((0, wasm_plugin_1.createWasmPlugin)({ allowAsync: zoneless, cache: loadResultCache }), (0, angular_localize_init_warning_plugin_1.createAngularLocalizeInitWarningPlugin)(), (0, compiler_plugin_1.createCompilerPlugin)(
         // JS/TS options
-        pluginOptions, 
-        // Browser compilation handles the actual Angular code compilation
-        new compilation_1.NoopCompilation(), 
+        pluginOptions, angularCompilationContext, 
         // Component stylesheet bundler
         stylesheetBundler));
         if (!externalPackages) {
@@ -257,7 +252,7 @@ function createServerMainCodeBundleOptions(options, target, sourceFileCache, sty
         return buildOptions;
     };
 }
-function createSsrEntryCodeBundleOptions(options, target, sourceFileCache, stylesheetBundler) {
+function createSsrEntryCodeBundleOptions(options, target, sourceFileCache, stylesheetBundler, angularCompilationContext) {
     const { workspaceRoot, ssrOptions, externalPackages } = options;
     const serverEntryPoint = ssrOptions?.entry;
     (0, node_assert_1.default)(serverEntryPoint, 'createSsrEntryCodeBundleOptions should not be called without a defined serverEntryPoint.');
@@ -294,9 +289,7 @@ function createSsrEntryCodeBundleOptions(options, target, sourceFileCache, style
         buildOptions.plugins ??= [];
         buildOptions.plugins.push((0, angular_localize_init_warning_plugin_1.createAngularLocalizeInitWarningPlugin)(), (0, compiler_plugin_1.createCompilerPlugin)(
         // JS/TS options
-        pluginOptions, 
-        // Browser compilation handles the actual Angular code compilation
-        new compilation_1.NoopCompilation(), 
+        pluginOptions, angularCompilationContext, 
         // Component stylesheet bundler
         stylesheetBundler));
         if (!externalPackages) {

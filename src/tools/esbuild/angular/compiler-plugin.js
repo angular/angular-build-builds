@@ -58,7 +58,7 @@ const file_reference_tracker_1 = require("./file-reference-tracker");
 const jit_plugin_callbacks_1 = require("./jit-plugin-callbacks");
 const rewrite_bazel_paths_1 = require("./rewrite-bazel-paths");
 // eslint-disable-next-line max-lines-per-function
-function createCompilerPlugin(pluginOptions, compilationOrFactory, stylesheetBundler) {
+function createCompilerPlugin(pluginOptions, compilationContextOrCompilation, stylesheetBundler) {
     return {
         name: 'angular-compiler',
         // eslint-disable-next-line max-lines-per-function
@@ -98,9 +98,12 @@ function createCompilerPlugin(pluginOptions, compilationOrFactory, stylesheetBun
             build.initialOptions.define['ngI18nClosureMode'] ??= 'false';
             // The factory is only relevant for compatibility purposes with the private API.
             // TODO: Update private API in the next major to allow compilation function factory removal here.
-            const compilation = typeof compilationOrFactory === 'function'
-                ? await compilationOrFactory()
-                : compilationOrFactory;
+            const angularCompilationContext = compilationContextOrCompilation instanceof compilation_state_1.AngularCompilationContext
+                ? compilationContextOrCompilation
+                : new compilation_state_1.AngularCompilationContext(typeof compilationContextOrCompilation === 'function'
+                    ? await compilationContextOrCompilation()
+                    : compilationContextOrCompilation);
+            const compilation = angularCompilationContext.compilation;
             // The in-memory cache of TypeScript file outputs will be used during the build in `onLoad` callbacks for TS files.
             // A string value indicates direct TS/NG output and a Uint8Array indicates fully transformed code.
             const typeScriptFileCache = pluginOptions.sourceFileCache?.typeScriptFileCache ??
@@ -113,15 +116,11 @@ function createCompilerPlugin(pluginOptions, compilationOrFactory, stylesheetBun
             let shouldTsIgnoreJs = true;
             // Determines if transpilation should be handle by TypeScript or esbuild
             let useTypeScriptTranspilation = true;
-            let sharedTSCompilationState;
             // To fully invalidate files, track resource referenced files and their referencing source
             const referencedFileTracker = new file_reference_tracker_1.FileReferenceTracker();
             // eslint-disable-next-line max-lines-per-function
             build.onStart(async () => {
-                sharedTSCompilationState = (0, compilation_state_1.getSharedCompilationState)();
-                if (!(compilation instanceof compilation_1.NoopCompilation)) {
-                    sharedTSCompilationState.markAsInProgress();
-                }
+                angularCompilationContext.markAsInProgress();
                 const result = {
                     warnings: setupWarnings,
                 };
@@ -273,7 +272,7 @@ function createCompilerPlugin(pluginOptions, compilationOrFactory, stylesheetBun
                     return result;
                 }
                 if (compilation instanceof compilation_1.NoopCompilation) {
-                    hasCompilationErrors = await sharedTSCompilationState.waitUntilReady;
+                    hasCompilationErrors = await angularCompilationContext.waitUntilReady;
                     return result;
                 }
                 if (externalStylesheets) {
@@ -326,7 +325,7 @@ function createCompilerPlugin(pluginOptions, compilationOrFactory, stylesheetBun
                 hasCompilationErrors = !!result.errors?.length;
                 // Reset the setup warnings so that they are only shown during the first build.
                 setupWarnings = undefined;
-                sharedTSCompilationState.markAsReady(hasCompilationErrors);
+                angularCompilationContext.markAsReady(hasCompilationErrors);
                 return result;
             });
             build.onLoad({ filter: /\.[cm]?[jt]sx?$/ }, async (args) => {
@@ -438,7 +437,7 @@ function createCompilerPlugin(pluginOptions, compilationOrFactory, stylesheetBun
             }
             build.onEnd((result) => {
                 // Ensure other compilations are unblocked if the main compilation throws during start
-                sharedTSCompilationState?.markAsReady(hasCompilationErrors);
+                angularCompilationContext.markAsReady(hasCompilationErrors);
                 for (const { outputFiles, metafile } of additionalResults.values()) {
                     // Add any additional output files to the main output files
                     if (outputFiles?.length) {
@@ -456,8 +455,7 @@ function createCompilerPlugin(pluginOptions, compilationOrFactory, stylesheetBun
                 (0, profiling_1.logCumulativeDurations)();
             });
             build.onDispose(() => {
-                sharedTSCompilationState?.dispose();
-                void compilation.close?.();
+                void angularCompilationContext.dispose();
                 void javascriptTransformer.close();
                 void cacheStore?.close();
             });

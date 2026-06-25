@@ -189,6 +189,7 @@ async function createVitestConfigPlugin(options) {
                 resolve: {
                     mainFields: ['es2020', 'module', 'main'],
                     conditions: ['es2015', 'es2020', 'module', ...(browser ? ['browser'] : [])],
+                    preserveSymlinks: options.preserveSymlinks,
                 },
             };
             const { optimizeDeps, resolve } = config;
