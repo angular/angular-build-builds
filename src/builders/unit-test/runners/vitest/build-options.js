@@ -29,7 +29,7 @@ const test_discovery_1 = require("../../test-discovery");
  * @param zoneTestingStrategy How zone.js should be loaded during initialization.
  * @returns The string content of the virtual initialization file.
  */
-function createTestBedInitVirtualFile(providersFile, projectSourceRoot, teardown, zoneTestingStrategy) {
+function createTestBedInitVirtualFile(providersFile, projectSourceRoot, teardown, zoneTestingStrategy, hasLocalize) {
     let providersImport = 'const providers = [];';
     if (providersFile) {
         const relativePath = node_path_1.default.relative(projectSourceRoot, providersFile);
@@ -52,6 +52,7 @@ function createTestBedInitVirtualFile(providersFile, projectSourceRoot, teardown
     // when running Vitest in non-isolated mode with JSDOM. It looks up the
     // document dynamically on every operation instead of caching it.
     return `
+    ${hasLocalize ? "import '@angular/localize/init';" : ''}
     // Initialize the Angular testing environment
     import { NgModule, provideZoneChangeDetection } from '@angular/core';
     import { getTestBed, ɵgetCleanupHook as getCleanupHook, TestComponentRenderer } from '@angular/core/testing';
@@ -226,7 +227,14 @@ async function getVitestBuildOptions(options, baseBuildOptions) {
     };
     // Inject the zone.js testing polyfill if Zone.js is installed.
     const zoneTestingStrategy = getZoneTestingStrategy(buildOptions, projectSourceRoot);
-    const testBedInitContents = createTestBedInitVirtualFile(providersFile, projectSourceRoot, !options.debug, zoneTestingStrategy);
+    let hasLocalize = false;
+    try {
+        const projectRequire = (0, node_module_1.createRequire)(node_path_1.default.join(projectSourceRoot, 'package.json'));
+        projectRequire.resolve('@angular/localize');
+        hasLocalize = true;
+    }
+    catch { }
+    const testBedInitContents = createTestBedInitVirtualFile(providersFile, projectSourceRoot, !options.debug, zoneTestingStrategy, hasLocalize);
     const mockPatchContents = `
     import { vi } from 'vitest';
 
