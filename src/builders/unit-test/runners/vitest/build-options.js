@@ -48,6 +48,11 @@ function createTestBedInitVirtualFile(providersFile, projectSourceRoot, teardown
       await import('zone.js/testing');
     }`;
     }
+    else if (zoneTestingStrategy === 'dynamic-zone') {
+        zoneTestingSnippet = `
+      await import('zone.js');
+      await import('zone.js/testing');`;
+    }
     // The DynamicDOMTestComponentRenderer is used to avoid stale document references
     // when running Vitest in non-isolated mode with JSDOM. It looks up the
     // document dynamically on every operation instead of caching it.
@@ -141,7 +146,7 @@ function adjustOutputHashing(hashing) {
  *
  * @param buildOptions The partial application builder options.
  * @param projectSourceRoot The root directory of the project source.
- * @returns The resolved zone testing strategy ('none', 'static', 'dynamic').
+ * @returns The resolved zone testing strategy ('none', 'static', 'dynamic', 'dynamic-zone').
  */
 function getZoneTestingStrategy(buildOptions, projectSourceRoot) {
     if (buildOptions.polyfills?.includes('zone.js/testing')) {
@@ -153,6 +158,11 @@ function getZoneTestingStrategy(buildOptions, projectSourceRoot) {
     try {
         const projectRequire = (0, node_module_1.createRequire)(node_path_1.default.join(projectSourceRoot, 'package.json'));
         projectRequire.resolve('zone.js');
+        // If polyfills is undefined (e.g. library build target), load zone.js dynamically.
+        // If polyfills is defined but doesn't include zone.js (e.g. zoneless application), do NOT load zone.js.
+        if (buildOptions.polyfills === undefined) {
+            return 'dynamic-zone';
+        }
         return 'dynamic';
     }
     catch {
