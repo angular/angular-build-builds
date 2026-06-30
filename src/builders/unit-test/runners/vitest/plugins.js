@@ -47,11 +47,11 @@ exports.createVitestConfigPlugin = createVitestConfigPlugin;
 exports.createVitestPlugins = createVitestPlugins;
 const node_assert_1 = __importDefault(require("node:assert"));
 const promises_1 = require("node:fs/promises");
-const node_module_1 = require("node:module");
 const node_os_1 = require("node:os");
 const node_path_1 = __importDefault(require("node:path"));
 const assets_middleware_1 = require("../../../../tools/vite/middlewares/assets-middleware");
 const path_1 = require("../../../../utils/path");
+const resolve_project_1 = require("../../../../utils/resolve-project");
 const browser_provider_1 = require("./browser-provider");
 async function findTestEnvironment(projectResolver) {
     try {
@@ -72,10 +72,10 @@ function determineCoverageProvider(browser, testConfig, optionsCoverageEnabled, 
             determinedProvider = 'istanbul';
         }
         else {
-            const projectRequire = (0, node_module_1.createRequire)(projectSourceRoot + '/');
+            const projectResolve = (0, resolve_project_1.createProjectResolver)(projectSourceRoot);
             const checkInstalled = (pkg) => {
                 try {
-                    projectRequire.resolve(pkg);
+                    projectResolve(pkg);
                     return true;
                 }
                 catch {
@@ -173,7 +173,7 @@ async function createVitestConfigPlugin(options) {
                 (options.coverage.enabled || testConfig?.coverage?.enabled)) {
                 validateBrowserCoverage(browser, testConfig?.browser, determinedProvider);
             }
-            const projectResolver = (0, node_module_1.createRequire)(projectSourceRoot + '/').resolve;
+            const projectResolver = (0, resolve_project_1.createProjectResolver)(projectSourceRoot);
             const projectDefaults = {
                 test: {
                     setupFiles,

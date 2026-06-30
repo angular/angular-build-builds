@@ -8,7 +8,7 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DependencyChecker = exports.MissingDependenciesError = void 0;
-const node_module_1 = require("node:module");
+const resolve_project_1 = require("../../../utils/resolve-project");
 /**
  * A custom error class to represent missing dependency errors.
  * This is used to avoid printing a stack trace for this expected error.
@@ -24,7 +24,7 @@ class DependencyChecker {
     resolver;
     missingDependencies = new Set();
     constructor(projectSourceRoot) {
-        this.resolver = (0, node_module_1.createRequire)(projectSourceRoot + '/').resolve;
+        this.resolver = (0, resolve_project_1.createProjectResolver)(projectSourceRoot);
     }
     /**
      * Checks if a package is installed.

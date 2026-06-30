@@ -24,6 +24,7 @@ const i18n_options_1 = require("../../utils/i18n-options");
 const normalize_cache_1 = require("../../utils/normalize-cache");
 const postcss_configuration_1 = require("../../utils/postcss-configuration");
 const project_metadata_1 = require("../../utils/project-metadata");
+const resolve_project_1 = require("../../utils/resolve-project");
 const url_1 = require("../../utils/url");
 const schema_1 = require("./schema");
 /**
@@ -483,9 +484,7 @@ function normalizeExternals(value) {
     ];
 }
 async function findFrameworkVersion(projectRoot) {
-    // Create a custom require function for ESM compliance.
-    // NOTE: The trailing slash is significant.
-    const projectResolve = (0, node_module_1.createRequire)(projectRoot + '/').resolve;
+    const projectResolve = (0, resolve_project_1.createProjectResolver)(projectRoot);
     try {
         const manifestPath = projectResolve('@angular/core/package.json');
         const manifestData = await (0, promises_1.readFile)(manifestPath, 'utf-8');
