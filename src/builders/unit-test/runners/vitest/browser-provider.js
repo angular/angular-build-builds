@@ -43,8 +43,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.normalizeBrowserName = normalizeBrowserName;
 exports.applyHeadlessConfiguration = applyHeadlessConfiguration;
 exports.setupBrowserConfiguration = setupBrowserConfiguration;
-const node_module_1 = require("node:module");
 const error_1 = require("../../../../utils/error");
+const resolve_project_1 = require("../../../../utils/resolve-project");
 function findBrowserProvider(projectResolver) {
     const requiresPreview = !!process.versions.webcontainer;
     // One of these must be installed in the project to use browser testing
@@ -131,7 +131,7 @@ async function setupBrowserConfiguration(browsers, headless, debug, projectSourc
         }
         return {};
     }
-    const projectResolver = (0, node_module_1.createRequire)(projectSourceRoot + '/').resolve;
+    const projectResolver = (0, resolve_project_1.createProjectResolver)(projectSourceRoot);
     let errors;
     const providerName = findBrowserProvider(projectResolver);
     if (!providerName) {

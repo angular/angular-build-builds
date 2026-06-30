@@ -15,9 +15,9 @@ exports.getVitestBuildOptions = getVitestBuildOptions;
  * @fileoverview
  * Provides Vitest-specific build options and virtual file contents for Angular unit testing.
  */
-const node_module_1 = require("node:module");
 const node_path_1 = __importDefault(require("node:path"));
 const path_1 = require("../../../../utils/path");
+const resolve_project_1 = require("../../../../utils/resolve-project");
 const schema_1 = require("../../../application/schema");
 const test_discovery_1 = require("../../test-discovery");
 /**
@@ -156,8 +156,8 @@ function getZoneTestingStrategy(buildOptions, projectSourceRoot) {
         return 'static';
     }
     try {
-        const projectRequire = (0, node_module_1.createRequire)(node_path_1.default.join(projectSourceRoot, 'package.json'));
-        projectRequire.resolve('zone.js');
+        const projectResolve = (0, resolve_project_1.createProjectResolver)(projectSourceRoot);
+        projectResolve('zone.js');
         // If polyfills is undefined (e.g. library build target), load zone.js dynamically.
         // If polyfills is defined but doesn't include zone.js (e.g. zoneless application), do NOT load zone.js.
         if (buildOptions.polyfills === undefined) {
@@ -239,8 +239,8 @@ async function getVitestBuildOptions(options, baseBuildOptions) {
     const zoneTestingStrategy = getZoneTestingStrategy(buildOptions, projectSourceRoot);
     let hasLocalize = false;
     try {
-        const projectRequire = (0, node_module_1.createRequire)(node_path_1.default.join(projectSourceRoot, 'package.json'));
-        projectRequire.resolve('@angular/localize');
+        const projectResolve = (0, resolve_project_1.createProjectResolver)(projectSourceRoot);
+        projectResolve('@angular/localize');
         hasLocalize = true;
     }
     catch { }

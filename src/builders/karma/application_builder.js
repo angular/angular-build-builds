@@ -47,10 +47,10 @@ exports.execute = execute;
 const node_crypto_1 = require("node:crypto");
 const node_fs_1 = require("node:fs");
 const fs = __importStar(require("node:fs/promises"));
-const node_module_1 = require("node:module");
 const node_path_1 = __importDefault(require("node:path"));
 const web_1 = require("node:stream/web");
 const virtual_module_plugin_1 = require("../../tools/esbuild/virtual-module-plugin");
+const resolve_project_1 = require("../../utils/resolve-project");
 const test_files_1 = require("../../utils/test-files");
 const index_1 = require("../application/index");
 const results_1 = require("../application/results");
@@ -166,8 +166,8 @@ async function runEsbuild(buildOptions, context, projectSourceRoot) {
     const usesZoneJS = buildOptions.polyfills?.includes('zone.js');
     let hasLocalize = false;
     try {
-        const projectRequire = (0, node_module_1.createRequire)(node_path_1.default.join(projectSourceRoot, 'package.json'));
-        projectRequire.resolve('@angular/localize');
+        const projectResolve = (0, resolve_project_1.createProjectResolver)(projectSourceRoot);
+        projectResolve('@angular/localize');
         hasLocalize = true;
     }
     catch { }
