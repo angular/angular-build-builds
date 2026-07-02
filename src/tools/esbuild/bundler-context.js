@@ -28,6 +28,7 @@ function isEsBuildFailure(value) {
 class BundlerContext {
     workspaceRoot;
     incremental;
+    alwaysUseContext;
     initialFilter;
     #esbuildContext;
     #esbuildOptions;
@@ -38,9 +39,10 @@ class BundlerContext {
     #shouldCacheResult;
     #loadCache;
     watchFiles = new Set();
-    constructor(workspaceRoot, incremental, options, initialFilter) {
+    constructor(workspaceRoot, incremental, options, alwaysUseContext = false, initialFilter) {
         this.workspaceRoot = workspaceRoot;
         this.incremental = incremental;
+        this.alwaysUseContext = alwaysUseContext;
         this.initialFilter = initialFilter;
         // To cache the results an option factory is needed to capture the full set of dependencies
         this.#shouldCacheResult = incremental && typeof options === 'function';
@@ -162,7 +164,7 @@ class BundlerContext {
                 // Rebuild using the existing incremental build context
                 result = await this.#esbuildContext.rebuild();
             }
-            else {
+            else if (this.incremental || this.alwaysUseContext) {
                 // Create a build context and perform the build.
                 // Context creation does not perform a build.
                 const esbuildContext = await (0, esbuild_1.context)(this.#esbuildOptions);
@@ -172,6 +174,16 @@ class BundlerContext {
                 }
                 this.#esbuildContext = esbuildContext;
                 result = await this.#esbuildContext.rebuild();
+            }
+            else {
+                // For non-incremental builds, perform a single build
+                if (this.#disposed) {
+                    throw new Error('BundlerContext was disposed during build.');
+                }
+                result = await (0, esbuild_1.build)(this.#esbuildOptions);
+                if (this.#disposed) {
+                    throw new Error('BundlerContext was disposed during build.');
+                }
             }
         }
         catch (failure) {

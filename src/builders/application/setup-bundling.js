@@ -28,11 +28,11 @@ function setupBundlerContexts(options, target, codeBundleCache, stylesheetBundle
     const typescriptContexts = [];
     const otherContexts = [];
     // Browser application code
-    typescriptContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, watch, (0, application_code_bundle_1.createBrowserCodeBundleOptions)(options, target, codeBundleCache, stylesheetBundler, angularCompilationContext, templateUpdates)));
+    typescriptContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, watch, (0, application_code_bundle_1.createBrowserCodeBundleOptions)(options, target, codeBundleCache, stylesheetBundler, angularCompilationContext, templateUpdates), true));
     // Browser polyfills code
     const browserPolyfillBundleOptions = (0, application_code_bundle_1.createBrowserPolyfillBundleOptions)(options, target, codeBundleCache, stylesheetBundler, angularCompilationContext.createSecondaryContext());
     if (browserPolyfillBundleOptions) {
-        const browserPolyfillContext = new bundler_context_1.BundlerContext(workspaceRoot, watch, browserPolyfillBundleOptions);
+        const browserPolyfillContext = new bundler_context_1.BundlerContext(workspaceRoot, watch, browserPolyfillBundleOptions, true);
         if (typeof browserPolyfillBundleOptions === 'function') {
             otherContexts.push(browserPolyfillContext);
         }
@@ -45,7 +45,7 @@ function setupBundlerContexts(options, target, codeBundleCache, stylesheetBundle
         for (const initial of [true, false]) {
             const bundleOptions = (0, global_styles_1.createGlobalStylesBundleOptions)(options, target, initial);
             if (bundleOptions) {
-                otherContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, watch, bundleOptions, () => initial));
+                otherContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, watch, bundleOptions, true, () => initial));
             }
         }
     }
@@ -54,22 +54,22 @@ function setupBundlerContexts(options, target, codeBundleCache, stylesheetBundle
         for (const initial of [true, false]) {
             const bundleOptions = (0, global_scripts_1.createGlobalScriptsBundleOptions)(options, target, initial);
             if (bundleOptions) {
-                otherContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, watch, bundleOptions, () => initial));
+                otherContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, watch, bundleOptions, true, () => initial));
             }
         }
     }
     // Skip server build when none of the features are enabled.
     if (serverEntryPoint && (outputMode || prerenderOptions || appShellOptions || ssrOptions)) {
         const nodeTargets = [...target, ...(0, utils_1.getSupportedNodeTargets)()];
-        typescriptContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, watch, (0, application_code_bundle_1.createServerMainCodeBundleOptions)(options, nodeTargets, codeBundleCache, stylesheetBundler, angularCompilationContext.createSecondaryContext())));
+        typescriptContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, watch, (0, application_code_bundle_1.createServerMainCodeBundleOptions)(options, nodeTargets, codeBundleCache, stylesheetBundler, angularCompilationContext.createSecondaryContext()), true));
         if (outputMode && ssrOptions?.entry) {
             // New behavior introduced: 'server.ts' is now bundled separately from 'main.server.ts'.
-            typescriptContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, watch, (0, application_code_bundle_1.createSsrEntryCodeBundleOptions)(options, nodeTargets, codeBundleCache, stylesheetBundler, angularCompilationContext.createSecondaryContext())));
+            typescriptContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, watch, (0, application_code_bundle_1.createSsrEntryCodeBundleOptions)(options, nodeTargets, codeBundleCache, stylesheetBundler, angularCompilationContext.createSecondaryContext()), true));
         }
         // Server polyfills code
         const serverPolyfillBundleOptions = (0, application_code_bundle_1.createServerPolyfillBundleOptions)(options, nodeTargets, codeBundleCache.loadResultCache);
         if (serverPolyfillBundleOptions) {
-            otherContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, watch, serverPolyfillBundleOptions));
+            otherContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, watch, serverPolyfillBundleOptions, true));
         }
     }
     return { typescriptContexts, otherContexts };

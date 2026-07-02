@@ -28,9 +28,10 @@ export declare class BundlerContext {
     #private;
     private workspaceRoot;
     private incremental;
+    private alwaysUseContext;
     private initialFilter?;
     readonly watchFiles: Set<string>;
-    constructor(workspaceRoot: string, incremental: boolean, options: BuildOptions | BundlerOptionsFactory, initialFilter?: ((initial: Readonly<InitialFileRecord>) => boolean) | undefined);
+    constructor(workspaceRoot: string, incremental: boolean, options: BuildOptions | BundlerOptionsFactory, alwaysUseContext?: boolean, initialFilter?: ((initial: Readonly<InitialFileRecord>) => boolean) | undefined);
     static bundleAll(contexts: Iterable<BundlerContext>, changedFiles?: Iterable<string>): Promise<BundleContextResult>;
     static mergeResults(results: BundleContextResult[]): BundleContextResult;
     /**

@@ -50,6 +50,7 @@ const promises_1 = require("node:fs/promises");
 const path = __importStar(require("node:path"));
 const environment_options_1 = require("../../../utils/environment-options");
 const compilation_1 = require("../../angular/compilation");
+const cache_1 = require("../cache");
 const javascript_transformer_1 = require("../javascript-transformer");
 const load_result_cache_1 = require("../load-result-cache");
 const profiling_1 = require("../profiling");
@@ -70,16 +71,17 @@ function createCompilerPlugin(pluginOptions, compilationContextOrCompilation, st
             let cacheStore;
             if (pluginOptions.sourceFileCache?.persistentCachePath && !process.versions.webcontainer) {
                 try {
-                    const { LmdbCacheStore } = await Promise.resolve().then(() => __importStar(require('../lmdb-cache-store')));
-                    cacheStore = new LmdbCacheStore(path.join(pluginOptions.sourceFileCache.persistentCachePath, 'angular-compiler.db'));
+                    cacheStore = await (0, cache_1.createPersistentCacheStore)(path.join(pluginOptions.sourceFileCache.persistentCachePath, 'angular-compiler'));
                 }
                 catch (e) {
                     setupWarnings.push({
                         text: 'Unable to initialize JavaScript cache storage.',
                         location: null,
                         notes: [
-                            // Only show first line of lmdb load error which has platform support listed
-                            { text: e?.message.split('\n')[0] ?? `${e}` },
+                            ...e.message
+                                .split('\n')
+                                .slice(1)
+                                .map((text) => ({ text })),
                             {
                                 text: 'This will not affect the build output content but may result in slower builds.',
                             },
@@ -501,7 +503,7 @@ function createCompilerOptionsTransformer(setupWarnings, pluginOptions, preserve
             // If 'useDefineForClassFields' is already defined in the users project leave the value as is.
             // Otherwise fallback to false due to https://github.com/microsoft/TypeScript/issues/45995
             // which breaks the deprecated `@Effects` NGRX decorator and potentially other existing code as well.
-            compilerOptions.target = 9 /** ES2022 */;
+            compilerOptions.target = 9; /** ES2022 */
             compilerOptions.useDefineForClassFields ??= false;
             // Only add the warning on the initial build
             setupWarnings?.push({
