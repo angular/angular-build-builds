@@ -140,7 +140,7 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
     const cacheDir = (0, node_path_1.join)(serverOptions.cacheOptions.path, serverOptions.buildTarget.project, 'vite');
     const configuration = {
         configFile: false,
-        envFile: false,
+        envDir: false,
         cacheDir,
         root: virtualProjectRoot,
         publicDir: false,
