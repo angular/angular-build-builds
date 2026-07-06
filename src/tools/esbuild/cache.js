@@ -46,6 +46,7 @@ exports.createPersistentCacheStore = createPersistentCacheStore;
  * @fileoverview
  * Provides infrastructure for common caching functionality within the build system.
  */
+const environment_options_1 = require("../../utils/environment-options");
 const error_1 = require("../../utils/error");
 /**
  * A cache object that allows accessing and storing key/value pairs in
@@ -221,6 +222,26 @@ exports.MemoryCache = MemoryCache;
  * @returns A promise resolving to a PersistentCacheStore instance.
  */
 async function createPersistentCacheStore(baseCachePath) {
+    if (environment_options_1.persistentCacheStoreSetting === 'sqlite') {
+        try {
+            const { SqliteCacheStore } = await Promise.resolve().then(() => __importStar(require('./sqlite-cache-store')));
+            return new SqliteCacheStore(baseCachePath + '-sqlite.db');
+        }
+        catch (err) {
+            (0, error_1.assertIsError)(err);
+            throw new Error('Unable to initialize JavaScript cache storage.\n' + `SQLite error: ${err.message}`, { cause: err });
+        }
+    }
+    if (environment_options_1.persistentCacheStoreSetting === 'lmdb') {
+        try {
+            const { LmdbCacheStore } = await Promise.resolve().then(() => __importStar(require('./lmdb-cache-store')));
+            return new LmdbCacheStore(baseCachePath + '.db');
+        }
+        catch (err) {
+            (0, error_1.assertIsError)(err);
+            throw new Error('Unable to initialize JavaScript cache storage.\n' + `LMDB error: ${err.message}`, { cause: err });
+        }
+    }
     try {
         const { LmdbCacheStore } = await Promise.resolve().then(() => __importStar(require('./lmdb-cache-store')));
         return new LmdbCacheStore(baseCachePath + '.db');

@@ -64,3 +64,11 @@ export declare const useComponentTemplateHmr: boolean;
  */
 export declare const usePartialSsrBuild: boolean;
 export declare const bazelEsbuildPluginPath: string | undefined;
+/**
+ * The persistent cache store configuration to use.
+ * Managed by the `NG_BUILD_CACHE_STORE` environment variable.
+ * - 'lmdb': Forces the use of LMDB.
+ * - 'sqlite': Forces the use of SQLite.
+ * - undefined / 'auto' / other: Automatically uses LMDB and falls back to SQLite.
+ */
+export declare const persistentCacheStoreSetting: string | undefined;

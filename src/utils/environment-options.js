@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.bazelEsbuildPluginPath = exports.usePartialSsrBuild = exports.useComponentTemplateHmr = exports.useComponentStyleHmr = exports.optimizeChunksThreshold = exports.useJSONBuildLogs = exports.useTypeChecking = exports.shouldWatchRoot = exports.debugPerformance = exports.useParallelTs = exports.maxWorkers = exports.useRolldownChunks = exports.allowMinify = exports.shouldBeautify = exports.allowMangle = void 0;
+exports.persistentCacheStoreSetting = exports.bazelEsbuildPluginPath = exports.usePartialSsrBuild = exports.useComponentTemplateHmr = exports.useComponentStyleHmr = exports.optimizeChunksThreshold = exports.useJSONBuildLogs = exports.useTypeChecking = exports.shouldWatchRoot = exports.debugPerformance = exports.useParallelTs = exports.maxWorkers = exports.useRolldownChunks = exports.allowMinify = exports.shouldBeautify = exports.allowMangle = void 0;
 const node_os_1 = require("node:os");
 /** A set of strings that are considered "truthy" when parsing environment variables. */
 const TRUTHY_VALUES = new Set(['1', 'true']);
@@ -173,4 +173,18 @@ const bazelExecRoot = process.env['JS_BINARY__EXECROOT'];
 exports.bazelEsbuildPluginPath = bazelBinDirectory && bazelExecRoot
     ? process.env['NG_INTERNAL_ESBUILD_PLUGINS_DO_NOT_USE']
     : undefined;
+/**
+ * The persistent cache store configuration to use.
+ * Managed by the `NG_BUILD_CACHE_STORE` environment variable.
+ * - 'lmdb': Forces the use of LMDB.
+ * - 'sqlite': Forces the use of SQLite.
+ * - undefined / 'auto' / other: Automatically uses LMDB and falls back to SQLite.
+ */
+exports.persistentCacheStoreSetting = (() => {
+    const env = process.env['NG_BUILD_CACHE_STORE']?.trim().toLowerCase();
+    if (env === 'lmdb' || env === 'sqlite') {
+        return env;
+    }
+    return undefined;
+})();
 //# sourceMappingURL=environment-options.js.map
