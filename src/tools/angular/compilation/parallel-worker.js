@@ -83,6 +83,7 @@ async function initialize(request) {
             isolatedModules: compilerOptions.isolatedModules,
             sourceMap: compilerOptions.sourceMap,
             inlineSourceMap: compilerOptions.inlineSourceMap,
+            _useTypeScriptTranspilation: compilerOptions['_useTypeScriptTranspilation'],
         },
         componentResourcesDependencies,
     };

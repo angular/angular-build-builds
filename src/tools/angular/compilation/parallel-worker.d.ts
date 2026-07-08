@@ -28,6 +28,7 @@ export declare function initialize(request: InitRequest): Promise<{
         isolatedModules: boolean | undefined;
         sourceMap: boolean | undefined;
         inlineSourceMap: boolean | undefined;
+        _useTypeScriptTranspilation: boolean | undefined;
     };
     componentResourcesDependencies: ReadonlyMap<string, readonly string[]> | undefined;
 }>;
