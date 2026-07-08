@@ -48,6 +48,7 @@ const bundler_context_1 = require("../../tools/esbuild/bundler-context");
 const bundler_execution_result_1 = require("../../tools/esbuild/bundler-execution-result");
 const bundler_files_1 = require("../../tools/esbuild/bundler-files");
 const commonjs_checker_1 = require("../../tools/esbuild/commonjs-checker");
+const i18n_locale_plugin_1 = require("../../tools/esbuild/i18n-locale-plugin");
 const license_extractor_1 = require("../../tools/esbuild/license-extractor");
 const profiling_1 = require("../../tools/esbuild/profiling");
 const utils_1 = require("../../tools/esbuild/utils");
@@ -162,6 +163,11 @@ async function executeBuild(options, context, rebuildState) {
         const exclusions = new Set(externalConfiguration);
         const explicitExternal = new Set();
         const isExplicitExternal = (dep) => {
+            // Locale-data imports are injected by the builder itself (see i18n-locale-plugin) and must stay resolvable
+            // even when the containing package is externalized by the user.
+            if (dep.startsWith(`${i18n_locale_plugin_1.LOCALE_DATA_BASE_MODULE}/`)) {
+                return false;
+            }
             if (exclusions.has(dep)) {
                 return true;
             }

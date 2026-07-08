@@ -9,7 +9,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LOCALE_DATA_BASE_MODULE = exports.LOCALE_DATA_NAMESPACE = void 0;
 exports.createAngularLocaleDataPlugin = createAngularLocaleDataPlugin;
-const node_module_1 = require("node:module");
+const resolve_project_1 = require("../../utils/resolve-project");
 /**
  * The internal namespace used by generated locale import statements and Angular locale data plugin.
  */
@@ -48,7 +48,7 @@ function createAngularLocaleDataPlugin() {
                     };
                 }
                 let exact = true;
-                let localeRequire;
+                let projectResolve;
                 while (partialLocaleTag) {
                     // Angular embeds the `en`/`en-US` locale into the framework and it does not need to be included again here.
                     // The onLoad hook below for the locale data namespace has an `empty` loader that will prevent inclusion.
@@ -69,9 +69,9 @@ function createAngularLocaleDataPlugin() {
                     let result;
                     const { packages, absWorkingDir } = build.initialOptions;
                     if (packages === 'external' && absWorkingDir) {
-                        localeRequire ??= (0, node_module_1.createRequire)(absWorkingDir + '/');
+                        projectResolve ??= (0, resolve_project_1.createProjectResolver)(absWorkingDir);
                         try {
-                            localeRequire.resolve(potentialPath);
+                            projectResolve(potentialPath);
                             result = {
                                 errors: [],
                                 warnings: [],
@@ -90,6 +90,18 @@ function createAngularLocaleDataPlugin() {
                             kind: 'import-statement',
                             resolveDir: absWorkingDir,
                         });
+                        if (result && result.external && absWorkingDir) {
+                            projectResolve ??= (0, resolve_project_1.createProjectResolver)(absWorkingDir);
+                            try {
+                                const resolvedPath = projectResolve(potentialPath);
+                                result = {
+                                    ...result,
+                                    external: false,
+                                    path: resolvedPath,
+                                };
+                            }
+                            catch { }
+                        }
                     }
                     if (result?.path) {
                         if (exact) {
