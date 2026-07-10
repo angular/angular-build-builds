@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "22.1.0-next.3+sha-035c72a",
+  "version": "22.1.0-next.3+sha-5926422",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -23,7 +23,7 @@
   "builders": "builders.json",
   "dependencies": {
     "@ampproject/remapping": "2.3.0",
-    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#035c72a",
+    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#5926422",
     "@babel/core": "8.0.1",
     "@babel/helper-annotate-as-pure": "8.0.0",
     "@babel/helper-split-export-declaration": "7.24.7",
@@ -34,18 +34,18 @@
     "esbuild": "0.28.1",
     "https-proxy-agent": "9.1.0",
     "jsonc-parser": "3.3.1",
-    "listr2": "10.2.1",
+    "listr2": "10.2.2",
     "magic-string": "0.30.21",
     "mrmime": "2.0.1",
     "parse5-html-rewriting-stream": "8.0.1",
-    "picomatch": "4.0.4",
+    "picomatch": "4.0.5",
     "piscina": "5.2.0",
-    "rolldown": "1.1.2",
+    "rolldown": "1.1.5",
     "sass": "1.101.0",
     "semver": "7.8.5",
     "source-map-support": "0.5.21",
     "tinyglobby": "0.2.17",
-    "vite": "8.1.0",
+    "vite": "8.1.4",
     "watchpack": "2.5.2"
   },
   "optionalDependencies": {
@@ -59,7 +59,7 @@
     "@angular/platform-browser": "^22.0.0 || ^22.1.0-next.0",
     "@angular/platform-server": "^22.0.0 || ^22.1.0-next.0",
     "@angular/service-worker": "^22.0.0 || ^22.1.0-next.0",
-    "@angular/ssr": "github:angular/angular-ssr-builds#035c72a",
+    "@angular/ssr": "github:angular/angular-ssr-builds#5926422",
     "istanbul-lib-instrument": "^6.0.0",
     "karma": "^6.4.0",
     "less": "^4.2.0",

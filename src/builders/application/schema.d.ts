@@ -408,7 +408,7 @@ export type StylesClass = {
     minify?: boolean;
     /**
      * Remove comments in global CSS that contains '@license' or '@preserve' or that starts with
-     * '//!' or '/*!'.
+     * '//!' or '/ *!'.
      */
     removeSpecialComments?: boolean;
 };
@@ -523,12 +523,6 @@ export type AutoCspClass = {
      */
     unsafeEval?: boolean;
 };
-/**
- * The full path for the server entry point to the application, relative to the current
- * workspace.
- *
- * Generates a service worker configuration.
- */
 export type Serv = boolean | string;
 /**
  * Output source maps for scripts and styles. For more information, see

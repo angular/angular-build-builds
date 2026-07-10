@@ -43,8 +43,13 @@ async function invalidateUpdatedFiles(normalizePath, generatedFiles, assetFiles,
         // Clear the server app cache and trigger module evaluation before reload to initiate dependency optimization.
         // The querystring is needed as a workaround for:
         // `ɵgetOrCreateAngularServerApp` can be undefined right after an error.
-        const { ɵdestroyAngularServerApp } = (await server.ssrLoadModule(`/main.server.mjs?timestamp=${Date.now()}`));
-        ɵdestroyAngularServerApp();
+        try {
+            const { ɵdestroyAngularServerApp } = (await server.ssrLoadModule(`/main.server.mjs?timestamp=${Date.now()}`));
+            ɵdestroyAngularServerApp();
+        }
+        catch {
+            // Ignored as the next SSR request will resolve compile errors and outdated pre-bundles.
+        }
     }
     return updatedFiles;
 }
