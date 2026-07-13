@@ -11,6 +11,7 @@ exports.JavaScriptTransformer = void 0;
 const node_crypto_1 = require("node:crypto");
 const promises_1 = require("node:fs/promises");
 const utils_1 = require("../../utils/server-rendering/esm-in-memory-loader/utils");
+const source_map_1 = require("../../utils/source-map");
 const worker_pool_1 = require("../../utils/worker-pool");
 /**
  * A class that performs transformation of JavaScript files and raw data.
@@ -161,7 +162,7 @@ class JavaScriptTransformer {
         if (skipLinker && !this.#commonOptions.advancedOptimizations && !instrumentForCoverage) {
             const keepSourcemap = this.#commonOptions.sourcemap &&
                 (!!this.#commonOptions.thirdPartySourcemaps || !/[\\/]node_modules[\\/]/.test(filename));
-            return Buffer.from(keepSourcemap ? data : data.replace(/^\/\/# sourceMappingURL=[^\r\n]*/gm, ''), 'utf-8');
+            return Buffer.from(keepSourcemap ? data : (0, source_map_1.removeSourceMappingURL)(data), 'utf-8');
         }
         return this.#runWithThrottle(() => this.#ensureWorkerPool().run({
             filename,

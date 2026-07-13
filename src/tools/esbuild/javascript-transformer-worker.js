@@ -49,6 +49,7 @@ const node_fs_1 = __importDefault(require("node:fs"));
 const node_module_1 = require("node:module");
 const node_path_1 = __importDefault(require("node:path"));
 const piscina_1 = __importDefault(require("piscina"));
+const source_map_1 = require("../../utils/source-map");
 const textDecoder = new TextDecoder();
 const textEncoder = new TextEncoder();
 /**
@@ -110,7 +111,7 @@ async function transformWithBabel(filename, data, options) {
     // If no additional transformations are needed, return the data directly
     if (plugins.length === 0) {
         // Strip sourcemaps if they should not be used
-        return useInputSourcemap ? data : data.replace(/^\/\/# sourceMappingURL=[^\r\n]*/gm, '');
+        return useInputSourcemap ? data : (0, source_map_1.removeSourceMappingURL)(data);
     }
     const result = await (0, core_1.transformAsync)(data, {
         filename,
@@ -125,9 +126,7 @@ async function transformWithBabel(filename, data, options) {
     const outputCode = result?.code ?? data;
     // Strip sourcemaps if they should not be used.
     // Babel will keep the original comments even if sourcemaps are disabled.
-    return useInputSourcemap
-        ? outputCode
-        : outputCode.replace(/^\/\/# sourceMappingURL=[^\r\n]*/gm, '');
+    return useInputSourcemap ? outputCode : (0, source_map_1.removeSourceMappingURL)(outputCode);
 }
 async function requiresLinking(path, source) {
     // @angular/core and @angular/compiler will cause false positives

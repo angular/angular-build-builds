@@ -48,6 +48,7 @@ const node_assert_1 = __importDefault(require("node:assert"));
 const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
 const node_url_1 = require("node:url");
+const source_map_1 = require("../../../utils/source-map");
 const ANGULAR_PREFIX = '/@ng/';
 const VITE_FS_PREFIX = '/@fs/';
 const FILE_PROTOCOL = 'file:';
@@ -114,7 +115,7 @@ async function createAngularMemoryPlugin(options) {
             return {
                 // Remove source map URL comments from the code if a sourcemap is present.
                 // Vite will inline and add an additional sourcemap URL for the sourcemap.
-                code: mapContents ? code.replace(/^\/\/# sourceMappingURL=[^\r\n]*/gm, '') : code,
+                code: mapContents ? (0, source_map_1.removeSourceMappingURL)(code) : code,
                 map: mapContents && Buffer.from(mapContents).toString('utf-8'),
             };
         },
