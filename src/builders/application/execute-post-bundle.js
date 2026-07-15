@@ -19,6 +19,7 @@ const manifest_1 = require("../../utils/server-rendering/manifest");
 const models_1 = require("../../utils/server-rendering/models");
 const prerender_1 = require("../../utils/server-rendering/prerender");
 const service_worker_1 = require("../../utils/service-worker");
+const inject_debug_ids_1 = require("./inject-debug-ids");
 const options_1 = require("./options");
 const schema_1 = require("./schema");
 /**
@@ -38,6 +39,13 @@ async function executePostBundleSteps(metafile, options, outputFiles, assetFiles
     const allWarnings = [];
     const prerenderedRoutes = {};
     const { baseHref = '/', serviceWorker, ssrOptions, indexHtmlOptions, optimizationOptions, sourcemapOptions, outputMode, serverEntryPoint, prerenderOptions, appShellOptions, publicPath, workspaceRoot, partialSSRBuild, } = options;
+    // Embed ECMA-426 Debug IDs into JS/source-map pairs before any consumer reads the bytes (in
+    // particular `generateIndexHtml` below, which computes SRI hashes from the on-disk content).
+    // Doing this here also covers the i18n path, where this function is invoked once per locale
+    // with locale-specific output files. Files without a source map sibling are skipped.
+    if (sourcemapOptions.scripts) {
+        (0, inject_debug_ids_1.injectDebugIds)(outputFiles);
+    }
     // Index HTML content without CSS inlining to be used for server rendering (AppShell, SSG and SSR).
     // NOTE: Critical CSS inlining is deliberately omitted here, as it will be handled during server rendering.
     // Additionally, when using prerendering or AppShell, the index HTML file may be regenerated.
