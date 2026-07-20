@@ -16,6 +16,7 @@ const architect_1 = require("@angular-devkit/architect");
 const node_fs_1 = require("node:fs");
 const node_path_1 = __importDefault(require("node:path"));
 const normalize_cache_1 = require("../../utils/normalize-cache");
+const path_1 = require("../../utils/path");
 const project_metadata_1 = require("../../utils/project-metadata");
 const tty_1 = require("../../utils/tty");
 const schema_1 = require("./schema");
@@ -34,16 +35,25 @@ function normalizeReporterOption(reporters) {
         : entry);
 }
 async function normalizeOptions(context, projectName, options) {
+    // Target specifier defaults to the current project's build target using a development configuration
+    const buildTargetSpecifier = options.buildTarget ?? `::development`;
+    const buildTarget = (0, architect_1.targetFromTargetString)(buildTargetSpecifier, projectName, 'build');
+    // Load target options to determine preserveSymlinks setting
+    let buildTargetOptions;
+    try {
+        buildTargetOptions = await context.getTargetOptions(buildTarget);
+    }
+    catch { }
+    const preserveSymlinks = typeof buildTargetOptions?.preserveSymlinks === 'boolean'
+        ? buildTargetOptions.preserveSymlinks
+        : process.execArgv.includes('--preserve-symlinks');
     // Setup base paths based on workspace root and project information
-    const workspaceRoot = context.workspaceRoot;
+    const workspaceRoot = (0, path_1.canonicalizePath)(context.workspaceRoot, preserveSymlinks);
     const projectMetadata = await context.getProjectMetadata(projectName);
     const { projectRoot, projectSourceRoot } = (0, project_metadata_1.getProjectRootPaths)(workspaceRoot, projectMetadata);
     // Gather persistent caching option and provide a project specific cache location
     const cacheOptions = (0, normalize_cache_1.normalizeCacheOptions)(projectMetadata, workspaceRoot);
     cacheOptions.path = node_path_1.default.join(cacheOptions.path, projectName);
-    // Target specifier defaults to the current project's build target using a development configuration
-    const buildTargetSpecifier = options.buildTarget ?? `::development`;
-    const buildTarget = (0, architect_1.targetFromTargetString)(buildTargetSpecifier, projectName, 'build');
     const { runner, browsers, progress, filter, browserViewport, ui, runnerConfig, isolate } = options;
     if (ui && runner !== schema_1.Runner.Vitest) {
         throw new Error('The "ui" option is only available for the "vitest" runner.');
@@ -111,7 +121,7 @@ async function normalizeOptions(context, projectName, options) {
             : [],
         dumpVirtualFiles: options.dumpVirtualFiles,
         listTests: options.listTests,
-        preserveSymlinks: undefined,
+        preserveSymlinks,
         runnerConfig: typeof runnerConfig === 'string'
             ? runnerConfig.length === 0
                 ? true

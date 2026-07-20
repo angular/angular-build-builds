@@ -9,6 +9,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.toPosixPath = toPosixPath;
 exports.isSubDirectory = isSubDirectory;
+exports.canonicalizePath = canonicalizePath;
+const node_fs_1 = require("node:fs");
 const node_path_1 = require("node:path");
 const node_process_1 = require("node:process");
 const WINDOWS_PATH_SEPERATOR_REGEXP = /\\/g;
@@ -48,5 +50,20 @@ function isSubDirectory(parent, child) {
     const resolvedChild = (0, node_path_1.resolve)(parent, child);
     const relativePath = toPosixPath((0, node_path_1.relative)(resolvedParent, resolvedChild));
     return relativePath !== '..' && !relativePath.startsWith('../') && !(0, node_path_1.isAbsolute)(relativePath);
+}
+/**
+ * Canonicalizes a file path by normalising Windows drive-letter casing to uppercase
+ * and optionally resolving symbolic links.
+ *
+ * @param pathString - The file path to canonicalize.
+ * @param preserveSymlinks - If true, symbolic links will not be resolved.
+ * @returns The canonicalized file path.
+ */
+function canonicalizePath(pathString, preserveSymlinks = false) {
+    const resolved = preserveSymlinks ? pathString : (0, node_fs_1.realpathSync)(pathString);
+    if (node_process_1.platform === 'win32' && /^[a-z]:/.test(resolved)) {
+        return resolved[0].toUpperCase() + resolved.slice(1);
+    }
+    return resolved;
 }
 //# sourceMappingURL=path.js.map
