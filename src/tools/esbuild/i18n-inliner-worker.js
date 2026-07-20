@@ -46,7 +46,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = inlineFile;
 exports.inlineCode = inlineCode;
 const remapping_1 = __importDefault(require("@ampproject/remapping"));
-const magic_string_1 = __importDefault(require("magic-string"));
+const magic_string_1 = require("magic-string");
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_worker_threads_1 = require("node:worker_threads");
 const oxc_parser_1 = require("oxc-parser");
@@ -118,7 +118,7 @@ async function transformWithOxc(code, map, options) {
     if (!program) {
         throw new Error(`Unknown error occurred parsing file "${options.filename}" with OXC.`);
     }
-    const magicString = new magic_string_1.default(code);
+    const magicString = new magic_string_1.MagicString(code);
     const { Diagnostics, translate } = await loadLocalizeTools();
     const diagnostics = new Diagnostics();
     const visitor = new oxc_parser_1.Visitor({
