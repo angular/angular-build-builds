@@ -13,7 +13,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.INDEX_HTML_SERVER = exports.INDEX_HTML_CSR = void 0;
 exports.normalizeOptions = normalizeOptions;
 exports.getLocaleBaseHref = getLocaleBaseHref;
-const node_fs_1 = require("node:fs");
 const promises_1 = require("node:fs/promises");
 const node_module_1 = require("node:module");
 const node_path_1 = __importDefault(require("node:path"));
@@ -22,6 +21,7 @@ const color_1 = require("../../utils/color");
 const environment_options_1 = require("../../utils/environment-options");
 const i18n_options_1 = require("../../utils/i18n-options");
 const normalize_cache_1 = require("../../utils/normalize-cache");
+const path_1 = require("../../utils/path");
 const postcss_configuration_1 = require("../../utils/postcss-configuration");
 const project_metadata_1 = require("../../utils/project-metadata");
 const resolve_project_1 = require("../../utils/resolve-project");
@@ -53,12 +53,7 @@ async function normalizeOptions(context, projectName, options, extensions) {
     // If not explicitly set, default to the Node.js process argument
     const preserveSymlinks = options.preserveSymlinks ?? process.execArgv.includes('--preserve-symlinks');
     // Setup base paths based on workspace root and project information
-    const workspaceRoot = preserveSymlinks
-        ? context.workspaceRoot
-        : // NOTE: promises.realpath should not be used here since it uses realpath.native which
-            // can cause case conversion and other undesirable behavior on Windows systems.
-            // ref: https://github.com/nodejs/node/issues/7726
-            (0, node_fs_1.realpathSync)(context.workspaceRoot);
+    const workspaceRoot = (0, path_1.canonicalizePath)(context.workspaceRoot, preserveSymlinks);
     const projectMetadata = await context.getProjectMetadata(projectName);
     const { projectRoot, projectSourceRoot } = (0, project_metadata_1.getProjectRootPaths)(workspaceRoot, projectMetadata);
     // Gather persistent caching option and provide a project specific cache location

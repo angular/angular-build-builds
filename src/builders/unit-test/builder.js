@@ -293,9 +293,6 @@ async function* execute(options, context, extensions) {
         yield { success: false };
         return;
     }
-    // Resolve final preserveSymlinks option
-    normalizedOptions.preserveSymlinks =
-        buildTargetOptions.preserveSymlinks ?? process.execArgv.includes('--preserve-symlinks');
     // Get runner-specific build options
     let runnerBuildOptions;
     let virtualFiles;

@@ -35,3 +35,12 @@ export declare function toPosixPath(path: string): string;
  * @returns `true` if the child path is within the parent directory, `false` otherwise.
  */
 export declare function isSubDirectory(parent: string, child: string): boolean;
+/**
+ * Canonicalizes a file path by normalising Windows drive-letter casing to uppercase
+ * and optionally resolving symbolic links.
+ *
+ * @param pathString - The file path to canonicalize.
+ * @param preserveSymlinks - If true, symbolic links will not be resolved.
+ * @returns The canonicalized file path.
+ */
+export declare function canonicalizePath(pathString: string, preserveSymlinks?: boolean): string;
