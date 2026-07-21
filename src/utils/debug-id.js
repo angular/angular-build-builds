@@ -10,6 +10,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateDebugId = generateDebugId;
 exports.injectDebugIdIntoJs = injectDebugIdIntoJs;
 exports.injectDebugIdIntoSourceMap = injectDebugIdIntoSourceMap;
+exports.stripDebugIdFromSourceMap = stripDebugIdFromSourceMap;
 const node_crypto_1 = require("node:crypto");
 /**
  * Fixed RFC 4122 namespace UUID used to derive deterministic UUIDv5 build/Debug IDs.
@@ -38,8 +39,8 @@ function generateDebugId(name) {
     const h = sha.toString('hex');
     return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`;
 }
-/** Pattern matching an existing `//# debugId=<uuid>` comment anywhere in the file. */
-const DEBUG_ID_COMMENT = /\n\/\/# debugId=[^\r\n]*\n?/;
+/** Pattern matching an existing `//# debugId=<uuid>` comment at the end of the file. */
+const DEBUG_ID_COMMENT = /(\n\/\/# debugId=[^\r\n]*)(\n\/\/# sourceMappingURL=[^\r\n]*)?(\s*)$/;
 /** Pattern matching the `//# sourceMappingURL=` comment, used to position the debug-id line. */
 const SOURCE_MAPPING_URL_COMMENT = /\n\/\/# sourceMappingURL=[^\r\n]*\s*$/;
 /**
@@ -53,7 +54,7 @@ function injectDebugIdIntoJs(text, id) {
     const comment = `//# debugId=${id}`;
     // Replace any existing debugId comment to keep the operation idempotent.
     if (DEBUG_ID_COMMENT.test(text)) {
-        return text.replace(DEBUG_ID_COMMENT, `\n${comment}\n`);
+        return text.replace(DEBUG_ID_COMMENT, (_, p1, p2, p3) => `\n${comment}${p2 || ''}${p3 || ''}`);
     }
     if (SOURCE_MAPPING_URL_COMMENT.test(text)) {
         return text.replace(SOURCE_MAPPING_URL_COMMENT, (match) => `\n${comment}${match}`);
@@ -84,5 +85,12 @@ function injectDebugIdIntoSourceMap(json, id) {
     // Preserve existing pretty-print indentation when the source map is formatted.
     const indent = json.match(/^[^{]*{\r?\n([ \t]+)/)?.[1];
     return JSON.stringify(parsed, null, indent);
+}
+/**
+ * Strips any existing `debugId` field from the source map JSON string to restore
+ * the original JSON contents for deterministic/idempotent hashing.
+ */
+function stripDebugIdFromSourceMap(json) {
+    return json.replace(/,\s*"debugId"\s*:\s*"[^"]*"|\s*"debugId"\s*:\s*"[^"]*"\s*,?/g, '');
 }
 //# sourceMappingURL=debug-id.js.map

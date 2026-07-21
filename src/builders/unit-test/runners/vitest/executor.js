@@ -279,10 +279,10 @@ class VitestExecutor {
             config: externalConfigPath,
             root: workspaceRoot,
             project,
-            outputFile,
-            cache: cacheOptions.enabled ? undefined : false,
-            testNamePattern: this.options.filter,
             watch,
+            ...(outputFile !== undefined ? { outputFile } : {}),
+            ...(cacheOptions.enabled ? {} : { cache: false }),
+            ...(this.options.filter !== undefined ? { testNamePattern: this.options.filter } : {}),
             ...(typeof ui === 'boolean' ? { ui } : {}),
             ...debugOptions,
         };

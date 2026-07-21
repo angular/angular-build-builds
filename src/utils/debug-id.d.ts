@@ -32,3 +32,8 @@ export declare function injectDebugIdIntoJs(text: string, id: string): string;
  * on URL/path conventions.
  */
 export declare function injectDebugIdIntoSourceMap(json: string, id: string): string;
+/**
+ * Strips any existing `debugId` field from the source map JSON string to restore
+ * the original JSON contents for deterministic/idempotent hashing.
+ */
+export declare function stripDebugIdFromSourceMap(json: string): string;

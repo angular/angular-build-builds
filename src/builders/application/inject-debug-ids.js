@@ -35,9 +35,11 @@ function injectDebugIds(outputFiles) {
         if (!map) {
             continue;
         }
-        const id = (0, debug_id_1.generateDebugId)(map.contents);
+        const mapText = map.text;
+        const mapTextForHash = (0, debug_id_1.stripDebugIdFromSourceMap)(mapText);
+        const id = (0, debug_id_1.generateDebugId)(mapTextForHash);
         file.contents = encoder.encode((0, debug_id_1.injectDebugIdIntoJs)(file.text, id));
-        map.contents = encoder.encode((0, debug_id_1.injectDebugIdIntoSourceMap)(map.text, id));
+        map.contents = encoder.encode((0, debug_id_1.injectDebugIdIntoSourceMap)(mapText, id));
     }
 }
 //# sourceMappingURL=inject-debug-ids.js.map
