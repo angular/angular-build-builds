@@ -45,6 +45,11 @@ const node_crypto_1 = require("node:crypto");
 const node_path_1 = require("node:path");
 const html_rewriting_stream_1 = require("./html-rewriting-stream");
 const valid_self_closing_tags_1 = require("./valid-self-closing-tags");
+/**
+ * RegExp to check if a URL is resolvable.
+ * A URL is resolvable if it is absolute (starting with http/https) or relative (starting with `./`, `../`, or `/`).
+ */
+const RESOLVABLE_URL_REGEXP = /^(?:\.{0,2}\/|https?:\/\/)/i;
 /*
  * Helper function used by the IndexHtmlWebpackPlugin.
  * Can also be directly used by builder, e. g. in order to generate an index.html
@@ -118,7 +123,9 @@ async function augmentIndexHtml(params) {
         // Stable iteration order for reproducible builds.
         const sortedEntries = [...chunksIntegrity.entries()].sort(([keyA], [keyB]) => keyA.localeCompare(keyB));
         for (const [url, integrityHash] of sortedEntries) {
-            integrity[generateUrl(url, deployUrl)] = integrityHash;
+            const resolvedUrl = generateUrl(url, deployUrl);
+            const key = RESOLVABLE_URL_REGEXP.test(resolvedUrl) ? resolvedUrl : `./${resolvedUrl}`;
+            integrity[key] = integrityHash;
         }
         const importMapJson = JSON.stringify({ integrity }).replace(/</g, '\\u003c');
         subResourceIntegrityTag = `<script type="importmap">${importMapJson}</script>`;
