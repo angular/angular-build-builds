@@ -46,6 +46,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.VitestExecutor = void 0;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_path_1 = __importDefault(require("node:path"));
+const promises_1 = require("node:timers/promises");
 const utils_1 = require("../../../../tools/vite/utils");
 const error_1 = require("../../../../utils/error");
 const results_1 = require("../../../application/results");
@@ -185,8 +186,31 @@ class VitestExecutor {
         yield { success };
     }
     async [Symbol.asyncDispose]() {
+        if (!this.vitest) {
+            return;
+        }
         this.debugLog(DebugLogLevel.Info, 'Disposing VitestExecutor: Closing Vitest instance.');
-        await this.vitest?.close();
+        const controller = new AbortController();
+        const timeoutMs = 10_000;
+        try {
+            await Promise.race([
+                this.vitest.close(),
+                (0, promises_1.setTimeout)(timeoutMs, undefined, { signal: controller.signal, ref: false })
+                    .then(() => {
+                    this.logger.warn(`Vitest instance failed to close cleanly within ${timeoutMs}ms. Continuing teardown...`);
+                })
+                    .catch(() => {
+                    // Suppress AbortError triggered by controller.abort() when close() resolves first
+                }),
+            ]);
+        }
+        catch (error) {
+            (0, error_1.assertIsError)(error);
+            this.logger.error(`An error occurred while closing Vitest instance: ${error.message}`);
+        }
+        finally {
+            controller.abort();
+        }
         this.debugLog(DebugLogLevel.Info, 'Vitest instance closed.');
     }
     prepareSetupFiles() {

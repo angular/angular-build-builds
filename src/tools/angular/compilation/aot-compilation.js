@@ -14,6 +14,7 @@ exports.AotCompilation = void 0;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_path_1 = require("node:path");
 const typescript_1 = __importDefault(require("typescript"));
+const environment_options_1 = require("../../../utils/environment-options");
 const profiling_1 = require("../../esbuild/profiling");
 const angular_host_1 = require("../angular-host");
 const jit_bootstrap_transformer_1 = require("../transformers/jit-bootstrap-transformer");
@@ -135,7 +136,16 @@ class AotCompilation extends angular_compilation_1.AngularCompilation {
                 templateUpdates.set(updateId, updateText);
             }
         }
-        const affectedFiles = (0, profiling_1.profileSync)('NG_FIND_AFFECTED', () => findAffectedFiles(typeScriptProgram, angularCompiler, usingBuildInfo));
+        // The affected files walk runs a full semantic type-check as a side effect
+        // (via `getSemanticDiagnosticsOfNextAffectedFile`). Its result is only consumed to
+        // scope Angular template diagnostics and to force re-emit of TS-affected files in the
+        // slow TypeScript emit path. When type-checking is disabled, template/semantic
+        // diagnostics are already suppressed at the consumption layer (see the compiler-plugin
+        // `diagnoseFiles` mask), and in the isolatedModules fast path emit is per-file, so the
+        // set is never read. Skip the walk in that case to avoid a discarded semantic pass.
+        const affectedFiles = environment_options_1.useTypeChecking || useTypeScriptTranspilation
+            ? (0, profiling_1.profileSync)('NG_FIND_AFFECTED', () => findAffectedFiles(typeScriptProgram, angularCompiler, usingBuildInfo))
+            : new Set();
         const componentResourcesDependencies = new Map();
         // Get all files referenced in the TypeScript/Angular program including component resources
         const referencedFiles = typeScriptProgram
