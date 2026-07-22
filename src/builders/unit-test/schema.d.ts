@@ -12,7 +12,7 @@ export type Schema = {
      * Node.js environment using jsdom. For both Vitest and Karma, browser names ending with
      * 'Headless' (e.g., 'ChromeHeadless') will enable headless mode.
      */
-    browsers?: string[];
+    browsers?: [string, ...string[]];
     /**
      * Specifies the build target to use for the unit test build in the format
      * `project:target[:configuration]`. This defaults to the `build` target of the current
@@ -157,7 +157,7 @@ export type Schema = {
      */
     watch?: boolean;
 };
-export type SchemaCoverageReporter = CoverageReporterCoverageReporterUnion[] | CoverageReporterEnum;
+export type SchemaCoverageReporter = [CoverageReporterCoverageReporterUnion, ...CoverageReporterCoverageReporterUnion[]] | CoverageReporterEnum;
 export type CoverageReporterCoverageReporterUnion = CoverageReporterEnum | {
     [key: string]: any;
 };
@@ -205,21 +205,21 @@ export type CoverageWatermarks = {
     /**
      * The high and low watermarks for branches coverage. `[low, high]`
      */
-    branches?: number[];
+    branches?: [number, number, ...number[]];
     /**
      * The high and low watermarks for functions coverage. `[low, high]`
      */
-    functions?: number[];
+    functions?: [number, number, ...number[]];
     /**
      * The high and low watermarks for lines coverage. `[low, high]`
      */
-    lines?: number[];
+    lines?: [number, number, ...number[]];
     /**
      * The high and low watermarks for statements coverage. `[low, high]`
      */
-    statements?: number[];
+    statements?: [number, number, ...number[]];
 };
-export type SchemaReporter = ReporterReporter[] | string;
+export type SchemaReporter = [ReporterReporter, ...ReporterReporter[]] | string;
 export type ReporterReporter = {
     [key: string]: any;
 } | string;
