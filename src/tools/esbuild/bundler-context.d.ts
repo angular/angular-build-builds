@@ -59,3 +59,13 @@ export declare class BundlerContext {
      */
     dispose(): Promise<void>;
 }
+/**
+ * Remaps all relative paths within an esbuild metafile from one base directory to another.
+ * Virtual files (e.g., `angular:` namespaced or bundler generated), external imports, and
+ * non-relative paths are left unmodified.
+ *
+ * @param metafile The metafile to update in place.
+ * @param fromBase The absolute base directory the metafile paths are currently relative to.
+ * @param toBase The absolute base directory the metafile paths should be made relative to.
+ */
+export declare function remapMetafileBasePath(metafile: Metafile, fromBase: string, toBase: string): void;

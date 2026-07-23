@@ -11,9 +11,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BundlerContext = void 0;
+exports.remapMetafileBasePath = remapMetafileBasePath;
 const esbuild_1 = require("esbuild");
 const node_assert_1 = __importDefault(require("node:assert"));
+const node_fs_1 = require("node:fs");
 const node_path_1 = require("node:path");
+const path_1 = require("../../utils/path");
 const manifest_1 = require("../../utils/server-rendering/manifest");
 const bundler_files_1 = require("./bundler-files");
 const load_result_cache_1 = require("./load-result-cache");
@@ -37,6 +40,7 @@ class BundlerContext {
     #optionsFactory;
     #shouldCacheResult;
     #loadCache;
+    #realWorkspaceRoot;
     watchFiles = new Set();
     constructor(workspaceRoot, incremental, options, initialFilter) {
         this.workspaceRoot = workspaceRoot;
@@ -196,6 +200,16 @@ class BundlerContext {
                     }
                 }
             }
+        }
+        // esbuild always resolves its working directory through symbolic links (including
+        // Windows directory junctions) and generates metafile paths relative to the resolved
+        // path. When `preserveSymlinks` is enabled, the workspace root is intentionally not
+        // resolved, and the metafile paths are then relative to a different base directory.
+        // The paths are remapped so that all downstream consumers can rely on the documented
+        // invariant that metafile paths are relative to the workspace root.
+        this.#realWorkspaceRoot ??= (0, node_fs_1.realpathSync)(this.workspaceRoot);
+        if (this.#realWorkspaceRoot !== this.workspaceRoot) {
+            remapMetafileBasePath(result.metafile, this.#realWorkspaceRoot, this.workspaceRoot);
         }
         // Update files that should be watched.
         // While this should technically not be linked to incremental mode, incremental is only
@@ -386,6 +400,64 @@ class BundlerContext {
     }
 }
 exports.BundlerContext = BundlerContext;
+/**
+ * Remaps all relative paths within an esbuild metafile from one base directory to another.
+ * Virtual files (e.g., `angular:` namespaced or bundler generated), external imports, and
+ * non-relative paths are left unmodified.
+ *
+ * @param metafile The metafile to update in place.
+ * @param fromBase The absolute base directory the metafile paths are currently relative to.
+ * @param toBase The absolute base directory the metafile paths should be made relative to.
+ */
+function remapMetafileBasePath(metafile, fromBase, toBase) {
+    const remapped = new Map();
+    const remap = (value) => {
+        // Skip virtual files and paths with a scheme-like or namespace prefix (e.g., `angular:`)
+        if (isInternalAngularFile(value) ||
+            isInternalBundlerFile(value) ||
+            /^[^\\/.]{2,}:/.test(value)) {
+            return value;
+        }
+        let result = remapped.get(value);
+        if (result === undefined) {
+            // esbuild metafile paths always use POSIX path separators
+            result = (0, path_1.toPosixPath)((0, node_path_1.relative)(toBase, (0, node_path_1.resolve)(fromBase, value)));
+            remapped.set(value, result);
+        }
+        return result;
+    };
+    const inputs = {};
+    for (const [key, value] of Object.entries(metafile.inputs)) {
+        for (const importRecord of value.imports) {
+            if (!importRecord.external) {
+                importRecord.path = remap(importRecord.path);
+            }
+        }
+        inputs[remap(key)] = value;
+    }
+    metafile.inputs = inputs;
+    const outputs = {};
+    for (const [key, value] of Object.entries(metafile.outputs)) {
+        if (value.entryPoint !== undefined) {
+            value.entryPoint = remap(value.entryPoint);
+        }
+        if (value.cssBundle !== undefined) {
+            value.cssBundle = remap(value.cssBundle);
+        }
+        for (const importRecord of value.imports) {
+            if (!importRecord.external) {
+                importRecord.path = remap(importRecord.path);
+            }
+        }
+        const outputInputs = {};
+        for (const [inputKey, inputValue] of Object.entries(value.inputs)) {
+            outputInputs[remap(inputKey)] = inputValue;
+        }
+        value.inputs = outputInputs;
+        outputs[remap(key)] = value;
+    }
+    metafile.outputs = outputs;
+}
 function isInternalAngularFile(file) {
     return file.startsWith('angular:');
 }
