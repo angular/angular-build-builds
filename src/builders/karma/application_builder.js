@@ -80,8 +80,15 @@ function execute(options, context, transforms) {
             }
             catch (err) {
                 if (err instanceof ApplicationBuildError) {
-                    controller.enqueue({ success: false, message: err.message });
-                    controller.close();
+                    if (controller.desiredSize !== null) {
+                        try {
+                            controller.enqueue({ success: false, message: err.message });
+                            controller.close();
+                        }
+                        catch {
+                            // Stream controller may already be closed or cancelled
+                        }
+                    }
                     return;
                 }
                 throw err;
@@ -94,8 +101,15 @@ function execute(options, context, transforms) {
             }
             // Close the stream once the Karma server returns.
             karmaServer = new karma.Server(karmaConfig, (exitCode) => {
-                controller.enqueue({ success: exitCode === 0 });
-                controller.close();
+                if (controller.desiredSize !== null) {
+                    try {
+                        controller.enqueue({ success: exitCode === 0 });
+                        controller.close();
+                    }
+                    catch {
+                        // Stream controller may already be closed or cancelled
+                    }
+                }
             });
             await karmaServer.start();
         },
