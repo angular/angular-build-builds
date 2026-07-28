@@ -32,8 +32,18 @@ function injectKarmaReporter(buildOptions, buildIterator, karmaConfig, controlle
                     if (done) {
                         break;
                     }
+                    if (controller.desiredSize === null) {
+                        break;
+                    }
                     if (buildOutput.kind === results_1.ResultKind.Failure) {
-                        controller.enqueue({ success: false, message: 'Build failed' });
+                        if (controller.desiredSize !== null) {
+                            try {
+                                controller.enqueue({ success: false, message: 'Build failed' });
+                            }
+                            catch {
+                                // Stream controller may already be closed or cancelled
+                            }
+                        }
                     }
                     else if (buildOutput.kind === results_1.ResultKind.Incremental ||
                         buildOutput.kind === results_1.ResultKind.Full) {
@@ -53,11 +63,13 @@ function injectKarmaReporter(buildOptions, buildIterator, karmaConfig, controlle
             })();
         }
         onRunComplete = function (_browsers, results) {
-            if (results.exitCode === 0) {
-                controller.enqueue({ success: true });
-            }
-            else {
-                controller.enqueue({ success: false });
+            if (controller.desiredSize !== null) {
+                try {
+                    controller.enqueue({ success: results.exitCode === 0 });
+                }
+                catch {
+                    // Stream controller may already be closed or cancelled
+                }
             }
         };
     }
