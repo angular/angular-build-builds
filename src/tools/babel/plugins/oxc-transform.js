@@ -497,25 +497,25 @@ function transform(filename, code, options) {
                     // 1. Remove `export default `
                     s.overwrite(statement.start, classNode.start, '');
                     // 2. Wrap in IIFE
-                    s.appendLeft(classNode.start, `let ${classIdName} = /*#__PURE__*/ (() => {\n`);
-                    s.appendRight(lastStatement.end, `\nreturn ${classIdName};\n})();\nexport { ${classIdName} as default };`);
+                    s.appendRight(classNode.start, `let ${classIdName} = /*#__PURE__*/ (() => {\n`);
+                    s.appendLeft(lastStatement.end, `\nreturn ${classIdName};\n})();\nexport { ${classIdName} as default };`);
                 }
                 else if (isExportNamed) {
                     // 1. Export is kept, turn `class` into `let ClassName = IIFE`
-                    s.appendLeft(classNode.start, `let ${classIdName} = /*#__PURE__*/ (() => {\n`);
-                    s.appendRight(lastStatement.end, `\nreturn ${classIdName};\n})();`);
+                    s.appendRight(classNode.start, `let ${classIdName} = /*#__PURE__*/ (() => {\n`);
+                    s.appendLeft(lastStatement.end, `\nreturn ${classIdName};\n})();`);
                 }
                 else if (isVariableClass) {
                     // Wrap class inside init: `/*#__PURE__*/ (() => { let ClassName = class ClassName {}; return ClassName; })()`
-                    s.appendLeft(classNode.start, `/*#__PURE__*/ (() => {\nlet ${classIdName} = `);
+                    s.appendRight(classNode.start, `/*#__PURE__*/ (() => {\nlet ${classIdName} = `);
                     const terminator = activeWrapPaths.length === 0 ? ';' : '';
                     const iifeClosing = activeWrapPaths.length === 0 ? '})()' : '})();';
-                    s.appendRight(lastStatement.end, `${terminator}\nreturn ${classIdName};\n${iifeClosing}`);
+                    s.appendLeft(lastStatement.end, `${terminator}\nreturn ${classIdName};\n${iifeClosing}`);
                 }
                 else {
                     // Standard ClassDeclaration
-                    s.appendLeft(classNode.start, `let ${classIdName} = /*#__PURE__*/ (() => {\n`);
-                    s.appendRight(lastStatement.end, `\nreturn ${classIdName};\n})();`);
+                    s.appendRight(classNode.start, `let ${classIdName} = /*#__PURE__*/ (() => {\n`);
+                    s.appendLeft(lastStatement.end, `\nreturn ${classIdName};\n})();`);
                 }
                 markEdited(statement.start, lastStatement.end);
                 // Fast-forward outer loop index to skip the statements we wrapped
@@ -524,7 +524,7 @@ function transform(filename, code, options) {
             else if (isExportDefault && !hasPotentialSideEffects) {
                 // Splitting default export even when not wrapped
                 s.overwrite(statement.start, classNode.start, '');
-                s.appendRight(classNode.end, `\nexport { ${classIdName} as default };`);
+                s.appendLeft(classNode.end, `\nexport { ${classIdName} as default };`);
                 markEdited(statement.start, classNode.end);
             }
         }
