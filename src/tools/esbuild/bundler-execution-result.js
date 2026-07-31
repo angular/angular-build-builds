@@ -137,12 +137,21 @@ class ExecutionResult {
         }
         return changed;
     }
-    async dispose() {
-        await Promise.allSettled([
-            ...this.rebuildContexts.typescriptContexts.map((context) => context.dispose()),
-            ...this.rebuildContexts.otherContexts.map((context) => context.dispose()),
-            this.componentStyleBundler.dispose(),
-        ]);
+    #disposal;
+    dispose() {
+        return (this.#disposal ??= this.#dispose());
+    }
+    async #dispose() {
+        try {
+            await Promise.allSettled([
+                ...this.rebuildContexts.typescriptContexts.map((context) => context.dispose()),
+                ...this.rebuildContexts.otherContexts.map((context) => context.dispose()),
+                this.componentStyleBundler.dispose(),
+            ]);
+        }
+        finally {
+            this.codeBundleCache?.clear();
+        }
     }
 }
 exports.ExecutionResult = ExecutionResult;

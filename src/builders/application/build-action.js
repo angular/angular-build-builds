@@ -77,8 +77,8 @@ async function* runEsBuildBuildAction(action, options) {
         await (0, utils_1.logMessages)(logger, result, colors, jsonLogs);
     }
     finally {
-        // Ensure Sass workers are shutdown if not watching
-        if (!watch) {
+        // Ensure Sass workers are shutdown if not watching or if the initial build failed
+        if (!watch || !result) {
             (0, sass_language_1.shutdownSassWorkerPool)();
         }
     }

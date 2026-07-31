@@ -71,6 +71,10 @@ class MemoryLoadResultCache {
         // are namespaced request paths and not disk-based file paths.
         return [...this.#fileDependencies.keys()];
     }
+    clear() {
+        this.#loadResults.clear();
+        this.#fileDependencies.clear();
+    }
 }
 exports.MemoryLoadResultCache = MemoryLoadResultCache;
 //# sourceMappingURL=load-result-cache.js.map

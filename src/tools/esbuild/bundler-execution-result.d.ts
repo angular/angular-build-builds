@@ -42,6 +42,7 @@ export type PrerenderedRoutesRecord = Record<string, {
  * Represents the result of a single builder execute call.
  */
 export declare class ExecutionResult {
+    #private;
     private rebuildContexts;
     private componentStyleBundler;
     private codeBundleCache?;
