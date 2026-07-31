@@ -39,12 +39,12 @@ class AngularCompilationContext {
     markAsInProgress() {
         this.#pendingCompilation = true;
     }
-    #disposed = false;
-    async dispose() {
-        if (this.#disposed) {
-            return;
-        }
-        this.#disposed = true;
+    #disposal;
+    dispose() {
+        // Reuse any in progress disposal to ensure all callers can await completion
+        return (this.#disposal ??= this.#close());
+    }
+    async #close() {
         this.markAsReady(true);
         try {
             await this.#compilation.close?.();

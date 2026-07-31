@@ -201,8 +201,8 @@ class I18nInliner {
      * Stops all active transformation tasks and shuts down all workers.
      * @returns A void promise that resolves when closing is complete.
      */
-    close() {
-        return this.#workerPool.destroy();
+    async close() {
+        await Promise.allSettled([this.#cache?.close(), this.#workerPool.destroy()]);
     }
     /**
      * Initializes the cache for storing translated bundles.
