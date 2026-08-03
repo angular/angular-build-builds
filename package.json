@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "20.3.32+sha-ed8f6ff",
+  "version": "20.3.32+sha-0b4008f",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -23,7 +23,7 @@
   "builders": "builders.json",
   "dependencies": {
     "@ampproject/remapping": "2.3.0",
-    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#ed8f6ff",
+    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#0b4008f",
     "@babel/core": "7.29.7",
     "@babel/helper-annotate-as-pure": "7.27.3",
     "@babel/helper-split-export-declaration": "7.24.7",
@@ -60,7 +60,7 @@
     "@angular/platform-browser": "^20.0.0",
     "@angular/platform-server": "^20.0.0",
     "@angular/service-worker": "^20.0.0",
-    "@angular/ssr": "github:angular/angular-ssr-builds#ed8f6ff",
+    "@angular/ssr": "github:angular/angular-ssr-builds#0b4008f",
     "karma": "^6.4.0",
     "less": "^4.2.0",
     "ng-packagr": "^20.0.0",
