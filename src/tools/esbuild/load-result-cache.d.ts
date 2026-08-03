@@ -7,7 +7,7 @@
  */
 import type { OnLoadResult, PluginBuild } from 'esbuild';
 export interface LoadResultCache {
-    get(path: string): OnLoadResult | undefined;
+    get(path: string): OnLoadResult | Promise<OnLoadResult | undefined> | undefined;
     put(path: string, result: OnLoadResult): Promise<void>;
     readonly watchFiles: ReadonlyArray<string>;
 }

@@ -16,7 +16,7 @@ function createCachedLoad(cache, callback) {
     }
     return async (args) => {
         const loadCacheKey = `${args.namespace}:${args.path}`;
-        let result = cache.get(loadCacheKey);
+        let result = await cache.get(loadCacheKey);
         if (result === undefined) {
             result = await callback(args);
             // Do not cache null or undefined
@@ -24,7 +24,9 @@ function createCachedLoad(cache, callback) {
                 // Ensure requested path is included if it was a resolved file
                 if (args.namespace === 'file') {
                     result.watchFiles ??= [];
-                    result.watchFiles.push(args.path);
+                    if (!result.watchFiles.includes(args.path)) {
+                        result.watchFiles.push(args.path);
+                    }
                 }
                 await cache.put(loadCacheKey, result);
             }
