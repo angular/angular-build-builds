@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.persistentCacheStoreSetting = exports.bazelEsbuildPluginPath = exports.usePartialSsrBuild = exports.useComponentTemplateHmr = exports.useComponentStyleHmr = exports.optimizeChunksThreshold = exports.useJSONBuildLogs = exports.useTypeChecking = exports.shouldWatchRoot = exports.debugPerformance = exports.useParallelTs = exports.maxWorkers = exports.useRolldownChunks = exports.allowMinify = exports.shouldBeautify = exports.allowMangle = void 0;
+exports.persistentCacheStoreSetting = exports.bazelEsbuildPluginPath = exports.useBabelLinker = exports.usePartialSsrBuild = exports.useComponentTemplateHmr = exports.useComponentStyleHmr = exports.optimizeChunksThreshold = exports.useJSONBuildLogs = exports.useTypeChecking = exports.shouldWatchRoot = exports.debugPerformance = exports.useParallelTs = exports.maxWorkers = exports.useRolldownChunks = exports.allowMinify = exports.shouldBeautify = exports.allowMangle = void 0;
 const node_os_1 = require("node:os");
 /** A set of strings that are considered "truthy" when parsing environment variables. */
 const TRUTHY_VALUES = new Set(['1', 'true']);
@@ -168,6 +168,12 @@ exports.useComponentTemplateHmr = parseTristate(process.env['NG_HMR_TEMPLATES'])
  * When `NG_BUILD_PARTIAL_SSR` is enabled, a partial server-side rendering build will be performed.
  */
 exports.usePartialSsrBuild = parseTristate(process.env['NG_BUILD_PARTIAL_SSR']) === true;
+/**
+ * When `NG_BUILD_BABEL_LINKER` is enabled (`1` or `true`), the Babel-based
+ * Angular Linker (`@angular/compiler-cli/linker/babel`) will be used instead of the
+ * default OXC in-place linker.
+ */
+exports.useBabelLinker = parseTristate(process.env['NG_BUILD_BABEL_LINKER']) === true;
 const bazelBinDirectory = process.env['BAZEL_BINDIR'];
 const bazelExecRoot = process.env['JS_BINARY__EXECROOT'];
 exports.bazelEsbuildPluginPath = bazelBinDirectory && bazelExecRoot

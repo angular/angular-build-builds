@@ -45,10 +45,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = transformJavaScript;
 const core_1 = require("@babel/core");
-const node_fs_1 = __importDefault(require("node:fs"));
 const node_module_1 = require("node:module");
-const node_path_1 = __importDefault(require("node:path"));
 const piscina_1 = __importDefault(require("piscina"));
+const environment_options_js_1 = require("../../utils/environment-options.js");
 const source_map_1 = require("../../utils/source-map");
 const textDecoder = new TextDecoder();
 const textEncoder = new TextEncoder();
@@ -67,11 +66,11 @@ async function transformJavaScript(request) {
     return piscina_1.default.move(textEncoder.encode(transformedData));
 }
 /**
- * Cached instance of the compiler-cli linker's createEs2015LinkerPlugin function.
+ * Cached instance of the OXC linker module.
  */
-let linkerPluginCreator;
+let oxcLinkerModule;
 async function transformJavaScriptImpl(filename, data, options) {
-    const shouldLink = !options.skipLinker && (await requiresLinking(filename, data));
+    const shouldLink = !options.skipLinker && requiresLinking(filename, data);
     const useInputSourcemap = options.sourcemap &&
         (!!options.thirdPartySourcemaps || !/[\\/]node_modules[\\/]/.test(filename));
     const babelPlugins = [];
@@ -97,13 +96,41 @@ async function transformJavaScriptImpl(filename, data, options) {
             throw new Error(`The 'istanbul-lib-instrument' package is required for code coverage but was not found. Please install the package.`, { cause: error });
         }
     }
-    if (shouldLink) {
-        // Lazy load the linker plugin only when linking is required
-        const linkerPlugin = await createLinkerPlugin(options);
-        babelPlugins.push(linkerPlugin);
-    }
     let code = data;
-    // If Babel is needed, run it first
+    if (shouldLink) {
+        if (environment_options_js_1.useBabelLinker) {
+            const { createEs2015LinkerPlugin } = await Promise.resolve().then(() => __importStar(require('@angular/compiler-cli/linker/babel')));
+            const { ConsoleLogger, LogLevel } = await Promise.resolve().then(() => __importStar(require('@angular/compiler-cli')));
+            babelPlugins.push(createEs2015LinkerPlugin({
+                fileSystem: {
+                    exists: () => false,
+                    readFile: () => '',
+                    resolve: (...paths) => paths.join('/'),
+                    dirname: (path) => path.split('/').slice(0, -1).join('/'),
+                    relative: (_from, to) => to,
+                },
+                logger: new ConsoleLogger(LogLevel.info),
+                linkerJitMode: options.jit,
+                // This is a workaround until https://github.com/angular/angular/issues/42769 is fixed.
+                sourceMapping: false,
+            }));
+        }
+        else {
+            oxcLinkerModule ??= await Promise.resolve().then(() => __importStar(require('../angular/linker/oxc-linker.js')));
+            const result = oxcLinkerModule.linkWithOxc(filename, code, {
+                sourcemap: useInputSourcemap,
+                jit: options.jit,
+                skipCheck: true,
+            });
+            code = result.code;
+            if (useInputSourcemap && result.map) {
+                code = (0, source_map_1.removeSourceMappingURL)(code);
+                const base64Map = Buffer.from(result.map).toString('base64');
+                code += `\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,${base64Map}`;
+            }
+        }
+    }
+    // If Babel is needed for code coverage or babel linker fallback, run it
     if (babelPlugins.length > 0) {
         const result = await (0, core_1.transformAsync)(code, {
             filename,
@@ -140,7 +167,7 @@ async function transformJavaScriptImpl(filename, data, options) {
     // Strip sourcemaps if they should not be used
     return useInputSourcemap ? code : (0, source_map_1.removeSourceMappingURL)(code);
 }
-async function requiresLinking(path, source) {
+function requiresLinking(path, source) {
     // @angular/core and @angular/compiler will cause false positives
     // Also, TypeScript files do not require linking
     if (/[\\/]@angular[\\/](?:compiler|core)|\.tsx?$/.test(path)) {
@@ -150,43 +177,5 @@ async function requiresLinking(path, source) {
     // There is a low chance of a false positive but the names are fairly unique
     // and the result would be an unnecessary no-op additional plugin pass.
     return source.includes(LINKER_DECLARATION_PREFIX);
-}
-async function createLinkerPlugin(options) {
-    linkerPluginCreator ??= (await Promise.resolve().then(() => __importStar(require('@angular/compiler-cli/linker/babel'))))
-        .createEs2015LinkerPlugin;
-    const linkerPlugin = linkerPluginCreator({
-        linkerJitMode: options.jit,
-        // This is a workaround until https://github.com/angular/angular/issues/42769 is fixed.
-        sourceMapping: false,
-        logger: {
-            level: 1, // Info level
-            debug(...args) {
-                // eslint-disable-next-line no-console
-                console.debug(args);
-            },
-            info(...args) {
-                // eslint-disable-next-line no-console
-                console.info(args);
-            },
-            warn(...args) {
-                // eslint-disable-next-line no-console
-                console.warn(args);
-            },
-            error(...args) {
-                // eslint-disable-next-line no-console
-                console.error(args);
-            },
-        },
-        fileSystem: {
-            resolve: node_path_1.default.resolve,
-            exists: node_fs_1.default.existsSync,
-            dirname: node_path_1.default.dirname,
-            relative: node_path_1.default.relative,
-            readFile: node_fs_1.default.readFileSync,
-            // Node.JS types don't overlap the Compiler types.
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        },
-    });
-    return linkerPlugin;
 }
 //# sourceMappingURL=javascript-transformer-worker.js.map

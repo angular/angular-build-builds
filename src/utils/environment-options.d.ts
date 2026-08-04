@@ -63,6 +63,12 @@ export declare const useComponentTemplateHmr: boolean;
  * When `NG_BUILD_PARTIAL_SSR` is enabled, a partial server-side rendering build will be performed.
  */
 export declare const usePartialSsrBuild: boolean;
+/**
+ * When `NG_BUILD_BABEL_LINKER` is enabled (`1` or `true`), the Babel-based
+ * Angular Linker (`@angular/compiler-cli/linker/babel`) will be used instead of the
+ * default OXC in-place linker.
+ */
+export declare const useBabelLinker: boolean;
 export declare const bazelEsbuildPluginPath: string | undefined;
 /**
  * The persistent cache store configuration to use.
