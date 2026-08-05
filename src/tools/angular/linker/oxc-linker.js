@@ -106,7 +106,7 @@ function linkWithOxc(filename, code, options = {}) {
         return { code, map: undefined };
     }
     const astFactory = new string_ast_factory_1.StringAstFactory(code);
-    const linkerEnvironment = linker_1.LinkerEnvironment.create(noopFileSystem, SHARED_LOGGER, SHARED_AST_HOST, astFactory, { linkerJitMode: options.jit ?? false });
+    const linkerEnvironment = linker_1.LinkerEnvironment.create(noopFileSystem, SHARED_LOGGER, SHARED_AST_HOST, astFactory, { linkerJitMode: options.jit ?? false, sourceMapping: false });
     const fileLinker = new linker_1.FileLinker(linkerEnvironment, filename, code);
     const { program } = (0, oxc_parser_1.parseSync)(filename, code, { range: true });
     let s;

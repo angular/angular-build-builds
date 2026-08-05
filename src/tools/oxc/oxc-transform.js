@@ -367,7 +367,11 @@ function transform(filename, code, options) {
             s.appendRight(callee.body.end - 1, `; return ${paramName};`);
             // 3. Remove `Name = ` assignment in arguments if it's a simple identifier
             if (rightCallArgument.left.type === 'Identifier') {
-                s.overwrite(arg.right.start, arg.right.end, code.substring(rightCallArgument.right.start, rightCallArgument.right.end));
+                let replacement = code.substring(rightCallArgument.right.start, rightCallArgument.right.end);
+                if (unwrapParentheses(rightCallArgument.right).type === 'AssignmentExpression') {
+                    replacement = `(${replacement})`;
+                }
+                s.overwrite(arg.right.start, arg.right.end, replacement);
                 markEdited(arg.right.start, arg.right.end);
             }
             // 4. Move IIFE to the var initializer
