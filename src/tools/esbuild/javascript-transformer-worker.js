@@ -58,6 +58,34 @@ const textEncoder = new TextEncoder();
  * the names MUST begin with this prefix.
  */
 const LINKER_DECLARATION_PREFIX = 'ɵɵngDeclare';
+async function instrumentCoverage(filename, data, useInputSourcemap) {
+    try {
+        let resolvedPath = 'istanbul-lib-instrument';
+        try {
+            const requireFn = (0, node_module_1.createRequire)(filename);
+            resolvedPath = requireFn.resolve('istanbul-lib-instrument');
+        }
+        catch {
+            // Fallback to pool worker import traversal
+        }
+        const { createInstrumenter } = (await Promise.resolve(`${resolvedPath}`).then(s => __importStar(require(s))));
+        const instrumenter = createInstrumenter({
+            produceSourceMap: useInputSourcemap,
+            esModules: true,
+        });
+        const inputSourceMap = useInputSourcemap ? (0, source_map_1.loadInputSourceMap)(filename, data) : undefined;
+        const instrumentedCode = instrumenter.instrumentSync(data, filename, inputSourceMap);
+        const lastMap = instrumenter.lastSourceMap();
+        if (useInputSourcemap && lastMap) {
+            const inlineMap = Buffer.from(JSON.stringify(lastMap)).toString('base64');
+            return instrumentedCode + `\n//# sourceMappingURL=data:application/json;base64,${inlineMap}`;
+        }
+        return (0, source_map_1.removeSourceMappingURL)(instrumentedCode);
+    }
+    catch (error) {
+        throw new Error(`The 'istanbul-lib-instrument' package is required for code coverage but was not found. Please install the package.`, { cause: error });
+    }
+}
 async function transformJavaScript(request) {
     const { filename, data, ...options } = request;
     const textData = typeof data === 'string' ? data : textDecoder.decode(data);
@@ -73,47 +101,39 @@ async function transformJavaScriptImpl(filename, data, options) {
     const shouldLink = !options.skipLinker && requiresLinking(filename, data);
     const useInputSourcemap = options.sourcemap &&
         (!!options.thirdPartySourcemaps || !/[\\/]node_modules[\\/]/.test(filename));
-    const babelPlugins = [];
-    if (options.instrumentForCoverage) {
-        try {
-            let resolvedPath = 'istanbul-lib-instrument';
-            try {
-                const requireFn = (0, node_module_1.createRequire)(filename);
-                resolvedPath = requireFn.resolve('istanbul-lib-instrument');
-            }
-            catch {
-                // Fallback to pool worker import traversal
-            }
-            const istanbul = await Promise.resolve(`${resolvedPath}`).then(s => __importStar(require(s)));
-            const programVisitor = istanbul.programVisitor ?? istanbul.default?.programVisitor;
-            if (!programVisitor) {
-                throw new Error('programVisitor is not available in istanbul-lib-instrument.');
-            }
-            const { default: coveragePluginFactory } = await Promise.resolve().then(() => __importStar(require('../babel/plugins/add-code-coverage.js')));
-            babelPlugins.push(coveragePluginFactory(programVisitor));
-        }
-        catch (error) {
-            throw new Error(`The 'istanbul-lib-instrument' package is required for code coverage but was not found. Please install the package.`, { cause: error });
-        }
-    }
     let code = data;
+    if (options.instrumentForCoverage) {
+        code = await instrumentCoverage(filename, code, useInputSourcemap);
+    }
     if (shouldLink) {
         if (environment_options_js_1.useBabelLinker) {
             const { createEs2015LinkerPlugin } = await Promise.resolve().then(() => __importStar(require('@angular/compiler-cli/linker/babel')));
             const { ConsoleLogger, LogLevel } = await Promise.resolve().then(() => __importStar(require('@angular/compiler-cli')));
-            babelPlugins.push(createEs2015LinkerPlugin({
-                fileSystem: {
-                    exists: () => false,
-                    readFile: () => '',
-                    resolve: (...paths) => paths.join('/'),
-                    dirname: (path) => path.split('/').slice(0, -1).join('/'),
-                    relative: (_from, to) => to,
-                },
-                logger: new ConsoleLogger(LogLevel.info),
-                linkerJitMode: options.jit,
-                // This is a workaround until https://github.com/angular/angular/issues/42769 is fixed.
-                sourceMapping: false,
-            }));
+            const result = await (0, core_1.transformAsync)(code, {
+                filename,
+                inputSourceMap: (useInputSourcemap ? undefined : false),
+                sourceMaps: useInputSourcemap ? 'inline' : false,
+                compact: false,
+                configFile: false,
+                babelrc: false,
+                browserslistConfigFile: false,
+                plugins: [
+                    createEs2015LinkerPlugin({
+                        fileSystem: {
+                            exists: () => false,
+                            readFile: () => '',
+                            resolve: (...paths) => paths.join('/'),
+                            dirname: (path) => path.split('/').slice(0, -1).join('/'),
+                            relative: (_from, to) => to,
+                        },
+                        logger: new ConsoleLogger(LogLevel.info),
+                        linkerJitMode: options.jit,
+                        // This is a workaround until https://github.com/angular/angular/issues/42769 is fixed.
+                        sourceMapping: false,
+                    }),
+                ],
+            });
+            code = result?.code ?? code;
         }
         else {
             oxcLinkerModule ??= await Promise.resolve().then(() => __importStar(require('../angular/linker/oxc-linker.js')));
@@ -129,20 +149,6 @@ async function transformJavaScriptImpl(filename, data, options) {
                 code += `\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,${base64Map}`;
             }
         }
-    }
-    // If Babel is needed for code coverage or babel linker fallback, run it
-    if (babelPlugins.length > 0) {
-        const result = await (0, core_1.transformAsync)(code, {
-            filename,
-            inputSourceMap: (useInputSourcemap ? undefined : false),
-            sourceMaps: useInputSourcemap ? 'inline' : false,
-            compact: false,
-            configFile: false,
-            babelrc: false,
-            browserslistConfigFile: false,
-            plugins: babelPlugins,
-        });
-        code = result?.code ?? code;
     }
     // Run advanced optimizations using our fast oxc-transform
     if (options.advancedOptimizations) {

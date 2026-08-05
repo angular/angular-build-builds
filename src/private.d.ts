@@ -19,7 +19,6 @@ export type { ApplicationBuilderInternalOptions } from './builders/application/o
 export { type Result, type ResultFile, ResultKind } from './builders/application/results';
 export { serveWithVite } from './builders/dev-server/vite';
 export { normalizeOptions as normalizeDevServerOptions, type NormalizedDevServerOptions, } from './builders/dev-server/options';
-export * from './tools/babel/plugins';
 export type { ExternalResultMetadata } from './tools/esbuild/bundler-execution-result';
 export { emitFilesToDisk } from './tools/esbuild/utils';
 export { transformSupportedBrowsersToTargets } from './tools/esbuild/utils';

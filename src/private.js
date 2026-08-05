@@ -42,8 +42,6 @@ var vite_1 = require("./builders/dev-server/vite");
 Object.defineProperty(exports, "serveWithVite", { enumerable: true, get: function () { return vite_1.serveWithVite; } });
 var options_1 = require("./builders/dev-server/options");
 Object.defineProperty(exports, "normalizeDevServerOptions", { enumerable: true, get: function () { return options_1.normalizeOptions; } });
-// Tools
-__exportStar(require("./tools/babel/plugins"), exports);
 var utils_1 = require("./tools/esbuild/utils");
 Object.defineProperty(exports, "emitFilesToDisk", { enumerable: true, get: function () { return utils_1.emitFilesToDisk; } });
 var utils_2 = require("./tools/esbuild/utils");
