@@ -19,9 +19,11 @@ interface InlineFileRequest {
      */
     locale: string;
     /**
-     * The translation messages for the locale that should be used during the inlining process of the file.
+     * The serialized translation messages for the locale that should be used during the inlining
+     * process of the file. A Blob is used so that the messages are shared with the Worker by
+     * reference instead of being copied into it for every request.
      */
-    translation?: Record<string, unknown>;
+    translation?: Blob;
 }
 /**
  * The options passed to the inliner for each code request
@@ -40,9 +42,11 @@ interface InlineCodeRequest {
      */
     locale: string;
     /**
-     * The translation messages for the locale that should be used during the inlining process of the file.
+     * The serialized translation messages for the locale that should be used during the inlining
+     * process of the file. A Blob is used so that the messages are shared with the Worker by
+     * reference instead of being copied into it for every request.
      */
-    translation?: Record<string, unknown>;
+    translation?: Blob;
 }
 /**
  * Inlines the provided locale and translation into a JavaScript file that contains `$localize` usage.
