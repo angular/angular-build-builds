@@ -7,7 +7,6 @@
  */
 export interface OxcTransformOptions {
     sourcemap?: boolean;
-    jit?: boolean;
     sideEffects?: boolean;
     topLevelSafeMode?: boolean;
     pureAnnotate?: boolean;

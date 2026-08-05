@@ -152,14 +152,13 @@ async function transformJavaScriptImpl(filename, data, options) {
     }
     // Run advanced optimizations using our fast oxc-transform
     if (options.advancedOptimizations) {
-        const { transform } = await Promise.resolve().then(() => __importStar(require('../babel/plugins/oxc-transform.js')));
+        const { transform } = await Promise.resolve().then(() => __importStar(require('../oxc/oxc-transform.js')));
         const sideEffectFree = options.sideEffects === false;
         const safeAngularPackage = sideEffectFree && /[\\/]node_modules[\\/]@angular[\\/]/.test(filename);
         const topLevelSafeMode = !safeAngularPackage;
         const result = transform(filename, code, {
             sourcemap: useInputSourcemap,
             sideEffects: options.sideEffects,
-            jit: options.jit,
             topLevelSafeMode,
         });
         code = result.code;

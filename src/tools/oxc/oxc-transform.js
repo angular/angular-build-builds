@@ -14,7 +14,7 @@ exports.transform = transform;
 const remapping_1 = __importDefault(require("@ampproject/remapping"));
 const magic_string_1 = require("magic-string");
 const oxc_parser_1 = require("oxc-parser");
-const source_map_1 = require("../../../utils/source-map");
+const source_map_1 = require("../../utils/source-map");
 /**
  * A set of constructor names that are considered to be side-effect free.
  */
@@ -236,7 +236,6 @@ function transform(filename, code, options) {
     const { program } = (0, oxc_parser_1.parseSync)(filename, code, { range: true });
     const s = new magic_string_1.MagicString(code);
     const sideEffectFree = options.sideEffects === false;
-    const safeAngularPackage = sideEffectFree && /[\\/]node_modules[\\/]@angular[\\/]/.test(filename);
     const topLevelSafeMode = options.topLevelSafeMode ?? false;
     const wrapDecorators = sideEffectFree;
     const pureAnnotate = options.pureAnnotate ?? true;
