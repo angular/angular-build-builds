@@ -14,6 +14,7 @@ exports.I18nInliner = void 0;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_crypto_1 = require("node:crypto");
 const node_path_1 = require("node:path");
+const node_v8_1 = require("node:v8");
 const worker_pool_1 = require("../../utils/worker-pool");
 const bundler_files_1 = require("./bundler-files");
 const cache_1 = require("./cache");
@@ -22,6 +23,19 @@ const cache_1 = require("./cache");
  * This keyword is used to avoid processing files that would not otherwise need i18n processing.
  */
 const LOCALIZE_KEYWORD = '$localize';
+/**
+ * Serializes the translation messages for a locale for transfer to an inliner Worker.
+ *
+ * A Blob is used because cloning one shares its data by reference, whereas sending the messages
+ * themselves copies them into a Worker for every request that carries them. A locale can contain
+ * tens of thousands of messages, which makes that copy the dominant cost of inlining a locale.
+ *
+ * @param translation The translation messages for a locale, if the locale has any.
+ * @returns A Blob containing the serialized messages, or undefined if the locale has none.
+ */
+function serializeTranslation(translation) {
+    return translation && new Blob([(0, node_v8_1.serialize)(translation)]);
+}
 /**
  * A class that performs i18n translation inlining of JavaScript code.
  * A worker pool is used to distribute the transformation actions and allow
@@ -103,6 +117,8 @@ class I18nInliner {
     async inlineForLocale(locale, translation) {
         await this.initCache();
         const { shouldOptimize, missingTranslation } = this.options;
+        // Serialized once here and then shared by the request for every file of this locale
+        const translationBlob = serializeTranslation(translation);
         // Request inlining for each file that contains localize calls
         const requests = [];
         let fileCacheKeyBase;
@@ -113,7 +129,12 @@ class I18nInliner {
             }
             let cacheResultPromise = Promise.resolve(null);
             if (this.#cache) {
-                fileCacheKeyBase ??= Buffer.from(JSON.stringify({ locale, translation, missingTranslation, shouldOptimize }), 'utf-8');
+                // The options are digested here so that each file's key is derived from a fixed number
+                // of bytes. Hashing the options directly would re-hash the full set of messages, which
+                // can be several megabytes, once for every file.
+                fileCacheKeyBase ??= (0, node_crypto_1.createHash)('sha256')
+                    .update(JSON.stringify({ locale, translation, missingTranslation, shouldOptimize }))
+                    .digest();
                 // NOTE: If additional options are added, this may need to be updated.
                 // TODO: Consider xxhash or similar instead of SHA256
                 cacheKey = (0, node_crypto_1.createHash)('sha256')
@@ -128,7 +149,11 @@ class I18nInliner {
                 if (cachedResult) {
                     return cachedResult;
                 }
-                const result = await this.#workerPool.run({ filename, locale, translation });
+                const result = await this.#workerPool.run({
+                    filename,
+                    locale,
+                    translation: translationBlob,
+                });
                 if (this.#cache && cacheKey) {
                     try {
                         // Failure to set the value should not fail the transform
@@ -180,7 +205,12 @@ class I18nInliner {
                 warnings: [],
             };
         }
-        const { output, messages } = await this.#workerPool.run({ code: templateCode, filename: templateId, locale, translation }, { name: 'inlineCode' });
+        const { output, messages } = await this.#workerPool.run({
+            code: templateCode,
+            filename: templateId,
+            locale,
+            translation: serializeTranslation(translation),
+        }, { name: 'inlineCode' });
         const errors = [];
         const warnings = [];
         for (const message of messages) {

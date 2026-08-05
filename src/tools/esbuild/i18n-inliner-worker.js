@@ -48,11 +48,40 @@ exports.inlineCode = inlineCode;
 const remapping_1 = __importDefault(require("@ampproject/remapping"));
 const magic_string_1 = require("magic-string");
 const node_assert_1 = __importDefault(require("node:assert"));
+const node_v8_1 = require("node:v8");
 const node_worker_threads_1 = require("node:worker_threads");
 const oxc_parser_1 = require("oxc-parser");
 // Extract the application files and common options used for inline requests from the Worker context
-// TODO: Evaluate overall performance difference of passing translations here as well
 const { files, missingTranslation, shouldOptimize } = (node_worker_threads_1.workerData || {});
+/**
+ * The translation messages deserialized for the locale most recently requested of this Worker.
+ * Locales are inlined one at a time, so retaining only the active locale is enough to avoid
+ * deserializing the messages once per file while holding at most one set of messages in memory.
+ */
+let activeTranslation;
+/**
+ * Deserializes the translation messages for an inline request, reusing the result for any
+ * subsequent request that targets the same locale.
+ * @param request An inline request containing the locale and its serialized messages.
+ * @returns The translation messages, or undefined if the locale has no translations.
+ */
+function loadTranslation(request) {
+    const { locale, translation } = request;
+    if (!translation) {
+        return undefined;
+    }
+    if (activeTranslation?.locale !== locale) {
+        activeTranslation = {
+            locale,
+            // Deserializing within the stored promise ensures that concurrent requests for a locale
+            // share the one deserialization instead of each performing their own.
+            messages: translation
+                .arrayBuffer()
+                .then((buffer) => (0, node_v8_1.deserialize)(new Uint8Array(buffer))),
+        };
+    }
+    return activeTranslation.messages;
+}
 /**
  * Inlines the provided locale and translation into a JavaScript file that contains `$localize` usage.
  * This function is the main entry for the Worker's action that is called by the worker pool.
@@ -65,7 +94,7 @@ async function inlineFile(request) {
     (0, node_assert_1.default)(data !== undefined, `Invalid inline request for file '${request.filename}'.`);
     const code = await data.text();
     const map = await files.get(request.filename + '.map')?.text();
-    const result = await transformWithOxc(code, map && JSON.parse(map), request);
+    const result = await transformWithOxc(code, map && JSON.parse(map), request, await loadTranslation(request));
     return {
         file: request.filename,
         code: result.code,
@@ -81,7 +110,7 @@ async function inlineFile(request) {
  * @returns An object containing the inlined code.
  */
 async function inlineCode(request) {
-    const result = await transformWithOxc(request.code, undefined, request);
+    const result = await transformWithOxc(request.code, undefined, request, await loadTranslation(request));
     return {
         output: result.code,
         messages: result.diagnostics.messages,
@@ -109,9 +138,10 @@ async function loadLocalizeTools() {
  * @param code A string containing the JavaScript code to transform.
  * @param map A sourcemap object for the provided JavaScript code.
  * @param options The inline request options to use.
+ * @param translation The translation messages to inline, or undefined for an untranslated locale.
  * @returns An object containing the code, map, and diagnostics from the transformation.
  */
-async function transformWithOxc(code, map, options) {
+async function transformWithOxc(code, map, options, translation) {
     const { program } = (0, oxc_parser_1.parseSync)(options.filename, code, {
         sourceType: 'unambiguous',
     });
@@ -132,7 +162,7 @@ async function transformWithOxc(code, map, options) {
                 const cooked = node.quasi.quasis.map((q) => q.value.cooked);
                 const raw = node.quasi.quasis.map((q) => q.value.raw);
                 const messageParts = Object.assign(cooked, { raw });
-                const [translatedParts, translatedSubstitutions] = translate(diagnostics, options.translation || {}, messageParts, node.quasi.expressions.map((_, index) => index), options.translation === undefined ? 'ignore' : missingTranslation);
+                const [translatedParts, translatedSubstitutions] = translate(diagnostics, translation || {}, messageParts, node.quasi.expressions.map((_, index) => index), translation === undefined ? 'ignore' : missingTranslation);
                 // Reconstruct the new template/string literal replacement
                 let replacement;
                 if (translatedSubstitutions.length === 0) {
@@ -164,12 +194,15 @@ async function transformWithOxc(code, map, options) {
     const outputCode = magicString.toString();
     let outputMap;
     if (map && magicString.hasChanged()) {
-        const rawMap = magicString.generateMap({
+        // A decoded map is generated here rather than an encoded one because remapping decodes its
+        // inputs. Encoding the mappings only for remapping to immediately decode them again doubles
+        // the peak memory of the largest structure involved in inlining a file.
+        const rawMap = magicString.generateDecodedMap({
             source: options.filename,
             includeContent: true,
             hires: 'boundary',
         });
-        outputMap = (0, remapping_1.default)([rawMap, map], () => null);
+        outputMap = (0, remapping_1.default)([{ ...rawMap, version: 3 }, map], () => null);
     }
     return {
         code: outputCode,
