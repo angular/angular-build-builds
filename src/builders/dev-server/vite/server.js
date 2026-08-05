@@ -102,13 +102,14 @@ async function createServerConfig(serverOptions, assets, ssrMode, preTransformRe
     }
     return server;
 }
-function createSsrConfig(externalMetadata, serverOptions, prebundleTransformer, prebundleLoaderExtensions, thirdPartySourcemaps, define) {
+function createSsrConfig(externalMetadata, serverOptions, prebundleTransformer, prebundleLoaderExtensions, thirdPartySourcemaps, define, target) {
     return {
         // Note: `true` and `/.*/` have different sematics. When true, the `external` option is ignored.
         noExternal: /.*/,
         // Exclude any Node.js built in module and provided dependencies (currently build defined externals)
         external: externalMetadata.explicitServer,
         optimizeDeps: (0, utils_1.getDepOptimizationConfig)({
+            target,
             // Only enable with caching since it causes prebundle dependencies to be cached
             disabled: serverOptions.prebundle === false,
             // Exclude any explicitly defined dependencies (currently build defined externals and node.js built-ins)
@@ -174,7 +175,7 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
         },
         ssr: ssrMode === plugins_1.ServerSsrMode.NoSsr
             ? undefined
-            : createSsrConfig(externalMetadata, serverOptions, prebundleTransformer, prebundleLoaderExtensions, thirdPartySourcemaps, define),
+            : createSsrConfig(externalMetadata, serverOptions, prebundleTransformer, prebundleLoaderExtensions, thirdPartySourcemaps, define, target),
         plugins: [
             (0, plugins_1.createAngularSetupMiddlewaresPlugin)({
                 outputFiles,
@@ -199,6 +200,7 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
         ],
         // Browser only optimizeDeps. (This does not run for SSR dependencies).
         optimizeDeps: (0, utils_1.getDepOptimizationConfig)({
+            target,
             // Only enable with caching since it causes prebundle dependencies to be cached
             disabled: serverOptions.prebundle === false,
             // Exclude any explicitly defined dependencies (currently build defined externals)

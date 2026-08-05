@@ -21,7 +21,8 @@ export type AngularOutputAssets = Map<string, {
 export declare function pathnameWithoutBasePath(url: string, basePath: string): string;
 export declare function lookupMimeTypeFromRequest(url: string): string | undefined;
 export type RolldownLoaderOption = Exclude<DepOptimizationConfig['rolldownOptions'], undefined>['moduleTypes'];
-export declare function getDepOptimizationConfig({ disabled, exclude, include, prebundleTransformer, loader, thirdPartySourcemaps, define, }: {
+export declare function getDepOptimizationConfig({ target, disabled, exclude, include, prebundleTransformer, loader, thirdPartySourcemaps, define, }: {
+    target: string[];
     disabled: boolean;
     exclude: string[];
     include: string[];
