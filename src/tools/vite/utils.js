@@ -30,7 +30,7 @@ function lookupMimeTypeFromRequest(url) {
     }
     return extension && (0, mrmime_1.lookup)(extension);
 }
-function getDepOptimizationConfig({ disabled, exclude, include, prebundleTransformer, loader, thirdPartySourcemaps, define = {}, }) {
+function getDepOptimizationConfig({ target, disabled, exclude, include, prebundleTransformer, loader, thirdPartySourcemaps, define = {}, }) {
     const config = {
         // Exclude any explicitly defined dependencies (currently build defined externals)
         exclude,
@@ -40,6 +40,7 @@ function getDepOptimizationConfig({ disabled, exclude, include, prebundleTransfo
         noDiscovery: disabled,
         rolldownOptions: {
             transform: {
+                target,
                 define,
             },
             moduleTypes: loader,
