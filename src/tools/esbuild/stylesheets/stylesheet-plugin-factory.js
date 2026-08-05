@@ -316,6 +316,7 @@ async function compileString(data, filename, postcssProcessor, options) {
                         },
                     },
                 ],
+                watchFiles: error.file && error.file !== filename ? [filename, error.file] : [filename],
             };
         }
         else {
