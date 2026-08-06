@@ -45,7 +45,7 @@ export declare class JavaScriptTransformer {
      * @param sideEffects If false, and `advancedOptimizations` is enabled tslib decorators are wrapped.
      * @returns A promise that resolves to a UTF-8 encoded Uint8Array containing the result.
      */
-    transformData(filename: string, data: string, skipLinker: boolean, sideEffects?: boolean, instrumentForCoverage?: boolean): Promise<Uint8Array>;
+    transformData(filename: string, data: string | Uint8Array, skipLinker: boolean, sideEffects?: boolean, instrumentForCoverage?: boolean): Promise<Uint8Array>;
     /**
      * Stops all active transformation tasks and shuts down all workers.
      * @returns A void promise that resolves when closing is complete.

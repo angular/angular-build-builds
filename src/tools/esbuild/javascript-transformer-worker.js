@@ -93,6 +93,9 @@ async function transformJavaScript(request) {
     const textData = typeof data === 'string' ? data : textDecoder.decode(data);
     const transformedData = await transformJavaScriptImpl(filename, textData, options);
     // Transfer the data via `move` instead of cloning
+    if (transformedData === textData && typeof data !== 'string') {
+        return piscina_1.default.move(data);
+    }
     return piscina_1.default.move(textEncoder.encode(transformedData));
 }
 /**
