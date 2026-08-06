@@ -360,9 +360,10 @@ function transform(filename, code, options) {
             if (!allPure || !hasElements) {
                 continue;
             }
-            // 1. Remove only the trailing characters/semicolon of the expression statement
+            // 1. Remove leading/trailing characters/parentheses of the expression statement
+            s.remove(nextStatement.start, nextExpr.start);
             s.remove(nextExpr.end, nextStatement.end);
-            markEdited(nextExpr.end, nextStatement.end);
+            markEdited(nextStatement.start, nextStatement.end);
             // 2. Add return statement inside IIFE body
             s.appendRight(callee.body.end - 1, `; return ${paramName};`);
             // 3. Remove `Name = ` assignment in arguments if it's a simple identifier
@@ -377,7 +378,6 @@ function transform(filename, code, options) {
             // 4. Move IIFE to the var initializer
             s.move(nextExpr.start, nextExpr.end, decl.id.end);
             s.appendLeft(decl.id.end, ' = /*#__PURE__*/ ');
-            markEdited(nextExpr.start, nextExpr.end);
         }
     }
     /**
