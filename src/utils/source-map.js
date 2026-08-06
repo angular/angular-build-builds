@@ -22,33 +22,35 @@ const node_url_1 = require("node:url");
  * @returns The code with top-level sourcemap comments removed.
  */
 function removeSourceMappingURL(code) {
+    if (!code.includes('//# sourceMappingURL=')) {
+        return code;
+    }
     const result = [];
+    let lastCopiedIndex = 0;
     let i = 0;
     const len = code.length;
     // Stack to track template literal state and curly brace depth for nested interpolations.
     const stack = [];
     let currentState = 'normal';
-    let isStrippingComment = false;
     while (i < len) {
         const char = code[i];
         const nextChar = code[i + 1];
         if (currentState === 'normal') {
             if (char === '/' && nextChar === '*') {
                 currentState = 'comment_block';
-                result.push('/*');
                 i += 2;
                 continue;
             }
             if (char === '/' && nextChar === '/') {
                 // Detect if the comment is escaped (e.g. inside a regex literal like `/\/\/#/`).
                 let isEscaped = false;
-                let prevIdx = result.length - 1;
-                while (prevIdx >= 0 && /\s/.test(result[prevIdx])) {
+                let prevIdx = i - 1;
+                while (prevIdx >= 0 && /\s/.test(code[prevIdx])) {
                     prevIdx--;
                 }
-                if (prevIdx >= 0 && result[prevIdx] === '\\') {
+                if (prevIdx >= 0 && code[prevIdx] === '\\') {
                     let bsCount = 0;
-                    while (prevIdx >= 0 && result[prevIdx] === '\\') {
+                    while (prevIdx >= 0 && code[prevIdx] === '\\') {
                         bsCount++;
                         prevIdx--;
                     }
@@ -57,35 +59,36 @@ function removeSourceMappingURL(code) {
                     }
                 }
                 if (!isEscaped && code.startsWith('//# sourceMappingURL=', i)) {
-                    currentState = 'comment_line';
-                    isStrippingComment = true;
-                    i += 21; // Skip the '//# sourceMappingURL=' prefix
+                    if (i > lastCopiedIndex) {
+                        result.push(code.slice(lastCopiedIndex, i));
+                    }
+                    // Skip the rest of the comment line up to the newline
+                    i += 21;
+                    while (i < len && code[i] !== '\n' && code[i] !== '\r') {
+                        i++;
+                    }
+                    lastCopiedIndex = i;
                     continue;
                 }
                 else {
                     currentState = 'comment_line';
-                    isStrippingComment = false;
-                    result.push('//');
                     i += 2;
                     continue;
                 }
             }
             if (char === '"') {
                 currentState = 'string_double';
-                result.push('"');
                 i++;
                 continue;
             }
             if (char === "'") {
                 currentState = 'string_single';
-                result.push("'");
                 i++;
                 continue;
             }
             if (char === '`') {
                 currentState = 'template';
                 stack.push({ type: 'template', braceDepth: 0 });
-                result.push('`');
                 i++;
                 continue;
             }
@@ -94,7 +97,6 @@ function removeSourceMappingURL(code) {
                 if (top) {
                     top.braceDepth++;
                 }
-                result.push('{');
                 i++;
                 continue;
             }
@@ -106,45 +108,37 @@ function removeSourceMappingURL(code) {
                         // Exiting a template literal interpolation ${ ... }
                         stack.pop();
                         currentState = 'template';
-                        result.push('}');
                         i++;
                         continue;
                     }
                 }
-                result.push('}');
                 i++;
                 continue;
             }
-            result.push(char);
             i++;
         }
         else if (currentState === 'string_double') {
             if (char === '\\') {
-                result.push(char, nextChar || '');
                 i += 2;
                 continue;
             }
             if (char === '"') {
                 currentState = 'normal';
             }
-            result.push(char);
             i++;
         }
         else if (currentState === 'string_single') {
             if (char === '\\') {
-                result.push(char, nextChar || '');
                 i += 2;
                 continue;
             }
             if (char === "'") {
                 currentState = 'normal';
             }
-            result.push(char);
             i++;
         }
         else if (currentState === 'template') {
             if (char === '\\') {
-                result.push(char, nextChar || '');
                 i += 2;
                 continue;
             }
@@ -152,7 +146,6 @@ function removeSourceMappingURL(code) {
                 // Entering template literal interpolation context
                 currentState = 'normal';
                 stack.push({ type: 'template', braceDepth: 0 });
-                result.push('${');
                 i += 2;
                 continue;
             }
@@ -160,32 +153,28 @@ function removeSourceMappingURL(code) {
                 stack.pop();
                 currentState = 'normal';
             }
-            result.push(char);
             i++;
         }
         else if (currentState === 'comment_block') {
             if (char === '*' && nextChar === '/') {
                 currentState = 'normal';
-                result.push('*/');
                 i += 2;
                 continue;
             }
-            result.push(char);
             i++;
         }
         else if (currentState === 'comment_line') {
             if (char === '\n' || char === '\r') {
                 currentState = 'normal';
-                isStrippingComment = false;
-                result.push(char);
-                i++;
-                continue;
-            }
-            if (!isStrippingComment) {
-                result.push(char);
             }
             i++;
         }
+    }
+    if (lastCopiedIndex === 0) {
+        return code;
+    }
+    if (lastCopiedIndex < len) {
+        result.push(code.slice(lastCopiedIndex));
     }
     return result.join('');
 }

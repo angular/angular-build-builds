@@ -5,7 +5,7 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-import { RawSourceMap } from '@ampproject/remapping';
+import type { DecodedSourceMap } from '@ampproject/remapping';
 import type { CanonicalizeContext, Importer, ImporterResult } from 'sass';
 /**
  * A preprocessed cache entry for the files and directories within a previously searched
@@ -34,7 +34,7 @@ declare abstract class UrlRebasingImporter implements Importer<'sync'> {
      * @param rebaseSourceMaps When provided, rebased files will have an intermediate sourcemap added to the Map
      * which can be used to generate a final sourcemap that contains original sources.
      */
-    constructor(entryDirectory: string, rebaseSourceMaps?: Map<string, RawSourceMap> | undefined);
+    constructor(entryDirectory: string, rebaseSourceMaps?: Map<string, DecodedSourceMap> | undefined);
     abstract canonicalize(url: string, options: {
         fromImport: boolean;
     }): URL | null;
@@ -47,7 +47,7 @@ declare abstract class UrlRebasingImporter implements Importer<'sync'> {
  */
 export declare class RelativeUrlRebasingImporter extends UrlRebasingImporter {
     private directoryCache;
-    constructor(entryDirectory: string, directoryCache?: Map<string, DirectoryEntry>, rebaseSourceMaps?: Map<string, RawSourceMap>);
+    constructor(entryDirectory: string, directoryCache?: Map<string, DirectoryEntry>, rebaseSourceMaps?: Map<string, DecodedSourceMap>);
     canonicalize(url: string, options: {
         fromImport: boolean;
     }): URL | null;
@@ -76,7 +76,7 @@ export declare class RelativeUrlRebasingImporter extends UrlRebasingImporter {
  */
 export declare class ModuleUrlRebasingImporter extends RelativeUrlRebasingImporter {
     private finder;
-    constructor(entryDirectory: string, directoryCache: Map<string, DirectoryEntry>, rebaseSourceMaps: Map<string, RawSourceMap> | undefined, finder: (specifier: string, options: CanonicalizeContext) => URL | null);
+    constructor(entryDirectory: string, directoryCache: Map<string, DirectoryEntry>, rebaseSourceMaps: Map<string, DecodedSourceMap> | undefined, finder: (specifier: string, options: CanonicalizeContext) => URL | null);
     canonicalize(url: string, options: CanonicalizeContext): URL | null;
 }
 /**
@@ -86,7 +86,7 @@ export declare class ModuleUrlRebasingImporter extends RelativeUrlRebasingImport
  */
 export declare class LoadPathsUrlRebasingImporter extends RelativeUrlRebasingImporter {
     private loadPaths;
-    constructor(entryDirectory: string, directoryCache: Map<string, DirectoryEntry>, rebaseSourceMaps: Map<string, RawSourceMap> | undefined, loadPaths: Iterable<string>);
+    constructor(entryDirectory: string, directoryCache: Map<string, DirectoryEntry>, rebaseSourceMaps: Map<string, DecodedSourceMap> | undefined, loadPaths: Iterable<string>);
     canonicalize(url: string, options: {
         fromImport: boolean;
     }): URL | null;

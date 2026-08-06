@@ -128,13 +128,13 @@ function linkWithOxc(filename, code, options = {}) {
     }
     let map;
     if (options.sourcemap) {
-        const rawMap = s.generateMap({ hires: true, source: filename });
         const inputMap = (0, source_map_1.loadInputSourceMap)(filename, code);
         if (inputMap) {
-            map = (0, remapping_1.default)([rawMap, inputMap], () => null).toString();
+            const rawMap = s.generateDecodedMap({ hires: true, source: filename });
+            map = (0, remapping_1.default)([{ ...rawMap, version: 3 }, inputMap], () => null).toString();
         }
         else {
-            map = rawMap.toString();
+            map = s.generateMap({ hires: true, source: filename }).toString();
         }
     }
     return {
