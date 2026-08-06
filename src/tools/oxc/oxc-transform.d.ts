@@ -5,6 +5,7 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
+import type { DecodedSourceMap } from '@ampproject/remapping';
 export interface OxcTransformOptions {
     sourcemap?: boolean;
     sideEffects?: boolean;
@@ -23,5 +24,5 @@ export interface OxcTransformOptions {
  */
 export declare function transform(filename: string, code: string, options: OxcTransformOptions): {
     code: string;
-    map: string | undefined;
+    map: DecodedSourceMap | undefined;
 };

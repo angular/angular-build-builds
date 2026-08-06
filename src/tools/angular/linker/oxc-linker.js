@@ -11,12 +11,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.linkWithOxc = linkWithOxc;
-const remapping_1 = __importDefault(require("@ampproject/remapping"));
 const compiler_cli_1 = require("@angular/compiler-cli");
 const linker_1 = require("@angular/compiler-cli/linker");
 const magic_string_1 = __importDefault(require("magic-string"));
 const oxc_parser_1 = require("oxc-parser");
-const source_map_1 = require("../../../utils/source-map");
 const oxc_ast_host_1 = require("./oxc-ast-host");
 const string_ast_factory_1 = require("./string-ast-factory");
 /**
@@ -128,14 +126,8 @@ function linkWithOxc(filename, code, options = {}) {
     }
     let map;
     if (options.sourcemap) {
-        const inputMap = (0, source_map_1.loadInputSourceMap)(filename, code);
-        if (inputMap) {
-            const rawMap = s.generateDecodedMap({ hires: true, source: filename });
-            map = (0, remapping_1.default)([{ ...rawMap, version: 3 }, inputMap], () => null).toString();
-        }
-        else {
-            map = s.generateMap({ hires: true, source: filename }).toString();
-        }
+        const rawMap = s.generateDecodedMap({ hires: true, source: filename });
+        map = { ...rawMap, version: 3 };
     }
     return {
         code: s.toString(),

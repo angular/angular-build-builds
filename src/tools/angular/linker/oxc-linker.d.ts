@@ -5,6 +5,7 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
+import type { DecodedSourceMap } from '@ampproject/remapping';
 export interface OxcLinkerOptions {
     sourcemap?: boolean;
     jit?: boolean;
@@ -21,5 +22,5 @@ export interface OxcLinkerOptions {
  */
 export declare function linkWithOxc(filename: string, code: string, options?: OxcLinkerOptions): {
     code: string;
-    map: string | undefined;
+    map: DecodedSourceMap | undefined;
 };

@@ -44,6 +44,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = transformJavaScript;
+const remapping_1 = __importDefault(require("@ampproject/remapping"));
 const core_1 = require("@babel/core");
 const node_module_1 = require("node:module");
 const piscina_1 = __importDefault(require("piscina"));
@@ -75,12 +76,13 @@ async function instrumentCoverage(filename, data, useInputSourcemap) {
         });
         const inputSourceMap = useInputSourcemap ? (0, source_map_1.loadInputSourceMap)(filename, data) : undefined;
         const instrumentedCode = instrumenter.instrumentSync(data, filename, inputSourceMap);
-        const lastMap = instrumenter.lastSourceMap();
-        if (useInputSourcemap && lastMap) {
-            const inlineMap = Buffer.from(JSON.stringify(lastMap)).toString('base64');
-            return instrumentedCode + `\n//# sourceMappingURL=data:application/json;base64,${inlineMap}`;
-        }
-        return (0, source_map_1.removeSourceMappingURL)(instrumentedCode);
+        const lastMap = useInputSourcemap
+            ? instrumenter.lastSourceMap()
+            : undefined;
+        return {
+            code: instrumentedCode,
+            map: lastMap ?? undefined,
+        };
     }
     catch (error) {
         throw new Error(`The 'istanbul-lib-instrument' package is required for code coverage but was not found. Please install the package.`, { cause: error });
@@ -97,13 +99,21 @@ async function transformJavaScript(request) {
  * Cached instance of the OXC linker module.
  */
 let oxcLinkerModule;
+/**
+ * Cached instance of the OXC transform module.
+ */
+let oxcTransformModule;
 async function transformJavaScriptImpl(filename, data, options) {
     const shouldLink = !options.skipLinker && requiresLinking(filename, data);
     const useInputSourcemap = options.sourcemap &&
         (!!options.thirdPartySourcemaps || !/[\\/]node_modules[\\/]/.test(filename));
     let code = data;
+    const maps = [];
+    let coverageMap;
     if (options.instrumentForCoverage) {
-        code = await instrumentCoverage(filename, code, useInputSourcemap);
+        const result = await instrumentCoverage(filename, code, useInputSourcemap);
+        code = result.code;
+        coverageMap = result.map;
     }
     if (shouldLink) {
         if (environment_options_js_1.useBabelLinker) {
@@ -111,8 +121,8 @@ async function transformJavaScriptImpl(filename, data, options) {
             const { ConsoleLogger, LogLevel } = await Promise.resolve().then(() => __importStar(require('@angular/compiler-cli')));
             const result = await (0, core_1.transformAsync)(code, {
                 filename,
-                inputSourceMap: (useInputSourcemap ? undefined : false),
-                sourceMaps: useInputSourcemap ? 'inline' : false,
+                inputSourceMap: false,
+                sourceMaps: !!useInputSourcemap,
                 compact: false,
                 configFile: false,
                 babelrc: false,
@@ -134,6 +144,9 @@ async function transformJavaScriptImpl(filename, data, options) {
                 ],
             });
             code = result?.code ?? code;
+            if (result?.map) {
+                maps.push(result.map);
+            }
         }
         else {
             oxcLinkerModule ??= await Promise.resolve().then(() => __importStar(require('../angular/linker/oxc-linker.js')));
@@ -143,34 +156,45 @@ async function transformJavaScriptImpl(filename, data, options) {
                 skipCheck: true,
             });
             code = result.code;
-            if (useInputSourcemap && result.map) {
-                code = (0, source_map_1.removeSourceMappingURL)(code);
-                const base64Map = Buffer.from(result.map).toString('base64');
-                code += `\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,${base64Map}`;
+            if (result.map) {
+                maps.push(result.map);
             }
         }
     }
     // Run advanced optimizations using our fast oxc-transform
     if (options.advancedOptimizations) {
-        const { transform } = await Promise.resolve().then(() => __importStar(require('../oxc/oxc-transform.js')));
+        oxcTransformModule ??= await Promise.resolve().then(() => __importStar(require('../oxc/oxc-transform.js')));
         const sideEffectFree = options.sideEffects === false;
         const safeAngularPackage = sideEffectFree && /[\\/]node_modules[\\/]@angular[\\/]/.test(filename);
         const topLevelSafeMode = !safeAngularPackage;
-        const result = transform(filename, code, {
+        const result = oxcTransformModule.transform(filename, code, {
             sourcemap: useInputSourcemap,
             sideEffects: options.sideEffects,
             topLevelSafeMode,
         });
         code = result.code;
-        if (useInputSourcemap && result.map) {
-            // Strip old source map comment if Babel added one
-            code = (0, source_map_1.removeSourceMappingURL)(code);
-            const base64Map = Buffer.from(result.map).toString('base64');
-            code += `\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,${base64Map}`;
+        if (result.map) {
+            maps.push(result.map);
         }
     }
+    if (useInputSourcemap) {
+        const baseMap = coverageMap ?? (0, source_map_1.loadInputSourceMap)(filename, data);
+        if (maps.length > 0 || coverageMap) {
+            code = (0, source_map_1.removeSourceMappingURL)(code);
+            const remappingChain = maps.reverse();
+            if (baseMap) {
+                remappingChain.push(baseMap);
+            }
+            if (remappingChain.length > 0) {
+                const finalMap = (0, remapping_1.default)(remappingChain, () => null).toString();
+                const base64Map = Buffer.from(finalMap).toString('base64');
+                code += `\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,${base64Map}`;
+            }
+        }
+        return code;
+    }
     // Strip sourcemaps if they should not be used
-    return useInputSourcemap ? code : (0, source_map_1.removeSourceMappingURL)(code);
+    return (0, source_map_1.removeSourceMappingURL)(code);
 }
 function requiresLinking(path, source) {
     // @angular/core and @angular/compiler will cause false positives

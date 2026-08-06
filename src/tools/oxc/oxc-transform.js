@@ -6,15 +6,10 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.transform = transform;
-const remapping_1 = __importDefault(require("@ampproject/remapping"));
 const magic_string_1 = require("magic-string");
 const oxc_parser_1 = require("oxc-parser");
-const source_map_1 = require("../../utils/source-map");
 /**
  * A set of constructor names that are considered to be side-effect free.
  */
@@ -641,14 +636,8 @@ function transform(filename, code, options) {
     visitor.visit(program);
     let map;
     if (options.sourcemap) {
-        const inputMap = (0, source_map_1.loadInputSourceMap)(filename, code);
-        if (inputMap) {
-            const rawMap = s.generateDecodedMap({ hires: true, source: filename });
-            map = (0, remapping_1.default)([{ ...rawMap, version: 3 }, inputMap], () => null).toString();
-        }
-        else {
-            map = s.generateMap({ hires: true, source: filename }).toString();
-        }
+        const rawMap = s.generateDecodedMap({ hires: true, source: filename });
+        map = { ...rawMap, version: 3 };
     }
     return {
         code: s.toString(),
