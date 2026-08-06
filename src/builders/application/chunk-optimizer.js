@@ -336,6 +336,7 @@ async function optimizeChunks(original, sourcemap) {
                 continue;
             }
             const record = createInitialFileRecord(entryRecord.depth + 1);
+            original.initialFiles.set(importPath, record);
             entriesToAnalyze.push([importPath, record]);
         }
     }
