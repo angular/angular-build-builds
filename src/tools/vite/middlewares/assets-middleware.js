@@ -10,9 +10,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createAngularAssetsMiddleware = createAngularAssetsMiddleware;
 exports.createBuildAssetsMiddleware = createBuildAssetsMiddleware;
 const mrmime_1 = require("mrmime");
-const node_crypto_1 = require("node:crypto");
 const node_fs_1 = require("node:fs");
 const node_path_1 = require("node:path");
+const hash_1 = require("../../../utils/hash");
 const utils_1 = require("../utils");
 const CSS_PREPROCESSOR_REGEXP = /\.(?:s[ac]ss|less|css)$/;
 const JS_TS_REGEXP = /\.[cm]?[tj]sx?$/;
@@ -32,7 +32,7 @@ function createAngularAssetsMiddleware(server, assets, outputFiles, componentSty
             // This is a workaround to serve extensionless, CSS, JS and TS files without Vite transformations.
             if (!extension || JS_TS_REGEXP.test(extension) || CSS_PREPROCESSOR_REGEXP.test(extension)) {
                 const contents = (0, node_fs_1.readFileSync)(asset.source);
-                const etag = `W/${(0, node_crypto_1.createHash)('sha256').update(contents).digest('hex')}`;
+                const etag = `W/${(0, hash_1.calculateHash)(contents)}`;
                 if (checkAndHandleEtag(req, res, etag)) {
                     return;
                 }
@@ -185,7 +185,7 @@ function createBuildAssetsMiddleware(basePath, buildResultFiles, readHandler = n
             const outputFile = buildResultFiles.get(pathname.slice(1));
             if (outputFile) {
                 const contents = outputFile.origin === 'memory' ? outputFile.contents : readHandler(outputFile.inputPath);
-                const etag = `W/${(0, node_crypto_1.createHash)('sha256').update(contents).digest('hex')}`;
+                const etag = `W/${(0, hash_1.calculateHash)(contents)}`;
                 if (checkAndHandleEtag(req, res, etag)) {
                     return;
                 }

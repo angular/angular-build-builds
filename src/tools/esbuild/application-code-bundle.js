@@ -16,10 +16,10 @@ exports.createServerPolyfillBundleOptions = createServerPolyfillBundleOptions;
 exports.createServerMainCodeBundleOptions = createServerMainCodeBundleOptions;
 exports.createSsrEntryCodeBundleOptions = createSsrEntryCodeBundleOptions;
 const node_assert_1 = __importDefault(require("node:assert"));
-const node_crypto_1 = require("node:crypto");
 const node_path_1 = require("node:path");
 const schema_1 = require("../../builders/application/schema");
 const environment_options_1 = require("../../utils/environment-options");
+const hash_1 = require("../../utils/hash");
 const path_1 = require("../../utils/path");
 const manifest_1 = require("../../utils/server-rendering/manifest");
 const compiler_plugin_1 = require("./angular/compiler-plugin");
@@ -378,7 +378,7 @@ function getEsBuildCommonOptions(options) {
     if (i18nOptions.shouldInline) {
         // Update file hashes to include translation file content
         const i18nHash = Object.values(i18nOptions.locales).reduce((data, locale) => data + locale.files.map((file) => file.integrity || '').join('|'), '');
-        footer = { js: `/**i18n:${(0, node_crypto_1.createHash)('sha256').update(i18nHash).digest('hex')}*/` };
+        footer = { js: `/**i18n:${(0, hash_1.calculateHash)(i18nHash)}*/` };
     }
     // Core conditions that are always included
     const conditions = [

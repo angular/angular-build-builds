@@ -8,8 +8,8 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.JavaScriptTransformer = void 0;
-const node_crypto_1 = require("node:crypto");
 const promises_1 = require("node:fs/promises");
+const hash_1 = require("../../utils/hash");
 const utils_1 = require("../../utils/server-rendering/esm-in-memory-loader/utils");
 const source_map_1 = require("../../utils/source-map");
 const worker_pool_1 = require("../../utils/worker-pool");
@@ -107,11 +107,11 @@ class JavaScriptTransformer {
             if (this.cache) {
                 // Create a cache key from the file data and options that effect the output.
                 // NOTE: If additional options are added, this may need to be updated.
-                const hash = (0, node_crypto_1.createHash)('sha256');
-                hash.update(`${!!skipLinker}--${!!sideEffects}`);
-                hash.update(data);
-                hash.update(this.#fileCacheKeyBase);
-                cacheKey = hash.digest('hex');
+                const hasher = (0, hash_1.createContentHash)();
+                hasher.update(`${!!skipLinker}--${!!sideEffects}`);
+                hasher.update(data);
+                hasher.update(this.#fileCacheKeyBase);
+                cacheKey = hasher.digest();
                 try {
                     const cached = await this.cache.get(cacheKey);
                     if (cached !== undefined) {

@@ -9,26 +9,23 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PersistentLoadResultCache = void 0;
 exports.extractDiskFilePath = extractDiskFilePath;
-const node_crypto_1 = require("node:crypto");
 const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
 const node_url_1 = require("node:url");
+const hash_1 = require("../../utils/hash");
 const load_result_cache_1 = require("./load-result-cache");
-function hashContent(content) {
-    return (0, node_crypto_1.createHash)('sha256').update(content).digest('hex');
-}
 /**
  * Calculates a unique cache key by updating the hash incrementally.
  * This prevents implicit string coercion of large binary content buffers.
  */
 function calculateCacheKey(globalConfigHash, path, content) {
-    return (0, node_crypto_1.createHash)('sha256')
-        .update(globalConfigHash)
-        .update('\0')
-        .update(path)
-        .update('\0')
-        .update(content)
-        .digest('hex');
+    const hasher = (0, hash_1.createContentHash)();
+    hasher.update(globalConfigHash);
+    hasher.update('\0');
+    hasher.update(path);
+    hasher.update('\0');
+    hasher.update(content);
+    return hasher.digest();
 }
 /**
  * Normalizes a namespaced cache key into a valid disk file path if one exists.
@@ -107,7 +104,7 @@ async function validateAndHealCacheEntry(watchFilesMetadata, store, cacheKey, ca
             }
             // 3. Slow Path for dependencies: content hash fallback
             const currentContent = await (0, promises_1.readFile)(filePath);
-            const currentHash = hashContent(currentContent);
+            const currentHash = (0, hash_1.calculateHash)(currentContent);
             if (currentHash === expected.hash) {
                 // Heal cache entry with new metadata
                 watchFilesMetadata[filePath] = {
@@ -150,8 +147,9 @@ async function computeMetadataForWatchFiles(watchFiles, knownContents) {
                 knownContent !== undefined ? knownContent : (0, promises_1.readFile)(filePath),
                 (0, promises_1.stat)(filePath),
             ]);
+            const hash = (0, hash_1.calculateHash)(content);
             watchFilesMetadata[filePath] = {
-                hash: hashContent(content),
+                hash,
                 mtimeMs: stats.mtimeMs,
                 size: stats.size,
             };

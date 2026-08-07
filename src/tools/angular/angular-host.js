@@ -13,8 +13,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ensureSourceFileVersions = ensureSourceFileVersions;
 exports.createAngularCompilerHost = createAngularCompilerHost;
 const node_assert_1 = __importDefault(require("node:assert"));
-const node_crypto_1 = require("node:crypto");
 const node_path_1 = __importDefault(require("node:path"));
+const hash_1 = require("../../utils/hash");
 /**
  * Patches in-place the `getSourceFiles` function on an instance of a TypeScript
  * `Program` to ensure that all returned SourceFile instances have a `version`
@@ -28,7 +28,7 @@ function ensureSourceFileVersions(program) {
         const files = baseGetSourceFiles(...parameters);
         for (const file of files) {
             if (file.version === undefined) {
-                file.version = (0, node_crypto_1.createHash)('sha256').update(file.text).digest('hex');
+                file.version = (0, hash_1.calculateHash)(file.text);
             }
         }
         return files;
@@ -134,7 +134,7 @@ function createAngularCompilerHost(typescript, compilerOptions, hostOptions, pac
         // For external stylesheets, create a unique identifier and store the mapping
         let externalId = hostOptions.externalStylesheets.get(resolvedPath);
         if (externalId === undefined) {
-            externalId = (0, node_crypto_1.createHash)('sha256').update(resolvedPath).digest('hex');
+            externalId = (0, hash_1.calculateHash)(resolvedPath);
             hostOptions.externalStylesheets.set(resolvedPath, externalId);
         }
         return externalId + '.css';

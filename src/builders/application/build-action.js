@@ -50,6 +50,7 @@ const bundler_files_1 = require("../../tools/esbuild/bundler-files");
 const sass_language_1 = require("../../tools/esbuild/stylesheets/sass-language");
 const utils_1 = require("../../tools/esbuild/utils");
 const environment_options_1 = require("../../utils/environment-options");
+const hash_1 = require("../../utils/hash");
 const path_1 = require("../../utils/path");
 const results_1 = require("./results");
 // Watch workspace for package manager changes
@@ -67,6 +68,7 @@ const packageWatchFiles = [
 ];
 async function* runEsBuildBuildAction(action, options) {
     const { watch, poll, clearScreen, logger, cacheOptions, outputOptions, verbose, projectRoot, workspaceRoot, progress, preserveSymlinks, colors, jsonLogs, incrementalResults, } = options;
+    await (0, hash_1.initializeHash)();
     const withProgress = progress ? utils_1.withSpinner : utils_1.withNoProgress;
     // Initial build
     let result;

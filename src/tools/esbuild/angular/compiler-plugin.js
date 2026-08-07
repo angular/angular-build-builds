@@ -45,10 +45,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createCompilerPlugin = createCompilerPlugin;
 const node_assert_1 = __importDefault(require("node:assert"));
-const node_crypto_1 = require("node:crypto");
 const promises_1 = require("node:fs/promises");
 const path = __importStar(require("node:path"));
 const environment_options_1 = require("../../../utils/environment-options");
+const hash_1 = require("../../../utils/hash");
 const compilation_1 = require("../../angular/compilation");
 const cache_1 = require("../cache");
 const javascript_transformer_1 = require("../javascript-transformer");
@@ -122,6 +122,7 @@ function createCompilerPlugin(pluginOptions, compilationContextOrCompilation, st
             const referencedFileTracker = new file_reference_tracker_1.FileReferenceTracker();
             // eslint-disable-next-line max-lines-per-function
             build.onStart(async () => {
+                await (0, hash_1.initializeHash)();
                 angularCompilationContext.markAsInProgress();
                 const result = {
                     warnings: setupWarnings,
@@ -169,11 +170,7 @@ function createCompilerPlugin(pluginOptions, compilationContextOrCompilation, st
                             // invalid the output and force a full page reload for HMR cases. The containing file and order
                             // of the style within the containing file is used.
                             pluginOptions.externalRuntimeStyles
-                                ? (0, node_crypto_1.createHash)('sha256')
-                                    .update(containingFile)
-                                    .update((order ?? 0).toString())
-                                    .update(className ?? '')
-                                    .digest('hex')
+                                ? (0, hash_1.calculateHash)(`${containingFile}${order ?? 0}${className ?? ''}`)
                                 : undefined);
                             // Adjust result source for inline styles.
                             // There may be multiple inline styles with the same containing file and to ensure that the results

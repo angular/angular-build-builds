@@ -12,9 +12,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.I18nInliner = void 0;
 const node_assert_1 = __importDefault(require("node:assert"));
-const node_crypto_1 = require("node:crypto");
 const node_path_1 = require("node:path");
 const node_v8_1 = require("node:v8");
+const hash_1 = require("../../utils/hash");
 const worker_pool_1 = require("../../utils/worker-pool");
 const bundler_files_1 = require("./bundler-files");
 const cache_1 = require("./cache");
@@ -132,16 +132,13 @@ class I18nInliner {
                 // The options are digested here so that each file's key is derived from a fixed number
                 // of bytes. Hashing the options directly would re-hash the full set of messages, which
                 // can be several megabytes, once for every file.
-                fileCacheKeyBase ??= (0, node_crypto_1.createHash)('sha256')
-                    .update(JSON.stringify({ locale, translation, missingTranslation, shouldOptimize }))
-                    .digest();
+                fileCacheKeyBase ??= (0, hash_1.calculateHash)(JSON.stringify({ locale, translation, missingTranslation, shouldOptimize }));
                 // NOTE: If additional options are added, this may need to be updated.
-                // TODO: Consider xxhash or similar instead of SHA256
-                cacheKey = (0, node_crypto_1.createHash)('sha256')
-                    .update(file.hash)
-                    .update(filename)
-                    .update(fileCacheKeyBase)
-                    .digest('hex');
+                const hasher = (0, hash_1.createContentHash)();
+                hasher.update(file.hash);
+                hasher.update(filename);
+                hasher.update(fileCacheKeyBase);
+                cacheKey = hasher.digest();
                 // Failure to get the value should not fail the transform
                 cacheResultPromise = this.#cache.get(cacheKey).catch(() => null);
             }

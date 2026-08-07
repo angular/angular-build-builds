@@ -46,6 +46,7 @@ const node_path_1 = require("node:path");
 const plugins_1 = require("../../../tools/vite/plugins");
 const utils_1 = require("../../../tools/vite/utils");
 const utils_2 = require("../../../utils");
+const hash_1 = require("../../../utils/hash");
 async function createServerConfig(serverOptions, assets, ssrMode, preTransformRequests, cacheDir) {
     const proxy = await (0, utils_2.loadProxyConfiguration)(serverOptions.workspaceRoot, serverOptions.proxyConfig);
     // Files used for SSR warmup.
@@ -127,6 +128,7 @@ function createSsrConfig(externalMetadata, serverOptions, prebundleTransformer, 
     };
 }
 async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks, externalMetadata, ssrMode, prebundleTransformer, target, componentStyles, templateUpdates, prebundleLoaderExtensions, define, extensionMiddleware, indexHtmlTransformer, thirdPartySourcemaps = false) {
+    await (0, hash_1.initializeHash)();
     const { normalizePath } = (await Promise.resolve(`${'vite'}`).then(s => __importStar(require(s))));
     // Path will not exist on disk and only used to provide separate path for Vite requests
     const virtualProjectRoot = normalizePath((0, node_path_1.join)(serverOptions.workspaceRoot, `.angular/vite-root`, serverOptions.buildTarget.project));

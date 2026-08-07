@@ -12,8 +12,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ComponentStylesheetBundler = void 0;
 const node_assert_1 = __importDefault(require("node:assert"));
-const node_crypto_1 = require("node:crypto");
 const node_path_1 = __importDefault(require("node:path"));
+const hash_1 = require("../../../utils/hash");
 const bundler_context_1 = require("../bundler-context");
 const bundler_files_1 = require("../bundler-files");
 const cache_1 = require("../cache");
@@ -74,11 +74,10 @@ class ComponentStylesheetBundler {
     async bundleInline(data, filename, language = this.defaultInlineLanguage, externalId) {
         // Use a hash of the inline stylesheet content to ensure a consistent identifier. External stylesheets will resolve
         // to the actual stylesheet file path.
-        // TODO: Consider xxhash instead for hashing
-        const id = (0, node_crypto_1.createHash)('sha256')
-            .update(data)
-            .update(externalId ?? '')
-            .digest('hex');
+        const hasher = (0, hash_1.createContentHash)();
+        hasher.update(data);
+        hasher.update(externalId ?? '');
+        const id = hasher.digest();
         const entry = [language, id, filename].join(';');
         const bundlerContext = await this.#inlineContexts.getOrCreate(entry, () => {
             const namespace = 'angular:styles/component';

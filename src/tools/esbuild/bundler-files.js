@@ -10,7 +10,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.BuildOutputFileType = void 0;
 exports.createOutputFile = createOutputFile;
 exports.convertOutputFile = convertOutputFile;
-const node_crypto_1 = require("node:crypto");
+const hash_1 = require("../../utils/hash");
 var BuildOutputFileType;
 (function (BuildOutputFileType) {
     BuildOutputFileType[BuildOutputFileType["Browser"] = 0] = "Browser";
@@ -43,9 +43,7 @@ function createOutputFile(path, data, type) {
                 return this.contents.byteLength;
             },
             get hash() {
-                cachedHash ??= (0, node_crypto_1.createHash)('sha256')
-                    .update(cachedText ?? this.contents)
-                    .digest('hex');
+                cachedHash ??= (0, hash_1.calculateHash)(cachedText ?? this.contents);
                 return cachedHash;
             },
             clone() {
@@ -75,7 +73,7 @@ function createOutputFile(path, data, type) {
                 return cachedText;
             },
             get hash() {
-                cachedHash ??= (0, node_crypto_1.createHash)('sha256').update(this.contents).digest('hex');
+                cachedHash ??= (0, hash_1.calculateHash)(this.contents);
                 return cachedHash;
             },
             clone() {

@@ -8,7 +8,7 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.calculateGlobalStylesheetConfigHash = calculateGlobalStylesheetConfigHash;
-const node_crypto_1 = require("node:crypto");
+const hash_1 = require("../../../utils/hash");
 /**
  * Generates a global hash based on all build options that affect stylesheet compilation.
  *
@@ -36,8 +36,7 @@ const node_crypto_1 = require("node:crypto");
  * that alters generated stylesheet code or asset outputs, it MUST be added to this hash object.
  */
 function calculateGlobalStylesheetConfigHash(options, packageVersion = '') {
-    return (0, node_crypto_1.createHash)('sha256')
-        .update(JSON.stringify({
+    return (0, hash_1.calculateHash)(JSON.stringify({
         optimization: options.optimization,
         sourcemap: options.sourcemap,
         sourcesContent: options.sourcesContent,
@@ -58,11 +57,8 @@ function calculateGlobalStylesheetConfigHash(options, packageVersion = '') {
         postcssConfig: options.postcssConfiguration?.configPath
             ? options.postcssConfiguration.configPath
             : '',
-        tailwindConfig: options.tailwindConfiguration?.file
-            ? options.tailwindConfiguration.file
-            : '',
+        tailwindConfig: options.tailwindConfiguration?.file ? options.tailwindConfiguration.file : '',
         packageVersion,
-    }))
-        .digest('hex');
+    }));
 }
 //# sourceMappingURL=stylesheet-cache-key.js.map

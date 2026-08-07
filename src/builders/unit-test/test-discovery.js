@@ -13,11 +13,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.findTests = findTests;
 exports.getTestEntrypoints = getTestEntrypoints;
 exports.generateNameFromPath = generateNameFromPath;
-const node_crypto_1 = require("node:crypto");
 const node_fs_1 = require("node:fs");
 const node_os_1 = __importDefault(require("node:os"));
 const node_path_1 = require("node:path");
 const tinyglobby_1 = require("tinyglobby");
+const hash_1 = require("../../utils/hash");
 const path_1 = require("../../utils/path");
 /**
  * An array of file infix notations that identify a file as a test file.
@@ -40,6 +40,7 @@ const MAX_FILENAME_LENGTH = 128;
  * @returns A unique set of absolute paths to all test files.
  */
 async function findTests(include, exclude, workspaceRoot, projectSourceRoot) {
+    await (0, hash_1.initializeHash)();
     const resolvedTestFiles = new Set();
     const dynamicPatterns = [];
     const projectRootPrefix = (0, path_1.toPosixPath)((0, node_path_1.relative)(workspaceRoot, projectSourceRoot) + '/');
@@ -154,7 +155,7 @@ function truncateName(name, originalPath) {
     if (name.length <= MAX_FILENAME_LENGTH) {
         return name;
     }
-    const hash = (0, node_crypto_1.createHash)('sha256').update(originalPath).digest('hex').substring(0, 8);
+    const hash = (0, hash_1.calculateHash)(originalPath).substring(0, 8);
     const availableLength = MAX_FILENAME_LENGTH - hash.length - 2; // 2 for '-' separators
     const prefixLength = Math.floor(availableLength / 2);
     const suffixLength = availableLength - prefixLength;
