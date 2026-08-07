@@ -10,8 +10,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SERVER_GENERATED_EXTERNALS = exports.SERVER_APP_ENGINE_MANIFEST_FILENAME = exports.SERVER_APP_MANIFEST_FILENAME = void 0;
 exports.generateAngularServerAppEngineManifest = generateAngularServerAppEngineManifest;
 exports.generateAngularServerAppManifest = generateAngularServerAppManifest;
+const node_buffer_1 = require("node:buffer");
 const node_path_1 = require("node:path");
-const node_vm_1 = require("node:vm");
 const bundler_files_1 = require("../../tools/esbuild/bundler-files");
 exports.SERVER_APP_MANIFEST_FILENAME = 'angular-app-manifest.mjs';
 exports.SERVER_APP_ENGINE_MANIFEST_FILENAME = 'angular-app-engine-manifest.mjs';
@@ -131,9 +131,14 @@ function generateAngularServerAppManifest(additionalHtmlOutputFiles, outputFiles
             const jsChunkFilePath = `assets-chunks/${file.path.replace(/[./]/g, '_')}.mjs`;
             const escapedContent = escapeUnsafeChars(file.text);
             serverAssetsChunks.push((0, bundler_files_1.createOutputFile)(jsChunkFilePath, `export default \`${escapedContent}\`;`, bundler_files_1.BuildOutputFileType.ServerApplication));
-            // This is needed because JavaScript engines script parser convert `\r\n` to `\n` in template literals,
-            // which can result in an incorrect byte length.
-            const size = (0, node_vm_1.runInThisContext)(`new TextEncoder().encode(\`${escapedContent}\`).byteLength`);
+            // JavaScript engine script parsers normalize `\r\n` (2 bytes in UTF-8) to `\n` (1 byte in UTF-8) in template literals.
+            // Subtracting the count of `\r\n` occurrences avoids allocating any temporary strings or match arrays for large assets.
+            let size = node_buffer_1.Buffer.byteLength(file.text);
+            let pos = file.text.indexOf('\r\n');
+            while (pos !== -1) {
+                size--;
+                pos = file.text.indexOf('\r\n', pos + 2);
+            }
             serverAssets[file.path] =
                 `{size: ${size}, hash: '${file.hash}', text: () => import('./${jsChunkFilePath}').then(m => m.default)}`;
         }
