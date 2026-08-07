@@ -22,7 +22,7 @@ export { normalizeOptions as normalizeDevServerOptions, type NormalizedDevServer
 export * from './tools/babel/plugins';
 export type { ExternalResultMetadata } from './tools/esbuild/bundler-execution-result';
 export { emitFilesToDisk } from './tools/esbuild/utils';
-export { transformSupportedBrowsersToTargets } from './tools/esbuild/utils';
+export { transformSupportedBrowsersToTargets } from './tools/esbuild/target';
 export { SassWorkerImplementation } from './tools/sass/sass-service';
 export { SourceFileCache } from './tools/esbuild/angular/source-file-cache';
 export { Cache } from './tools/esbuild/cache';

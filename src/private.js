@@ -46,8 +46,8 @@ Object.defineProperty(exports, "normalizeDevServerOptions", { enumerable: true, 
 __exportStar(require("./tools/babel/plugins"), exports);
 var utils_1 = require("./tools/esbuild/utils");
 Object.defineProperty(exports, "emitFilesToDisk", { enumerable: true, get: function () { return utils_1.emitFilesToDisk; } });
-var utils_2 = require("./tools/esbuild/utils");
-Object.defineProperty(exports, "transformSupportedBrowsersToTargets", { enumerable: true, get: function () { return utils_2.transformSupportedBrowsersToTargets; } });
+var target_1 = require("./tools/esbuild/target");
+Object.defineProperty(exports, "transformSupportedBrowsersToTargets", { enumerable: true, get: function () { return target_1.transformSupportedBrowsersToTargets; } });
 var sass_service_1 = require("./tools/sass/sass-service");
 Object.defineProperty(exports, "SassWorkerImplementation", { enumerable: true, get: function () { return sass_service_1.SassWorkerImplementation; } });
 var source_file_cache_1 = require("./tools/esbuild/angular/source-file-cache");

@@ -14,7 +14,7 @@ const application_code_bundle_1 = require("../../tools/esbuild/application-code-
 const bundler_context_1 = require("../../tools/esbuild/bundler-context");
 const global_scripts_1 = require("../../tools/esbuild/global-scripts");
 const global_styles_1 = require("../../tools/esbuild/global-styles");
-const utils_1 = require("../../tools/esbuild/utils");
+const target_1 = require("../../tools/esbuild/target");
 /**
  * Generates one or more BundlerContext instances based on the builder provided
  * configuration.
@@ -60,7 +60,7 @@ function setupBundlerContexts(options, target, codeBundleCache, stylesheetBundle
     }
     // Skip server build when none of the features are enabled.
     if (serverEntryPoint && (outputMode || prerenderOptions || appShellOptions || ssrOptions)) {
-        const nodeTargets = [...target, ...(0, utils_1.getSupportedNodeTargets)()];
+        const nodeTargets = [...target, ...(0, target_1.getSupportedNodeTargets)()];
         typescriptContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, watch, (0, application_code_bundle_1.createServerMainCodeBundleOptions)(options, nodeTargets, codeBundleCache, stylesheetBundler, angularCompilationContext.createSecondaryContext()), true));
         if (outputMode && ssrOptions?.entry) {
             // New behavior introduced: 'server.ts' is now bundled separately from 'main.server.ts'.

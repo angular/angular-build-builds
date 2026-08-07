@@ -24,16 +24,6 @@ export declare function withNoProgress<T>(text: string, action: () => T | Promis
  */
 export declare function getFeatureSupport(nativeAsyncAwait: boolean): BuildOptions['supported'];
 export declare function emitFilesToDisk<T = BuildOutputAsset | BuildOutputFile>(files: T[], writeFileCallback: (file: T) => Promise<void>): Promise<void>;
-/**
- * Transform browserlists result to esbuild target.
- * @see https://esbuild.github.io/api/#target
- */
-export declare function transformSupportedBrowsersToTargets(supportedBrowsers: string[]): string[];
-/**
- * Transform supported Node.js versions to esbuild target.
- * @see https://esbuild.github.io/api/#target
- */
-export declare function getSupportedNodeTargets(): string[];
 export declare function createJsonBuildManifest(result: ExecutionResult, normalizedOptions: NormalizedApplicationBuildOptions): Promise<string>;
 export declare function logMessages(logger: BuilderContext['logger'], executionResult: ExecutionResult, color?: boolean, jsonLogs?: boolean): Promise<void>;
 /**
