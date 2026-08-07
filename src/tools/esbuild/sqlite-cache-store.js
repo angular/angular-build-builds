@@ -19,6 +19,8 @@ class SqliteCacheStore {
     #hasStmt;
     #setStmt;
     #updateAccessedStmt;
+    #pendingAccessedKeys = new Set();
+    #flushTimeout;
     constructor(cachePath, maxPayloadSize = 1024 * 1024 * 1024, ttlDays = 14) {
         this.cachePath = cachePath;
         this.maxPayloadSize = maxPayloadSize;
@@ -31,6 +33,9 @@ class SqliteCacheStore {
             this.#db.exec('PRAGMA auto_vacuum = FULL;');
             this.#db.exec('PRAGMA journal_mode = WAL;');
             this.#db.exec('PRAGMA synchronous = NORMAL;');
+            this.#db.exec('PRAGMA busy_timeout = 5000;');
+            this.#db.exec('PRAGMA temp_store = MEMORY;');
+            this.#db.exec('PRAGMA mmap_size = 268435456;');
             this.#db.exec('CREATE TABLE IF NOT EXISTS cache (key TEXT PRIMARY KEY, value TEXT, last_accessed INTEGER NOT NULL) WITHOUT ROWID;');
             this.#getStmt = this.#db.prepare('SELECT value FROM cache WHERE key = ?');
             this.#hasStmt = this.#db.prepare('SELECT 1 FROM cache WHERE key = ?');
@@ -39,12 +44,49 @@ class SqliteCacheStore {
         }
         return this.#db;
     }
+    #queueAccessUpdate(key) {
+        this.#pendingAccessedKeys.add(key);
+        if (this.#pendingAccessedKeys.size >= 100) {
+            this.#flushAccessUpdates();
+        }
+        else if (!this.#flushTimeout) {
+            this.#flushTimeout = setTimeout(() => this.#flushAccessUpdates(), 500);
+            this.#flushTimeout.unref?.();
+        }
+    }
+    #flushAccessUpdates() {
+        if (this.#flushTimeout) {
+            clearTimeout(this.#flushTimeout);
+            this.#flushTimeout = undefined;
+        }
+        if (!this.#db || this.#pendingAccessedKeys.size === 0 || !this.#updateAccessedStmt) {
+            return;
+        }
+        try {
+            this.#db.exec('BEGIN IMMEDIATE TRANSACTION;');
+            for (const key of this.#pendingAccessedKeys) {
+                this.#updateAccessedStmt.run(key);
+            }
+            this.#db.exec('COMMIT;');
+        }
+        catch {
+            try {
+                this.#db.exec('ROLLBACK;');
+            }
+            catch {
+                // Ignore rollback errors if transaction was not active
+            }
+        }
+        finally {
+            this.#pendingAccessedKeys.clear();
+        }
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async get(key) {
         this.#ensureDb();
         const row = this.#getStmt?.get(key);
         if (row) {
-            this.#updateAccessedStmt?.run(key);
+            this.#queueAccessUpdate(key);
             try {
                 return JSON.parse(row.value);
             }
@@ -60,6 +102,7 @@ class SqliteCacheStore {
     }
     async set(key, value) {
         this.#ensureDb();
+        this.#pendingAccessedKeys.delete(key);
         this.#setStmt?.run(key, JSON.stringify(value));
         return this;
     }
@@ -69,6 +112,8 @@ class SqliteCacheStore {
     close() {
         if (this.#db) {
             try {
+                // Flush any pending access updates in one transaction before pruning
+                this.#flushAccessUpdates();
                 // 1. Delete items older than N days
                 this.#db
                     .prepare("DELETE FROM cache WHERE last_accessed < unixepoch('now', ?);")
@@ -89,6 +134,11 @@ class SqliteCacheStore {
                 // Pruning errors should not block build success
             }
             finally {
+                if (this.#flushTimeout) {
+                    clearTimeout(this.#flushTimeout);
+                    this.#flushTimeout = undefined;
+                }
+                this.#pendingAccessedKeys.clear();
                 this.#getStmt = undefined;
                 this.#hasStmt = undefined;
                 this.#setStmt = undefined;
