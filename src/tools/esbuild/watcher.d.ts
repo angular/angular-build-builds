@@ -17,9 +17,28 @@ export interface BuildWatcher extends AsyncIterableIterator<ChangedFiles> {
     remove(paths: string | readonly string[]): void;
     close(): Promise<void>;
 }
-export declare function createWatcher(options?: {
+export interface WatcherOptions {
     polling?: boolean;
     interval?: number;
     ignored?: string[];
     followSymlinks?: boolean;
-}): BuildWatcher;
+    cwd?: string;
+}
+/**
+ * Normalizes a file system path string to POSIX format (forward slashes '/')
+ * and strips trailing slashes (except root '/' or Windows drive root 'C:/').
+ */
+export declare function toPosixPathNormalized(pathString: string): string;
+/**
+ * Returns the parent directory of a normalized POSIX path, correctly handling Windows drive roots.
+ */
+export declare function getDirectoryPath(posixPath: string): string;
+export declare function createWatcher(options?: WatcherOptions): Promise<BuildWatcher>;
+/**
+ * Checks whether a file path is located inside a parent directory.
+ *
+ * Input Expectations:
+ * - Both `file` and `dir` must be normalized POSIX-style paths (using forward slashes '/').
+ * - Both paths must share the same casing normalization (e.g., lowercased on case-insensitive file systems).
+ */
+export declare function isPathInside(file: string, dir: string): boolean;

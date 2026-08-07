@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "22.2.0-next.2+sha-19c91e4",
+  "version": "22.2.0-next.2+sha-45565dd",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -23,12 +23,14 @@
   "builders": "builders.json",
   "dependencies": {
     "@ampproject/remapping": "2.3.0",
-    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#19c91e4",
+    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#45565dd",
     "@babel/core": "8.0.1",
     "@inquirer/confirm": "6.1.1",
+    "@parcel/watcher": "2.6.0",
     "@vitejs/plugin-basic-ssl": "2.3.0",
     "beasties": "0.4.3",
     "browserslist": "^4.26.0",
+    "chokidar": "5.0.0",
     "esbuild": "0.28.1",
     "https-proxy-agent": "9.1.0",
     "jsonc-parser": "3.3.1",
@@ -45,7 +47,6 @@
     "source-map-support": "0.5.21",
     "tinyglobby": "0.2.17",
     "vite": "8.2.0",
-    "watchpack": "2.5.2",
     "xxhash-wasm": "1.1.0"
   },
   "optionalDependencies": {
@@ -59,7 +60,7 @@
     "@angular/platform-browser": "^22.0.0 || ^22.2.0-next.0",
     "@angular/platform-server": "^22.0.0 || ^22.2.0-next.0",
     "@angular/service-worker": "^22.0.0 || ^22.2.0-next.0",
-    "@angular/ssr": "github:angular/angular-ssr-builds#19c91e4",
+    "@angular/ssr": "github:angular/angular-ssr-builds#45565dd",
     "istanbul-lib-instrument": "^6.0.0",
     "karma": "^6.4.0",
     "less": "^4.2.0",
