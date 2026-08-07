@@ -52,6 +52,7 @@ const commonjs_checker_1 = require("../../tools/esbuild/commonjs-checker");
 const i18n_locale_plugin_1 = require("../../tools/esbuild/i18n-locale-plugin");
 const license_extractor_1 = require("../../tools/esbuild/license-extractor");
 const profiling_1 = require("../../tools/esbuild/profiling");
+const target_1 = require("../../tools/esbuild/target");
 const utils_1 = require("../../tools/esbuild/utils");
 const bundle_calculator_1 = require("../../utils/bundle-calculator");
 const environment_options_1 = require("../../utils/environment-options");
@@ -104,7 +105,7 @@ async function executeBuild(options, context, rebuildState) {
             bundlingResult = bundler_context_1.BundlerContext.mergeResults([bundlingResult, ...typescriptResults]);
         }
         else {
-            const target = (0, utils_1.transformSupportedBrowsersToTargets)(browsers);
+            const target = (0, target_1.transformSupportedBrowsersToTargets)(browsers);
             codeBundleCache = new source_file_cache_1.SourceFileCache(cacheOptions.enabled ? cacheOptions.path : undefined);
             componentStyleBundler = (0, setup_bundling_1.createComponentStyleBundler)(options, target);
             if (options.templateUpdates) {

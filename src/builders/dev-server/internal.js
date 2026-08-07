@@ -21,8 +21,8 @@ var purge_cache_1 = require("../../utils/purge-cache");
 Object.defineProperty(exports, "purgeStaleBuildCache", { enumerable: true, get: function () { return purge_cache_1.purgeStaleBuildCache; } });
 var supported_browsers_1 = require("../../utils/supported-browsers");
 Object.defineProperty(exports, "getSupportedBrowsers", { enumerable: true, get: function () { return supported_browsers_1.getSupportedBrowsers; } });
-var utils_2 = require("../../tools/esbuild/utils");
-Object.defineProperty(exports, "transformSupportedBrowsersToTargets", { enumerable: true, get: function () { return utils_2.transformSupportedBrowsersToTargets; } });
+var target_1 = require("../../tools/esbuild/target");
+Object.defineProperty(exports, "transformSupportedBrowsersToTargets", { enumerable: true, get: function () { return target_1.transformSupportedBrowsersToTargets; } });
 var application_1 = require("../../builders/application");
 Object.defineProperty(exports, "buildApplicationInternal", { enumerable: true, get: function () { return application_1.buildApplicationInternal; } });
 //# sourceMappingURL=internal.js.map

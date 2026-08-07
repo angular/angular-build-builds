@@ -21,7 +21,7 @@ export { serveWithVite } from './builders/dev-server/vite';
 export { normalizeOptions as normalizeDevServerOptions, type NormalizedDevServerOptions, } from './builders/dev-server/options';
 export type { ExternalResultMetadata } from './tools/esbuild/bundler-execution-result';
 export { emitFilesToDisk } from './tools/esbuild/utils';
-export { transformSupportedBrowsersToTargets } from './tools/esbuild/utils';
+export { transformSupportedBrowsersToTargets } from './tools/esbuild/target';
 export { SassWorkerImplementation } from './tools/sass/sass-service';
 export { SourceFileCache } from './tools/esbuild/angular/source-file-cache';
 export { Cache } from './tools/esbuild/cache';

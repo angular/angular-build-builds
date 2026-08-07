@@ -14,8 +14,6 @@ exports.withSpinner = withSpinner;
 exports.withNoProgress = withNoProgress;
 exports.getFeatureSupport = getFeatureSupport;
 exports.emitFilesToDisk = emitFilesToDisk;
-exports.transformSupportedBrowsersToTargets = transformSupportedBrowsersToTargets;
-exports.getSupportedNodeTargets = getSupportedNodeTargets;
 exports.createJsonBuildManifest = createJsonBuildManifest;
 exports.logMessages = logMessages;
 exports.isZonelessApp = isZonelessApp;
@@ -25,7 +23,6 @@ const listr2_1 = require("listr2");
 const node_path_1 = require("node:path");
 const node_url_1 = require("node:url");
 const node_zlib_1 = require("node:zlib");
-const semver_1 = require("semver");
 const schema_1 = require("../../builders/application/schema");
 const stats_table_1 = require("../../utils/stats-table");
 const bundler_files_1 = require("./bundler-files");
@@ -177,61 +174,6 @@ async function emitFilesToDisk(files, writeFileCallback) {
         }
         await Promise.all(actions);
     }
-}
-/**
- * Transform browserlists result to esbuild target.
- * @see https://esbuild.github.io/api/#target
- */
-function transformSupportedBrowsersToTargets(supportedBrowsers) {
-    const transformed = [];
-    // https://esbuild.github.io/api/#target
-    const esBuildSupportedBrowsers = new Set([
-        'chrome',
-        'edge',
-        'firefox',
-        'ie',
-        'ios',
-        'node',
-        'opera',
-        'safari',
-    ]);
-    for (const browser of supportedBrowsers) {
-        let [browserName, version] = browser.toLowerCase().split(' ');
-        // browserslist uses the name `ios_saf` for iOS Safari whereas esbuild uses `ios`
-        if (browserName === 'ios_saf') {
-            browserName = 'ios';
-        }
-        // browserslist uses ranges `15.2-15.3` versions but only the lowest is required
-        // to perform minimum supported feature checks. esbuild also expects a single version.
-        [version] = version.split('-');
-        if (esBuildSupportedBrowsers.has(browserName)) {
-            if (browserName === 'safari' && version === 'tp') {
-                // esbuild only supports numeric versions so `TP` is converted to a high number (999) since
-                // a Technology Preview (TP) of Safari is assumed to support all currently known features.
-                version = '999';
-            }
-            else if (!version.includes('.')) {
-                // A lone major version is considered by esbuild to include all minor versions. However,
-                // browserslist does not and is also inconsistent in its `.0` version naming. For example,
-                // Safari 15.0 is named `safari 15` but Safari 16.0 is named `safari 16.0`.
-                version += '.0';
-            }
-            transformed.push(browserName + version);
-        }
-    }
-    return transformed;
-}
-const SUPPORTED_NODE_VERSIONS = '^22.22.3 || ^24.15.0 || >=26.0.0';
-/**
- * Transform supported Node.js versions to esbuild target.
- * @see https://esbuild.github.io/api/#target
- */
-function getSupportedNodeTargets() {
-    if (SUPPORTED_NODE_VERSIONS.charAt(0) === '0') {
-        // Unlike `pkg_npm`, `ts_library` which is used to run unit tests does not support substitutions.
-        return [];
-    }
-    return SUPPORTED_NODE_VERSIONS.split('||').map((v) => 'node' + (0, semver_1.coerce)(v)?.version);
 }
 async function createJsonBuildManifest(result, normalizedOptions) {
     const { colors: color, outputOptions: { base, server, browser }, ssrOptions, outputMode, } = normalizedOptions;
