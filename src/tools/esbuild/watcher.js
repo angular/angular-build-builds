@@ -39,6 +39,9 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ChangedFiles = void 0;
 exports.toPosixPathNormalized = toPosixPathNormalized;
@@ -47,6 +50,7 @@ exports.createWatcher = createWatcher;
 exports.isPathInside = isPathInside;
 const fs = __importStar(require("node:fs"));
 const path = __importStar(require("node:path"));
+const picomatch_1 = __importDefault(require("picomatch"));
 const path_1 = require("../../utils/path");
 class ChangedFiles {
     added = new Set();
@@ -448,9 +452,16 @@ async function createChokidarWatcher(options, chokidarModule) {
     const isCaseSensitive = isFileSystemCaseSensitive(rootDir);
     const rootDirPosix = toPosixPathNormalized(rootDir);
     const rootDirLookupKey = toLookupKey(rootDirPosix, isCaseSensitive);
+    const ignored = options?.ignored?.map((pattern) => {
+        if (/[*?[\]{}()]/.test(pattern)) {
+            const isMatch = (0, picomatch_1.default)(pattern, { dot: true });
+            return (filePath) => isMatch(toPosixPathNormalized(filePath));
+        }
+        return { path: toPosixPathNormalized(pattern), recursive: true };
+    });
     const watcher = chokidar.watch(rootDir, {
         ignoreInitial: true,
-        ignored: options?.ignored,
+        ignored,
         followSymlinks: options?.followSymlinks,
         usePolling: !!options?.polling,
         interval: options?.interval,

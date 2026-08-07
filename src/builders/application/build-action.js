@@ -93,10 +93,14 @@ async function* runEsBuildBuildAction(action, options) {
             if (progress) {
                 logger.info('Watch mode enabled. Watching for file changes...');
             }
+            const normalizedOutputBase = (0, path_1.toPosixPath)(outputOptions.base);
+            const normalizedCacheBase = (0, path_1.toPosixPath)(cacheOptions.basePath);
             const ignored = [
                 // Ignore the output and cache paths to avoid infinite rebuild cycles
-                outputOptions.base,
-                cacheOptions.basePath,
+                normalizedOutputBase,
+                `${normalizedOutputBase}/**`,
+                normalizedCacheBase,
+                `${normalizedCacheBase}/**`,
                 `${(0, path_1.toPosixPath)(workspaceRoot)}/**/.*/**`,
             ];
             // Setup a watcher
