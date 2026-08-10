@@ -17,6 +17,15 @@ import type { EncodedSourceMap } from '@ampproject/remapping';
  */
 export declare function removeSourceMappingURL(code: string): string;
 /**
+ * Checks whether a `//# sourceMappingURL=` URL line snippet represents a valid trailing comment at the end of the file.
+ */
+export declare function isTrailingSourceMapComment(urlLine: string): boolean;
+/**
+ * Resolves and loads the input sourcemap referenced in a `//# sourceMappingURL=` URL line snippet.
+ * Supports inline base64 data URIs, local absolute file URLs, and relative/absolute filesystem paths.
+ */
+export declare function loadInputSourceMapFromUrl(filename: string, urlLine: string): EncodedSourceMap | undefined;
+/**
  * Finds, resolves, and loads the input sourcemap referenced in the code's trailing
  * sourceMappingURL comment, if present. Supports inline base64 data URIs, local absolute
  * file URLs, and relative/absolute filesystem paths.

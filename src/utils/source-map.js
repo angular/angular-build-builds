@@ -8,6 +8,8 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.removeSourceMappingURL = removeSourceMappingURL;
+exports.isTrailingSourceMapComment = isTrailingSourceMapComment;
+exports.loadInputSourceMapFromUrl = loadInputSourceMapFromUrl;
 exports.loadInputSourceMap = loadInputSourceMap;
 const node_fs_1 = require("node:fs");
 const node_path_1 = require("node:path");
@@ -179,61 +181,83 @@ function removeSourceMappingURL(code) {
     return result.join('');
 }
 /**
- * Finds, resolves, and loads the input sourcemap referenced in the code's trailing
- * sourceMappingURL comment, if present. Supports inline base64 data URIs, local absolute
- * file URLs, and relative/absolute filesystem paths.
+ * Extracts the base64 payload from an inline sourcemap data URI line and verifies
+ * that only trailing whitespace follows the payload.
+ *
+ * @returns The base64 payload string if valid and trailing, or `undefined` otherwise.
  */
-function loadInputSourceMap(filename, code) {
-    // Locate the last sourceMappingURL comment using lastIndexOf to avoid scanning
-    // the entire file with a regular expression (significant for large files).
-    const lastSourceMapIndex = code.lastIndexOf('//# sourceMappingURL=');
-    if (lastSourceMapIndex === -1) {
+function extractTrailingBase64Payload(urlLine) {
+    if (!urlLine.startsWith('data:application/json;')) {
         return undefined;
     }
-    const urlLine = code.slice(lastSourceMapIndex + 21);
-    // Inline base64-encoded sourcemaps can be extremely large (up to megabytes).
-    // Parse them without regular expressions to avoid heavy backtracking and allocations.
-    if (urlLine.startsWith('data:application/json;')) {
-        const base64StartIndex = urlLine.indexOf('base64,');
-        if (base64StartIndex === -1) {
+    const base64StartIndex = urlLine.indexOf('base64,');
+    if (base64StartIndex === -1) {
+        return undefined;
+    }
+    const payloadStart = base64StartIndex + 7;
+    let payloadEnd = urlLine.length;
+    // Find the first trailing whitespace character that marks the end of the base64 payload.
+    for (let i = payloadStart; i < urlLine.length; i++) {
+        const char = urlLine[i];
+        if (char === ' ' || char === '\r' || char === '\n' || char === '\t') {
+            payloadEnd = i;
+            break;
+        }
+    }
+    // Verify that everything after the base64 payload is trailing whitespace
+    // to ensure this is a valid trailing sourceMappingURL comment at the end of the file.
+    for (let i = payloadEnd; i < urlLine.length; i++) {
+        const char = urlLine[i];
+        if (char !== ' ' && char !== '\r' && char !== '\n' && char !== '\t') {
             return undefined;
         }
-        const payloadStart = base64StartIndex + 7;
-        let payloadEnd = urlLine.length;
-        // Find the first trailing whitespace character that marks the end of the base64 payload.
-        for (let i = payloadStart; i < urlLine.length; i++) {
-            const char = urlLine[i];
-            if (char === ' ' || char === '\r' || char === '\n' || char === '\t') {
-                payloadEnd = i;
-                break;
-            }
-        }
-        // Verify that everything after the base64 payload is trailing whitespace
-        // to ensure this is a valid trailing sourceMappingURL comment at the end of the file.
-        for (let i = payloadEnd; i < urlLine.length; i++) {
-            const char = urlLine[i];
-            if (char !== ' ' && char !== '\r' && char !== '\n' && char !== '\t') {
-                return undefined;
-            }
-        }
+    }
+    return urlLine.slice(payloadStart, payloadEnd);
+}
+/**
+ * Extracts the URL from an external sourcemap comment line and verifies
+ * that only trailing whitespace follows the URL.
+ *
+ * @returns The URL string if valid and trailing, or `undefined` otherwise.
+ */
+function extractTrailingUrl(urlLine) {
+    if (urlLine.startsWith('data:')) {
+        return undefined;
+    }
+    const urlMatch = /^([^\r\n\s'"`]+)/.exec(urlLine);
+    if (!urlMatch) {
+        return undefined;
+    }
+    const remaining = urlLine.slice(urlMatch[1].length);
+    if (!/^\s*$/.test(remaining)) {
+        return undefined;
+    }
+    return urlMatch[1];
+}
+/**
+ * Checks whether a `//# sourceMappingURL=` URL line snippet represents a valid trailing comment at the end of the file.
+ */
+function isTrailingSourceMapComment(urlLine) {
+    return (extractTrailingBase64Payload(urlLine) !== undefined || extractTrailingUrl(urlLine) !== undefined);
+}
+/**
+ * Resolves and loads the input sourcemap referenced in a `//# sourceMappingURL=` URL line snippet.
+ * Supports inline base64 data URIs, local absolute file URLs, and relative/absolute filesystem paths.
+ */
+function loadInputSourceMapFromUrl(filename, urlLine) {
+    // Inline base64-encoded sourcemaps can be extremely large (up to megabytes).
+    // Parse them without regular expressions to avoid heavy backtracking and allocations.
+    const base64Payload = extractTrailingBase64Payload(urlLine);
+    if (base64Payload !== undefined) {
         try {
-            // Extract the base64 payload and decode it directly into binary memory.
-            const base64Content = urlLine.slice(payloadStart, payloadEnd);
-            return JSON.parse(Buffer.from(base64Content, 'base64').toString('utf-8'));
+            return JSON.parse(Buffer.from(base64Payload, 'base64').toString('utf-8'));
         }
         catch {
             return undefined;
         }
     }
-    // Non-inline sourcemap comments (always small, typically < 200 characters).
-    const urlMatch = /^([^\r\n\s]+)/.exec(urlLine);
-    if (!urlMatch) {
-        return undefined;
-    }
-    const url = urlMatch[1];
-    const remaining = urlLine.slice(url.length);
-    // Verify there is only whitespace after the URL to the end of the file.
-    if (!/^\s*$/.test(remaining)) {
+    const url = extractTrailingUrl(urlLine);
+    if (!url) {
         return undefined;
     }
     if (url.startsWith('file://')) {
@@ -257,5 +281,30 @@ function loadInputSourceMap(filename, code) {
         catch { }
     }
     return undefined;
+}
+/**
+ * Finds, resolves, and loads the input sourcemap referenced in the code's trailing
+ * sourceMappingURL comment, if present. Supports inline base64 data URIs, local absolute
+ * file URLs, and relative/absolute filesystem paths.
+ */
+function loadInputSourceMap(filename, code) {
+    // Locate the last sourceMappingURL comment using lastIndexOf to avoid scanning
+    // the entire file with a regular expression (significant for large files).
+    const lastSourceMapIndex = code.lastIndexOf('//# sourceMappingURL=');
+    if (lastSourceMapIndex === -1) {
+        return undefined;
+    }
+    if (lastSourceMapIndex > 0) {
+        // Skip any preceding horizontal whitespace (spaces/tabs) to find the start of the line.
+        let prevIdx = lastSourceMapIndex - 1;
+        while (prevIdx >= 0 && (code[prevIdx] === ' ' || code[prevIdx] === '\t')) {
+            prevIdx--;
+        }
+        // Ensure the comment starts at the beginning of a line, preventing false positives within code or strings.
+        if (prevIdx >= 0 && code[prevIdx] !== '\n' && code[prevIdx] !== '\r') {
+            return undefined;
+        }
+    }
+    return loadInputSourceMapFromUrl(filename, code.slice(lastSourceMapIndex + 21));
 }
 //# sourceMappingURL=source-map.js.map
