@@ -8,12 +8,8 @@
 interface JavaScriptTransformRequest {
     filename: string;
     data: string | Uint8Array;
-    sourcemap: boolean;
-    thirdPartySourcemaps: boolean;
-    advancedOptimizations: boolean;
     skipLinker?: boolean;
     sideEffects?: boolean;
-    jit: boolean;
     instrumentForCoverage?: boolean;
 }
 export default function transformJavaScript(request: JavaScriptTransformRequest): Promise<unknown>;

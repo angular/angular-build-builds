@@ -47,9 +47,13 @@ exports.default = transformJavaScript;
 const remapping_1 = __importDefault(require("@ampproject/remapping"));
 const core_1 = require("@babel/core");
 const node_module_1 = require("node:module");
+const node_worker_threads_1 = require("node:worker_threads");
 const piscina_1 = __importDefault(require("piscina"));
 const environment_options_js_1 = require("../../utils/environment-options.js");
 const source_map_1 = require("../../utils/source-map");
+const oxc_linker_js_1 = require("../angular/linker/oxc-linker.js");
+const oxc_transform_js_1 = require("../oxc/oxc-transform.js");
+const { sourcemap = false, thirdPartySourcemaps = false, advancedOptimizations = false, jit = false, } = (node_worker_threads_1.workerData || {});
 const textDecoder = new TextDecoder();
 const textEncoder = new TextEncoder();
 async function instrumentCoverage(filename, data, useInputSourcemap) {
@@ -83,8 +87,7 @@ async function instrumentCoverage(filename, data, useInputSourcemap) {
 }
 async function transformJavaScript(request) {
     const { filename, data, ...options } = request;
-    const useInputSourcemap = options.sourcemap &&
-        (!!options.thirdPartySourcemaps || !/[\\/]node_modules[\\/]/.test(filename));
+    const useInputSourcemap = sourcemap && (!!thirdPartySourcemaps || !/[\\/]node_modules[\\/]/.test(filename));
     let textData;
     let inputSourceMap;
     let isAlreadyStripped = false;
@@ -139,18 +142,9 @@ async function transformJavaScript(request) {
     }
     return piscina_1.default.move(textEncoder.encode(transformedData));
 }
-/**
- * Cached instance of the OXC linker module.
- */
-let oxcLinkerModule;
-/**
- * Cached instance of the OXC transform module.
- */
-let oxcTransformModule;
 async function transformJavaScriptImpl(filename, data, options) {
     const shouldLink = !options.skipLinker;
-    const useInputSourcemap = options.sourcemap &&
-        (!!options.thirdPartySourcemaps || !/[\\/]node_modules[\\/]/.test(filename));
+    const useInputSourcemap = sourcemap && (!!thirdPartySourcemaps || !/[\\/]node_modules[\\/]/.test(filename));
     let code = data;
     const maps = [];
     let coverageMap;
@@ -181,7 +175,7 @@ async function transformJavaScriptImpl(filename, data, options) {
                             relative: (_from, to) => to,
                         },
                         logger: new ConsoleLogger(LogLevel.info),
-                        linkerJitMode: options.jit,
+                        linkerJitMode: jit,
                         // This is a workaround until https://github.com/angular/angular/issues/42769 is fixed.
                         sourceMapping: false,
                     }),
@@ -193,10 +187,9 @@ async function transformJavaScriptImpl(filename, data, options) {
             }
         }
         else {
-            oxcLinkerModule ??= await Promise.resolve().then(() => __importStar(require('../angular/linker/oxc-linker.js')));
-            const result = oxcLinkerModule.linkWithOxc(filename, code, {
+            const result = (0, oxc_linker_js_1.linkWithOxc)(filename, code, {
                 sourcemap: useInputSourcemap,
-                jit: options.jit,
+                jit,
                 skipCheck: true,
             });
             code = result.code;
@@ -206,12 +199,11 @@ async function transformJavaScriptImpl(filename, data, options) {
         }
     }
     // Run advanced optimizations using our fast oxc-transform
-    if (options.advancedOptimizations) {
-        oxcTransformModule ??= await Promise.resolve().then(() => __importStar(require('../oxc/oxc-transform.js')));
+    if (advancedOptimizations) {
         const sideEffectFree = options.sideEffects === false;
         const safeAngularPackage = sideEffectFree && /[\\/]node_modules[\\/]@angular[\\/]/.test(filename);
         const topLevelSafeMode = !safeAngularPackage;
-        const result = oxcTransformModule.transform(filename, code, {
+        const result = (0, oxc_transform_js_1.transform)(filename, code, {
             sourcemap: useInputSourcemap,
             sideEffects: options.sideEffects,
             topLevelSafeMode,

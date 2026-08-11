@@ -69,6 +69,7 @@ class JavaScriptTransformer {
             jit,
         };
         this.#fileCacheKeyBase = Buffer.from(JSON.stringify(this.#commonOptions), 'utf-8');
+        this.#workerPool = this.#ensureWorkerPool();
     }
     /**
      * Executes a transformation action using a semaphore-based backpressure throttle.
@@ -105,6 +106,8 @@ class JavaScriptTransformer {
         const workerPoolOptions = {
             filename: require.resolve('./javascript-transformer-worker'),
             maxThreads: this.maxThreads,
+            minThreads: this.maxThreads,
+            workerData: this.#commonOptions,
         };
         // Prevent passing SSR `--import` (loader-hooks) from parent to child worker.
         const filteredExecArgv = process.execArgv.filter((v) => v !== utils_1.IMPORT_EXEC_ARGV);
@@ -192,7 +195,6 @@ class JavaScriptTransformer {
             skipLinker: !shouldLink,
             sideEffects,
             instrumentForCoverage,
-            ...this.#commonOptions,
         }, {
             transferList: isTransferable ? [data.buffer] : undefined,
         });
