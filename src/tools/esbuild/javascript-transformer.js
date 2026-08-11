@@ -13,7 +13,6 @@ const hash_1 = require("../../utils/hash");
 const utils_1 = require("../../utils/server-rendering/esm-in-memory-loader/utils");
 const source_map_1 = require("../../utils/source-map");
 const worker_pool_1 = require("../../utils/worker-pool");
-const SOURCEMAP_COMMENT_BYTES = Buffer.from('sourceMappingURL=');
 const LINKER_DECLARATION_PREFIX = 'ɵɵngDeclare';
 const LINKER_DECLARATION_PREFIX_BYTES = Buffer.from(LINKER_DECLARATION_PREFIX, 'utf-8');
 /**
@@ -176,19 +175,7 @@ class JavaScriptTransformer {
             if (typeof data === 'string') {
                 return Buffer.from(keepSourcemap ? data : (0, source_map_1.removeSourceMappingURL)(data), 'utf-8');
             }
-            if (keepSourcemap) {
-                return data;
-            }
-            const dataBuffer = Buffer.isBuffer(data)
-                ? data
-                : Buffer.from(data.buffer, data.byteOffset, data.byteLength);
-            // Fast check on raw ASCII bytes to avoid UTF-8 string decoding if no comment exists.
-            if (dataBuffer.indexOf(SOURCEMAP_COMMENT_BYTES) === -1) {
-                return data;
-            }
-            const text = dataBuffer.toString('utf-8');
-            const stripped = (0, source_map_1.removeSourceMappingURL)(text);
-            return stripped === text ? data : Buffer.from(stripped, 'utf-8');
+            return keepSourcemap ? data : (0, source_map_1.removeSourceMappingURL)(data);
         }
         // Only standalone (non-pooled) ArrayBuffers can be transferred across worker threads.
         // Node.js shares an internal 8KB ArrayBuffer pool for small buffers, and transferring

@@ -52,7 +52,6 @@ const environment_options_js_1 = require("../../utils/environment-options.js");
 const source_map_1 = require("../../utils/source-map");
 const textDecoder = new TextDecoder();
 const textEncoder = new TextEncoder();
-const SOURCEMAP_COMMENT_BYTES = Buffer.from('//# sourceMappingURL=');
 async function instrumentCoverage(filename, data, useInputSourcemap) {
     try {
         let resolvedPath = 'istanbul-lib-instrument';
@@ -90,56 +89,39 @@ async function transformJavaScript(request) {
     let inputSourceMap;
     let isAlreadyStripped = false;
     if (typeof data !== 'string') {
-        const dataBuffer = Buffer.isBuffer(data)
-            ? data
-            : Buffer.from(data.buffer, data.byteOffset, data.byteLength);
-        const firstIndex = dataBuffer.indexOf(SOURCEMAP_COMMENT_BYTES);
-        if (firstIndex === -1) {
+        const trailing = (0, source_map_1.findTrailingSourceMapComment)(data);
+        if (trailing === null) {
             // 0 comments: fast path, no sourcemap to load or strip
             textData = textDecoder.decode(data);
             isAlreadyStripped = true;
         }
-        else {
-            const lastIndex = dataBuffer.lastIndexOf(SOURCEMAP_COMMENT_BYTES);
-            // Skip any preceding horizontal whitespace (spaces/tabs) to find the start of the line.
-            let prevIdx = lastIndex - 1;
-            while (prevIdx >= 0 && (dataBuffer[prevIdx] === 32 || dataBuffer[prevIdx] === 9)) {
-                prevIdx--;
-            }
-            // Ensure the comment starts at the beginning of a line or the start of the file,
-            // preventing false positives for occurrences inside inline string literals or code.
-            const isLineStart = prevIdx < 0 || dataBuffer[prevIdx] === 10 || dataBuffer[prevIdx] === 13;
-            if (firstIndex === lastIndex && isLineStart) {
-                const urlLine = dataBuffer
-                    .subarray(lastIndex + SOURCEMAP_COMMENT_BYTES.length)
-                    .toString('utf-8');
-                if (useInputSourcemap) {
-                    inputSourceMap = (0, source_map_1.loadInputSourceMapFromUrl)(filename, urlLine);
-                    if (inputSourceMap !== undefined) {
-                        // Valid trailing sourcemap comment confirmed: safe to slice code buffer for transformation passes.
-                        // Note: If no passes modify the code, the untouched original `data` buffer is returned below.
-                        textData = textDecoder.decode(dataBuffer.subarray(0, prevIdx < 0 ? 0 : prevIdx + 1));
-                        isAlreadyStripped = true;
-                    }
-                    else {
-                        // Not a valid trailing sourcemap (e.g. inside template literal): fallback to full decode
-                        textData = textDecoder.decode(data);
-                    }
-                }
-                else if ((0, source_map_1.isTrailingSourceMapComment)(urlLine)) {
-                    // Valid trailing sourcemap comment confirmed: safe to slice code buffer
-                    textData = textDecoder.decode(dataBuffer.subarray(0, prevIdx < 0 ? 0 : prevIdx + 1));
+        else if (trailing !== undefined) {
+            if (useInputSourcemap) {
+                inputSourceMap = (0, source_map_1.loadInputSourceMapFromUrl)(filename, trailing.urlLine);
+                if (inputSourceMap !== undefined) {
+                    // Valid trailing sourcemap comment confirmed: safe to slice code buffer for transformation passes.
+                    // Note: If no passes modify the code, the untouched original `data` buffer is returned below.
+                    textData = textDecoder.decode(trailing.code);
                     isAlreadyStripped = true;
                 }
                 else {
-                    // Fallback to full decode and state-machine stripping
+                    // Not a valid trailing sourcemap (e.g. inside template literal): fallback to full decode
                     textData = textDecoder.decode(data);
                 }
             }
+            else if ((0, source_map_1.isTrailingSourceMapComment)(trailing.urlLine)) {
+                // Valid trailing sourcemap comment confirmed: safe to slice code buffer
+                textData = textDecoder.decode(trailing.code);
+                isAlreadyStripped = true;
+            }
             else {
-                // Multiple comments or comment not at line start: fall back to full decode and string parser
+                // Fallback to full decode and state-machine stripping
                 textData = textDecoder.decode(data);
             }
+        }
+        else {
+            // Multiple comments or comment not at line start: fall back to full decode and string parser
+            textData = textDecoder.decode(data);
         }
     }
     else {

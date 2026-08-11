@@ -7,6 +7,8 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.SOURCEMAP_COMMENT_BYTES = exports.SOURCEMAP_COMMENT_PREFIX = void 0;
+exports.findTrailingSourceMapComment = findTrailingSourceMapComment;
 exports.removeSourceMappingURL = removeSourceMappingURL;
 exports.isTrailingSourceMapComment = isTrailingSourceMapComment;
 exports.loadInputSourceMapFromUrl = loadInputSourceMapFromUrl;
@@ -14,17 +16,64 @@ exports.loadInputSourceMap = loadInputSourceMap;
 const node_fs_1 = require("node:fs");
 const node_path_1 = require("node:path");
 const node_url_1 = require("node:url");
+exports.SOURCEMAP_COMMENT_PREFIX = '//# sourceMappingURL=';
+exports.SOURCEMAP_COMMENT_BYTES = Buffer.from(exports.SOURCEMAP_COMMENT_PREFIX);
 /**
- * Removes `//# sourceMappingURL=` comments safely from the given JavaScript code,
- * ignoring any occurrences that are inside string literals, template literals, or block comments.
+ * Checks for a single trailing `//# sourceMappingURL=` comment on a raw buffer.
  *
- * It uses a lightweight state-machine parser to accurately handle nested template literals.
- *
- * @param code The JavaScript source code.
- * @returns The code with top-level sourcemap comments removed.
+ * @param data The raw byte buffer to inspect.
+ * @returns An object containing the sliced code buffer and URL snippet if a single trailing comment exists,
+ *          `null` if no sourcemap comment exists in the buffer, or `undefined` if multiple/non-trailing comments exist.
  */
+function findTrailingSourceMapComment(data) {
+    const dataBuffer = Buffer.isBuffer(data)
+        ? data
+        : Buffer.from(data.buffer, data.byteOffset, data.byteLength);
+    const firstIndex = dataBuffer.indexOf(exports.SOURCEMAP_COMMENT_BYTES);
+    if (firstIndex === -1) {
+        return null;
+    }
+    const lastIndex = dataBuffer.lastIndexOf(exports.SOURCEMAP_COMMENT_BYTES);
+    // Skip any preceding horizontal whitespace (spaces/tabs) to find the start of the line.
+    let prevIdx = lastIndex - 1;
+    while (prevIdx >= 0 && (dataBuffer[prevIdx] === 32 || dataBuffer[prevIdx] === 9)) {
+        prevIdx--;
+    }
+    // Ensure the comment starts at the beginning of a line or the start of the file,
+    // preventing false positives for occurrences inside inline string literals or code.
+    const isLineStart = prevIdx < 0 || dataBuffer[prevIdx] === 10 || dataBuffer[prevIdx] === 13;
+    if (firstIndex === lastIndex && isLineStart) {
+        const urlLine = dataBuffer
+            .subarray(lastIndex + exports.SOURCEMAP_COMMENT_BYTES.length)
+            .toString('utf-8');
+        return {
+            code: dataBuffer.subarray(0, prevIdx < 0 ? 0 : prevIdx + 1),
+            urlLine,
+        };
+    }
+    return undefined;
+}
 function removeSourceMappingURL(code) {
-    if (!code.includes('//# sourceMappingURL=')) {
+    if (typeof code === 'string') {
+        return removeSourceMappingURLFromString(code);
+    }
+    const trailing = findTrailingSourceMapComment(code);
+    if (trailing === null) {
+        return code;
+    }
+    if (trailing && isTrailingSourceMapComment(trailing.urlLine)) {
+        return trailing.code;
+    }
+    // Fallback to full decode and state-machine stripping for multiple comments or non-trailing comments
+    const dataBuffer = Buffer.isBuffer(code)
+        ? code
+        : Buffer.from(code.buffer, code.byteOffset, code.byteLength);
+    const text = dataBuffer.toString('utf-8');
+    const stripped = removeSourceMappingURLFromString(text);
+    return stripped === text ? code : Buffer.from(stripped, 'utf-8');
+}
+function removeSourceMappingURLFromString(code) {
+    if (!code.includes(exports.SOURCEMAP_COMMENT_PREFIX)) {
         return code;
     }
     const result = [];
@@ -60,12 +109,12 @@ function removeSourceMappingURL(code) {
                         isEscaped = true;
                     }
                 }
-                if (!isEscaped && code.startsWith('//# sourceMappingURL=', i)) {
+                if (!isEscaped && code.startsWith(exports.SOURCEMAP_COMMENT_PREFIX, i)) {
                     if (i > lastCopiedIndex) {
                         result.push(code.slice(lastCopiedIndex, i));
                     }
                     // Skip the rest of the comment line up to the newline
-                    i += 21;
+                    i += exports.SOURCEMAP_COMMENT_PREFIX.length;
                     while (i < len && code[i] !== '\n' && code[i] !== '\r') {
                         i++;
                     }
@@ -290,7 +339,7 @@ function loadInputSourceMapFromUrl(filename, urlLine) {
 function loadInputSourceMap(filename, code) {
     // Locate the last sourceMappingURL comment using lastIndexOf to avoid scanning
     // the entire file with a regular expression (significant for large files).
-    const lastSourceMapIndex = code.lastIndexOf('//# sourceMappingURL=');
+    const lastSourceMapIndex = code.lastIndexOf(exports.SOURCEMAP_COMMENT_PREFIX);
     if (lastSourceMapIndex === -1) {
         return undefined;
     }
@@ -305,6 +354,6 @@ function loadInputSourceMap(filename, code) {
             return undefined;
         }
     }
-    return loadInputSourceMapFromUrl(filename, code.slice(lastSourceMapIndex + 21));
+    return loadInputSourceMapFromUrl(filename, code.slice(lastSourceMapIndex + exports.SOURCEMAP_COMMENT_PREFIX.length));
 }
 //# sourceMappingURL=source-map.js.map
