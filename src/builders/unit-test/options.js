@@ -117,7 +117,7 @@ async function normalizeOptions(context, projectName, options) {
         quiet: options.quiet ?? (process.env['CI'] ? false : true),
         providersFile: options.providersFile && node_path_1.default.join(workspaceRoot, options.providersFile),
         setupFiles: options.setupFiles
-            ? options.setupFiles.map((setupFile) => node_path_1.default.join(workspaceRoot, setupFile))
+            ? options.setupFiles.map((setupFile) => (0, path_1.toPosixPath)(node_path_1.default.join(workspaceRoot, setupFile)))
             : [],
         dumpVirtualFiles: options.dumpVirtualFiles,
         listTests: options.listTests,
