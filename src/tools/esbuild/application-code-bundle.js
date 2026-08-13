@@ -52,6 +52,11 @@ function createBrowserCodeBundleOptions(options, target, sourceFileCache, styles
             target,
             supported: (0, utils_1.getFeatureSupport)(zoneless),
         };
+        if (options.disableCodeSplitting) {
+            // Splitting emits shared chunks that are read across chunk boundaries as live ESM bindings,
+            // which the unit-test runners' module loading does not reliably preserve.
+            buildOptions.splitting = false;
+        }
         buildOptions.plugins ??= [];
         buildOptions.plugins.push((0, wasm_plugin_1.createWasmPlugin)({ allowAsync: zoneless, cache: loadCache }), (0, angular_localize_init_warning_plugin_1.createAngularLocalizeInitWarningPlugin)(), (0, compiler_plugin_1.createCompilerPlugin)(
         // JS/TS options

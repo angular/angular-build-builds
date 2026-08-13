@@ -134,6 +134,49 @@ async function loadLocalizeTools() {
     return localizeToolsModule;
 }
 /**
+ * Traverses ESTree AST nodes in post-order (bottom-up) without recursion.
+ * Bottom-up traversal ensures that nested `$localize` expressions are transformed and
+ * written to MagicString before outer containing templates are evaluated.
+ *
+ * @param root The root AST node to traverse.
+ * @param onExit Callback invoked on each AST node in post-order.
+ */
+function walkAstPostOrder(root, onExit) {
+    const traverseStack = [root];
+    const postOrderNodes = [];
+    while (traverseStack.length > 0) {
+        const current = traverseStack.pop();
+        if (!current) {
+            continue;
+        }
+        postOrderNodes.push(current);
+        const keys = oxc_parser_1.visitorKeys[current.type];
+        if (!keys) {
+            continue;
+        }
+        for (let i = 0; i < keys.length; i++) {
+            const child = current[keys[i]];
+            if (!child) {
+                continue;
+            }
+            if (Array.isArray(child)) {
+                for (const item of child) {
+                    if (item) {
+                        traverseStack.push(item);
+                    }
+                }
+            }
+            else {
+                traverseStack.push(child);
+            }
+        }
+    }
+    // Process collected nodes in reverse order to achieve bottom-up (post-order) traversal
+    for (let i = postOrderNodes.length - 1; i >= 0; i--) {
+        onExit(postOrderNodes[i]);
+    }
+}
+/**
  * Transforms a JavaScript file using OXC and Magic-String to inline the request locale and translation.
  * @param code A string containing the JavaScript code to transform.
  * @param map A sourcemap object for the provided JavaScript code.
@@ -151,13 +194,13 @@ async function transformWithOxc(code, map, options, translation) {
     const magicString = new magic_string_1.MagicString(code);
     const { Diagnostics, translate } = await loadLocalizeTools();
     const diagnostics = new Diagnostics();
-    const visitor = new oxc_parser_1.Visitor({
-        Literal(node) {
+    walkAstPostOrder(program, (node) => {
+        if (node.type === 'Literal') {
             if (typeof node.value === 'string' && node.value === '___NG_LOCALE_INSERT___') {
                 magicString.overwrite(node.start, node.end, JSON.stringify(options.locale));
             }
-        },
-        'TaggedTemplateExpression:exit'(node) {
+        }
+        else if (node.type === 'TaggedTemplateExpression') {
             if (node.tag.type === 'Identifier' && node.tag.name === '$localize') {
                 const cooked = node.quasi.quasis.map((q) => q.value.cooked);
                 const raw = node.quasi.quasis.map((q) => q.value.raw);
@@ -188,9 +231,8 @@ async function transformWithOxc(code, map, options, translation) {
                 }
                 magicString.overwrite(node.start, node.end, replacement);
             }
-        },
+        }
     });
-    visitor.visit(program);
     const outputCode = magicString.toString();
     let outputMap;
     if (map && magicString.hasChanged()) {
