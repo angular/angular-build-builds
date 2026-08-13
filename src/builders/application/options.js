@@ -253,7 +253,7 @@ async function normalizeOptions(context, projectName, options, extensions) {
             : undefined,
     };
     // Initial options to keep
-    const { allowedCommonJsDependencies, aot = true, baseHref, crossOrigin, externalDependencies, extractLicenses, inlineStyleLanguage = 'css', outExtension, serviceWorker, poll, polyfills, statsJson, outputMode, stylePreprocessorOptions, subresourceIntegrity, verbose, watch, progress = true, externalPackages, namedChunks, budgets, deployUrl, clearScreen, define, partialSSRBuild = false, externalRuntimeStyles, instrumentForCoverage, } = options;
+    const { allowedCommonJsDependencies, aot = true, baseHref, crossOrigin, externalDependencies, extractLicenses, inlineStyleLanguage = 'css', outExtension, serviceWorker, poll, polyfills, statsJson, outputMode, stylePreprocessorOptions, subresourceIntegrity, verbose, watch, progress = true, externalPackages, namedChunks, budgets, deployUrl, clearScreen, define, partialSSRBuild = false, externalRuntimeStyles, instrumentForCoverage, disableCodeSplitting, } = options;
     // Return all the normalized options
     return {
         advancedOptimizations: !!aot && optimizationOptions.scripts,
@@ -287,6 +287,7 @@ async function normalizeOptions(context, projectName, options, extensions) {
         watch,
         workspaceRoot,
         entryPoints,
+        disableCodeSplitting,
         optimizationOptions,
         outputOptions,
         outExtension,
