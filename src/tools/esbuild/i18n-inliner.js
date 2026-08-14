@@ -112,9 +112,10 @@ class I18nInliner {
      * of the localize function keyword.
      * @param locale The string representing the locale to inline.
      * @param translation The translation messages to use when inlining.
+     * @param translationIntegrity An optional integrity value for the translation messages to use for caching.
      * @returns A promise that resolves to an array of OutputFiles representing a translated result.
      */
-    async inlineForLocale(locale, translation) {
+    async inlineForLocale(locale, translation, translationIntegrity) {
         await this.initCache();
         const { shouldOptimize, missingTranslation } = this.options;
         // Serialized once here and then shared by the request for every file of this locale
@@ -132,7 +133,13 @@ class I18nInliner {
                 // The options are digested here so that each file's key is derived from a fixed number
                 // of bytes. Hashing the options directly would re-hash the full set of messages, which
                 // can be several megabytes, once for every file.
-                fileCacheKeyBase ??= (0, hash_1.calculateHash)(JSON.stringify({ locale, translation, missingTranslation, shouldOptimize }));
+                fileCacheKeyBase ??= (0, hash_1.calculateHash)(JSON.stringify({
+                    locale,
+                    translation: translationIntegrity ?? translation,
+                    missingTranslation,
+                    shouldOptimize,
+                    localizeVersion: this.options.localizeVersion,
+                }));
                 // NOTE: If additional options are added, this may need to be updated.
                 const hasher = (0, hash_1.createContentHash)();
                 hasher.update(file.hash);

@@ -9,12 +9,14 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.inlineI18n = inlineI18n;
 exports.loadActiveTranslations = loadActiveTranslations;
+const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
 const bundler_files_1 = require("../../tools/esbuild/bundler-files");
 const i18n_inliner_1 = require("../../tools/esbuild/i18n-inliner");
 const environment_options_1 = require("../../utils/environment-options");
 const i18n_options_1 = require("../../utils/i18n-options");
 const load_translations_1 = require("../../utils/load-translations");
+const resolve_project_1 = require("../../utils/resolve-project");
 const execute_post_bundle_1 = require("./execute-post-bundle");
 const options_1 = require("./options");
 /**
@@ -33,6 +35,7 @@ async function inlineI18n(metafile, options, executionResult, initialFiles) {
         outputFiles: executionResult.outputFiles,
         shouldOptimize: optimizationOptions.scripts,
         persistentCachePath: cacheOptions.enabled ? cacheOptions.path : undefined,
+        localizeVersion: i18nOptions.localizeVersion,
     }, environment_options_1.maxWorkers);
     const inlineResult = {
         errors: [],
@@ -46,8 +49,17 @@ async function inlineI18n(metafile, options, executionResult, initialFiles) {
     const unModifiedOutputFiles = executionResult.outputFiles.filter(({ type }) => type === bundler_files_1.BuildOutputFileType.Root || type === bundler_files_1.BuildOutputFileType.ServerRoot);
     try {
         for (const locale of i18nOptions.inlineLocales) {
+            const localeDescription = i18nOptions.locales[locale];
+            let translationIntegrity = '';
+            for (const file of localeDescription.files) {
+                if (!file.integrity) {
+                    translationIntegrity = undefined;
+                    break;
+                }
+                translationIntegrity += (translationIntegrity ? '|' : '') + file.integrity;
+            }
             // A locale specific set of files is returned from the inliner.
-            const localeInlineResult = await inliner.inlineForLocale(locale, i18nOptions.locales[locale].translation);
+            const localeInlineResult = await inliner.inlineForLocale(locale, localeDescription.translation, translationIntegrity);
             const localeOutputFiles = localeInlineResult.outputFiles;
             inlineResult.errors.push(...localeInlineResult.errors);
             inlineResult.warnings.push(...localeInlineResult.warnings);
@@ -115,6 +127,15 @@ async function inlineI18n(metafile, options, executionResult, initialFiles) {
  * @param i18n The normalized i18n options to use.
  */
 async function loadActiveTranslations(context, i18n) {
+    if (!i18n.localizeVersion) {
+        try {
+            const projectResolve = (0, resolve_project_1.createProjectResolver)(context.workspaceRoot);
+            const manifestPath = projectResolve('@angular/localize/package.json');
+            const manifest = JSON.parse(await (0, promises_1.readFile)(manifestPath, 'utf-8'));
+            i18n.localizeVersion = manifest.version;
+        }
+        catch { }
+    }
     // Load locale data and translations (if present)
     let loader;
     for (const [locale, desc] of Object.entries(i18n.locales)) {

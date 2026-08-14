@@ -24,6 +24,7 @@ export interface I18nOptions {
     flatOutput?: boolean;
     readonly shouldInline: boolean;
     hasDefinedSourceLocale?: boolean;
+    localizeVersion?: string;
 }
 export declare function createI18nOptions(projectMetadata: {
     i18n?: unknown;

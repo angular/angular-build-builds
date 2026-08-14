@@ -14,6 +14,7 @@ export interface I18nInlinerOptions {
     outputFiles: BuildOutputFile[];
     shouldOptimize?: boolean;
     persistentCachePath?: string;
+    localizeVersion?: string;
 }
 /**
  * A class that performs i18n translation inlining of JavaScript code.
@@ -31,9 +32,10 @@ export declare class I18nInliner {
      * of the localize function keyword.
      * @param locale The string representing the locale to inline.
      * @param translation The translation messages to use when inlining.
+     * @param translationIntegrity An optional integrity value for the translation messages to use for caching.
      * @returns A promise that resolves to an array of OutputFiles representing a translated result.
      */
-    inlineForLocale(locale: string, translation: Record<string, unknown> | undefined): Promise<{
+    inlineForLocale(locale: string, translation: Record<string, unknown> | undefined, translationIntegrity?: string): Promise<{
         outputFiles: BuildOutputFile[];
         errors: string[];
         warnings: string[];
