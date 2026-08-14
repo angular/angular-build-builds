@@ -168,7 +168,6 @@ class AotCompilation extends angular_compilation_1.AngularCompilation {
         });
         this.#state = new AngularCompilationState(angularProgram, host, typeScriptProgram, affectedFiles, affectedFiles.size === 1 ? OptimizeFor.SingleFile : OptimizeFor.WholeProgram, (0, web_worker_transformer_1.createWorkerTransformer)(hostOptions.processWebWorker.bind(hostOptions)), useTypeScriptTranspilation, this.#state?.diagnosticCache);
         return {
-            affectedFiles,
             compilerOptions,
             referencedFiles,
             externalStylesheets: hostOptions.externalStylesheets,

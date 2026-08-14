@@ -7,7 +7,7 @@
  */
 import type { PartialMessage } from 'esbuild';
 import { type MessagePort } from 'node:worker_threads';
-import type { DiagnosticModes } from './angular-compilation';
+import type { AngularCompilationResult, DiagnosticModes } from './angular-compilation';
 export interface InitRequest {
     jit: boolean;
     browserOnlyBuild: boolean;
@@ -19,19 +19,7 @@ export interface InitRequest {
     webWorkerPort: MessagePort;
     webWorkerSignal: Int32Array;
 }
-export declare function initialize(request: InitRequest): Promise<{
-    externalStylesheets: ReadonlyMap<string, string> | undefined;
-    templateUpdates: ReadonlyMap<string, string> | undefined;
-    referencedFiles: readonly string[];
-    compilerOptions: {
-        allowJs: boolean | undefined;
-        isolatedModules: boolean | undefined;
-        sourceMap: boolean | undefined;
-        inlineSourceMap: boolean | undefined;
-        _useTypeScriptTranspilation: boolean | undefined;
-    };
-    componentResourcesDependencies: ReadonlyMap<string, readonly string[]> | undefined;
-}>;
+export declare function initialize(request: InitRequest): Promise<AngularCompilationResult>;
 export declare function diagnose(modes: DiagnosticModes): Promise<{
     errors?: PartialMessage[];
     warnings?: PartialMessage[];

@@ -7,9 +7,8 @@
  */
 import type { CompilerOptions } from '@angular/compiler-cli';
 import type { PartialMessage } from 'esbuild';
-import type { SourceFile } from 'typescript';
 import type { AngularHostOptions } from '../angular-host';
-import { AngularCompilation, DiagnosticModes, EmitFileResult } from './angular-compilation';
+import { AngularCompilation, AngularCompilationResult, DiagnosticModes, EmitFileResult } from './angular-compilation';
 /**
  * An Angular compilation which uses a Node.js Worker thread to load and execute
  * the TypeScript and Angular compilers. This allows for longer synchronous actions
@@ -23,12 +22,7 @@ export declare class ParallelCompilation extends AngularCompilation {
     private readonly jit;
     private readonly browserOnlyBuild;
     constructor(jit: boolean, browserOnlyBuild: boolean);
-    initialize(tsconfig: string, hostOptions: AngularHostOptions, compilerOptionsTransformer?: (compilerOptions: CompilerOptions) => CompilerOptions): Promise<{
-        affectedFiles: ReadonlySet<SourceFile>;
-        compilerOptions: CompilerOptions;
-        referencedFiles: readonly string[];
-        externalStylesheets?: ReadonlyMap<string, string>;
-    }>;
+    initialize(tsconfig: string, hostOptions: AngularHostOptions, compilerOptionsTransformer?: (compilerOptions: CompilerOptions) => CompilerOptions): Promise<AngularCompilationResult>;
     /**
      * This is not needed with this compilation type since the worker will already send a response
      * with the serializable esbuild compatible diagnostics.

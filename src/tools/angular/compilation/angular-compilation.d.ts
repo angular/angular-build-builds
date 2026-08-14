@@ -14,6 +14,25 @@ export interface EmitFileResult {
     contents: string;
     dependencies?: readonly string[];
 }
+export interface FileTransformResult {
+    contents: string;
+    watchFiles?: readonly string[];
+}
+export interface AngularCompilationOptions {
+    allowJs?: boolean;
+    isolatedModules?: boolean;
+    sourceMap?: boolean;
+    inlineSourceMap?: boolean;
+    _useTypeScriptTranspilation?: boolean;
+    [key: string]: unknown;
+}
+export interface AngularCompilationResult {
+    compilerOptions: AngularCompilationOptions;
+    referencedFiles: readonly string[];
+    externalStylesheets?: ReadonlyMap<string, string>;
+    templateUpdates?: ReadonlyMap<string, string>;
+    componentResourcesDependencies?: ReadonlyMap<string, readonly string[]>;
+}
 export declare enum DiagnosticModes {
     None = 0,
     Option = 1,
@@ -26,16 +45,10 @@ export declare abstract class AngularCompilation {
     static loadCompilerCli(): Promise<typeof ng>;
     static loadTypescript(): Promise<typeof ts>;
     protected loadConfiguration(tsconfig: string): Promise<ng.CompilerOptions>;
-    abstract initialize(tsconfig: string, hostOptions: AngularHostOptions, compilerOptionsTransformer?: (compilerOptions: ng.CompilerOptions) => ng.CompilerOptions): Promise<{
-        affectedFiles: ReadonlySet<ts.SourceFile>;
-        compilerOptions: ng.CompilerOptions;
-        referencedFiles: readonly string[];
-        externalStylesheets?: ReadonlyMap<string, string>;
-        templateUpdates?: ReadonlyMap<string, string>;
-        componentResourcesDependencies?: ReadonlyMap<string, readonly string[]>;
-    }>;
-    abstract emitAffectedFiles(): Iterable<EmitFileResult> | Promise<Iterable<EmitFileResult>>;
-    protected abstract collectDiagnostics(modes: DiagnosticModes): Iterable<ts.Diagnostic> | Promise<Iterable<ts.Diagnostic>>;
+    abstract initialize(tsconfig: string, hostOptions: AngularHostOptions, compilerOptionsTransformer?: (compilerOptions: ng.CompilerOptions) => ng.CompilerOptions): Promise<AngularCompilationResult>;
+    emitAffectedFiles(): Iterable<EmitFileResult> | Promise<Iterable<EmitFileResult>>;
+    transformFile?(filename: string, content: string): Promise<FileTransformResult | null>;
+    protected collectDiagnostics?(modes: DiagnosticModes): Iterable<ts.Diagnostic> | Promise<Iterable<ts.Diagnostic>>;
     diagnoseFiles(modes?: DiagnosticModes): Promise<{
         errors?: PartialMessage[];
         warnings?: PartialMessage[];

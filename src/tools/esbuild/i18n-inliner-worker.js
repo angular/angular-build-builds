@@ -177,62 +177,110 @@ function walkAstPostOrder(root, onExit) {
     }
 }
 /**
- * Transforms a JavaScript file using OXC and Magic-String to inline the request locale and translation.
- * @param code A string containing the JavaScript code to transform.
- * @param map A sourcemap object for the provided JavaScript code.
- * @param options The inline request options to use.
- * @param translation The translation messages to inline, or undefined for an untranslated locale.
- * @returns An object containing the code, map, and diagnostics from the transformation.
+ * Extracts localization call sites and locale insertion points from JavaScript code using OXC.
+ *
+ * @param filename The name of the file being processed.
+ * @param code The JavaScript source code.
+ * @returns The extracted localization metadata.
  */
-async function transformWithOxc(code, map, options, translation) {
-    const { program } = (0, oxc_parser_1.parseSync)(options.filename, code, {
+function extractLocalizeMetadata(filename, code) {
+    const { program } = (0, oxc_parser_1.parseSync)(filename, code, {
         sourceType: 'unambiguous',
     });
     if (!program) {
-        throw new Error(`Unknown error occurred parsing file "${options.filename}" with OXC.`);
+        throw new Error(`Unknown error occurred parsing file "${filename}" with OXC.`);
     }
-    const magicString = new magic_string_1.MagicString(code);
-    const { Diagnostics, translate } = await loadLocalizeTools();
-    const diagnostics = new Diagnostics();
+    const callSites = [];
+    const localeInsertSites = [];
+    let diagnostics;
     walkAstPostOrder(program, (node) => {
         if (node.type === 'Literal') {
             if (typeof node.value === 'string' && node.value === '___NG_LOCALE_INSERT___') {
-                magicString.overwrite(node.start, node.end, JSON.stringify(options.locale));
+                localeInsertSites.push({ start: node.start, end: node.end });
             }
         }
         else if (node.type === 'TaggedTemplateExpression') {
             if (node.tag.type === 'Identifier' && node.tag.name === '$localize') {
-                const cooked = node.quasi.quasis.map((q) => q.value.cooked);
-                const raw = node.quasi.quasis.map((q) => q.value.raw);
-                const messageParts = Object.assign(cooked, { raw });
-                const [translatedParts, translatedSubstitutions] = translate(diagnostics, translation || {}, messageParts, node.quasi.expressions.map((_, index) => index), translation === undefined ? 'ignore' : missingTranslation);
-                // Reconstruct the new template/string literal replacement
-                let replacement;
-                if (translatedSubstitutions.length === 0) {
-                    replacement = JSON.stringify(translatedParts[0]);
-                }
-                else {
-                    replacement = '`';
-                    for (let i = 0; i < translatedParts.length; i++) {
-                        const escapedPart = JSON.stringify(translatedParts[i])
-                            .slice(1, -1)
-                            .replace(/\\"/g, '"')
-                            .replace(/`/g, '\\`')
-                            .replace(/\$\{/g, '\\${');
-                        replacement += escapedPart;
-                        if (i < translatedSubstitutions.length) {
-                            const originalIndex = translatedSubstitutions[i];
-                            const exprNode = node.quasi.expressions[originalIndex];
-                            const exprCode = magicString.slice(exprNode.start, exprNode.end);
-                            replacement += '${' + exprCode + '}';
-                        }
+                const cooked = [];
+                const raw = [];
+                let hasMalformedEscape = false;
+                for (const q of node.quasi.quasis) {
+                    if (q.value.cooked === null || q.value.cooked === undefined) {
+                        hasMalformedEscape = true;
+                        (diagnostics ??= []).push(`Malformed escape sequence in $localize template literal in file "${filename}".`);
+                        break;
                     }
-                    replacement += '`';
+                    cooked.push(q.value.cooked);
+                    raw.push(q.value.raw);
                 }
-                magicString.overwrite(node.start, node.end, replacement);
+                if (!hasMalformedEscape) {
+                    const messageParts = Object.assign(cooked, { raw });
+                    const expressions = node.quasi.expressions.map((expr) => ({
+                        start: expr.start,
+                        end: expr.end,
+                    }));
+                    callSites.push({
+                        start: node.start,
+                        end: node.end,
+                        messageParts,
+                        expressions,
+                    });
+                }
             }
         }
     });
+    return { callSites, localeInsertSites, diagnostics };
+}
+/**
+ * Inlines translations into code using previously extracted localization metadata.
+ *
+ * @param code The source code to transform.
+ * @param map Optional source map for the source code.
+ * @param metadata Extracted localization metadata.
+ * @param locale The target locale identifier.
+ * @param translation The translation messages dictionary, or undefined for untranslated locale.
+ * @param filename The name of the file being transformed.
+ * @returns The transformed code, optional remapped source map, and diagnostics.
+ */
+async function inlineLocalize(code, map, metadata, locale, translation, filename) {
+    const magicString = new magic_string_1.MagicString(code);
+    const { Diagnostics, translate } = await loadLocalizeTools();
+    const diagnostics = new Diagnostics();
+    if (metadata.diagnostics) {
+        for (const message of metadata.diagnostics) {
+            diagnostics.error(message);
+        }
+    }
+    for (const site of metadata.localeInsertSites) {
+        magicString.overwrite(site.start, site.end, JSON.stringify(locale));
+    }
+    for (const callSite of metadata.callSites) {
+        const [translatedParts, translatedSubstitutions] = translate(diagnostics, translation || {}, callSite.messageParts, callSite.expressions.map((_, index) => index), translation === undefined ? 'ignore' : missingTranslation);
+        // Reconstruct the new template/string literal replacement
+        let replacement;
+        if (translatedSubstitutions.length === 0) {
+            replacement = JSON.stringify(translatedParts[0]);
+        }
+        else {
+            replacement = '`';
+            for (let i = 0; i < translatedParts.length; i++) {
+                const escapedPart = JSON.stringify(translatedParts[i])
+                    .slice(1, -1)
+                    .replace(/\\"/g, '"')
+                    .replace(/`/g, '\\`')
+                    .replace(/\$\{/g, '\\${');
+                replacement += escapedPart;
+                if (i < translatedSubstitutions.length) {
+                    const originalIndex = translatedSubstitutions[i];
+                    const expr = callSite.expressions[originalIndex];
+                    const exprCode = magicString.slice(expr.start, expr.end);
+                    replacement += '${' + exprCode + '}';
+                }
+            }
+            replacement += '`';
+        }
+        magicString.overwrite(callSite.start, callSite.end, replacement);
+    }
     const outputCode = magicString.toString();
     let outputMap;
     if (map && magicString.hasChanged()) {
@@ -240,7 +288,7 @@ async function transformWithOxc(code, map, options, translation) {
         // inputs. Encoding the mappings only for remapping to immediately decode them again doubles
         // the peak memory of the largest structure involved in inlining a file.
         const rawMap = magicString.generateDecodedMap({
-            source: options.filename,
+            source: filename,
             includeContent: true,
             hires: 'boundary',
         });
@@ -251,5 +299,17 @@ async function transformWithOxc(code, map, options, translation) {
         map: outputMap && JSON.stringify(outputMap),
         diagnostics,
     };
+}
+/**
+ * Transforms a JavaScript file using OXC and Magic-String to inline the request locale and translation.
+ * @param code A string containing the JavaScript code to transform.
+ * @param map A sourcemap object for the provided JavaScript code.
+ * @param options The inline request options to use.
+ * @param translation The translation messages to inline, or undefined for an untranslated locale.
+ * @returns An object containing the code, map, and diagnostics from the transformation.
+ */
+async function transformWithOxc(code, map, options, translation) {
+    const metadata = extractLocalizeMetadata(options.filename, code);
+    return inlineLocalize(code, map, metadata, options.locale, translation, options.filename);
 }
 //# sourceMappingURL=i18n-inliner-worker.js.map

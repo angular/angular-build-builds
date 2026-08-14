@@ -81,13 +81,23 @@ class AngularCompilation {
             removeComments: false,
         }));
     }
+    emitAffectedFiles() {
+        return [];
+    }
     async diagnoseFiles(modes = DiagnosticModes.All) {
+        if (!this.collectDiagnostics) {
+            return {};
+        }
         const result = {};
         // Avoid loading typescript until actually needed.
         // This allows for avoiding the load of typescript in the main thread when using the parallel compilation.
         const typescript = await AngularCompilation.loadTypescript();
         await (0, profiling_1.profileAsync)('NG_DIAGNOSTICS_TOTAL', async () => {
-            for (const diagnostic of await this.collectDiagnostics(modes)) {
+            const diagnostics = await this.collectDiagnostics?.(modes);
+            if (!diagnostics) {
+                return;
+            }
+            for (const diagnostic of diagnostics) {
                 const message = (0, diagnostics_1.convertTypeScriptDiagnostic)(typescript, diagnostic);
                 if (diagnostic.category === typescript.DiagnosticCategory.Error) {
                     (result.errors ??= []).push(message);

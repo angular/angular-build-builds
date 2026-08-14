@@ -88,7 +88,7 @@ class JitCompilation extends angular_compilation_1.AngularCompilation {
         const referencedFiles = typeScriptProgram
             .getSourceFiles()
             .map((sourceFile) => sourceFile.fileName);
-        return { affectedFiles, compilerOptions, referencedFiles };
+        return { compilerOptions, referencedFiles };
     }
     *collectDiagnostics(modes) {
         (0, node_assert_1.default)(this.#state, 'Compilation must be initialized prior to collecting diagnostics.');

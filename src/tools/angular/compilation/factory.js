@@ -44,18 +44,23 @@ exports.createAngularCompilation = createAngularCompilation;
 const environment_options_1 = require("../../../utils/environment-options");
 /**
  * Creates an Angular compilation object that can be used to perform Angular application
- * compilation either for AOT or JIT mode. By default a parallel compilation is created
+ * compilation either for AOT, JIT, or on-demand transform mode. By default a parallel compilation is created
  * that uses a Node.js worker thread.
- * @param jit True, for Angular JIT compilation; False, for Angular AOT compilation.
+ * @param mode True or 'jit' for JIT mode; False or 'aot' for AOT compilation; 'transform' for on-demand transformation.
  * @param browserOnlyBuild True, for browser only builds; False, for browser and server builds.
+ * @param parallel True to execute compilation in a worker thread.
  * @returns An instance of an Angular compilation object.
  */
-async function createAngularCompilation(jit, browserOnlyBuild, parallel = environment_options_1.useParallelTs) {
+async function createAngularCompilation(mode, browserOnlyBuild, parallel = environment_options_1.useParallelTs) {
+    if (mode === 'transform') {
+        throw new Error('Transform compilation mode is not supported.');
+    }
+    const isJit = mode === true || mode === 'jit';
     if (parallel) {
         const { ParallelCompilation } = await Promise.resolve().then(() => __importStar(require('./parallel-compilation')));
-        return new ParallelCompilation(jit, browserOnlyBuild);
+        return new ParallelCompilation(isJit, browserOnlyBuild);
     }
-    if (jit) {
+    if (isJit) {
         const { JitCompilation } = await Promise.resolve().then(() => __importStar(require('./jit-compilation')));
         return new JitCompilation(browserOnlyBuild);
     }

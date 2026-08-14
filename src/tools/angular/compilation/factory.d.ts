@@ -6,12 +6,14 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 import type { AngularCompilation } from './angular-compilation';
+export type AngularCompilationMode = 'aot' | 'jit' | 'transform';
 /**
  * Creates an Angular compilation object that can be used to perform Angular application
- * compilation either for AOT or JIT mode. By default a parallel compilation is created
+ * compilation either for AOT, JIT, or on-demand transform mode. By default a parallel compilation is created
  * that uses a Node.js worker thread.
- * @param jit True, for Angular JIT compilation; False, for Angular AOT compilation.
+ * @param mode True or 'jit' for JIT mode; False or 'aot' for AOT compilation; 'transform' for on-demand transformation.
  * @param browserOnlyBuild True, for browser only builds; False, for browser and server builds.
+ * @param parallel True to execute compilation in a worker thread.
  * @returns An instance of an Angular compilation object.
  */
-export declare function createAngularCompilation(jit: boolean, browserOnlyBuild: boolean, parallel?: boolean): Promise<AngularCompilation>;
+export declare function createAngularCompilation(mode: boolean | AngularCompilationMode, browserOnlyBuild: boolean, parallel?: boolean): Promise<AngularCompilation>;

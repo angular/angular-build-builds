@@ -14,7 +14,7 @@ class NoopCompilation extends angular_compilation_1.AngularCompilation {
         // Load the compiler configuration and transform as needed
         const { options: originalCompilerOptions } = await this.loadConfiguration(tsconfig);
         const compilerOptions = compilerOptionsTransformer?.(originalCompilerOptions) ?? originalCompilerOptions;
-        return { affectedFiles: new Set(), compilerOptions, referencedFiles: [] };
+        return { compilerOptions, referencedFiles: [] };
     }
     collectDiagnostics() {
         throw new Error('Not available when using noop compilation.');
