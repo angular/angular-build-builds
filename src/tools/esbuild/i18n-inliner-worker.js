@@ -52,13 +52,35 @@ const node_v8_1 = require("node:v8");
 const node_worker_threads_1 = require("node:worker_threads");
 const oxc_parser_1 = require("oxc-parser");
 // Extract the application files and common options used for inline requests from the Worker context
-const { files, missingTranslation, shouldOptimize } = (node_worker_threads_1.workerData || {});
+const { files, missingTranslation } = (node_worker_threads_1.workerData || {});
 /**
- * The translation messages deserialized for the locale most recently requested of this Worker.
- * Locales are inlined one at a time, so retaining only the active locale is enough to avoid
- * deserializing the messages once per file while holding at most one set of messages in memory.
+ * Cache of file data promises keyed by filename.
  */
-let activeTranslation;
+const fileDataCache = new Map();
+/**
+ * Cache of deserialized translation messages keyed by locale.
+ */
+const deserializedTranslations = new Map();
+/**
+ * Retrieves the cached file data for a filename, loading and extracting it on the first request.
+ *
+ * @param filename The name of the file to load.
+ * @returns The cached code and localization metadata.
+ */
+function getFileData(filename) {
+    let fileDataPromise = fileDataCache.get(filename);
+    if (!fileDataPromise) {
+        fileDataPromise = (async () => {
+            const data = files.get(filename);
+            (0, node_assert_1.default)(data !== undefined, `Invalid inline request for file '${filename}'.`);
+            const code = await data.text();
+            const metadata = extractLocalizeMetadata(filename, code);
+            return { code, metadata };
+        })();
+        fileDataCache.set(filename, fileDataPromise);
+    }
+    return fileDataPromise;
+}
 /**
  * Deserializes the translation messages for an inline request, reusing the result for any
  * subsequent request that targets the same locale.
@@ -70,17 +92,14 @@ function loadTranslation(request) {
     if (!translation) {
         return undefined;
     }
-    if (activeTranslation?.locale !== locale) {
-        activeTranslation = {
-            locale,
-            // Deserializing within the stored promise ensures that concurrent requests for a locale
-            // share the one deserialization instead of each performing their own.
-            messages: translation
-                .arrayBuffer()
-                .then((buffer) => (0, node_v8_1.deserialize)(new Uint8Array(buffer))),
-        };
+    let messagesPromise = deserializedTranslations.get(locale);
+    if (!messagesPromise) {
+        messagesPromise = translation
+            .arrayBuffer()
+            .then((buffer) => (0, node_v8_1.deserialize)(new Uint8Array(buffer)));
+        deserializedTranslations.set(locale, messagesPromise);
     }
-    return activeTranslation.messages;
+    return messagesPromise;
 }
 /**
  * Inlines the provided locale and translation into a JavaScript file that contains `$localize` usage.
@@ -90,11 +109,14 @@ function loadTranslation(request) {
  * @returns An object containing the inlined file and optional map content.
  */
 async function inlineFile(request) {
-    const data = files.get(request.filename);
-    (0, node_assert_1.default)(data !== undefined, `Invalid inline request for file '${request.filename}'.`);
-    const code = await data.text();
-    const map = await files.get(request.filename + '.map')?.text();
-    const result = await transformWithOxc(code, map && JSON.parse(map), request, await loadTranslation(request));
+    const { code, metadata } = await getFileData(request.filename);
+    // Sourcemaps are parsed on demand per request rather than cached long-term to prevent
+    // monotonic memory growth as a worker processes multiple files across the build.
+    // When multi-locale batching is implemented, the sourcemap can be parsed once per batch and released
+    // upon batch completion.
+    const rawMap = await files.get(request.filename + '.map')?.text();
+    const map = rawMap ? JSON.parse(rawMap) : undefined;
+    const result = await inlineLocalize(code, map, metadata, request.locale, await loadTranslation(request), request.filename);
     return {
         file: request.filename,
         code: result.code,
@@ -110,7 +132,8 @@ async function inlineFile(request) {
  * @returns An object containing the inlined code.
  */
 async function inlineCode(request) {
-    const result = await transformWithOxc(request.code, undefined, request, await loadTranslation(request));
+    const metadata = extractLocalizeMetadata(request.filename, request.code);
+    const result = await inlineLocalize(request.code, undefined, metadata, request.locale, await loadTranslation(request), request.filename);
     return {
         output: result.code,
         messages: result.diagnostics.messages,
@@ -299,17 +322,5 @@ async function inlineLocalize(code, map, metadata, locale, translation, filename
         map: outputMap && JSON.stringify(outputMap),
         diagnostics,
     };
-}
-/**
- * Transforms a JavaScript file using OXC and Magic-String to inline the request locale and translation.
- * @param code A string containing the JavaScript code to transform.
- * @param map A sourcemap object for the provided JavaScript code.
- * @param options The inline request options to use.
- * @param translation The translation messages to inline, or undefined for an untranslated locale.
- * @returns An object containing the code, map, and diagnostics from the transformation.
- */
-async function transformWithOxc(code, map, options, translation) {
-    const metadata = extractLocalizeMetadata(options.filename, code);
-    return inlineLocalize(code, map, metadata, options.locale, translation, options.filename);
 }
 //# sourceMappingURL=i18n-inliner-worker.js.map

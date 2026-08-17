@@ -41,19 +41,15 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SourceFileCache = void 0;
-const node_os_1 = require("node:os");
 const path = __importStar(require("node:path"));
 const load_result_cache_1 = require("../load-result-cache");
-const USING_WINDOWS = (0, node_os_1.platform)() === 'win32';
-const WINDOWS_SEP_REGEXP = new RegExp(`\\${path.win32.sep}`, 'g');
-class SourceFileCache extends Map {
+class SourceFileCache {
     persistentCachePath;
     modifiedFiles = new Set();
     typeScriptFileCache = new Map();
     loadResultCache = new load_result_cache_1.MemoryLoadResultCache();
     referencedFiles;
     constructor(persistentCachePath) {
-        super();
         this.persistentCachePath = persistentCachePath;
     }
     /**
@@ -62,7 +58,6 @@ class SourceFileCache extends Map {
      * program. The cache is repopulated if a build is performed after this is called.
      */
     clear() {
-        super.clear();
         this.modifiedFiles.clear();
         this.typeScriptFileCache.clear();
         this.loadResultCache.clear();
@@ -78,11 +73,6 @@ class SourceFileCache extends Map {
             file = path.normalize(file);
             invalid = this.loadResultCache.invalidate(file) || invalid;
             invalid = extraWatchFiles.has(file) || invalid;
-            // Normalize separators to allow matching TypeScript Host paths
-            if (USING_WINDOWS) {
-                file = file.replace(WINDOWS_SEP_REGEXP, path.posix.sep);
-            }
-            invalid = this.delete(file) || invalid;
             this.modifiedFiles.add(file);
         }
         return invalid;

@@ -46,6 +46,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.JitCompilation = void 0;
 const node_assert_1 = __importDefault(require("node:assert"));
 const typescript_1 = __importDefault(require("typescript"));
+const path_1 = require("../../../utils/path");
 const profiling_1 = require("../../esbuild/profiling");
 const angular_host_1 = require("../angular-host");
 const jit_resource_transformer_1 = require("../transformers/jit-resource-transformer");
@@ -69,6 +70,7 @@ class JitCompilationState {
 class JitCompilation extends angular_compilation_1.AngularCompilation {
     browserOnlyBuild;
     #state;
+    #sourceFiles = new Map();
     constructor(browserOnlyBuild) {
         super();
         this.browserOnlyBuild = browserOnlyBuild;
@@ -79,11 +81,15 @@ class JitCompilation extends angular_compilation_1.AngularCompilation {
         // Load the compiler configuration and transform as needed
         const { options: originalCompilerOptions, rootNames, errors: configurationDiagnostics, } = await this.loadConfiguration(tsconfig);
         const compilerOptions = compilerOptionsTransformer?.(originalCompilerOptions) ?? originalCompilerOptions;
+        if (hostOptions.modifiedFiles) {
+            for (const modifiedFile of hostOptions.modifiedFiles) {
+                this.#sourceFiles.delete((0, path_1.toPosixPath)(modifiedFile));
+            }
+        }
         // Create Angular compiler host
-        const host = (0, angular_host_1.createAngularCompilerHost)(typescript_1.default, compilerOptions, hostOptions, undefined);
+        const host = (0, angular_host_1.createAngularCompilerHost)(typescript_1.default, compilerOptions, hostOptions, undefined, this.#sourceFiles);
         // Create the TypeScript Program
         const typeScriptProgram = (0, profiling_1.profileSync)('TS_CREATE_PROGRAM', () => typescript_1.default.createEmitAndSemanticDiagnosticsBuilderProgram(rootNames, compilerOptions, host, this.#state?.typeScriptProgram ?? typescript_1.default.readBuilderProgram(compilerOptions, host), configurationDiagnostics));
-        const affectedFiles = (0, profiling_1.profileSync)('TS_FIND_AFFECTED', () => findAffectedFiles(typeScriptProgram));
         this.#state = new JitCompilationState(host, typeScriptProgram, constructorParametersDownlevelTransform(typeScriptProgram.getProgram()), (0, jit_resource_transformer_1.createJitResourceTransformer)(() => typeScriptProgram.getProgram().getTypeChecker()), (0, web_worker_transformer_1.createWorkerTransformer)(hostOptions.processWebWorker.bind(hostOptions)));
         const referencedFiles = typeScriptProgram
             .getSourceFiles()
@@ -137,14 +143,11 @@ class JitCompilation extends angular_compilation_1.AngularCompilation {
         }
         return emittedFiles;
     }
+    async update(files) {
+        for (const file of files) {
+            this.#sourceFiles.delete((0, path_1.toPosixPath)(file));
+        }
+    }
 }
 exports.JitCompilation = JitCompilation;
-function findAffectedFiles(builder) {
-    const affectedFiles = new Set();
-    let result;
-    while ((result = builder.getSemanticDiagnosticsOfNextAffectedFile())) {
-        affectedFiles.add(result.affected);
-    }
-    return affectedFiles;
-}
 //# sourceMappingURL=jit-compilation.js.map

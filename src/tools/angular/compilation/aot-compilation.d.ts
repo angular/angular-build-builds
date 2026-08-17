@@ -16,4 +16,5 @@ export declare class AotCompilation extends AngularCompilation {
     initialize(tsconfig: string, hostOptions: AngularHostOptions, compilerOptionsTransformer?: (compilerOptions: ng.CompilerOptions) => ng.CompilerOptions): Promise<AngularCompilationResult>;
     protected collectDiagnostics(modes: DiagnosticModes): Iterable<ts.Diagnostic>;
     emitAffectedFiles(): Iterable<EmitFileResult>;
+    update(files: Set<string>): Promise<void>;
 }

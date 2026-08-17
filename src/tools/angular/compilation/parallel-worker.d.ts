@@ -26,4 +26,4 @@ export declare function diagnose(modes: DiagnosticModes): Promise<{
     timings?: Record<string, number[]>;
 }>;
 export declare function emit(): Promise<import("./angular-compilation").EmitFileResult[]>;
-export declare function update(files: Set<string>): void;
+export declare function update(files: Set<string>): Promise<void>;

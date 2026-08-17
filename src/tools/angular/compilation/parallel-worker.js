@@ -18,13 +18,14 @@ const node_assert_1 = __importDefault(require("node:assert"));
 const node_crypto_1 = require("node:crypto");
 const node_worker_threads_1 = require("node:worker_threads");
 const hash_1 = require("../../../utils/hash");
-const source_file_cache_1 = require("../../esbuild/angular/source-file-cache");
 const profiling_1 = require("../../esbuild/profiling");
 const aot_compilation_1 = require("./aot-compilation");
 const jit_compilation_1 = require("./jit-compilation");
 let compilation;
-const sourceFileCache = new source_file_cache_1.SourceFileCache();
+const modifiedFiles = new Set();
 async function initialize(request) {
+    const currentModifiedFiles = new Set(modifiedFiles);
+    modifiedFiles.clear();
     await (0, hash_1.initializeHash)();
     compilation ??= request.jit
         ? new jit_compilation_1.JitCompilation(request.browserOnlyBuild)
@@ -40,8 +41,7 @@ async function initialize(request) {
     });
     const { compilerOptions, referencedFiles, externalStylesheets, templateUpdates, componentResourcesDependencies, } = await compilation.initialize(request.tsconfig, {
         fileReplacements: request.fileReplacements,
-        sourceFileCache,
-        modifiedFiles: sourceFileCache.modifiedFiles,
+        modifiedFiles: currentModifiedFiles,
         transformStylesheet(data, containingFile, stylesheetFile, order, className) {
             const requestId = (0, node_crypto_1.randomUUID)();
             const resultPromise = new Promise((resolve, reject) => stylesheetRequests.set(requestId, [resolve, reject]));
@@ -104,7 +104,10 @@ async function emit() {
     const files = await compilation.emitAffectedFiles();
     return [...files];
 }
-function update(files) {
-    sourceFileCache.invalidate(files);
+async function update(files) {
+    for (const file of files) {
+        modifiedFiles.add(file);
+    }
+    await compilation?.update?.(files);
 }
 //# sourceMappingURL=parallel-worker.js.map

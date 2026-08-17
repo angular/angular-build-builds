@@ -153,7 +153,6 @@ function createCompilerPlugin(pluginOptions, compilationContextOrCompilation, st
                 const hostOptions = {
                     fileReplacements: pluginOptions.fileReplacements,
                     modifiedFiles,
-                    sourceFileCache: pluginOptions.sourceFileCache,
                     async transformStylesheet(data, containingFile, stylesheetFile, order, className) {
                         let stylesheetResult;
                         let resultSource = stylesheetFile ?? containingFile;

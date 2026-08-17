@@ -11,7 +11,6 @@ export type AngularCompilerOptions = ng.CompilerOptions;
 export type AngularCompilerHost = ng.CompilerHost;
 export interface AngularHostOptions {
     fileReplacements?: Record<string, string>;
-    sourceFileCache?: Map<string, ts.SourceFile>;
     modifiedFiles?: Set<string>;
     externalStylesheets?: Map<string, string>;
     transformStylesheet(data: string, containingFile: string, stylesheetFile?: string, order?: number, className?: string): Promise<string | null>;
@@ -24,4 +23,4 @@ export interface AngularHostOptions {
  * @param program The TypeScript Program instance to patch.
  */
 export declare function ensureSourceFileVersions(program: ts.Program): void;
-export declare function createAngularCompilerHost(typescript: typeof ts, compilerOptions: AngularCompilerOptions, hostOptions: AngularHostOptions, packageJsonCache: ts.PackageJsonInfoCache | undefined): AngularCompilerHost;
+export declare function createAngularCompilerHost(typescript: typeof ts, compilerOptions: AngularCompilerOptions, hostOptions: AngularHostOptions, packageJsonCache: ts.PackageJsonInfoCache | undefined, sourceFileCache?: Map<string, ts.SourceFile>): AngularCompilerHost;
