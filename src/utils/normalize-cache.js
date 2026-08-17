@@ -11,7 +11,7 @@ exports.normalizeCacheOptions = normalizeCacheOptions;
 const node_fs_1 = require("node:fs");
 const node_path_1 = require("node:path");
 /** Version placeholder is replaced during the build process with actual package version */
-const VERSION = '22.1.4+sha-ff1d356';
+const VERSION = '22.1.4+sha-0e36040';
 function hasCacheMetadata(value) {
     return (!!value &&
         typeof value === 'object' &&
