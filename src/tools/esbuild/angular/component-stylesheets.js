@@ -198,7 +198,7 @@ class ComponentStylesheetBundler {
                 throw new Error(`Unexpected non CSS/Media file "${filename}" outputted during component stylesheet processing.`);
             }
         }
-        const metafile = result.metafile;
+        const { metafile } = result;
         // Remove entryPoint fields from outputs to prevent the internal component styles from being
         // treated as initial files. Also mark the entry as a component resource for stat reporting.
         Object.values(metafile.outputs).forEach((output) => {
@@ -214,6 +214,7 @@ class ComponentStylesheetBundler {
             metafile,
             referencedFiles,
             externalImports: result.externalImports,
+            platform: result.platform,
             initialFiles: new Map(),
         };
     }

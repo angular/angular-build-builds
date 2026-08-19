@@ -24,11 +24,11 @@ function generateBudgetStats(metafile, outputFiles, initialFiles) {
         assets: [],
     };
     for (const { path: file, size, type } of outputFiles) {
-        if (!file.endsWith('.js') && !file.endsWith('.css')) {
-            continue;
-        }
         // Exclude server bundles
         if (type === bundler_files_1.BuildOutputFileType.ServerApplication || type === bundler_files_1.BuildOutputFileType.ServerRoot) {
+            continue;
+        }
+        if (!file.endsWith('.js') && !file.endsWith('.css')) {
             continue;
         }
         const initialRecord = initialFiles.get(file);

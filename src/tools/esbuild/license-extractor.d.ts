@@ -22,4 +22,4 @@ import type { Metafile } from 'esbuild';
  * @param rootDirectory The root directory of the workspace.
  * @returns A string containing the content of the output licenses file.
  */
-export declare function extractLicenses(metafile: Metafile, rootDirectory: string): Promise<string>;
+export declare function extractLicenses(metafiles: Metafile[], rootDirectory: string): Promise<string>;

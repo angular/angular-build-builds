@@ -26,7 +26,7 @@ const node_zlib_1 = require("node:zlib");
 const schema_1 = require("../../builders/application/schema");
 const stats_table_1 = require("../../utils/stats-table");
 const bundler_files_1 = require("./bundler-files");
-function logBuildStats(metafile, outputFiles, initial, budgetFailures, colors, changedFiles, estimatedTransferSizes, ssrOutputEnabled, verbose) {
+function logBuildStats(metafiles, outputFiles, initial, budgetFailures, colors, changedFiles, estimatedTransferSizes, ssrOutputEnabled, verbose) {
     // Remove the i18n subpath in case the build is using i18n.
     // en-US/main.js -> main.js
     const normalizedChangedFiles = new Set([...(changedFiles ?? [])].map((f) => (0, node_path_1.basename)(f)));
@@ -50,11 +50,11 @@ function logBuildStats(metafile, outputFiles, initial, budgetFailures, colors, c
             continue;
         }
         // Skip logging external component stylesheets used for HMR
-        if (metafile.outputs[file] && 'ng-component' in metafile.outputs[file]) {
+        if (metafiles.some((mf) => mf.outputs[file] && 'ng-component' in mf.outputs[file])) {
             componentStyleChange = true;
             continue;
         }
-        const name = initial.get(file)?.name ?? getChunkNameFromMetafile(metafile, file);
+        const name = initial.get(file)?.name ?? getChunkNameFromMetafile(metafiles, file);
         const stat = {
             initial: initial.has(file),
             stats: [file, name ?? '-', size, estimatedTransferSizes?.get(file) ?? '-'],
@@ -83,9 +83,12 @@ function logBuildStats(metafile, outputFiles, initial, budgetFailures, colors, c
     }
     return '';
 }
-function getChunkNameFromMetafile(metafile, file) {
-    if (metafile.outputs[file]?.entryPoint) {
-        return getEntryPointName(metafile.outputs[file].entryPoint);
+function getChunkNameFromMetafile(metafiles, file) {
+    const metafileArray = Array.isArray(metafiles) ? metafiles : [metafiles];
+    for (const metafile of metafileArray) {
+        if (metafile.outputs[file]?.entryPoint) {
+            return getEntryPointName(metafile.outputs[file].entryPoint);
+        }
     }
 }
 async function calculateEstimatedTransferSizes(outputFiles) {

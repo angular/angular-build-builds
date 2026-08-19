@@ -5,7 +5,7 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-import { BundleContextResult } from '../../tools/esbuild/bundler-context';
+import { BundleMergedContextResult } from '../../tools/esbuild/bundler-context';
 /**
  * Optimizes the chunks of a build result using rolldown.
  *
@@ -18,4 +18,4 @@ import { BundleContextResult } from '../../tools/esbuild/bundler-context';
  * @param sourcemap A boolean or 'hidden' to control sourcemap generation.
  * @returns A promise that resolves to the updated build result with optimized chunks.
  */
-export declare function optimizeChunks(original: BundleContextResult, sourcemap: boolean | 'hidden'): Promise<BundleContextResult>;
+export declare function optimizeChunks(original: BundleMergedContextResult, sourcemap: boolean | 'hidden'): Promise<BundleMergedContextResult>;

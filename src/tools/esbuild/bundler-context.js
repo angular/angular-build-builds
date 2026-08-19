@@ -55,23 +55,19 @@ class BundlerContext {
             };
         };
     }
-    static async bundleAll(contexts, changedFiles) {
-        const individualResults = await Promise.all([...contexts].map((context) => {
+    static bundleAll(contexts, changedFiles) {
+        return Promise.all([...contexts].map((context) => {
             if (changedFiles) {
                 context.invalidate(changedFiles);
             }
             return context.bundle();
         }));
-        return BundlerContext.mergeResults(individualResults);
     }
     static mergeResults(results) {
-        // Return directly if only one result
-        if (results.length === 1) {
-            return results[0];
-        }
         let errors;
         const warnings = [];
-        const metafile = { inputs: {}, outputs: {} };
+        const browserMetafile = { inputs: {}, outputs: {} };
+        const serverMetafile = { inputs: {}, outputs: {} };
         const initialFiles = new Map();
         const externalImportsBrowser = new Set();
         const externalImportsServer = new Set();
@@ -84,15 +80,17 @@ class BundlerContext {
                 errors.push(...result.errors);
                 continue;
             }
-            // Combine metafiles used for the stats option as well as bundle budgets and console output
+            const platformIsBrowser = result.platform === 'browser';
+            // Combine metafiles used for the bundle budgets and console output
             if (result.metafile) {
+                const metafile = platformIsBrowser ? browserMetafile : serverMetafile;
                 Object.assign(metafile.inputs, result.metafile.inputs);
                 Object.assign(metafile.outputs, result.metafile.outputs);
             }
+            const externalImports = platformIsBrowser ? externalImportsBrowser : externalImportsServer;
+            result.externalImports?.forEach((value) => externalImports.add(value));
             result.initialFiles.forEach((value, key) => initialFiles.set(key, value));
             outputFiles.push(...result.outputFiles);
-            result.externalImports.browser?.forEach((value) => externalImportsBrowser.add(value));
-            result.externalImports.server?.forEach((value) => externalImportsServer.add(value));
             if (result.externalConfiguration) {
                 externalConfiguration ??= new Set();
                 for (const value of result.externalConfiguration) {
@@ -106,12 +104,15 @@ class BundlerContext {
         return {
             errors,
             warnings,
-            metafile,
             initialFiles,
             outputFiles,
             externalImports: {
                 browser: externalImportsBrowser,
                 server: externalImportsServer,
+            },
+            metafiles: {
+                browser: browserMetafile,
+                server: serverMetafile,
             },
             externalConfiguration: externalConfiguration ? [...externalConfiguration] : undefined,
         };
@@ -333,9 +334,8 @@ class BundlerContext {
             ...result,
             outputFiles,
             initialFiles,
-            externalImports: {
-                [isPlatformServer ? 'server' : 'browser']: externalImports,
-            },
+            externalImports,
+            platform: isPlatformServer ? 'server' : 'browser',
             externalConfiguration,
             errors: undefined,
         };

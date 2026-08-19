@@ -192,7 +192,7 @@ async function optimizeChunks(original, sourcemap) {
         }
     }
     // No action required if no browser main entrypoint or metafile for stats
-    if (!mainFile || !original.metafile) {
+    if (!mainFile || !original.metafiles.browser) {
         return original;
     }
     const chunks = {};
@@ -281,20 +281,20 @@ async function optimizeChunks(original, sourcemap) {
         await bundle?.close();
     }
     // Update metafile
-    const newMetafile = bundleOutputToEsbuildMetafile(optimizedOutput, original.metafile);
+    const newMetafile = bundleOutputToEsbuildMetafile(optimizedOutput, original.metafiles.browser);
     // Add back the outputs that were not part of the optimization
-    for (const [path, output] of Object.entries(original.metafile.outputs)) {
+    for (const [path, output] of Object.entries(original.metafiles.browser.outputs)) {
         if (usedChunks.has(path)) {
             continue;
         }
         newMetafile.outputs[path] = output;
         for (const inputPath of Object.keys(output.inputs)) {
             if (!newMetafile.inputs[inputPath]) {
-                newMetafile.inputs[inputPath] = original.metafile.inputs[inputPath];
+                newMetafile.inputs[inputPath] = original.metafiles.browser.inputs[inputPath];
             }
         }
     }
-    original.metafile = newMetafile;
+    original.metafiles.browser = newMetafile;
     // Remove used chunks and associated sourcemaps from the original result
     original.outputFiles = original.outputFiles.filter((file) => !usedChunks.has(file.path) &&
         !(file.path.endsWith('.map') && usedChunks.has(file.path.slice(0, -4))));

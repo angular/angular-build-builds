@@ -24,7 +24,7 @@ const options_1 = require("./options");
 const schema_1 = require("./schema");
 /**
  * Run additional builds steps including SSG, AppShell, Index HTML file and Service worker generation.
- * @param metafile An esbuild metafile object.
+ * @param browserMetafile An esbuild metafile object.
  * @param options The normalized application builder options used to create the build.
  * @param outputFiles The output files of an executed build.
  * @param assetFiles The assets of an executed build.
@@ -32,7 +32,7 @@ const schema_1 = require("./schema");
  * @param locale A language locale to insert in the index.html.
  */
 // eslint-disable-next-line max-lines-per-function
-async function executePostBundleSteps(metafile, options, outputFiles, assetFiles, initialFiles, locale) {
+async function executePostBundleSteps(browserMetafile, options, outputFiles, assetFiles, initialFiles, locale) {
     const additionalAssets = [];
     const additionalOutputFiles = [];
     const allErrors = [];
@@ -65,7 +65,7 @@ async function executePostBundleSteps(metafile, options, outputFiles, assetFiles
     // Create server manifest
     const initialFilesPaths = new Set(initialFiles.keys());
     if (serverEntryPoint && (outputMode || prerenderOptions || appShellOptions || ssrOptions)) {
-        const { manifestContent, serverAssetsChunks } = (0, manifest_1.generateAngularServerAppManifest)(additionalHtmlOutputFiles, outputFiles, optimizationOptions.styles.inlineCritical ?? false, undefined, locale, baseHref, initialFilesPaths, metafile, publicPath);
+        const { manifestContent, serverAssetsChunks } = (0, manifest_1.generateAngularServerAppManifest)(additionalHtmlOutputFiles, outputFiles, optimizationOptions.styles.inlineCritical ?? false, undefined, locale, baseHref, initialFilesPaths, browserMetafile, publicPath);
         additionalOutputFiles.push(...serverAssetsChunks, (0, bundler_files_1.createOutputFile)(manifest_1.SERVER_APP_MANIFEST_FILENAME, manifestContent, bundler_files_1.BuildOutputFileType.ServerApplication));
     }
     // Pre-render (SSG) and App-shell
@@ -104,7 +104,7 @@ async function executePostBundleSteps(metafile, options, outputFiles, assetFiles
             // Regenerate the manifest to append route tree. This is only needed if SSR is enabled.
             const manifest = additionalOutputFiles.find((f) => f.path === manifest_1.SERVER_APP_MANIFEST_FILENAME);
             (0, node_assert_1.default)(manifest, `${manifest_1.SERVER_APP_MANIFEST_FILENAME} was not found in output files.`);
-            const { manifestContent, serverAssetsChunks } = (0, manifest_1.generateAngularServerAppManifest)(additionalHtmlOutputFiles, outputFiles, optimizationOptions.styles.inlineCritical ?? false, serializableRouteTreeNodeForManifest, locale, baseHref, initialFilesPaths, metafile, publicPath);
+            const { manifestContent, serverAssetsChunks } = (0, manifest_1.generateAngularServerAppManifest)(additionalHtmlOutputFiles, outputFiles, optimizationOptions.styles.inlineCritical ?? false, serializableRouteTreeNodeForManifest, locale, baseHref, initialFilesPaths, browserMetafile, publicPath);
             for (const chunk of serverAssetsChunks) {
                 const idx = additionalOutputFiles.findIndex(({ path }) => path === chunk.path);
                 if (idx === -1) {

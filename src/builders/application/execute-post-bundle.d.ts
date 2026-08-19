@@ -11,14 +11,14 @@ import { type BuildOutputFile, type InitialFileRecord } from '../../tools/esbuil
 import { NormalizedApplicationBuildOptions } from './options';
 /**
  * Run additional builds steps including SSG, AppShell, Index HTML file and Service worker generation.
- * @param metafile An esbuild metafile object.
+ * @param browserMetafile An esbuild metafile object.
  * @param options The normalized application builder options used to create the build.
  * @param outputFiles The output files of an executed build.
  * @param assetFiles The assets of an executed build.
  * @param initialFiles A map containing initial file information for the executed build.
  * @param locale A language locale to insert in the index.html.
  */
-export declare function executePostBundleSteps(metafile: Metafile, options: NormalizedApplicationBuildOptions, outputFiles: BuildOutputFile[], assetFiles: BuildOutputAsset[], initialFiles: Map<string, InitialFileRecord>, locale: string | undefined): Promise<{
+export declare function executePostBundleSteps(browserMetafile: Metafile, options: NormalizedApplicationBuildOptions, outputFiles: BuildOutputFile[], assetFiles: BuildOutputAsset[], initialFiles: Map<string, InitialFileRecord>, locale: string | undefined): Promise<{
     errors: string[];
     warnings: string[];
     additionalOutputFiles: BuildOutputFile[];

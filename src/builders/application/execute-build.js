@@ -78,7 +78,7 @@ async function executeBuild(options, context, rebuildState) {
     let bundlerContexts;
     let componentStyleBundler;
     let codeBundleCache;
-    let bundlingResult;
+    let bundlingIndividualResults;
     let templateUpdates;
     let angularCompilationContext;
     let executionResult;
@@ -94,7 +94,7 @@ async function executeBuild(options, context, rebuildState) {
             const allFileChanges = rebuildState.fileChanges.all;
             // Bundle all contexts that do not require TypeScript changed file checks.
             // These will automatically use cached results based on the changed files.
-            bundlingResult = await bundler_context_1.BundlerContext.bundleAll(bundlerContexts.otherContexts, allFileChanges);
+            bundlingIndividualResults = await bundler_context_1.BundlerContext.bundleAll(bundlerContexts.otherContexts, allFileChanges);
             // Check the TypeScript code bundling cache for changes. If invalid, force a rebundle of
             // all TypeScript related contexts.
             const forceTypeScriptRebuild = codeBundleCache?.invalidate(allFileChanges);
@@ -104,7 +104,7 @@ async function executeBuild(options, context, rebuildState) {
                 const result = await typescriptContext.bundle(forceTypeScriptRebuild);
                 typescriptResults.push(result);
             }
-            bundlingResult = bundler_context_1.BundlerContext.mergeResults([bundlingResult, ...typescriptResults]);
+            bundlingIndividualResults.push(...typescriptResults);
         }
         else {
             const target = (0, target_1.transformSupportedBrowsersToTargets)(browsers);
@@ -118,7 +118,7 @@ async function executeBuild(options, context, rebuildState) {
             bundlerContexts = (0, setup_bundling_1.setupBundlerContexts)(options, target, codeBundleCache, componentStyleBundler, angularCompilationContext, templateUpdates);
             executionResult = new bundler_execution_result_1.ExecutionResult(bundlerContexts, componentStyleBundler, codeBundleCache, templateUpdates);
             // Bundle everything on initial build
-            bundlingResult = await bundler_context_1.BundlerContext.bundleAll([
+            bundlingIndividualResults = await bundler_context_1.BundlerContext.bundleAll([
                 ...bundlerContexts.typescriptContexts,
                 ...bundlerContexts.otherContexts,
             ]);
@@ -128,8 +128,9 @@ async function executeBuild(options, context, rebuildState) {
         if (rebuildState && options.externalRuntimeStyles) {
             componentStyleBundler.invalidate(rebuildState.fileChanges.all);
             const componentResults = await componentStyleBundler.bundleAllFiles(true, true);
-            bundlingResult = bundler_context_1.BundlerContext.mergeResults([bundlingResult, ...componentResults]);
+            bundlingIndividualResults.push(...componentResults);
         }
+        let bundlingResult = bundler_context_1.BundlerContext.mergeResults(bundlingIndividualResults);
         executionResult.addWarnings(bundlingResult.warnings);
         // Add used external component style referenced files to be watched
         if (options.externalRuntimeStyles) {
@@ -172,8 +173,8 @@ async function executeBuild(options, context, rebuildState) {
         if (options.optimizationOptions.scripts) {
             // Count lazy chunks (files not needed for initial load).
             // Advanced chunk optimization is most beneficial when there are multiple lazy chunks.
-            const { metafile, initialFiles } = bundlingResult;
-            const lazyChunksCount = Object.keys(metafile.outputs).filter((path) => path.endsWith('.js') && !initialFiles.has(path)).length;
+            const { metafiles, initialFiles } = bundlingResult;
+            const lazyChunksCount = Object.keys(metafiles.browser.outputs || {}).filter((path) => path.endsWith('.js') && !initialFiles.has(path)).length;
             // Only run if the number of lazy chunks meets the configured threshold.
             // This avoids overhead for small projects with few chunks.
             if (lazyChunksCount >= environment_options_1.optimizeChunksThreshold) {
@@ -231,12 +232,13 @@ async function executeBuild(options, context, rebuildState) {
             }
             executionResult.setExternalMetadata(implicitBrowser, implicitServer, [...explicitExternal]);
         }
-        const { metafile, initialFiles, outputFiles } = bundlingResult;
+        const { metafiles: { browser: browserMetafile, server: serverMetafile }, initialFiles, outputFiles, } = bundlingResult;
+        const metafiles = [browserMetafile, serverMetafile];
         executionResult.outputFiles.push(...outputFiles);
         // Analyze files for bundle budget failures if present
         let budgetFailures;
         if (options.budgets) {
-            const compatStats = (0, budget_stats_1.generateBudgetStats)(metafile, outputFiles, initialFiles);
+            const compatStats = (0, budget_stats_1.generateBudgetStats)(browserMetafile, outputFiles, initialFiles);
             budgetFailures = [...(0, bundle_calculator_1.checkBudgets)(options.budgets, compatStats, true)];
             for (const { message, severity } of budgetFailures) {
                 if (severity === 'error') {
@@ -254,7 +256,7 @@ async function executeBuild(options, context, rebuildState) {
         }
         // Check metafile for CommonJS module usage if optimizing scripts
         if (optimizationOptions.scripts) {
-            const messages = (0, commonjs_checker_1.checkCommonJSModules)(metafile, options.allowedCommonJsDependencies);
+            const messages = (0, commonjs_checker_1.checkCommonJSModules)(browserMetafile, options.allowedCommonJsDependencies);
             executionResult.addWarnings(messages);
         }
         // Copy assets
@@ -263,7 +265,7 @@ async function executeBuild(options, context, rebuildState) {
         }
         // Extract and write licenses for used packages
         if (options.extractLicenses) {
-            executionResult.addOutputFile('3rdpartylicenses.txt', await (0, license_extractor_1.extractLicenses)(metafile, workspaceRoot), bundler_files_1.BuildOutputFileType.Root);
+            executionResult.addOutputFile('3rdpartylicenses.txt', await (0, license_extractor_1.extractLicenses)(metafiles, workspaceRoot), bundler_files_1.BuildOutputFileType.Root);
         }
         // Watch input index HTML file if configured
         if (options.indexHtmlOptions) {
@@ -277,13 +279,13 @@ async function executeBuild(options, context, rebuildState) {
         }
         // Perform i18n translation inlining if enabled
         if (i18nOptions.shouldInline) {
-            const result = await (0, i18n_1.inlineI18n)(metafile, options, executionResult, initialFiles);
+            const result = await (0, i18n_1.inlineI18n)(browserMetafile, options, executionResult, initialFiles);
             executionResult.addErrors(result.errors);
             executionResult.addWarnings(result.warnings);
             executionResult.addPrerenderedRoutes(result.prerenderedRoutes);
         }
         else {
-            const result = await (0, execute_post_bundle_1.executePostBundleSteps)(metafile, options, executionResult.outputFiles, executionResult.assetFiles, initialFiles, 
+            const result = await (0, execute_post_bundle_1.executePostBundleSteps)(browserMetafile, options, executionResult.outputFiles, executionResult.assetFiles, initialFiles, 
             // Set lang attribute to the defined source locale if present
             i18nOptions.hasDefinedSourceLocale ? i18nOptions.sourceLocale : undefined);
             // Deduplicate and add errors and warnings
@@ -293,14 +295,19 @@ async function executeBuild(options, context, rebuildState) {
             executionResult.outputFiles.push(...result.additionalOutputFiles);
             executionResult.assetFiles.push(...result.additionalAssets);
         }
-        executionResult.addOutputFile('prerendered-routes.json', JSON.stringify({ routes: executionResult.prerenderedRoutes }, null, 2), bundler_files_1.BuildOutputFileType.Root);
-        // Write metafile if stats option is enabled
+        if (serverEntryPoint) {
+            executionResult.addOutputFile('prerendered-routes.json', JSON.stringify({ routes: executionResult.prerenderedRoutes }, null, 2), bundler_files_1.BuildOutputFileType.Root);
+        }
+        // Write metafiles if stats option is enabled
         if (options.stats) {
-            executionResult.addOutputFile('stats.json', JSON.stringify(metafile, null, 2), bundler_files_1.BuildOutputFileType.Root);
+            executionResult.addOutputFile('browser-stats.json', JSON.stringify(browserMetafile, null, 2), bundler_files_1.BuildOutputFileType.Root);
+            if (serverEntryPoint) {
+                executionResult.addOutputFile('server-stats.json', JSON.stringify(serverMetafile, null, 2), bundler_files_1.BuildOutputFileType.Root);
+            }
         }
         if (!jsonLogs && !options.quiet) {
             const changedFiles = rebuildState && executionResult.findChangedFiles(rebuildState.previousOutputInfo);
-            executionResult.addLog((0, utils_1.logBuildStats)(metafile, outputFiles, initialFiles, budgetFailures, colors, changedFiles, estimatedTransferSizes, !!ssrOptions, verbose));
+            executionResult.addLog((0, utils_1.logBuildStats)(metafiles, outputFiles, initialFiles, budgetFailures, colors, changedFiles, estimatedTransferSizes, !!ssrOptions, verbose));
         }
         return executionResult;
     }

@@ -15,11 +15,27 @@ export type BundleContextResult = {
     errors: undefined;
     warnings: Message[];
     metafile: Metafile;
+    platform: 'browser' | 'server';
+    outputFiles: BuildOutputFile[];
+    initialFiles: Map<string, InitialFileRecord>;
+    externalImports: Set<string>;
+    externalConfiguration?: string[];
+};
+export type BundleMergedContextResult = {
+    errors: Message[];
+    warnings: Message[];
+} | {
+    errors: undefined;
+    warnings: Message[];
+    metafiles: {
+        browser: Metafile;
+        server: Metafile;
+    };
     outputFiles: BuildOutputFile[];
     initialFiles: Map<string, InitialFileRecord>;
     externalImports: {
-        server?: Set<string>;
-        browser?: Set<string>;
+        server: Set<string>;
+        browser: Set<string>;
     };
     externalConfiguration?: string[];
 };
@@ -32,8 +48,8 @@ export declare class BundlerContext {
     private initialFilter?;
     readonly watchFiles: Set<string>;
     constructor(workspaceRoot: string, incremental: boolean, options: BuildOptions | BundlerOptionsFactory, alwaysUseContext?: boolean, initialFilter?: ((initial: Readonly<InitialFileRecord>) => boolean) | undefined);
-    static bundleAll(contexts: Iterable<BundlerContext>, changedFiles?: Iterable<string>): Promise<BundleContextResult>;
-    static mergeResults(results: BundleContextResult[]): BundleContextResult;
+    static bundleAll(contexts: Iterable<BundlerContext>, changedFiles?: Iterable<string>): Promise<BundleContextResult[]>;
+    static mergeResults(results: BundleContextResult[]): BundleMergedContextResult;
     /**
      * Executes the esbuild build function and normalizes the build result in the event of a
      * build failure that results in no output being generated.
