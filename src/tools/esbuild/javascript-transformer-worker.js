@@ -51,7 +51,6 @@ const node_worker_threads_1 = require("node:worker_threads");
 const piscina_1 = __importDefault(require("piscina"));
 const environment_options_js_1 = require("../../utils/environment-options.js");
 const source_map_1 = require("../../utils/source-map");
-const oxc_linker_js_1 = require("../angular/linker/oxc-linker.js");
 const oxc_transform_js_1 = require("../oxc/oxc-transform.js");
 const { sourcemap = false, thirdPartySourcemaps = false, advancedOptimizations = false, jit = false, } = (node_worker_threads_1.workerData || {});
 const textDecoder = new TextDecoder();
@@ -153,57 +152,48 @@ async function transformJavaScriptImpl(filename, data, options) {
         code = result.code;
         coverageMap = result.map;
     }
-    if (shouldLink) {
-        if (environment_options_js_1.useBabelLinker) {
-            const { createEs2015LinkerPlugin } = await Promise.resolve().then(() => __importStar(require('@angular/compiler-cli/linker/babel')));
-            const { ConsoleLogger, LogLevel } = await Promise.resolve().then(() => __importStar(require('@angular/compiler-cli')));
-            const result = await (0, core_1.transformAsync)(code, {
-                filename,
-                inputSourceMap: false,
-                sourceMaps: !!useInputSourcemap,
-                compact: false,
-                configFile: false,
-                babelrc: false,
-                browserslistConfigFile: false,
-                plugins: [
-                    createEs2015LinkerPlugin({
-                        fileSystem: {
-                            exists: () => false,
-                            readFile: () => '',
-                            resolve: (...paths) => paths.join('/'),
-                            dirname: (path) => path.split('/').slice(0, -1).join('/'),
-                            relative: (_from, to) => to,
-                        },
-                        logger: new ConsoleLogger(LogLevel.info),
-                        linkerJitMode: jit,
-                        // This is a workaround until https://github.com/angular/angular/issues/42769 is fixed.
-                        sourceMapping: false,
-                    }),
-                ],
-            });
-            code = result?.code ?? code;
-            if (result?.map) {
-                maps.push(result.map);
-            }
-        }
-        else {
-            const result = (0, oxc_linker_js_1.linkWithOxc)(filename, code, {
-                sourcemap: useInputSourcemap,
-                jit,
-                skipCheck: true,
-            });
-            code = result.code;
-            if (result.map) {
-                maps.push(result.map);
-            }
+    if (shouldLink && environment_options_js_1.useBabelLinker) {
+        const { createEs2015LinkerPlugin } = await Promise.resolve().then(() => __importStar(require('@angular/compiler-cli/linker/babel')));
+        const { ConsoleLogger, LogLevel } = await Promise.resolve().then(() => __importStar(require('@angular/compiler-cli')));
+        const result = await (0, core_1.transformAsync)(code, {
+            filename,
+            inputSourceMap: false,
+            sourceMaps: !!useInputSourcemap,
+            compact: false,
+            configFile: false,
+            babelrc: false,
+            browserslistConfigFile: false,
+            plugins: [
+                createEs2015LinkerPlugin({
+                    fileSystem: {
+                        exists: () => false,
+                        readFile: () => '',
+                        resolve: (...paths) => paths.join('/'),
+                        dirname: (path) => path.split('/').slice(0, -1).join('/'),
+                        relative: (_from, to) => to,
+                    },
+                    logger: new ConsoleLogger(LogLevel.info),
+                    linkerJitMode: jit,
+                    // This is a workaround until https://github.com/angular/angular/issues/42769 is fixed.
+                    sourceMapping: false,
+                }),
+            ],
+        });
+        code = result?.code ?? code;
+        if (result?.map) {
+            maps.push(result.map);
         }
     }
-    // Run advanced optimizations using our fast oxc-transform
-    if (advancedOptimizations) {
+    // Run Oxc linking and/or advanced optimizations in a single unified AST traversal pass
+    const oxcLink = shouldLink && !environment_options_js_1.useBabelLinker;
+    if (oxcLink || advancedOptimizations) {
         const sideEffectFree = options.sideEffects === false;
         const safeAngularPackage = sideEffectFree && /[\\/]node_modules[\\/]@angular[\\/]/.test(filename);
         const topLevelSafeMode = !safeAngularPackage;
         const result = (0, oxc_transform_js_1.transform)(filename, code, {
+            link: oxcLink,
+            jit,
+            advancedOptimizations,
             sourcemap: useInputSourcemap,
             sideEffects: options.sideEffects,
             topLevelSafeMode,

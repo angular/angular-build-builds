@@ -5,22 +5,18 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-import type { DecodedSourceMap } from '@ampproject/remapping';
-export interface OxcLinkerOptions {
-    sourcemap?: boolean;
-    jit?: boolean;
-    skipCheck?: boolean;
-}
+import type { CallExpression } from '@oxc-project/types';
 /**
- * Executes Angular partial declaration linking on the specified JavaScript file
- * using `oxc-parser` and `magic-string`.
- *
- * @param filename The full path to the file.
- * @param code The source code content.
- * @param options Linker options (sourcemap, jit, skipCheck).
- * @returns An object containing the transformed code and optional source map.
+ * Manages Angular partial declaration linking using Oxc AST nodes.
  */
-export declare function linkWithOxc(filename: string, code: string, options?: OxcLinkerOptions): {
-    code: string;
-    map: DecodedSourceMap | undefined;
-};
+export declare class OxcLinker {
+    #private;
+    constructor(filename: string, code: string, jit?: boolean);
+    /**
+     * Attempts to link an Angular partial declaration CallExpression.
+     *
+     * @param node The CallExpression AST node to check and link.
+     * @returns The linked code string if the node is a partial declaration, or undefined otherwise.
+     */
+    linkCallExpression(node: CallExpression): string | undefined;
+}

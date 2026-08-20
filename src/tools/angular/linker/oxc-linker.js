@@ -6,15 +6,10 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.linkWithOxc = linkWithOxc;
+exports.OxcLinker = void 0;
 const compiler_cli_1 = require("@angular/compiler-cli");
 const linker_1 = require("@angular/compiler-cli/linker");
-const magic_string_1 = __importDefault(require("magic-string"));
-const oxc_parser_1 = require("oxc-parser");
 const oxc_ast_host_1 = require("./oxc-ast-host");
 const string_ast_factory_1 = require("./string-ast-factory");
 /**
@@ -44,94 +39,37 @@ const noopFileSystem = {
     dirname: (path) => path.split('/').slice(0, -1).join('/'),
     relative: (_from, to) => to,
 };
-const SHARED_LOGGER = new compiler_cli_1.ConsoleLogger(compiler_cli_1.LogLevel.info);
-const SHARED_AST_HOST = new oxc_ast_host_1.OxcAstHost();
-const SHARED_DECLARATION_SCOPE = new InlineDeclarationScope();
+let SHARED_LOGGER;
+let SHARED_AST_HOST;
+let SHARED_DECLARATION_SCOPE;
 /**
- * Recursively traverses ESTree AST nodes with subtree pruning.
- * When `onCallExpression` returns `true` for a linked `CallExpression`,
- * child traversal into `callee` and `arguments` is skipped.
- *
- * Why subtree pruning is safe for the linker:
- * - Angular partial declarations (`ɵɵngDeclareComponent`, `ɵɵngDeclareDirective`,
- *   etc.) are never nested inside each other.
- * - Once a declaration `CallExpression` is linked and replaced, there can never be
- *   another partial declaration within its metadata argument object. Pruning its
- *   subtree avoids traversing hundreds of unnecessary metadata argument nodes per
- *   component.
+ * Manages Angular partial declaration linking using Oxc AST nodes.
  */
-function visitNode(node, onCallExpression) {
-    if (node === null || node === undefined || typeof node !== 'object') {
-        return;
+class OxcLinker {
+    #fileLinker;
+    constructor(filename, code, jit = false) {
+        SHARED_LOGGER ??= new compiler_cli_1.ConsoleLogger(compiler_cli_1.LogLevel.info);
+        SHARED_AST_HOST ??= new oxc_ast_host_1.OxcAstHost();
+        SHARED_DECLARATION_SCOPE ??= new InlineDeclarationScope();
+        const astFactory = new string_ast_factory_1.StringAstFactory(code);
+        const linkerEnvironment = linker_1.LinkerEnvironment.create(noopFileSystem, SHARED_LOGGER, SHARED_AST_HOST, astFactory, { linkerJitMode: jit, sourceMapping: false });
+        this.#fileLinker = new linker_1.FileLinker(linkerEnvironment, filename, code);
     }
-    if (Array.isArray(node)) {
-        for (let i = 0; i < node.length; i++) {
-            visitNode(node[i], onCallExpression);
-        }
-        return;
-    }
-    const nodeType = node.type;
-    if (!nodeType) {
-        return;
-    }
-    if (nodeType === 'CallExpression') {
-        if (onCallExpression(node)) {
-            // Subtree pruning: partial declarations cannot be nested, so skip child traversal.
-            return;
-        }
-    }
-    const keys = oxc_parser_1.visitorKeys[nodeType];
-    if (keys) {
-        for (let i = 0; i < keys.length; i++) {
-            const child = node[keys[i]];
-            if (child !== undefined && child !== null) {
-                visitNode(child, onCallExpression);
-            }
-        }
-    }
-}
-/**
- * Executes Angular partial declaration linking on the specified JavaScript file
- * using `oxc-parser` and `magic-string`.
- *
- * @param filename The full path to the file.
- * @param code The source code content.
- * @param options Linker options (sourcemap, jit, skipCheck).
- * @returns An object containing the transformed code and optional source map.
- */
-function linkWithOxc(filename, code, options = {}) {
-    if (!options.skipCheck && !(0, linker_1.needsLinking)(filename, code)) {
-        return { code, map: undefined };
-    }
-    const astFactory = new string_ast_factory_1.StringAstFactory(code);
-    const linkerEnvironment = linker_1.LinkerEnvironment.create(noopFileSystem, SHARED_LOGGER, SHARED_AST_HOST, astFactory, { linkerJitMode: options.jit ?? false, sourceMapping: false });
-    const fileLinker = new linker_1.FileLinker(linkerEnvironment, filename, code);
-    const { program } = (0, oxc_parser_1.parseSync)(filename, code, { range: true });
-    let s;
-    let hasLinked = false;
-    visitNode(program, (node) => {
+    /**
+     * Attempts to link an Angular partial declaration CallExpression.
+     *
+     * @param node The CallExpression AST node to check and link.
+     * @returns The linked code string if the node is a partial declaration, or undefined otherwise.
+     */
+    linkCallExpression(node) {
         const calleeName = SHARED_AST_HOST.getSymbolName(node.callee);
-        if (calleeName && fileLinker.isPartialDeclaration(calleeName)) {
-            const args = SHARED_AST_HOST.parseArguments(node);
-            const linkedCode = fileLinker.linkPartialDeclaration(calleeName, args, SHARED_DECLARATION_SCOPE);
-            s ??= new magic_string_1.default(code);
-            s.overwrite(node.start, node.end, linkedCode);
-            hasLinked = true;
-            return true;
+        if (!calleeName || !this.#fileLinker.isPartialDeclaration(calleeName)) {
+            return undefined;
         }
-        return false;
-    });
-    if (!hasLinked || !s) {
-        return { code, map: undefined };
+        const args = SHARED_AST_HOST.parseArguments(node);
+        const linkedCode = this.#fileLinker.linkPartialDeclaration(calleeName, args, SHARED_DECLARATION_SCOPE);
+        return linkedCode;
     }
-    let map;
-    if (options.sourcemap) {
-        const rawMap = s.generateDecodedMap({ hires: true, source: filename });
-        map = { ...rawMap, version: 3 };
-    }
-    return {
-        code: s.toString(),
-        map,
-    };
 }
+exports.OxcLinker = OxcLinker;
 //# sourceMappingURL=oxc-linker.js.map

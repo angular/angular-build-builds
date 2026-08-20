@@ -8,8 +8,10 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.transform = transform;
+const linker_1 = require("@angular/compiler-cli/linker");
 const magic_string_1 = require("magic-string");
 const oxc_parser_1 = require("oxc-parser");
+const oxc_linker_1 = require("../angular/linker/oxc-linker");
 /**
  * A set of constructor names that are considered to be side-effect free.
  */
@@ -229,7 +231,10 @@ function analyzeClassStaticProperties(classNode, code) {
 // eslint-disable-next-line max-lines-per-function
 function transform(filename, code, options) {
     const { program } = (0, oxc_parser_1.parseSync)(filename, code, { range: true });
-    const s = new magic_string_1.MagicString(code);
+    const source = new magic_string_1.MagicString(code);
+    const shouldLink = options.link && (0, linker_1.needsLinking)(filename, code);
+    const linker = shouldLink ? new oxc_linker_1.OxcLinker(filename, code, options.jit) : undefined;
+    const advancedOptimizations = options.advancedOptimizations ?? true;
     const sideEffectFree = options.sideEffects === false;
     const topLevelSafeMode = options.topLevelSafeMode ?? false;
     const wrapDecorators = sideEffectFree;
@@ -356,23 +361,23 @@ function transform(filename, code, options) {
                 continue;
             }
             // 1. Remove leading/trailing characters/parentheses of the expression statement
-            s.remove(nextStatement.start, nextExpr.start);
-            s.remove(nextExpr.end, nextStatement.end);
+            source.remove(nextStatement.start, nextExpr.start);
+            source.remove(nextExpr.end, nextStatement.end);
             markEdited(nextStatement.start, nextStatement.end);
             // 2. Add return statement inside IIFE body
-            s.appendRight(callee.body.end - 1, `; return ${paramName};`);
+            source.appendRight(callee.body.end - 1, `; return ${paramName};`);
             // 3. Remove `Name = ` assignment in arguments if it's a simple identifier
             if (rightCallArgument.left.type === 'Identifier') {
                 let replacement = code.substring(rightCallArgument.right.start, rightCallArgument.right.end);
                 if (unwrapParentheses(rightCallArgument.right).type === 'AssignmentExpression') {
                     replacement = `(${replacement})`;
                 }
-                s.overwrite(arg.right.start, arg.right.end, replacement);
+                source.overwrite(arg.right.start, arg.right.end, replacement);
                 markEdited(arg.right.start, arg.right.end);
             }
             // 4. Move IIFE to the var initializer
-            s.move(nextExpr.start, nextExpr.end, decl.id.end);
-            s.appendLeft(decl.id.end, ' = /*#__PURE__*/ ');
+            source.move(nextExpr.start, nextExpr.end, decl.id.end);
+            source.appendLeft(decl.id.end, ' = /*#__PURE__*/ ');
         }
     }
     /**
@@ -481,7 +486,7 @@ function transform(filename, code, options) {
             // Perform elisions immediately
             for (const item of wrapStatementPaths) {
                 if (item.type === 'elide') {
-                    s.remove(item.statement.start, item.statement.end);
+                    source.remove(item.statement.start, item.statement.end);
                     markEdited(item.statement.start, item.statement.end);
                 }
             }
@@ -493,27 +498,27 @@ function transform(filename, code, options) {
                     : classNode;
                 if (isExportDefault) {
                     // 1. Remove `export default `
-                    s.overwrite(statement.start, classNode.start, '');
+                    source.overwrite(statement.start, classNode.start, '');
                     // 2. Wrap in IIFE
-                    s.appendRight(classNode.start, `let ${classIdName} = /*#__PURE__*/ (() => {\n`);
-                    s.appendLeft(lastStatement.end, `\nreturn ${classIdName};\n})();\nexport { ${classIdName} as default };`);
+                    source.appendRight(classNode.start, `let ${classIdName} = /*#__PURE__*/ (() => {\n`);
+                    source.appendLeft(lastStatement.end, `\nreturn ${classIdName};\n})();\nexport { ${classIdName} as default };`);
                 }
                 else if (isExportNamed) {
                     // 1. Export is kept, turn `class` into `let ClassName = IIFE`
-                    s.appendRight(classNode.start, `let ${classIdName} = /*#__PURE__*/ (() => {\n`);
-                    s.appendLeft(lastStatement.end, `\nreturn ${classIdName};\n})();`);
+                    source.appendRight(classNode.start, `let ${classIdName} = /*#__PURE__*/ (() => {\n`);
+                    source.appendLeft(lastStatement.end, `\nreturn ${classIdName};\n})();`);
                 }
                 else if (isVariableClass) {
                     // Wrap class inside init: `/*#__PURE__*/ (() => { let ClassName = class ClassName {}; return ClassName; })()`
-                    s.appendRight(classNode.start, `/*#__PURE__*/ (() => {\nlet ${classIdName} = `);
+                    source.appendRight(classNode.start, `/*#__PURE__*/ (() => {\nlet ${classIdName} = `);
                     const terminator = activeWrapPaths.length === 0 ? ';' : '';
                     const iifeClosing = activeWrapPaths.length === 0 ? '})()' : '})();';
-                    s.appendLeft(lastStatement.end, `${terminator}\nreturn ${classIdName};\n${iifeClosing}`);
+                    source.appendLeft(lastStatement.end, `${terminator}\nreturn ${classIdName};\n${iifeClosing}`);
                 }
                 else {
                     // Standard ClassDeclaration
-                    s.appendRight(classNode.start, `let ${classIdName} = /*#__PURE__*/ (() => {\n`);
-                    s.appendLeft(lastStatement.end, `\nreturn ${classIdName};\n})();`);
+                    source.appendRight(classNode.start, `let ${classIdName} = /*#__PURE__*/ (() => {\n`);
+                    source.appendLeft(lastStatement.end, `\nreturn ${classIdName};\n})();`);
                 }
                 markEdited(statement.start, lastStatement.end);
                 // Fast-forward outer loop index to skip the statements we wrapped
@@ -521,8 +526,8 @@ function transform(filename, code, options) {
             }
             else if (isExportDefault && !hasPotentialSideEffects) {
                 // Splitting default export even when not wrapped
-                s.overwrite(statement.start, classNode.start, '');
-                s.appendLeft(classNode.end, `\nexport { ${classIdName} as default };`);
+                source.overwrite(statement.start, classNode.start, '');
+                source.appendLeft(classNode.end, `\nexport { ${classIdName} as default };`);
                 markEdited(statement.start, classNode.end);
             }
         }
@@ -564,16 +569,31 @@ function transform(filename, code, options) {
             functionDepth--;
             functionStack.pop();
         },
-        Program(node) {
-            adjustTypeScriptEnumsInStatements(node.body);
-            adjustStaticMembersInStatements(node.body);
+        'Program:exit'(node) {
+            if (advancedOptimizations) {
+                adjustTypeScriptEnumsInStatements(node.body);
+                adjustStaticMembersInStatements(node.body);
+            }
         },
-        BlockStatement(node) {
-            adjustTypeScriptEnumsInStatements(node.body);
-            adjustStaticMembersInStatements(node.body);
+        'BlockStatement:exit'(node) {
+            if (advancedOptimizations) {
+                adjustTypeScriptEnumsInStatements(node.body);
+                adjustStaticMembersInStatements(node.body);
+            }
         },
         CallExpression(node) {
             if (isAlreadyEdited(node.start, node.end)) {
+                return;
+            }
+            if (linker) {
+                const linkedCode = linker.linkCallExpression(node);
+                if (linkedCode !== undefined) {
+                    source.overwrite(node.start, node.end, linkedCode);
+                    markEdited(node.start, node.end);
+                    return;
+                }
+            }
+            if (!advancedOptimizations) {
                 return;
             }
             // 1. Elide Angular Metadata check
@@ -590,7 +610,7 @@ function transform(filename, code, options) {
                 if (parentFunc &&
                     (parentFunc.type === 'FunctionExpression' ||
                         parentFunc.type === 'ArrowFunctionExpression')) {
-                    s.overwrite(node.start, node.end, 'void 0');
+                    source.overwrite(node.start, node.end, 'void 0');
                     markEdited(node.start, node.end);
                     return;
                 }
@@ -609,11 +629,12 @@ function transform(filename, code, options) {
                 return;
             }
             if (!hasPureComment(node.start)) {
-                s.appendLeft(node.start, '/*#__PURE__*/ ');
+                source.appendLeft(node.start, '/*#__PURE__*/ ');
             }
         },
         NewExpression(node) {
-            if (!pureAnnotate ||
+            if (!advancedOptimizations ||
+                !pureAnnotate ||
                 functionDepth > 0 ||
                 classDepth > 0 ||
                 isAlreadyEdited(node.start, node.end)) {
@@ -621,14 +642,14 @@ function transform(filename, code, options) {
             }
             if (!topLevelSafeMode) {
                 if (!hasPureComment(node.start)) {
-                    s.appendLeft(node.start, '/*#__PURE__*/ ');
+                    source.appendLeft(node.start, '/*#__PURE__*/ ');
                 }
                 return;
             }
             const callee = node.callee;
             if (callee.type === 'Identifier' && sideEffectFreeConstructors.has(callee.name)) {
                 if (!hasPureComment(node.start)) {
-                    s.appendLeft(node.start, '/*#__PURE__*/ ');
+                    source.appendLeft(node.start, '/*#__PURE__*/ ');
                 }
             }
         },
@@ -636,11 +657,11 @@ function transform(filename, code, options) {
     visitor.visit(program);
     let map;
     if (options.sourcemap) {
-        const rawMap = s.generateDecodedMap({ hires: true, source: filename });
+        const rawMap = source.generateDecodedMap({ hires: true, source: filename });
         map = { ...rawMap, version: 3 };
     }
     return {
-        code: s.toString(),
+        code: source.toString(),
         map,
     };
 }

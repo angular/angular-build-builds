@@ -11,6 +11,9 @@ export interface OxcTransformOptions {
     sideEffects?: boolean;
     topLevelSafeMode?: boolean;
     pureAnnotate?: boolean;
+    link?: boolean;
+    jit?: boolean;
+    advancedOptimizations?: boolean;
 }
 /**
  * Executes a single-pass optimized transformation using oxc-parser and magic-string.
