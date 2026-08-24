@@ -76,6 +76,10 @@ export declare class Cache<V, S extends CacheStore<V> = CacheStore<V>> {
      */
     put(key: string, value: V): Promise<void>;
     /**
+     * Clears internal state for a specific namespaced key (requests, write counts, and pending gets).
+     */
+    protected deleteInternal(namespacedKey: string): void;
+    /**
      * Clears the base class internal state (requests, write counts, and pending gets).
      */
     protected clearInternal(): void;
@@ -85,6 +89,12 @@ export declare class Cache<V, S extends CacheStore<V> = CacheStore<V>> {
  */
 export declare class MemoryCache<V> extends Cache<V, Map<string, V>> {
     constructor();
+    /**
+     * Removes the specified key from the cache instance.
+     * @param key The key to remove.
+     * @returns True if an element in the Map existed and has been removed, or false if the element does not exist.
+     */
+    delete(key: string): boolean;
     /**
      * Removes all entries from the cache instance.
      */

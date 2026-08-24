@@ -134,6 +134,7 @@ class ComponentStylesheetBundler {
             return;
         }
         const normalizedFiles = [...files].map(node_path_1.default.normalize);
+        const normalizedFilesSet = new Set(normalizedFiles);
         let entries;
         for (const [entry, bundler] of this.#fileContexts.entries()) {
             if (bundler.invalidate(normalizedFiles)) {
@@ -141,8 +142,18 @@ class ComponentStylesheetBundler {
                 entries.push(entry);
             }
         }
-        for (const bundler of this.#inlineContexts.values()) {
-            bundler.invalidate(normalizedFiles);
+        for (const [entry, bundler] of this.#inlineContexts.entries()) {
+            // Entry is format: [language, id, filename].join(';')
+            const firstSemi = entry.indexOf(';');
+            const secondSemi = firstSemi !== -1 ? entry.indexOf(';', firstSemi + 1) : -1;
+            const filename = secondSemi !== -1 ? entry.slice(secondSemi + 1) : '';
+            if (filename && normalizedFilesSet.has(node_path_1.default.normalize(filename))) {
+                this.#inlineContexts.delete(entry);
+                void bundler.dispose();
+            }
+            else {
+                bundler.invalidate(normalizedFiles);
+            }
         }
         return entries;
     }

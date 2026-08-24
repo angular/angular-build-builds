@@ -174,6 +174,14 @@ class Cache {
         await this.store.set(namespacedKey, value);
     }
     /**
+     * Clears internal state for a specific namespaced key (requests, write counts, and pending gets).
+     */
+    deleteInternal(namespacedKey) {
+        this.#requests.delete(namespacedKey);
+        this.#writeCounts.delete(namespacedKey);
+        this.#pendingGets.delete(namespacedKey);
+    }
+    /**
      * Clears the base class internal state (requests, write counts, and pending gets).
      */
     clearInternal() {
@@ -189,6 +197,16 @@ exports.Cache = Cache;
 class MemoryCache extends Cache {
     constructor() {
         super(new Map());
+    }
+    /**
+     * Removes the specified key from the cache instance.
+     * @param key The key to remove.
+     * @returns True if an element in the Map existed and has been removed, or false if the element does not exist.
+     */
+    delete(key) {
+        const namespacedKey = this.withNamespace(key);
+        this.deleteInternal(namespacedKey);
+        return this.store.delete(namespacedKey);
     }
     /**
      * Removes all entries from the cache instance.

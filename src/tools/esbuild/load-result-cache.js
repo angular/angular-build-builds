@@ -42,13 +42,29 @@ class MemoryLoadResultCache {
         return this.#loadResults.get(path);
     }
     async put(path, result) {
+        const previousWatchFiles = this.#watchFilesPerKey.get(path);
         if (result.errors && result.errors.length > 0) {
-            const previousWatchFiles = this.#watchFilesPerKey.get(path);
             if (previousWatchFiles) {
                 result.watchFiles = Array.from(new Set([...(result.watchFiles ?? []), ...previousWatchFiles]));
             }
         }
-        else if (result.watchFiles && result.watchFiles.length > 0) {
+        const currentNormalizedWatchFiles = new Set(result.watchFiles?.map(node_path_1.normalize) ?? []);
+        // Clean up any previous file dependencies that are no longer referenced
+        if (previousWatchFiles) {
+            for (const watchFile of previousWatchFiles) {
+                const normalizedWatchFile = (0, node_path_1.normalize)(watchFile);
+                if (!currentNormalizedWatchFiles.has(normalizedWatchFile)) {
+                    const affected = this.#fileDependencies.get(normalizedWatchFile);
+                    if (affected) {
+                        affected.delete(path);
+                        if (affected.size === 0) {
+                            this.#fileDependencies.delete(normalizedWatchFile);
+                        }
+                    }
+                }
+            }
+        }
+        if (result.watchFiles && result.watchFiles.length > 0) {
             this.#watchFilesPerKey.set(path, [...result.watchFiles]);
         }
         else {
