@@ -49,6 +49,42 @@ interface InlineCodeRequest {
     translation?: Blob;
 }
 /**
+ * The options passed to the inliner for a batch file request
+ */
+interface InlineFileBatchRequest {
+    /**
+     * The filename that should be processed. The data for the file is provided to the Worker
+     * during Worker initialization.
+     */
+    filename: string;
+    /**
+     * The locale specifiers or locale objects that should be used during the inlining process of the file.
+     */
+    locales: (string | {
+        locale: string;
+        translation?: Blob;
+    })[];
+}
+/**
+ * The result for a single locale within a batch file request.
+ */
+interface InlineLocaleResult {
+    locale: string;
+    code: string;
+    map?: string;
+    messages: {
+        type: 'error' | 'warning';
+        message: string;
+    }[];
+}
+/**
+ * The response returned from a batch file request.
+ */
+interface InlineFileBatchResult {
+    file: string;
+    results: InlineLocaleResult[];
+}
+/**
  * Inlines the provided locale and translation into a JavaScript file that contains `$localize` usage.
  * This function is the main entry for the Worker's action that is called by the worker pool.
  *
@@ -64,6 +100,13 @@ export default function inlineFile(request: InlineFileRequest): Promise<{
         message: string;
     }[];
 }>;
+/**
+ * Inlines multiple locales and translations into a JavaScript file that contains `$localize` usage.
+ *
+ * @param request An InlineFileBatchRequest object representing the options for inlining.
+ * @returns An object containing the inlined results for each requested locale.
+ */
+export declare function inlineFileBatch(request: InlineFileBatchRequest): Promise<InlineFileBatchResult>;
 /**
  * Inlines the provided locale and translation into JavaScript code that contains `$localize` usage.
  * This function is a secondary entry primarily for use with component HMR update modules.

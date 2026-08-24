@@ -6,9 +6,13 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.inlineI18n = inlineI18n;
 exports.loadActiveTranslations = loadActiveTranslations;
+const node_assert_1 = __importDefault(require("node:assert"));
 const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
 const bundler_files_1 = require("../../tools/esbuild/bundler-files");
@@ -48,7 +52,7 @@ async function inlineI18n(metafile, options, executionResult, initialFiles) {
     // Root and SSR entry files are not modified.
     const unModifiedOutputFiles = executionResult.outputFiles.filter(({ type }) => type === bundler_files_1.BuildOutputFileType.Root || type === bundler_files_1.BuildOutputFileType.ServerRoot);
     try {
-        for (const locale of i18nOptions.inlineLocales) {
+        const localesToInline = Array.from(i18nOptions.inlineLocales, (locale) => {
             const localeDescription = i18nOptions.locales[locale];
             let translationIntegrity = '';
             for (const file of localeDescription.files) {
@@ -58,8 +62,16 @@ async function inlineI18n(metafile, options, executionResult, initialFiles) {
                 }
                 translationIntegrity += (translationIntegrity ? '|' : '') + file.integrity;
             }
-            // A locale specific set of files is returned from the inliner.
-            const localeInlineResult = await inliner.inlineForLocale(locale, localeDescription.translation, translationIntegrity);
+            return {
+                locale,
+                translation: localeDescription.translation,
+                translationIntegrity,
+            };
+        });
+        const inlinedLocales = await inliner.inlineAll(localesToInline);
+        for (const locale of i18nOptions.inlineLocales) {
+            const localeInlineResult = inlinedLocales.get(locale);
+            (0, node_assert_1.default)(localeInlineResult !== undefined, 'Inlined result must exist for locale: ' + locale);
             const localeOutputFiles = localeInlineResult.outputFiles;
             inlineResult.errors.push(...localeInlineResult.errors);
             inlineResult.warnings.push(...localeInlineResult.warnings);

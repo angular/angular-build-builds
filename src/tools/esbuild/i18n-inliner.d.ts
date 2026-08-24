@@ -15,6 +15,32 @@ export interface I18nInlinerOptions {
     shouldOptimize?: boolean;
     persistentCachePath?: string;
     localizeVersion?: string;
+    translations?: ReadonlyMap<string, Blob>;
+}
+/**
+ * Options for inlining a specific locale.
+ */
+export interface LocaleInlineOptions {
+    /**
+     * The locale specifier string.
+     */
+    locale: string;
+    /**
+     * The translation messages for the locale, or undefined for the source/untranslated locale.
+     */
+    translation?: Record<string, unknown>;
+    /**
+     * An optional content integrity hash of the translation file(s) for fast cache key calculation.
+     */
+    translationIntegrity?: string;
+}
+/**
+ * Result of inlining for a specific locale.
+ */
+export interface LocaleInlineResult {
+    outputFiles: BuildOutputFile[];
+    errors: string[];
+    warnings: string[];
 }
 /**
  * A class that performs i18n translation inlining of JavaScript code.
@@ -27,6 +53,16 @@ export declare class I18nInliner {
     private readonly options;
     constructor(options: I18nInlinerOptions, maxThreads?: number);
     /**
+     * Performs inlining of translations across multiple locales in parallel.
+     *
+     * An adaptive 2D task-partitioning algorithm distributes (files x locales) work units
+     * across all worker threads while caching AST metadata and sourcemaps in worker memory.
+     *
+     * @param locales The locales and translations to inline.
+     * @returns A map of locale names to their inlined output files and diagnostics.
+     */
+    inlineAll(locales: Iterable<LocaleInlineOptions>): Promise<Map<string, LocaleInlineResult>>;
+    /**
      * Performs inlining of translations for the provided locale and translations. The files that
      * are processed originate from the files passed to the class constructor and filter by presence
      * of the localize function keyword.
@@ -35,11 +71,7 @@ export declare class I18nInliner {
      * @param translationIntegrity An optional integrity value for the translation messages to use for caching.
      * @returns A promise that resolves to an array of OutputFiles representing a translated result.
      */
-    inlineForLocale(locale: string, translation: Record<string, unknown> | undefined, translationIntegrity?: string): Promise<{
-        outputFiles: BuildOutputFile[];
-        errors: string[];
-        warnings: string[];
-    }>;
+    inlineForLocale(locale: string, translation: Record<string, unknown> | undefined, translationIntegrity?: string): Promise<LocaleInlineResult>;
     inlineTemplateUpdate(locale: string, translation: Record<string, unknown> | undefined, templateCode: string, templateId: string): Promise<{
         code: string;
         errors: string[];
