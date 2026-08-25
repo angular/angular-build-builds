@@ -21,7 +21,7 @@ const manifest_1 = require("./manifest");
 const models_1 = require("./models");
 const utils_2 = require("./utils");
 async function prerenderPages(workspaceRoot, baseHref, appShellOptions, prerenderOptions, outputFiles, assets, outputMode, sourcemap = false, maxThreads = 1) {
-    const outputFilesForWorker = {};
+    const rawOutputFiles = {};
     const serverBundlesSourceMaps = new Map();
     const warnings = [];
     const errors = [];
@@ -34,21 +34,22 @@ async function prerenderPages(workspaceRoot, baseHref, appShellOptions, prerende
             serverBundlesSourceMaps.set(path.slice(0, -4), text);
         }
         else {
-            outputFilesForWorker[path] = text;
+            rawOutputFiles[path] = text;
         }
     }
     // Inline sourcemap into JS file. This is needed to make Node.js resolve sourcemaps
     // when using `--enable-source-maps` when using in memory files.
     for (const [filePath, map] of serverBundlesSourceMaps) {
-        const jsContent = outputFilesForWorker[filePath];
+        const jsContent = rawOutputFiles[filePath];
         if (jsContent) {
-            outputFilesForWorker[filePath] =
+            rawOutputFiles[filePath] =
                 jsContent +
-                    `\n//# sourceMappingURL=` +
+                    '\n//# sourceMappingURL=' +
                     `data:application/json;base64,${Buffer.from(map).toString('base64')}`;
         }
     }
     serverBundlesSourceMaps.clear();
+    const outputFilesForWorker = (0, utils_1.createSharedServerFiles)(rawOutputFiles);
     const assetsReversed = {};
     for (const { source, destination } of assets) {
         // Assets are not stored with baseHref when using i18n,
@@ -101,7 +102,8 @@ async function prerenderPages(workspaceRoot, baseHref, appShellOptions, prerende
     // We could re-generate it from the start, but that would require a number of options to be passed down.
     const manifest = outputFilesForWorker[manifest_1.SERVER_APP_MANIFEST_FILENAME];
     if (manifest) {
-        outputFilesForWorker[manifest_1.SERVER_APP_MANIFEST_FILENAME] = manifest.replace('routes: undefined,', `routes: ${JSON.stringify(serializableRouteTreeNodeForPrerender, undefined, 2)},`);
+        const manifestText = new TextDecoder().decode(manifest);
+        outputFilesForWorker[manifest_1.SERVER_APP_MANIFEST_FILENAME] = (0, utils_1.createSharedFile)(manifestText.replace('routes: undefined,', `routes: ${JSON.stringify(serializableRouteTreeNodeForPrerender, undefined, 2)},`));
     }
     // Render routes
     const { errors: renderingErrors, output } = await renderPages(baseHref, sourcemap, serializableRouteTreeNodeForPrerender, maxThreads, workspaceRoot, outputFilesForWorker, assetsReversed, outputMode, appShellRoute ?? appShellOptions?.route);
@@ -116,13 +118,46 @@ async function prerenderPages(workspaceRoot, baseHref, appShellOptions, prerende
 async function renderPages(baseHref, sourcemap, serializableRouteTreeNode, maxThreads, workspaceRoot, outputFilesForWorker, assetFilesForWorker, outputMode, appShellRoute) {
     const output = {};
     const errors = [];
+    const baseHrefPathnameWithLeadingSlash = new URL(baseHref, 'http://localhost').pathname;
+    const appShellRouteWithoutBaseHref = appShellRoute
+        ? (0, url_1.addTrailingSlash)(appShellRoute).startsWith(baseHrefPathnameWithLeadingSlash)
+            ? (0, url_1.addLeadingSlash)(appShellRoute.slice(baseHrefPathnameWithLeadingSlash.length))
+            : (0, url_1.addLeadingSlash)(appShellRoute)
+        : undefined;
+    const routesToRender = [];
+    for (const { route, redirectTo } of serializableRouteTreeNode) {
+        // Remove the base href from the file output path.
+        const routeWithoutBaseHref = (0, url_1.addTrailingSlash)(route).startsWith(baseHrefPathnameWithLeadingSlash)
+            ? (0, url_1.addLeadingSlash)(route.slice(baseHrefPathnameWithLeadingSlash.length))
+            : route;
+        const outPath = (0, url_1.stripLeadingSlash)(node_path_1.posix.join(routeWithoutBaseHref, 'index.html'));
+        if (typeof redirectTo === 'string') {
+            output[outPath] = { content: (0, utils_2.generateRedirectStaticPage)(redirectTo), appShellRoute: false };
+            continue;
+        }
+        routesToRender.push({
+            route,
+            outPath,
+            isAppShell: appShellRouteWithoutBaseHref === routeWithoutBaseHref,
+        });
+    }
+    if (routesToRender.length === 0) {
+        return {
+            errors,
+            output,
+        };
+    }
+    // Batch routes to reduce IPC overhead while ensuring enough batches exist for load balancing across worker threads.
+    const batchSize = Math.max(1, Math.min(50, Math.ceil(routesToRender.length / (maxThreads * 4))));
+    const numBatches = Math.ceil(routesToRender.length / batchSize);
+    const effectiveMaxThreads = Math.min(numBatches, maxThreads);
     const workerExecArgv = [utils_1.IMPORT_EXEC_ARGV];
     if (sourcemap) {
         workerExecArgv.push('--enable-source-maps');
     }
     const renderWorker = new worker_pool_1.WorkerPool({
         filename: require.resolve('./render-worker'),
-        maxThreads: Math.min(serializableRouteTreeNode.length, maxThreads),
+        maxThreads: effectiveMaxThreads,
         workerData: {
             workspaceRoot,
             outputFiles: outputFilesForWorker,
@@ -137,35 +172,40 @@ async function renderPages(baseHref, sourcemap, serializableRouteTreeNode, maxTh
         },
     });
     try {
+        const routeOutPathMap = new Map();
+        for (const item of routesToRender) {
+            routeOutPathMap.set(item.route, item);
+        }
         const renderingPromises = [];
-        const appShellRouteWithLeadingSlash = appShellRoute && (0, url_1.addLeadingSlash)(appShellRoute);
-        const baseHrefPathnameWithLeadingSlash = new URL(baseHref, 'http://localhost').pathname;
-        for (const { route, redirectTo } of serializableRouteTreeNode) {
-            // Remove the base href from the file output path.
-            const routeWithoutBaseHref = (0, url_1.addTrailingSlash)(route).startsWith(baseHrefPathnameWithLeadingSlash)
-                ? (0, url_1.addLeadingSlash)(route.slice(baseHrefPathnameWithLeadingSlash.length))
-                : route;
-            const outPath = (0, url_1.stripLeadingSlash)(node_path_1.posix.join(routeWithoutBaseHref, 'index.html'));
-            if (typeof redirectTo === 'string') {
-                output[outPath] = { content: (0, utils_2.generateRedirectStaticPage)(redirectTo), appShellRoute: false };
-                continue;
-            }
-            const render = renderWorker.run({ url: route });
-            const renderResult = render
-                .then((content) => {
-                if (content !== null) {
-                    output[outPath] = {
-                        content,
-                        appShellRoute: appShellRouteWithLeadingSlash === routeWithoutBaseHref,
-                    };
+        for (let i = 0; i < routesToRender.length; i += batchSize) {
+            const batch = routesToRender.slice(i, i + batchSize);
+            const urls = batch.map((item) => item.route);
+            const renderBatchPromise = renderWorker.run(urls);
+            const batchResultPromise = renderBatchPromise
+                .then((results) => {
+                for (const { url, content, error } of results) {
+                    if (error) {
+                        errors.push(`An error occurred while prerendering route '${url}'.\n\n${error}`);
+                        continue;
+                    }
+                    if (content !== null) {
+                        const routeInfo = routeOutPathMap.get(url);
+                        if (routeInfo) {
+                            output[routeInfo.outPath] = {
+                                content,
+                                appShellRoute: routeInfo.isAppShell,
+                            };
+                        }
+                    }
                 }
             })
                 .catch((err) => {
                 (0, error_1.assertIsError)(err);
-                errors.push(`An error occurred while prerendering route '${route}'.\n\n${err.stack ?? err.message ?? err.code ?? err}`);
-                void renderWorker.destroy();
+                for (const url of urls) {
+                    errors.push(`An error occurred while prerendering route '${url}'.\n\n${err.stack ?? err.message ?? err.code ?? err}`);
+                }
             });
-            renderingPromises.push(renderResult);
+            renderingPromises.push(batchResultPromise);
         }
         await Promise.all(renderingPromises);
     }

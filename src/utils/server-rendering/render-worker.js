@@ -41,6 +41,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const node_worker_threads_1 = require("node:worker_threads");
+const error_1 = require("../error");
 const fetch_patch_1 = require("./fetch-patch");
 const launch_server_1 = require("./launch-server");
 const load_esm_from_memory_1 = require("./load-esm-from-memory");
@@ -51,19 +52,40 @@ const utils_1 = require("./utils");
 const { outputMode, hasSsrEntry } = node_worker_threads_1.workerData;
 let serverURL = launch_server_1.DEFAULT_URL;
 /**
- * Renders each route in routes and writes them to <outputPath>/<route>/index.html.
+ * Renders a single route URL.
  */
-async function renderPage({ url }) {
-    const { ɵgetOrCreateAngularServerApp: getOrCreateAngularServerApp } = await (0, load_esm_from_memory_1.loadEsmModuleFromMemory)('./main.server.mjs');
-    const angularServerApp = getOrCreateAngularServerApp({
-        allowStaticRouteRender: true,
-    });
+async function renderPage(url, angularServerApp) {
     const response = await angularServerApp.handle(new Request(new URL(url, serverURL), { signal: AbortSignal.timeout(30_000) }));
     if (!response) {
         return null;
     }
     const location = response.headers.get('Location');
     return location ? (0, utils_1.generateRedirectStaticPage)(location) : response.text();
+}
+/**
+ * Renders routes in batch or individual URL.
+ */
+async function renderPages(urls) {
+    const { ɵgetOrCreateAngularServerApp: getOrCreateAngularServerApp } = await (0, load_esm_from_memory_1.loadEsmModuleFromMemory)('./main.server.mjs');
+    const angularServerApp = getOrCreateAngularServerApp({
+        allowStaticRouteRender: true,
+    });
+    const results = [];
+    for (const currentUrl of urls) {
+        try {
+            const content = await renderPage(currentUrl, angularServerApp);
+            results.push({ url: currentUrl, content });
+        }
+        catch (err) {
+            (0, error_1.assertIsError)(err);
+            results.push({
+                url: currentUrl,
+                content: null,
+                error: err.stack ?? err.message ?? err.code ?? `${err}`,
+            });
+        }
+    }
+    return results;
 }
 async function initialize() {
     // Load the compiler because `@angular/ssr/node` depends on `@angular/` packages,
@@ -73,7 +95,7 @@ async function initialize() {
         serverURL = await (0, launch_server_1.launchServer)();
     }
     (0, fetch_patch_1.patchFetchToLoadInMemoryAssets)(serverURL);
-    return renderPage;
+    return renderPages;
 }
 exports.default = initialize();
 //# sourceMappingURL=render-worker.js.map

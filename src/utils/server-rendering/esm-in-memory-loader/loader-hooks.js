@@ -22,6 +22,7 @@ const node_url_1 = require("node:url");
  * @note For some unknown reason, setting `globalThis.ngServerMode = true` does not work when using ESM loader hooks.
  */
 const NG_SERVER_MODE_INIT_BYTES = new TextEncoder().encode('var ngServerMode=true;');
+const UTF8_DECODER = new TextDecoder();
 /**
  * Node.js ESM loader to redirect imports to in memory files.
  * @see: https://nodejs.org/api/esm.html#loaders for more information about loaders.
@@ -69,7 +70,7 @@ function resolve(specifier, context, nextResolve) {
             specifierUrl = new URL(specifier, context.parentURL);
         }
         catch { }
-        if (specifierUrl?.pathname &&
+        if (specifierUrl?.href.startsWith(memoryVirtualRootUrl) &&
             Object.hasOwn(outputFiles, specifierUrl.href.slice(memoryVirtualRootUrl.length))) {
             return {
                 format: 'module',
@@ -92,11 +93,12 @@ async function load(url, context, nextLoad) {
     const { format } = context;
     // Load the file from memory if the URL is based in the virtual root
     if (url.startsWith(memoryVirtualRootUrl)) {
-        const source = outputFiles[url.slice(memoryVirtualRootUrl.length)];
-        (0, node_assert_1.default)(source !== undefined, 'Resolved in-memory ESM file should always exist: ' + url);
+        const rawSource = outputFiles[url.slice(memoryVirtualRootUrl.length)];
+        (0, node_assert_1.default)(rawSource !== undefined, 'Resolved in-memory ESM file should always exist: ' + url);
+        const source = typeof rawSource === 'string' ? rawSource : UTF8_DECODER.decode(rawSource);
         // In-memory files have already been transformer during bundling and can be returned directly
         return {
-            format,
+            format: format ?? 'module',
             shortCircuit: true,
             source,
         };
@@ -104,12 +106,13 @@ async function load(url, context, nextLoad) {
     // Only module files potentially require transformation. Angular libraries that would
     // need linking are ESM only.
     if (format === 'module' && isFileProtocol(url)) {
-        const filePath = (0, node_url_1.fileURLToPath)(url);
-        let source = await (0, promises_1.readFile)(filePath);
-        if (filePath.includes('@angular/')) {
-            // Prepend 'var ngServerMode=true;' to the source.
-            source = Buffer.concat([NG_SERVER_MODE_INIT_BYTES, source]);
+        // Check url instead of filePath so the check is robust across Windows and POSIX path separators.
+        if (!url.includes('/@angular/')) {
+            return nextLoad(url, context);
         }
+        const filePath = (0, node_url_1.fileURLToPath)(url);
+        const fileBytes = await (0, promises_1.readFile)(filePath);
+        const source = Buffer.concat([NG_SERVER_MODE_INIT_BYTES, fileBytes]);
         return {
             format,
             shortCircuit: true,
