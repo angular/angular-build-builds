@@ -86,16 +86,13 @@ class MemoryLoadResultCache {
     }
     invalidate(path) {
         const affectedPaths = this.#fileDependencies.get(path);
-        let found = false;
-        if (affectedPaths) {
-            for (const affected of affectedPaths) {
-                if (this.#loadResults.delete(affected)) {
-                    found = true;
-                }
-            }
-            this.#fileDependencies.delete(path);
+        if (!affectedPaths) {
+            return false;
         }
-        return found;
+        for (const affected of affectedPaths) {
+            this.#loadResults.delete(affected);
+        }
+        return true;
     }
     get watchFiles() {
         // this.#loadResults.keys() is not included here because the keys

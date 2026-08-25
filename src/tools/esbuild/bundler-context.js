@@ -28,7 +28,7 @@ function isEsBuildFailure(value) {
 class BundlerContext {
     workspaceRoot;
     incremental;
-    alwaysUseContext;
+    useContext;
     initialFilter;
     #esbuildContext;
     #esbuildOptions;
@@ -39,11 +39,12 @@ class BundlerContext {
     #shouldCacheResult;
     #loadCache;
     watchFiles = new Set();
-    constructor(workspaceRoot, incremental, options, alwaysUseContext = false, initialFilter) {
+    constructor(workspaceRoot, incremental, options, useContext = incremental, initialFilter, sharedLoadCache) {
         this.workspaceRoot = workspaceRoot;
         this.incremental = incremental;
-        this.alwaysUseContext = alwaysUseContext;
+        this.useContext = useContext;
         this.initialFilter = initialFilter;
+        this.#loadCache = sharedLoadCache;
         // To cache the results an option factory is needed to capture the full set of dependencies
         this.#shouldCacheResult = incremental && typeof options === 'function';
         this.#optionsFactory = (...args) => {
@@ -151,7 +152,7 @@ class BundlerContext {
     async #performBundle() {
         // Create esbuild options if not present
         if (this.#esbuildOptions === undefined) {
-            if (this.incremental) {
+            if (this.incremental && !this.#loadCache) {
                 this.#loadCache = new load_result_cache_1.MemoryLoadResultCache();
             }
             this.#esbuildOptions = this.#optionsFactory(this.#loadCache);
@@ -165,7 +166,7 @@ class BundlerContext {
                 // Rebuild using the existing incremental build context
                 result = await this.#esbuildContext.rebuild();
             }
-            else if (this.incremental || this.alwaysUseContext) {
+            else if (this.useContext) {
                 // Create a build context and perform the build.
                 // Context creation does not perform a build.
                 const esbuildContext = await (0, esbuild_1.context)(this.#esbuildOptions);
@@ -191,23 +192,11 @@ class BundlerContext {
             // Build failures will throw an exception which contains errors/warnings
             if (isEsBuildFailure(failure)) {
                 this.#addErrorsToWatch(failure);
+                this.#addLoadCacheFilesToWatch();
                 return failure;
             }
             else {
                 throw failure;
-            }
-        }
-        finally {
-            if (this.incremental) {
-                // When incremental always add any files from the load result cache
-                if (this.#loadCache) {
-                    for (const file of this.#loadCache.watchFiles) {
-                        if (!isInternalAngularFile(file)) {
-                            // watch files are fully resolved paths
-                            this.watchFiles.add(file);
-                        }
-                    }
-                }
             }
         }
         // Update files that should be watched.
@@ -216,16 +205,32 @@ class BundlerContext {
         if (this.incremental) {
             // Add input files except virtual angular files which do not exist on disk
             for (const input of Object.keys(result.metafile.inputs)) {
-                if (isInternalAngularFile(input) || isInternalBundlerFile(input)) {
-                    continue;
+                const isInternal = isInternalAngularFile(input) || isInternalBundlerFile(input);
+                // Input file paths are always relative to the workspace root unless already absolute
+                const normalizedAbsoluteInput = (0, node_path_1.isAbsolute)(input)
+                    ? (0, node_path_1.normalize)(input)
+                    : (0, node_path_1.join)(this.workspaceRoot, input);
+                if (!isInternal) {
+                    this.watchFiles.add(normalizedAbsoluteInput);
                 }
-                // Input file paths are always relative to the workspace root
-                this.watchFiles.add((0, node_path_1.join)(this.workspaceRoot, input));
+                if (this.#loadCache) {
+                    const cachedLoad = await (this.#loadCache.get(input) ??
+                        this.#loadCache.get(input.replace(';', ':')) ??
+                        this.#loadCache.get('file:' + normalizedAbsoluteInput));
+                    if (cachedLoad?.watchFiles) {
+                        for (const file of cachedLoad.watchFiles) {
+                            if (!isInternalAngularFile(file)) {
+                                this.watchFiles.add((0, node_path_1.isAbsolute)(file) ? (0, node_path_1.normalize)(file) : (0, node_path_1.join)(this.workspaceRoot, file));
+                            }
+                        }
+                    }
+                }
             }
         }
         // Return if the build encountered any errors
         if (result.errors.length) {
             this.#addErrorsToWatch(result);
+            this.#addLoadCacheFilesToWatch();
             return {
                 errors: result.errors,
                 warnings: result.warnings,
@@ -344,12 +349,21 @@ class BundlerContext {
         for (const error of result.errors) {
             let file = error.location?.file;
             if (file && !isInternalAngularFile(file)) {
-                this.watchFiles.add((0, node_path_1.join)(this.workspaceRoot, file));
+                this.watchFiles.add((0, node_path_1.isAbsolute)(file) ? (0, node_path_1.normalize)(file) : (0, node_path_1.join)(this.workspaceRoot, file));
             }
             for (const note of error.notes) {
                 file = note.location?.file;
                 if (file && !isInternalAngularFile(file)) {
-                    this.watchFiles.add((0, node_path_1.join)(this.workspaceRoot, file));
+                    this.watchFiles.add((0, node_path_1.isAbsolute)(file) ? (0, node_path_1.normalize)(file) : (0, node_path_1.join)(this.workspaceRoot, file));
+                }
+            }
+        }
+    }
+    #addLoadCacheFilesToWatch() {
+        if (this.incremental && this.#loadCache) {
+            for (const file of this.#loadCache.watchFiles) {
+                if (!isInternalAngularFile(file)) {
+                    this.watchFiles.add((0, node_path_1.isAbsolute)(file) ? (0, node_path_1.normalize)(file) : (0, node_path_1.join)(this.workspaceRoot, file));
                 }
             }
         }
@@ -367,11 +381,9 @@ class BundlerContext {
         }
         let invalid = false;
         for (const file of files) {
-            if (this.#loadCache?.invalidate(file)) {
-                invalid = true;
-                continue;
-            }
-            invalid ||= this.watchFiles.has(file);
+            const normalizedFile = (0, node_path_1.isAbsolute)(file) ? (0, node_path_1.normalize)(file) : (0, node_path_1.join)(this.workspaceRoot, file);
+            this.#loadCache?.invalidate(normalizedFile);
+            invalid ||= this.watchFiles.has(normalizedFile);
         }
         if (invalid) {
             this.#esbuildResult = undefined;

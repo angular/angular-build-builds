@@ -14,6 +14,7 @@ const application_code_bundle_1 = require("../../tools/esbuild/application-code-
 const bundler_context_1 = require("../../tools/esbuild/bundler-context");
 const global_scripts_1 = require("../../tools/esbuild/global-scripts");
 const global_styles_1 = require("../../tools/esbuild/global-styles");
+const load_result_cache_1 = require("../../tools/esbuild/load-result-cache");
 const target_1 = require("../../tools/esbuild/target");
 /**
  * Generates one or more BundlerContext instances based on the builder provided
@@ -42,10 +43,11 @@ function setupBundlerContexts(options, target, codeBundleCache, stylesheetBundle
     }
     // Global Stylesheets
     if (options.globalStyles.length > 0) {
+        const globalStylesCache = new load_result_cache_1.MemoryLoadResultCache();
         for (const initial of [true, false]) {
             const bundleOptions = (0, global_styles_1.createGlobalStylesBundleOptions)(options, target, initial);
             if (bundleOptions) {
-                otherContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, watch, bundleOptions, true, () => initial));
+                otherContexts.push(new bundler_context_1.BundlerContext(workspaceRoot, watch, bundleOptions, true, () => initial, globalStylesCache));
             }
         }
     }
