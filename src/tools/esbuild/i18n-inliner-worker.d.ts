@@ -20,10 +20,10 @@ interface InlineFileRequest {
     locale: string;
     /**
      * The serialized translation messages for the locale that should be used during the inlining
-     * process of the file. A Blob is used so that the messages are shared with the Worker by
-     * reference instead of being copied into it for every request.
+     * process of the file. A SharedArrayBuffer or Blob is used so that the messages are shared with
+     * the Worker by reference instead of being copied into it for every request.
      */
-    translation?: Blob;
+    translation?: Blob | SharedArrayBuffer;
 }
 /**
  * The options passed to the inliner for each code request
@@ -43,10 +43,10 @@ interface InlineCodeRequest {
     locale: string;
     /**
      * The serialized translation messages for the locale that should be used during the inlining
-     * process of the file. A Blob is used so that the messages are shared with the Worker by
-     * reference instead of being copied into it for every request.
+     * process of the file. A SharedArrayBuffer or Blob is used so that the messages are shared with
+     * the Worker by reference instead of being copied into it for every request.
      */
-    translation?: Blob;
+    translation?: Blob | SharedArrayBuffer;
 }
 /**
  * The options passed to the inliner for a batch file request
@@ -62,7 +62,7 @@ interface InlineFileBatchRequest {
      */
     locales: (string | {
         locale: string;
-        translation?: Blob;
+        translation?: Blob | SharedArrayBuffer;
     })[];
     /**
      * Whether the file data should be treated as ephemeral and not cached long-term in the Worker.

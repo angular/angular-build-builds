@@ -15,7 +15,7 @@ export interface I18nInlinerOptions {
     shouldOptimize?: boolean;
     persistentCachePath?: string;
     localizeVersion?: string;
-    translations?: ReadonlyMap<string, Blob>;
+    translations?: ReadonlyMap<string, Blob | SharedArrayBuffer>;
 }
 /**
  * Options for inlining a specific locale.

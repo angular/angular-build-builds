@@ -52,6 +52,7 @@ const node_assert_1 = __importDefault(require("node:assert"));
 const node_v8_1 = require("node:v8");
 const node_worker_threads_1 = require("node:worker_threads");
 const oxc_parser_1 = require("oxc-parser");
+const i18n_translation_reader_1 = require("./i18n-translation-reader");
 // Extract the application files and common options used for inline requests from the Worker context
 const { files, missingTranslation, translations } = (node_worker_threads_1.workerData || {});
 /**
@@ -93,26 +94,31 @@ function loadFileData(filename, cache = true) {
     return fileDataPromise;
 }
 /**
- * Deserializes the translation messages for a locale, reusing the result for any
+ * Deserializes or wraps the translation messages for a locale, reusing the result for any
  * subsequent request that targets the same locale.
  * @param locale The locale identifier.
- * @param translation Optional serialized translation messages. If omitted, workerData.translations is used.
+ * @param translation Optional serialized translation messages (SharedArrayBuffer or Blob).
  * @returns The translation messages, or undefined if the locale has no translations.
  */
 function loadTranslation(locale, translation) {
-    const translationBlob = translation ?? translations?.get(locale);
-    if (!translationBlob) {
+    const translationData = translation ?? translations?.get(locale);
+    if (!translationData) {
         return undefined;
     }
     let messagesPromise = deserializedTranslations.get(locale);
     if (!messagesPromise) {
-        messagesPromise = translationBlob
-            .arrayBuffer()
-            .then((buffer) => (0, node_v8_1.deserialize)(new Uint8Array(buffer)))
-            .catch((error) => {
-            deserializedTranslations.delete(locale);
-            throw error;
-        });
+        if (translationData instanceof Blob) {
+            messagesPromise = translationData
+                .arrayBuffer()
+                .then((buffer) => (0, node_v8_1.deserialize)(new Uint8Array(buffer)))
+                .catch((error) => {
+                deserializedTranslations.delete(locale);
+                throw error;
+            });
+        }
+        else {
+            messagesPromise = Promise.resolve((0, i18n_translation_reader_1.createSharedTranslationProxy)(translationData));
+        }
         deserializedTranslations.set(locale, messagesPromise);
     }
     return messagesPromise;

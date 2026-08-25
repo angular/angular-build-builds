@@ -18,6 +18,7 @@ const hash_1 = require("../../utils/hash");
 const worker_pool_1 = require("../../utils/worker-pool");
 const bundler_files_1 = require("./bundler-files");
 const cache_1 = require("./cache");
+const i18n_translation_encoder_1 = require("./i18n-translation-encoder");
 /**
  * A keyword used to indicate if a JavaScript file may require inlining of translations.
  * This keyword is used to avoid processing files that would not otherwise need i18n processing.
@@ -31,15 +32,21 @@ const DEFAULT_LOCALE_WINDOW_SIZE = 8;
 /**
  * Serializes the translation messages for a locale for transfer to an inliner Worker.
  *
- * A Blob is used because cloning one shares its data by reference, whereas sending the messages
- * themselves copies them into a Worker for every request that carries them. A locale can contain
- * tens of thousands of messages, which makes that copy the dominant cost of inlining a locale.
+ * A SharedArrayBuffer is preferred because it enables zero-copy shared memory access
+ * and on-demand string decoding across all worker threads. Falls back to a Blob when
+ * SharedArrayBuffer is unavailable.
  *
  * @param translation The translation messages for a locale, if the locale has any.
- * @returns A Blob containing the serialized messages, or undefined if the locale has none.
+ * @returns A SharedArrayBuffer or Blob containing the serialized messages, or undefined if none.
  */
 function serializeTranslation(translation) {
-    return translation && new Blob([(0, node_v8_1.serialize)(translation)]);
+    if (!translation) {
+        return undefined;
+    }
+    if (typeof SharedArrayBuffer !== 'undefined') {
+        return (0, i18n_translation_encoder_1.encodeTranslationToBuffer)(translation);
+    }
+    return new Blob([(0, node_v8_1.serialize)(translation)]);
 }
 /**
  * A class that performs i18n translation inlining of JavaScript code.
