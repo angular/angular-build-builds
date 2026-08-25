@@ -17,6 +17,7 @@ const hash_1 = require("../../../utils/hash");
 const bundler_context_1 = require("../bundler-context");
 const bundler_files_1 = require("../bundler-files");
 const cache_1 = require("../cache");
+const load_result_cache_1 = require("../load-result-cache");
 const bundle_options_1 = require("../stylesheets/bundle-options");
 /**
  * Bundles component stylesheets. A stylesheet can be either an inline stylesheet that
@@ -29,10 +30,11 @@ class ComponentStylesheetBundler {
     incremental;
     #fileContexts = new cache_1.MemoryCache();
     #inlineContexts = new cache_1.MemoryCache();
+    #loadCache = new load_result_cache_1.MemoryLoadResultCache();
     /**
-     *
      * @param options An object containing the stylesheet bundling options.
-     * @param cache A load result cache to use when bundling.
+     * @param defaultInlineLanguage The default language to use for inline component styles.
+     * @param incremental True if incremental watch mode is enabled.
      */
     constructor(options, defaultInlineLanguage, incremental) {
         this.options = options;
@@ -47,6 +49,7 @@ class ComponentStylesheetBundler {
      * @returns A component bundle result object.
      */
     async bundleFile(entry, externalId, direct) {
+        entry = node_path_1.default.normalize(entry);
         const bundlerContext = await this.#fileContexts.getOrCreate(entry, () => {
             return new bundler_context_1.BundlerContext(this.options.workspaceRoot, this.incremental, (loadCache) => {
                 const buildOptions = (0, bundle_options_1.createStylesheetBundleOptions)(this.options, loadCache);
@@ -64,7 +67,9 @@ class ComponentStylesheetBundler {
                 buildOptions.supported ??= {};
                 buildOptions.supported['nesting'] = false;
                 return buildOptions;
-            });
+            }, 
+            /* useContext */ false, 
+            /* initialFilter */ undefined, this.#loadCache);
         });
         return this.extractResult(await bundlerContext.bundle(), bundlerContext.watchFiles, !!externalId, !!direct);
     }
@@ -72,6 +77,7 @@ class ComponentStylesheetBundler {
         return Promise.all(Array.from(this.#fileContexts.entries()).map(([entry]) => this.bundleFile(entry, external, direct)));
     }
     async bundleInline(data, filename, language = this.defaultInlineLanguage, externalId) {
+        filename = node_path_1.default.normalize(filename);
         // Use a hash of the inline stylesheet content to ensure a consistent identifier. External stylesheets will resolve
         // to the actual stylesheet file path.
         const hasher = (0, hash_1.createContentHash)();
@@ -119,7 +125,9 @@ class ComponentStylesheetBundler {
                     },
                 });
                 return buildOptions;
-            });
+            }, 
+            /* useContext */ false, 
+            /* initialFilter */ undefined, this.#loadCache);
         });
         // Extract the result of the bundling from the output files
         return this.extractResult(await bundlerContext.bundle(), bundlerContext.watchFiles, !!externalId, false);
@@ -133,8 +141,14 @@ class ComponentStylesheetBundler {
         if (!this.incremental) {
             return;
         }
-        const normalizedFiles = [...files].map(node_path_1.default.normalize);
-        const normalizedFilesSet = new Set(normalizedFiles);
+        const normalizedFiles = new Set();
+        for (const file of files) {
+            const normalized = node_path_1.default.normalize(file);
+            normalizedFiles.add(normalized);
+            if (!node_path_1.default.isAbsolute(normalized)) {
+                normalizedFiles.add(node_path_1.default.normalize(node_path_1.default.join(this.options.workspaceRoot, normalized)));
+            }
+        }
         let entries;
         for (const [entry, bundler] of this.#fileContexts.entries()) {
             if (bundler.invalidate(normalizedFiles)) {
@@ -147,7 +161,7 @@ class ComponentStylesheetBundler {
             const firstSemi = entry.indexOf(';');
             const secondSemi = firstSemi !== -1 ? entry.indexOf(';', firstSemi + 1) : -1;
             const filename = secondSemi !== -1 ? entry.slice(secondSemi + 1) : '';
-            if (filename && normalizedFilesSet.has(node_path_1.default.normalize(filename))) {
+            if (filename && normalizedFiles.has(node_path_1.default.normalize(filename))) {
                 this.#inlineContexts.delete(entry);
                 void bundler.dispose();
             }
@@ -168,6 +182,7 @@ class ComponentStylesheetBundler {
         const contexts = [...this.#fileContexts.values(), ...this.#inlineContexts.values()];
         this.#fileContexts.clear();
         this.#inlineContexts.clear();
+        this.#loadCache.clear();
         await Promise.allSettled(contexts.map((context) => context.dispose()));
     }
     extractResult(result, referencedFiles, external, direct) {
@@ -209,14 +224,15 @@ class ComponentStylesheetBundler {
                 throw new Error(`Unexpected non CSS/Media file "${filename}" outputted during component stylesheet processing.`);
             }
         }
-        const { metafile } = result;
-        // Remove entryPoint fields from outputs to prevent the internal component styles from being
-        // treated as initial files. Also mark the entry as a component resource for stat reporting.
-        Object.values(metafile.outputs).forEach((output) => {
-            delete output.entryPoint;
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            output['ng-component'] = true;
-        });
+        // Clone metafile to prevent mutation of the cached result by downstream plugins
+        const metafile = {
+            inputs: { ...result.metafile.inputs },
+            outputs: Object.fromEntries(Object.entries(result.metafile.outputs).map(([key, output]) => {
+                const cloned = { ...output, ['ng-component']: true };
+                delete cloned.entryPoint;
+                return [key, cloned];
+            })),
+        };
         return {
             errors,
             warnings,

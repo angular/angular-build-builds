@@ -22,9 +22,9 @@ export declare class ComponentStylesheetBundler {
     private readonly defaultInlineLanguage;
     private readonly incremental;
     /**
-     *
      * @param options An object containing the stylesheet bundling options.
-     * @param cache A load result cache to use when bundling.
+     * @param defaultInlineLanguage The default language to use for inline component styles.
+     * @param incremental True if incremental watch mode is enabled.
      */
     constructor(options: BundleStylesheetOptions, defaultInlineLanguage: string, incremental: boolean);
     /**
@@ -42,7 +42,7 @@ export declare class ComponentStylesheetBundler {
      * @param files The group of files that have been modified
      * @returns An array of file based stylesheet entries if any were invalidated; otherwise, undefined.
      */
-    invalidate(files: Iterable<string>): string[] | undefined;
+    invalidate(files: Iterable<string> | ReadonlySet<string>): string[] | undefined;
     collectReferencedFiles(): string[];
     dispose(): Promise<void>;
     private extractResult;

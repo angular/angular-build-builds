@@ -48,7 +48,7 @@ export declare class BundlerContext {
     private initialFilter?;
     readonly watchFiles: Set<string>;
     constructor(workspaceRoot: string, incremental: boolean, options: BuildOptions | BundlerOptionsFactory, useContext?: boolean, initialFilter?: ((initial: Readonly<InitialFileRecord>) => boolean) | undefined, sharedLoadCache?: LoadResultCache);
-    static bundleAll(contexts: Iterable<BundlerContext>, changedFiles?: Iterable<string>): Promise<BundleContextResult[]>;
+    static bundleAll(contexts: Iterable<BundlerContext>, changedFiles?: Iterable<string> | ReadonlySet<string>): Promise<BundleContextResult[]>;
     static mergeResults(results: BundleContextResult[]): BundleMergedContextResult;
     /**
      * Executes the esbuild build function and normalizes the build result in the event of a
@@ -68,7 +68,7 @@ export declare class BundlerContext {
      * to be stored.
      * @returns True, if the result was invalidated; False, otherwise.
      */
-    invalidate(files: Iterable<string>): boolean;
+    invalidate(files: Iterable<string> | ReadonlySet<string>): boolean;
     /**
      * Disposes incremental build resources present in the context.
      *

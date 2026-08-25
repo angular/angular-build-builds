@@ -63,21 +63,31 @@ const fileDataCache = new Map();
  */
 const deserializedTranslations = new Map();
 /**
- * Retrieves the cached file data for a filename, loading and extracting it on the first request.
+ * Retrieves the file data for a filename, loading and extracting localization metadata.
+ * If `cache` is true, the result is cached in `fileDataCache` across requests in this Worker.
+ * If `cache` is false (ephemeral), the result is not retained in `fileDataCache`, allowing it
+ * to be garbage-collected once the batch request finishes.
  *
  * @param filename The name of the file to load.
- * @returns The cached code and localization metadata.
+ * @param cache Whether to cache the loaded file data in the Worker's long-term cache.
+ * @returns The cached or newly extracted code and localization metadata.
  */
-function getFileData(filename) {
-    let fileDataPromise = fileDataCache.get(filename);
-    if (!fileDataPromise) {
-        fileDataPromise = (async () => {
-            const data = files.get(filename);
-            (0, node_assert_1.default)(data !== undefined, `Invalid inline request for file '${filename}'.`);
-            const code = await data.text();
-            const metadata = extractLocalizeMetadata(filename, code);
-            return { code, metadata };
-        })();
+function loadFileData(filename, cache = true) {
+    const existing = fileDataCache.get(filename);
+    if (existing) {
+        return existing;
+    }
+    const fileDataPromise = (async () => {
+        const data = files.get(filename);
+        (0, node_assert_1.default)(data !== undefined, `Invalid inline request for file '${filename}'.`);
+        const code = await data.text();
+        const metadata = extractLocalizeMetadata(filename, code);
+        return { code, metadata };
+    })();
+    if (cache) {
+        fileDataPromise.catch(() => {
+            fileDataCache.delete(filename);
+        });
         fileDataCache.set(filename, fileDataPromise);
     }
     return fileDataPromise;
@@ -115,7 +125,7 @@ function loadTranslation(locale, translation) {
  * @returns An object containing the inlined file and optional map content.
  */
 async function inlineFile(request) {
-    const { code, metadata } = await getFileData(request.filename);
+    const { code, metadata } = await loadFileData(request.filename, true);
     // Sourcemaps are parsed on demand per request rather than cached long-term to prevent
     // monotonic memory growth as a worker processes multiple files across the build.
     const rawMap = await files.get(request.filename + '.map')?.text();
@@ -135,7 +145,15 @@ async function inlineFile(request) {
  * @returns An object containing the inlined results for each requested locale.
  */
 async function inlineFileBatch(request) {
-    const { code, metadata } = await getFileData(request.filename);
+    if (request.activeLocales) {
+        const activeSet = new Set(request.activeLocales);
+        for (const locale of deserializedTranslations.keys()) {
+            if (!activeSet.has(locale)) {
+                deserializedTranslations.delete(locale);
+            }
+        }
+    }
+    const { code, metadata } = await loadFileData(request.filename, !request.ephemeral);
     // Parse the sourcemap once for the entire batch.
     // It will naturally be garbage-collected after this batch action returns.
     const rawMap = await files.get(request.filename + '.map')?.text();

@@ -379,11 +379,65 @@ class BundlerContext {
         if (!this.incremental) {
             return false;
         }
+        let candidateFiles;
+        if (files instanceof Set) {
+            let isCandidateReady = true;
+            for (const file of files) {
+                if (file !== (0, node_path_1.normalize)(file) ||
+                    (!(0, node_path_1.isAbsolute)(file) && !files.has((0, node_path_1.normalize)((0, node_path_1.join)(this.workspaceRoot, file))))) {
+                    isCandidateReady = false;
+                    break;
+                }
+            }
+            if (isCandidateReady) {
+                candidateFiles = files;
+            }
+            else {
+                const normalizedFiles = new Set();
+                for (const file of files) {
+                    const normalized = (0, node_path_1.normalize)(file);
+                    normalizedFiles.add(normalized);
+                    if (!(0, node_path_1.isAbsolute)(normalized)) {
+                        normalizedFiles.add((0, node_path_1.normalize)((0, node_path_1.join)(this.workspaceRoot, normalized)));
+                    }
+                }
+                candidateFiles = normalizedFiles;
+            }
+        }
+        else {
+            const normalizedFiles = new Set();
+            for (const file of files) {
+                const normalized = (0, node_path_1.normalize)(file);
+                normalizedFiles.add(normalized);
+                if (!(0, node_path_1.isAbsolute)(normalized)) {
+                    normalizedFiles.add((0, node_path_1.normalize)((0, node_path_1.join)(this.workspaceRoot, normalized)));
+                }
+            }
+            candidateFiles = normalizedFiles;
+        }
         let invalid = false;
-        for (const file of files) {
-            const normalizedFile = (0, node_path_1.isAbsolute)(file) ? (0, node_path_1.normalize)(file) : (0, node_path_1.join)(this.workspaceRoot, file);
-            this.#loadCache?.invalidate(normalizedFile);
-            invalid ||= this.watchFiles.has(normalizedFile);
+        for (const file of candidateFiles) {
+            if (this.#loadCache?.invalidate(file)) {
+                invalid = true;
+            }
+        }
+        if (!invalid) {
+            if (this.watchFiles.size < candidateFiles.size) {
+                for (const file of this.watchFiles) {
+                    if (candidateFiles.has(file)) {
+                        invalid = true;
+                        break;
+                    }
+                }
+            }
+            else {
+                for (const file of candidateFiles) {
+                    if (this.watchFiles.has(file)) {
+                        invalid = true;
+                        break;
+                    }
+                }
+            }
         }
         if (invalid) {
             this.#esbuildResult = undefined;

@@ -64,6 +64,16 @@ interface InlineFileBatchRequest {
         locale: string;
         translation?: Blob;
     })[];
+    /**
+     * Whether the file data should be treated as ephemeral and not cached long-term in the Worker.
+     * Typically true when all remaining locales for the file are processed in a single batch.
+     */
+    ephemeral?: boolean;
+    /**
+     * The list of active locales in the current inlining window. Any cached translation dictionaries
+     * not present in this list will be evicted from the Worker's memory cache.
+     */
+    activeLocales?: string[];
 }
 /**
  * The result for a single locale within a batch file request.
