@@ -12,12 +12,15 @@ export interface RenderWorkerData extends ESMInMemoryFileLoaderWorkerData {
     outputMode: OutputMode | undefined;
     hasSsrEntry: boolean;
 }
-export interface RenderOptions {
+export interface RenderResultItem {
     url: string;
+    content: string | null;
+    error?: string;
 }
+export type RenderResult = RenderResultItem[];
 /**
- * Renders each route in routes and writes them to <outputPath>/<route>/index.html.
+ * Renders routes in batch or individual URL.
  */
-declare function renderPage({ url }: RenderOptions): Promise<string | null>;
-declare const _default: Promise<typeof renderPage>;
+declare function renderPages(urls: string[]): Promise<RenderResult>;
+declare const _default: Promise<typeof renderPages>;
 export default _default;

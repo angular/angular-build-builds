@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 export interface ESMInMemoryFileLoaderWorkerData {
-    outputFiles: Record<string, string>;
+    outputFiles: Record<string, string | Uint8Array>;
     workspaceRoot: string;
 }
 export declare function initialize(data: ESMInMemoryFileLoaderWorkerData): void;
