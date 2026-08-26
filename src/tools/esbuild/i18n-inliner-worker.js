@@ -52,6 +52,7 @@ const node_assert_1 = __importDefault(require("node:assert"));
 const node_v8_1 = require("node:v8");
 const node_worker_threads_1 = require("node:worker_threads");
 const oxc_parser_1 = require("oxc-parser");
+const i18n_locale_plugin_1 = require("./i18n-locale-plugin");
 const i18n_translation_reader_1 = require("./i18n-translation-reader");
 // Extract the application files and common options used for inline requests from the Worker context
 const { files, missingTranslation, translations } = (node_worker_threads_1.workerData || {});
@@ -330,8 +331,19 @@ async function inlineLocalize(code, map, metadata, locale, translation, filename
             diagnostics.error(message);
         }
     }
-    for (const site of metadata.localeInsertSites) {
-        magicString.overwrite(site.start, site.end, JSON.stringify(locale));
+    if (metadata.localeInsertSites.length > 0) {
+        const localeData = await (0, i18n_locale_plugin_1.loadLocaleData)(locale);
+        if (localeData.error) {
+            diagnostics.error(localeData.error);
+        }
+        else if (localeData.warning) {
+            diagnostics.warn(localeData.warning);
+        }
+        let injected = false;
+        for (const site of metadata.localeInsertSites) {
+            magicString.overwrite(site.start, site.end, JSON.stringify(locale) + (localeData.code && !injected ? `;\n${localeData.code}\n;` : ''));
+            injected = true;
+        }
     }
     for (const callSite of metadata.callSites) {
         const [translatedParts, translatedSubstitutions] = translate(diagnostics, translation || {}, callSite.messageParts, callSite.expressions.map((_, index) => index), translation === undefined ? 'ignore' : missingTranslation);

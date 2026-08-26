@@ -489,27 +489,20 @@ function getEsBuildCommonPolyfillsOptions(options, namespace, tryToResolvePolyfi
         polyfills.unshift('@angular/compiler');
     }
     // Add Angular's global locale data if i18n options are present.
-    // Locale data should go first so that project provided polyfill code can augment if needed.
     let needLocaleDataPlugin = false;
     if (i18nOptions.shouldInline) {
         // Remove localize polyfill when i18n inline transformation have been applied to all the packages.
         polyfills = polyfills.filter((path) => !path.startsWith('@angular/localize'));
-        // Add locale data for all active locales
-        // TODO: Inject each individually within the inlining process itself
-        for (const locale of i18nOptions.inlineLocales) {
-            polyfills.unshift(`angular:locale/data:${locale}`);
-        }
-        needLocaleDataPlugin = true;
     }
     else if (i18nOptions.hasDefinedSourceLocale) {
-        // When not inlining and a source local is present, use the source locale data directly
+        // When not inlining and a source locale is present, use the source locale data directly
         polyfills.unshift(`angular:locale/data:${i18nOptions.sourceLocale}`);
         needLocaleDataPlugin = true;
     }
     if (needLocaleDataPlugin) {
         buildOptions.plugins.unshift((0, i18n_locale_plugin_1.createAngularLocaleDataPlugin)());
     }
-    if (polyfills.length === 0) {
+    if (polyfills.length === 0 && !i18nOptions.shouldInline && !i18nOptions.hasDefinedSourceLocale) {
         return;
     }
     buildOptions.plugins.push((0, virtual_module_plugin_1.createVirtualModulePlugin)({
