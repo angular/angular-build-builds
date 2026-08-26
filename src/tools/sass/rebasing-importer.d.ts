@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 import type { DecodedSourceMap } from '@ampproject/remapping';
-import type { CanonicalizeContext, Importer, ImporterResult } from 'sass';
+import type { CanonicalizeContext, Importer, ImporterResult } from 'sass-embedded';
 /**
  * A preprocessed cache entry for the files and directories within a previously searched
  * directory when performing Sass import resolution.
@@ -78,6 +78,17 @@ export declare class ModuleUrlRebasingImporter extends RelativeUrlRebasingImport
     private finder;
     constructor(entryDirectory: string, directoryCache: Map<string, DirectoryEntry>, rebaseSourceMaps: Map<string, DecodedSourceMap> | undefined, finder: (specifier: string, options: CanonicalizeContext) => URL | null);
     canonicalize(url: string, options: CanonicalizeContext): URL | null;
+}
+/**
+ * Provides the Sass importer logic to resolve module (npm package) stylesheet imports asynchronously
+ * and also rebase any `url()` function usage within those stylesheets.
+ */
+export declare class AsyncModuleUrlRebasingImporter implements Importer<'async'> {
+    private finder;
+    private relativeImporter;
+    constructor(entryDirectory: string, directoryCache: Map<string, DirectoryEntry>, rebaseSourceMaps: Map<string, DecodedSourceMap> | undefined, finder: (specifier: string, options: CanonicalizeContext) => Promise<URL | null> | URL | null);
+    canonicalize(url: string, options: CanonicalizeContext): Promise<URL | null>;
+    load(canonicalUrl: URL): ImporterResult | null;
 }
 /**
  * Provides the Sass importer logic to resolve load paths located stylesheet imports via both import and

@@ -8,7 +8,7 @@
 import { type RawSourceMap } from '@ampproject/remapping';
 import { MessagePort } from 'node:worker_threads';
 import { SourceSpan, StringOptions } from 'sass';
-import type { SerializableWarningMessage } from './sass-service';
+import type { SerializableWarningMessage } from './sass-worker-implementation';
 /**
  * A request to render a Sass stylesheet using the supplied options.
  */

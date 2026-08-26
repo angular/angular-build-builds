@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 import type { OnLoadResult, Plugin, PluginBuild } from 'esbuild';
-import type { Options } from 'sass';
+import type { Options } from 'sass-embedded';
 import type { PostcssConfiguration } from '../../../utils/postcss-configuration';
 import { LoadResultCache } from '../load-result-cache';
 /**

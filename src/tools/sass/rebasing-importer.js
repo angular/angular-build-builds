@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.LoadPathsUrlRebasingImporter = exports.ModuleUrlRebasingImporter = exports.RelativeUrlRebasingImporter = void 0;
+exports.LoadPathsUrlRebasingImporter = exports.AsyncModuleUrlRebasingImporter = exports.ModuleUrlRebasingImporter = exports.RelativeUrlRebasingImporter = void 0;
 exports.sassBindWorkaround = sassBindWorkaround;
 const magic_string_1 = require("magic-string");
 const node_fs_1 = require("node:fs");
@@ -293,6 +293,29 @@ class ModuleUrlRebasingImporter extends RelativeUrlRebasingImporter {
     }
 }
 exports.ModuleUrlRebasingImporter = ModuleUrlRebasingImporter;
+/**
+ * Provides the Sass importer logic to resolve module (npm package) stylesheet imports asynchronously
+ * and also rebase any `url()` function usage within those stylesheets.
+ */
+class AsyncModuleUrlRebasingImporter {
+    finder;
+    relativeImporter;
+    constructor(entryDirectory, directoryCache, rebaseSourceMaps, finder) {
+        this.finder = finder;
+        this.relativeImporter = new RelativeUrlRebasingImporter(entryDirectory, directoryCache, rebaseSourceMaps);
+    }
+    async canonicalize(url, options) {
+        if (url.startsWith('file://')) {
+            return this.relativeImporter.canonicalize(url, options);
+        }
+        const result = await this.finder(url, options);
+        return result ? this.relativeImporter.canonicalize(result.href, options) : null;
+    }
+    load(canonicalUrl) {
+        return this.relativeImporter.load(canonicalUrl);
+    }
+}
+exports.AsyncModuleUrlRebasingImporter = AsyncModuleUrlRebasingImporter;
 /**
  * Provides the Sass importer logic to resolve load paths located stylesheet imports via both import and
  * use rules and also rebase any `url()` function usage within those stylesheets. The rebasing will ensure that
