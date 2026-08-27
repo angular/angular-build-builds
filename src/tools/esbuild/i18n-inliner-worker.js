@@ -138,6 +138,17 @@ async function inlineFileBatch(request) {
         }
     }
     const { code, metadata } = await loadFileData(request.filename, !request.ephemeral);
+    // Fast path: file has no $localize call sites or locale insert sites
+    if (metadata.callSites.length === 0 && metadata.localeInsertSites.length === 0) {
+        return {
+            file: request.filename,
+            unmodified: true,
+            messages: (metadata.diagnostics ?? []).map((message) => ({
+                type: 'error',
+                message,
+            })),
+        };
+    }
     // Parse the sourcemap once for the entire batch.
     // It will naturally be garbage-collected after this batch action returns.
     const rawMap = await files.get(request.filename + '.map')?.text();
@@ -167,7 +178,7 @@ async function inlineCode(request) {
     const metadata = extractLocalizeMetadata(request.filename, request.code);
     const result = await inlineLocalize(request.code, undefined, metadata, request.locale, await loadTranslation(request.locale, request.translation), request.filename);
     return {
-        output: result.code,
+        output: result.code ?? request.code,
         messages: result.diagnostics.messages,
     };
 }
@@ -347,9 +358,16 @@ async function inlineLocalize(code, map, metadata, locale, translation, filename
         }
         magicString.overwrite(callSite.start, callSite.end, replacement);
     }
+    if (!magicString.hasChanged()) {
+        return {
+            code: undefined,
+            map: undefined,
+            diagnostics,
+        };
+    }
     const outputCode = magicString.toString();
     let outputMap;
-    if (map && magicString.hasChanged()) {
+    if (map) {
         // A decoded map is generated here rather than an encoded one because remapping decodes its
         // inputs. Encoding the mappings only for remapping to immediately decode them again doubles
         // the peak memory of the largest structure involved in inlining a file.

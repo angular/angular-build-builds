@@ -226,15 +226,25 @@ class I18nInliner {
             const warnings = [];
             if (fileResults) {
                 for (const filename of filenames) {
+                    const originalFile = this.#localizeFiles.get(filename);
+                    (0, node_assert_1.default)(originalFile !== undefined, 'Localize file must exist: ' + filename);
                     const fileResult = fileResults.get(filename);
                     if (!fileResult) {
                         continue;
                     }
-                    const type = this.#localizeFiles.get(filename)?.type;
-                    (0, node_assert_1.default)(type !== undefined, 'localized file should always have a type: ' + filename);
-                    outputFiles.push((0, bundler_files_1.createOutputFile)(filename, fileResult.code, type));
-                    if (fileResult.map) {
+                    const type = originalFile.type;
+                    if (fileResult.code != undefined) {
+                        outputFiles.push((0, bundler_files_1.createOutputFile)(filename, fileResult.code, type));
+                    }
+                    else {
+                        outputFiles.push(originalFile.clone());
+                    }
+                    const originalMap = this.#localizeFiles.get(filename + '.map');
+                    if (fileResult.map !== undefined) {
                         outputFiles.push((0, bundler_files_1.createOutputFile)(filename + '.map', fileResult.map, type));
+                    }
+                    else if (originalMap !== undefined) {
+                        outputFiles.push(originalMap.clone());
                     }
                     for (const message of fileResult.messages) {
                         if (message.type === 'error') {
@@ -272,21 +282,37 @@ class I18nInliner {
                         ephemeral,
                         activeLocales,
                     }, { name: 'inlineFileBatch' }));
-                    const cachePromises = [];
-                    for (const res of batchResult.results) {
-                        const matchingEntry = batchEntries.find((e) => e.locale === res.locale);
-                        const cacheKey = matchingEntry?.cacheKey;
-                        if (this.#cache && cacheKey) {
-                            cachePromises.push(this.#cache.put(cacheKey, {
-                                file: filename,
-                                code: res.code,
-                                map: res.map,
-                                messages: res.messages,
-                            }));
+                    if (batchResult.unmodified) {
+                        const unmodifiedResult = {
+                            file: filename,
+                            messages: batchResult.messages,
+                        };
+                        const cachePromises = [];
+                        for (const { locale, cacheKey } of batchEntries) {
+                            fileResultsByLocale.get(locale)?.set(filename, unmodifiedResult);
+                            if (this.#cache && cacheKey) {
+                                cachePromises.push(this.#cache.put(cacheKey, unmodifiedResult));
+                            }
                         }
-                        fileResultsByLocale.get(res.locale)?.set(filename, res);
+                        await Promise.allSettled(cachePromises);
                     }
-                    await Promise.allSettled(cachePromises);
+                    else {
+                        const cachePromises = [];
+                        for (const res of batchResult.results) {
+                            const matchingEntry = batchEntries.find((e) => e.locale === res.locale);
+                            const cacheKey = matchingEntry?.cacheKey;
+                            if (this.#cache && cacheKey) {
+                                cachePromises.push(this.#cache.put(cacheKey, {
+                                    file: filename,
+                                    code: res.code,
+                                    map: res.map,
+                                    messages: res.messages,
+                                }));
+                            }
+                            fileResultsByLocale.get(res.locale)?.set(filename, res);
+                        }
+                        await Promise.allSettled(cachePromises);
+                    }
                 })();
                 workerTasks.push(task);
             }

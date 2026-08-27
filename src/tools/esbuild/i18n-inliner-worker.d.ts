@@ -57,7 +57,7 @@ interface InlineFileBatchRequest {
  */
 interface InlineLocaleResult {
     locale: string;
-    code: string;
+    code?: string;
     map?: string;
     messages: {
         type: 'error' | 'warning';
@@ -67,10 +67,18 @@ interface InlineLocaleResult {
 /**
  * The response returned from a batch file request.
  */
-interface InlineFileBatchResult {
+type InlineFileBatchResult = {
     file: string;
+    unmodified: true;
+    messages: {
+        type: 'error' | 'warning';
+        message: string;
+    }[];
+} | {
+    file: string;
+    unmodified?: false;
     results: InlineLocaleResult[];
-}
+};
 /**
  * Inlines multiple locales and translations into a JavaScript file that contains `$localize` usage.
  *
