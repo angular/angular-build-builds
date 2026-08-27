@@ -9,7 +9,16 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SqliteCacheStore = void 0;
 const node_sqlite_1 = require("node:sqlite");
+const node_v8_1 = require("node:v8");
 const cache_1 = require("./cache");
+/**
+ * A persistent cache store backed by SQLite.
+ *
+ * Values are persisted with the V8 structured clone serialization API instead of JSON. Cached
+ * values include binary data such as the `Uint8Array` output of the JavaScript transformer and
+ * the `contents` of an esbuild load result. A JSON round-trip converts those into plain objects
+ * (`{"0":105,"1":109,...}`), which breaks consumers on any build that reads them back from disk.
+ */
 class SqliteCacheStore {
     cachePath;
     maxPayloadSize;
@@ -36,7 +45,7 @@ class SqliteCacheStore {
             this.#db.exec('PRAGMA busy_timeout = 5000;');
             this.#db.exec('PRAGMA temp_store = MEMORY;');
             this.#db.exec('PRAGMA mmap_size = 268435456;');
-            this.#db.exec('CREATE TABLE IF NOT EXISTS cache (key TEXT PRIMARY KEY, value TEXT, last_accessed INTEGER NOT NULL) WITHOUT ROWID;');
+            this.#db.exec('CREATE TABLE IF NOT EXISTS cache (key TEXT PRIMARY KEY, value BLOB, last_accessed INTEGER NOT NULL) WITHOUT ROWID;');
             this.#getStmt = this.#db.prepare('SELECT value FROM cache WHERE key = ?');
             this.#hasStmt = this.#db.prepare('SELECT 1 FROM cache WHERE key = ?');
             this.#setStmt = this.#db.prepare('INSERT OR REPLACE INTO cache (key, value, last_accessed) VALUES (?, ?, unixepoch())');
@@ -84,14 +93,17 @@ class SqliteCacheStore {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async get(key) {
         this.#ensureDb();
+        // SQLite column types are dynamic, so the stored value is only known at runtime.
         const row = this.#getStmt?.get(key);
         if (row) {
             this.#queueAccessUpdate(key);
-            try {
-                return JSON.parse(row.value);
-            }
-            catch {
-                return undefined;
+            if (row.value instanceof Uint8Array) {
+                try {
+                    return (0, node_v8_1.deserialize)(row.value);
+                }
+                catch {
+                    // Treat corrupt or unparseable cached payloads as a cache miss.
+                }
             }
         }
         return undefined;
@@ -103,7 +115,7 @@ class SqliteCacheStore {
     async set(key, value) {
         this.#ensureDb();
         this.#pendingAccessedKeys.delete(key);
-        this.#setStmt?.run(key, JSON.stringify(value));
+        this.#setStmt?.run(key, (0, node_v8_1.serialize)(value));
         return this;
     }
     createCache(namespace) {
