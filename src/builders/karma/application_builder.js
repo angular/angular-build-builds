@@ -307,7 +307,7 @@ async function configureKarma(karma, context, karmaOptions, options, buildOption
     if (pluginLengthBefore !== pluginLengthAfter) {
         context.logger.warn(`Ignoring framework "@angular-devkit/build-angular" from karma config file because it's not compatible with the application builder.`);
     }
-    parsedKarmaConfig.plugins.push(assets_middleware_1.AngularAssetsMiddleware.createPlugin(buildOutput));
+    parsedKarmaConfig.plugins.push(assets_middleware_1.AngularAssetsMiddleware.createPlugin(buildOutput.files));
     parsedKarmaConfig.middleware ??= [];
     parsedKarmaConfig.middleware.push(assets_middleware_1.AngularAssetsMiddleware.NAME);
     parsedKarmaConfig.plugins.push(polyfills_plugin_1.AngularPolyfillsPlugin.createPlugin(polyfillsFile, jasmineCleanupFiles, scriptsFiles));

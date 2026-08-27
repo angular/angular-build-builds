@@ -185,13 +185,13 @@ async function* buildApplication(options, context, extensions) {
         // Writes the output files to disk and ensures the containing directories are present
         const directoryExists = new Set();
         try {
-            await (0, utils_1.emitFilesToDisk)(Object.entries(result.files), async ([filePath, file]) => {
+            await (0, utils_1.emitFilesToDisk)(result.files, async (file) => {
                 if (outputOptions.ignoreServer &&
                     (file.type === bundler_files_1.BuildOutputFileType.ServerApplication ||
                         file.type === bundler_files_1.BuildOutputFileType.ServerRoot)) {
                     return;
                 }
-                const fullFilePath = generateFullPath(filePath, file.type, outputOptions);
+                const fullFilePath = generateFullPath(file.path, file.type, outputOptions);
                 // Ensure output subdirectories exist
                 const fileBasePath = node_path_1.default.dirname(fullFilePath);
                 if (fileBasePath && !directoryExists.has(fileBasePath)) {

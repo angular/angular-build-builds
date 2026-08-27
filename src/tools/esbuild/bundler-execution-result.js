@@ -122,7 +122,7 @@ class ExecutionResult {
             codeBundleCache: this.codeBundleCache,
             componentStyleBundler: this.componentStyleBundler,
             fileChanges,
-            previousOutputInfo: new Map(this.outputFiles.map(({ path, hash, type }) => [path, { hash, type }])),
+            previousOutputInfo: new Map(this.outputFiles.map(({ path, hash, type }) => [`${type}:${path}`, { hash, type, path }])),
             previousAssetsInfo: new Map(this.assetFiles.map(({ source, destination }) => [source, destination])),
             templateUpdates: this.templateUpdates,
         };
@@ -130,7 +130,7 @@ class ExecutionResult {
     findChangedFiles(previousOutputHashes) {
         const changed = new Set();
         for (const file of this.outputFiles) {
-            const previousHash = previousOutputHashes.get(file.path)?.hash;
+            const previousHash = previousOutputHashes.get(`${file.type}:${file.path}`)?.hash;
             if (previousHash === undefined || previousHash !== file.hash) {
                 changed.add(file.path);
             }

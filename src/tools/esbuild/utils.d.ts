@@ -23,7 +23,7 @@ export declare function withNoProgress<T>(text: string, action: () => T | Promis
  * @returns An object that can be used with the esbuild build `supported` option.
  */
 export declare function getFeatureSupport(nativeAsyncAwait: boolean): BuildOptions['supported'];
-export declare function emitFilesToDisk<T = BuildOutputAsset | BuildOutputFile>(files: T[], writeFileCallback: (file: T) => Promise<void>): Promise<void>;
+export declare function emitFilesToDisk<T = BuildOutputAsset | BuildOutputFile>(files: readonly T[], writeFileCallback: (file: T) => Promise<void>): Promise<void>;
 export declare function createJsonBuildManifest(result: ExecutionResult, normalizedOptions: NormalizedApplicationBuildOptions): Promise<string>;
 export declare function logMessages(logger: BuilderContext['logger'], executionResult: ExecutionResult, color?: boolean, jsonLogs?: boolean): Promise<void>;
 /**

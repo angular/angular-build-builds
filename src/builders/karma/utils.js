@@ -45,8 +45,8 @@ async function collectEntrypoints(options, context, projectSourceRoot) {
     return (0, find_tests_1.getTestEntrypoints)(testFiles, { projectSourceRoot, workspaceRoot: context.workspaceRoot });
 }
 function hasChunkOrWorkerFiles(files) {
-    return Object.keys(files).some((filename) => {
-        return /(?:^|\/)(?:worker|chunk)[^/]+\.js$/.test(filename);
+    return files.some((file) => {
+        return /(?:^|\/)(?:worker|chunk)[^/]+\.js$/.test(file.path);
     });
 }
 /** Returns the first item yielded by the given generator and cancels the execution. */

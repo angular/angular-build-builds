@@ -247,7 +247,7 @@ async function* execute(options, context, extensions) {
                 const executor = __addDisposableResource(env_1, await runner.createExecutor(context, normalizedOptions, undefined), true);
                 yield* executor.execute({
                     kind: results_1.ResultKind.Full,
-                    files: {},
+                    files: [],
                 });
             }
             catch (e_1) {

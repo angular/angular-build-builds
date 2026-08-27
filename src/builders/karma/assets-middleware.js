@@ -31,7 +31,7 @@ class AngularAssetsMiddleware {
         if (isWindows) {
             pathname = pathname.replaceAll(node_path_1.default.posix.sep, node_path_1.default.win32.sep);
         }
-        const file = this.latestBuildFiles.files[pathname];
+        const file = this.latestBuildFiles.files.get(pathname);
         if (!file) {
             next();
             return;
@@ -51,7 +51,10 @@ class AngularAssetsMiddleware {
     }
     static createPlugin(initialFiles) {
         return {
-            [LATEST_BUILD_FILES_TOKEN]: ['value', { files: { ...initialFiles.files } }],
+            [LATEST_BUILD_FILES_TOKEN]: [
+                'value',
+                { files: new Map(initialFiles.map((file) => [file.path, file])) },
+            ],
             [`middleware:${AngularAssetsMiddleware.NAME}`]: [
                 'factory',
                 Object.assign((...args) => {

@@ -10,22 +10,22 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateResultRecord = updateResultRecord;
 exports.isAbsoluteUrl = isAbsoluteUrl;
 const internal_1 = require("../internal");
-function updateResultRecord(outputPath, file, normalizePath, htmlIndexPath, generatedFiles, assetFiles, componentStyles, initial = false) {
+function updateResultRecord(file, normalizePath, htmlIndexPath, generatedFiles, assetFiles, componentStyles, initial = false) {
     if (file.origin === 'disk') {
-        assetFiles.set('/' + normalizePath(outputPath), {
+        assetFiles.set('/' + normalizePath(file.path), {
             source: normalizePath(file.inputPath),
             updated: !initial,
         });
         return;
     }
     let filePath;
-    if (outputPath === htmlIndexPath) {
+    if (file.path === htmlIndexPath) {
         // Convert custom index output path to standard index path for dev-server usage.
         // This mimics the Webpack dev-server behavior.
         filePath = '/index.html';
     }
     else {
-        filePath = '/' + normalizePath(outputPath);
+        filePath = '/' + normalizePath(file.path);
     }
     const servable = file.type === internal_1.BuildOutputFileType.Browser || file.type === internal_1.BuildOutputFileType.Media;
     // Skip analysis of sourcemaps
@@ -38,6 +38,11 @@ function updateResultRecord(outputPath, file, normalizePath, htmlIndexPath, gene
             type: file.type,
             updated: false,
         });
+        return;
+    }
+    // Avoid overwriting a servable browser file with a non-servable server file of the same path (e.g. CSS chunks)
+    const existing = generatedFiles.get(filePath);
+    if (existing?.servable && !servable) {
         return;
     }
     // New or updated file

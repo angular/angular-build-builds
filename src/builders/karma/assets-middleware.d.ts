@@ -12,7 +12,7 @@ interface ServeFileFunction {
     (filepath: string, rangeHeader: string | string[] | undefined, response: ServerResponse, transform?: (c: string | Uint8Array) => string | Uint8Array, content?: string | Uint8Array, doNotCache?: boolean): void;
 }
 export interface LatestBuildFiles {
-    files: Record<string, ResultFile | undefined>;
+    files: Map<string, ResultFile>;
 }
 export declare class AngularAssetsMiddleware {
     private readonly serveFile;
@@ -21,6 +21,6 @@ export declare class AngularAssetsMiddleware {
     static readonly NAME = "angular-test-assets";
     constructor(serveFile: ServeFileFunction, latestBuildFiles: LatestBuildFiles);
     handle(req: IncomingMessage, res: ServerResponse, next: (err?: unknown) => unknown): void;
-    static createPlugin(initialFiles: LatestBuildFiles): InlinePluginDef;
+    static createPlugin(initialFiles: readonly ResultFile[]): InlinePluginDef;
 }
 export {};

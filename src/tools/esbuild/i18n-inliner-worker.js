@@ -43,7 +43,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = inlineFile;
 exports.inlineFileBatch = inlineFileBatch;
 exports.inlineCode = inlineCode;
 const remapping_1 = __importDefault(require("@ampproject/remapping"));
@@ -55,7 +54,7 @@ const oxc_parser_1 = require("oxc-parser");
 const i18n_locale_plugin_1 = require("./i18n-locale-plugin");
 const i18n_translation_reader_1 = require("./i18n-translation-reader");
 // Extract the application files and common options used for inline requests from the Worker context
-const { files, missingTranslation, translations } = (node_worker_threads_1.workerData || {});
+const { files, missingTranslation } = (node_worker_threads_1.workerData || {});
 /**
  * Cache of file data promises keyed by filename.
  */
@@ -102,14 +101,13 @@ function loadFileData(filename, cache = true) {
  * @returns The translation messages, or undefined if the locale has no translations.
  */
 function loadTranslation(locale, translation) {
-    const translationData = translation ?? translations?.get(locale);
-    if (!translationData) {
+    if (!translation) {
         return undefined;
     }
     let messagesPromise = deserializedTranslations.get(locale);
     if (!messagesPromise) {
-        if (translationData instanceof Blob) {
-            messagesPromise = translationData
+        if (translation instanceof Blob) {
+            messagesPromise = translation
                 .arrayBuffer()
                 .then((buffer) => (0, node_v8_1.deserialize)(new Uint8Array(buffer)))
                 .catch((error) => {
@@ -118,32 +116,11 @@ function loadTranslation(locale, translation) {
             });
         }
         else {
-            messagesPromise = Promise.resolve((0, i18n_translation_reader_1.createSharedTranslationProxy)(translationData));
+            messagesPromise = Promise.resolve((0, i18n_translation_reader_1.createSharedTranslationProxy)(translation));
         }
         deserializedTranslations.set(locale, messagesPromise);
     }
     return messagesPromise;
-}
-/**
- * Inlines the provided locale and translation into a JavaScript file that contains `$localize` usage.
- * This function is the main entry for the Worker's action that is called by the worker pool.
- *
- * @param request An InlineRequest object representing the options for inlining
- * @returns An object containing the inlined file and optional map content.
- */
-async function inlineFile(request) {
-    const { code, metadata } = await loadFileData(request.filename, true);
-    // Sourcemaps are parsed on demand per request rather than cached long-term to prevent
-    // monotonic memory growth as a worker processes multiple files across the build.
-    const rawMap = await files.get(request.filename + '.map')?.text();
-    const map = rawMap ? JSON.parse(rawMap) : undefined;
-    const result = await inlineLocalize(code, map, metadata, request.locale, await loadTranslation(request.locale, request.translation), request.filename);
-    return {
-        file: request.filename,
-        code: result.code,
-        map: result.map,
-        messages: result.diagnostics.messages,
-    };
 }
 /**
  * Inlines multiple locales and translations into a JavaScript file that contains `$localize` usage.
@@ -165,9 +142,7 @@ async function inlineFileBatch(request) {
     // It will naturally be garbage-collected after this batch action returns.
     const rawMap = await files.get(request.filename + '.map')?.text();
     const map = rawMap ? JSON.parse(rawMap) : undefined;
-    const results = await Promise.all(request.locales.map(async (entry) => {
-        const locale = typeof entry === 'string' ? entry : entry.locale;
-        const translation = typeof entry === 'string' ? undefined : entry.translation;
+    const results = await Promise.all(Array.from(request.locales, async ([locale, translation]) => {
         const result = await inlineLocalize(code, map, metadata, locale, await loadTranslation(locale, translation), request.filename);
         return {
             locale,

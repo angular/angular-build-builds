@@ -221,33 +221,7 @@ function* emitOutputResults({ outputFiles, assetFiles, errors, warnings, externa
     }
     // Use a full result if there is no rebuild state (no prior build result)
     if (!rebuildState || !changes) {
-        const result = {
-            kind: results_1.ResultKind.Full,
-            warnings: warnings,
-            files: {},
-            detail: {
-                externalMetadata,
-                htmlIndexPath,
-                htmlBaseHref,
-                outputOptions,
-            },
-        };
-        for (const file of assetFiles) {
-            result.files[file.destination] = {
-                type: bundler_files_1.BuildOutputFileType.Browser,
-                inputPath: file.source,
-                origin: 'disk',
-            };
-        }
-        for (const file of outputFiles) {
-            result.files[file.path] = {
-                type: file.type,
-                contents: file.contents,
-                origin: 'memory',
-                hash: file.hash,
-            };
-        }
-        yield result;
+        yield createFullResult(outputFiles, assetFiles, warnings, outputOptions, externalMetadata, htmlIndexPath, htmlBaseHref);
         return;
     }
     // Template updates only exist if no other JS changes have occurred.
@@ -263,7 +237,7 @@ function* emitOutputResults({ outputFiles, assetFiles, errors, warnings, externa
         added: [],
         removed: [],
         modified: [],
-        files: {},
+        files: [],
         detail: {
             externalMetadata,
             htmlIndexPath,
@@ -275,8 +249,9 @@ function* emitOutputResults({ outputFiles, assetFiles, errors, warnings, externa
     // Initially assume all previous output files have been removed
     const removedOutputFiles = new Map(previousOutputInfo);
     for (const file of outputFiles) {
-        removedOutputFiles.delete(file.path);
-        const previousHash = previousOutputInfo.get(file.path)?.hash;
+        const key = `${file.type}:${file.path}`;
+        removedOutputFiles.delete(key);
+        const previousHash = previousOutputInfo.get(key)?.hash;
         let needFile = false;
         if (previousHash === undefined) {
             needFile = true;
@@ -293,12 +268,13 @@ function* emitOutputResults({ outputFiles, assetFiles, errors, warnings, externa
             else if (!canBackgroundUpdate(file)) {
                 incrementalResult.background = false;
             }
-            incrementalResult.files[file.path] = {
+            incrementalResult.files.push({
+                path: file.path,
                 type: file.type,
                 contents: file.contents,
                 origin: 'memory',
                 hash: file.hash,
-            };
+            });
         }
     }
     // Initially assume all previous assets files have been removed
@@ -317,11 +293,12 @@ function* emitOutputResults({ outputFiles, assetFiles, errors, warnings, externa
             continue;
         }
         hasCssUpdates ||= destination.endsWith('.css');
-        incrementalResult.files[destination] = {
+        incrementalResult.files.push({
+            path: destination,
             type: bundler_files_1.BuildOutputFileType.Browser,
             inputPath: source,
             origin: 'disk',
-        };
+        });
     }
     // Do not remove stale files yet if there are template updates.
     // Component chunk files may still be referenced in running browser code.
@@ -332,11 +309,11 @@ function* emitOutputResults({ outputFiles, assetFiles, errors, warnings, externa
         removedOutputFiles.clear();
     }
     // Include the removed output and asset files
-    incrementalResult.removed.push(...Array.from(removedOutputFiles, ([file, { type }]) => ({
-        path: file,
+    incrementalResult.removed.push(...Array.from(removedOutputFiles.values(), ({ type, path }) => ({
+        path,
         type,
-    })), ...Array.from(removedAssetFiles.values(), (file) => ({
-        path: file,
+    })), ...Array.from(removedAssetFiles.values(), (path) => ({
+        path,
         type: bundler_files_1.BuildOutputFileType.Browser,
     })));
     yield incrementalResult;
@@ -350,7 +327,7 @@ function* emitOutputResults({ outputFiles, assetFiles, errors, warnings, externa
                 added: incrementalResult.added.filter(isCssFilePath),
                 removed: incrementalResult.removed.filter(({ path }) => isCssFilePath(path)),
                 modified: incrementalResult.modified.filter(isCssFilePath),
-                files: Object.fromEntries(Object.entries(incrementalResult.files).filter(([path]) => isCssFilePath(path))),
+                files: incrementalResult.files.filter((file) => isCssFilePath(file.path)),
             };
             yield styleResult;
         }
@@ -364,6 +341,33 @@ function* emitOutputResults({ outputFiles, assetFiles, errors, warnings, externa
         };
         yield updateResult;
     }
+}
+function createFullResult(outputFiles, assetFiles, warnings, outputOptions, externalMetadata, htmlIndexPath, htmlBaseHref) {
+    return {
+        kind: results_1.ResultKind.Full,
+        warnings: warnings,
+        files: [
+            ...assetFiles.map(({ source, destination }) => ({
+                path: destination,
+                type: bundler_files_1.BuildOutputFileType.Browser,
+                inputPath: source,
+                origin: 'disk',
+            })),
+            ...outputFiles.map((file) => ({
+                path: file.path,
+                type: file.type,
+                contents: file.contents,
+                origin: 'memory',
+                hash: file.hash,
+            })),
+        ],
+        detail: {
+            externalMetadata,
+            htmlIndexPath,
+            htmlBaseHref,
+            outputOptions,
+        },
+    };
 }
 function isCssFilePath(filePath) {
     return /\.css(?:\.map)?$/i.test(filePath);

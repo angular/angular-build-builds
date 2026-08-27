@@ -53,17 +53,17 @@ const utils_1 = require("../tools/esbuild/utils");
  * This function handles both in-memory and on-disk files, creating subdirectories
  * as needed.
  *
- * @param files A map of file paths to `ResultFile` objects, representing the build output.
+ * @param files A collection of `ResultFile` objects, representing the build output.
  * @param testDir The absolute path to the directory where the files should be written.
  */
 async function writeTestFiles(files, testDir) {
     const directoryExists = new Set();
     // Writes the test related output files to disk and ensures the containing directories are present
-    await (0, utils_1.emitFilesToDisk)(Object.entries(files), async ([filePath, file]) => {
+    await (0, utils_1.emitFilesToDisk)(files, async (file) => {
         if (file.type !== bundler_files_1.BuildOutputFileType.Browser && file.type !== bundler_files_1.BuildOutputFileType.Media) {
             return;
         }
-        const fullFilePath = node_path_1.default.join(testDir, filePath);
+        const fullFilePath = node_path_1.default.join(testDir, file.path);
         // Ensure output subdirectories exist
         const fileBasePath = node_path_1.default.dirname(fullFilePath);
         if (fileBasePath && !directoryExists.has(fileBasePath)) {

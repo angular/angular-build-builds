@@ -5,6 +5,7 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
+import type { ɵParsedTranslation } from '@angular/localize';
 import type { TranslationLoader } from './load-translations';
 export interface LocaleDescription {
     files: {
@@ -12,7 +13,7 @@ export interface LocaleDescription {
         integrity?: string;
         format?: string;
     }[];
-    translation?: Record<string, unknown>;
+    translation?: Record<string, ɵParsedTranslation>;
     dataPath?: string;
     baseHref?: string;
     subPath: string;

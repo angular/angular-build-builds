@@ -24,7 +24,7 @@ export interface DevServerExternalResultMetadata extends Omit<ExternalResultMeta
     explicitBrowser: string[];
     explicitServer: string[];
 }
-export declare function updateResultRecord(outputPath: string, file: ResultFile, normalizePath: (id: string) => string, htmlIndexPath: string, generatedFiles: Map<string, OutputFileRecord>, assetFiles: Map<string, OutputAssetRecord>, componentStyles: Map<string, ComponentStyleRecord>, initial?: boolean): void;
+export declare function updateResultRecord(file: ResultFile, normalizePath: (id: string) => string, htmlIndexPath: string, generatedFiles: Map<string, OutputFileRecord>, assetFiles: Map<string, OutputAssetRecord>, componentStyles: Map<string, ComponentStyleRecord>, initial?: boolean): void;
 /**
  * Checks if the given value is an absolute URL.
  *

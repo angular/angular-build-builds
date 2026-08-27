@@ -108,8 +108,8 @@ class VitestExecutor {
         this.normalizePath ??= (await Promise.resolve(`${'vite'}`).then(s => __importStar(require(s)))).normalizePath;
         if (buildResult.kind === results_1.ResultKind.Full) {
             this.buildResultFiles.clear();
-            for (const [path, file] of Object.entries(buildResult.files)) {
-                this.buildResultFiles.set(this.normalizePath(path), file);
+            for (const file of buildResult.files) {
+                this.buildResultFiles.set(this.normalizePath(file.path), file);
             }
             this.debugLog(DebugLogLevel.Info, `Full build results received. Total files: ${this.buildResultFiles.size}.`);
         }
@@ -122,8 +122,8 @@ class VitestExecutor {
             for (const file of buildResult.removed) {
                 this.buildResultFiles.delete(this.normalizePath(file.path));
             }
-            for (const [path, file] of Object.entries(buildResult.files)) {
-                this.buildResultFiles.set(this.normalizePath(path), file);
+            for (const file of buildResult.files) {
+                this.buildResultFiles.set(this.normalizePath(file.path), file);
             }
         }
         (0, utils_1.updateExternalMetadata)(buildResult, this.externalMetadata, undefined, true);

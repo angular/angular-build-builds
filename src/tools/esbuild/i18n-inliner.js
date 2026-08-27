@@ -65,7 +65,7 @@ class I18nInliner {
     constructor(options, maxThreads) {
         this.options = options;
         this.#unmodifiedFiles = [];
-        const { outputFiles, shouldOptimize, missingTranslation, translations } = options;
+        const { outputFiles, missingTranslation } = options;
         const files = new Map();
         const pendingMaps = [];
         for (const file of outputFiles) {
@@ -110,8 +110,6 @@ class I18nInliner {
             // Extract options to ensure only the named options are serialized and sent to the worker
             workerData: {
                 missingTranslation,
-                shouldOptimize,
-                translations,
                 // A Blob is an immutable data structure that allows sharing the data between workers
                 // without copying until the data is actually used within a Worker. This is useful here
                 // since each file may not actually be processed in each Worker and the Blob avoids
@@ -131,7 +129,7 @@ class I18nInliner {
      */
     async inlineAll(locales) {
         await this.initCache();
-        const { shouldOptimize, missingTranslation, localizeVersion } = this.options;
+        const { missingTranslation, localizeVersion } = this.options;
         const localeList = Array.from(locales);
         if (localeList.length === 0) {
             return new Map();
@@ -156,7 +154,6 @@ class I18nInliner {
                         locale,
                         translation: translationIntegrity || translation,
                         missingTranslation,
-                        shouldOptimize,
                         localizeVersion,
                     })));
                 }
@@ -271,10 +268,7 @@ class I18nInliner {
                 const task = (async () => {
                     const batchResult = (await this.#workerPool.run({
                         filename,
-                        locales: batchEntries.map((e) => ({
-                            locale: e.locale,
-                            translation: e.translation,
-                        })),
+                        locales: new Map(batchEntries.map((e) => [e.locale, e.translation])),
                         ephemeral,
                         activeLocales,
                     }, { name: 'inlineFileBatch' }));

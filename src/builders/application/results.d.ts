@@ -25,7 +25,7 @@ export interface FailureResult extends BaseResult {
 }
 export interface FullResult extends BaseResult {
     kind: ResultKind.Full;
-    files: Record<string, ResultFile>;
+    files: ResultFile[];
 }
 export interface IncrementalResult extends BaseResult {
     kind: ResultKind.Incremental;
@@ -36,11 +36,12 @@ export interface IncrementalResult extends BaseResult {
         type: BuildOutputFileType;
     }[];
     modified: string[];
-    files: Record<string, ResultFile>;
+    files: ResultFile[];
 }
 export type ResultFile = DiskFile | MemoryFile;
 export interface BaseResultFile {
     origin: 'memory' | 'disk';
+    path: string;
     type: BuildOutputFileType;
 }
 export interface DiskFile extends BaseResultFile {

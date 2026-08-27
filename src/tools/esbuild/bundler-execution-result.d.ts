@@ -26,6 +26,7 @@ export interface RebuildState {
     previousOutputInfo: ReadonlyMap<string, {
         hash: string;
         type: BuildOutputFileType;
+        path: string;
     }>;
     previousAssetsInfo: ReadonlyMap<string, string>;
     templateUpdates?: Map<string, string>;

@@ -5,11 +5,12 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
+import type { ɵParsedTranslation } from '@angular/localize';
 /**
  * A zero-copy reader that queries translation messages directly from a SharedArrayBuffer
  * using binary search over a sorted key index.
  */
-export declare class SharedTranslationDictionary {
+export declare class SharedTranslationDictionary<T = ɵParsedTranslation> {
     private readonly entryCount;
     private readonly uint32Index;
     private readonly uint8Pool;
@@ -24,7 +25,7 @@ export declare class SharedTranslationDictionary {
      * @param targetKey The message key ID to search for.
      * @returns The parsed translation message, or undefined if not found.
      */
-    get(targetKey: string): unknown | undefined;
+    get(targetKey: string): T | undefined;
 }
 /**
  * Creates a JavaScript object Proxy wrapping a SharedTranslationDictionary so it can be passed
@@ -37,4 +38,4 @@ export declare class SharedTranslationDictionary {
  * @param buffer The SharedArrayBuffer containing binary encoded translation catalog.
  * @returns A Proxy object that intercepts property reads and queries the SharedTranslationDictionary.
  */
-export declare function createSharedTranslationProxy(buffer: SharedArrayBuffer): Record<string, unknown>;
+export declare function createSharedTranslationProxy<T = ɵParsedTranslation>(buffer: SharedArrayBuffer): Record<string, T>;

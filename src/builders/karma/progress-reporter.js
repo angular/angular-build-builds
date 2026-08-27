@@ -48,13 +48,15 @@ function injectKarmaReporter(buildOptions, buildIterator, karmaConfig, controlle
                     else if (buildOutput.kind === results_1.ResultKind.Incremental ||
                         buildOutput.kind === results_1.ResultKind.Full) {
                         if (buildOutput.kind === results_1.ResultKind.Full) {
-                            this.latestBuildFiles.files = buildOutput.files;
+                            this.latestBuildFiles.files.clear();
                         }
                         else {
-                            this.latestBuildFiles.files = {
-                                ...this.latestBuildFiles.files,
-                                ...buildOutput.files,
-                            };
+                            for (const { path } of buildOutput.removed) {
+                                this.latestBuildFiles.files.delete(path);
+                            }
+                        }
+                        for (const file of buildOutput.files) {
+                            this.latestBuildFiles.files.set(file.path, file);
                         }
                         await (0, test_files_1.writeTestFiles)(buildOutput.files, buildOptions.outputPath);
                         this.emitter.refreshFiles();

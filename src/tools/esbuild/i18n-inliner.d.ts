@@ -5,6 +5,7 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
+import type { ɵParsedTranslation } from '@angular/localize';
 import { type BuildOutputFile } from './bundler-files';
 /**
  * Inlining options that should apply to all transformed code.
@@ -12,10 +13,8 @@ import { type BuildOutputFile } from './bundler-files';
 export interface I18nInlinerOptions {
     missingTranslation: 'error' | 'warning' | 'ignore';
     outputFiles: BuildOutputFile[];
-    shouldOptimize?: boolean;
     persistentCachePath?: string;
     localizeVersion?: string;
-    translations?: ReadonlyMap<string, Blob | SharedArrayBuffer>;
 }
 /**
  * Options for inlining a specific locale.
@@ -28,7 +27,7 @@ export interface LocaleInlineOptions {
     /**
      * The translation messages for the locale, or undefined for the source/untranslated locale.
      */
-    translation?: Record<string, unknown>;
+    translation?: Record<string, ɵParsedTranslation>;
     /**
      * An optional content integrity hash of the translation file(s) for fast cache key calculation.
      */
@@ -71,8 +70,8 @@ export declare class I18nInliner {
      * @param translationIntegrity An optional integrity value for the translation messages to use for caching.
      * @returns A promise that resolves to an array of OutputFiles representing a translated result.
      */
-    inlineForLocale(locale: string, translation: Record<string, unknown> | undefined, translationIntegrity?: string): Promise<LocaleInlineResult>;
-    inlineTemplateUpdate(locale: string, translation: Record<string, unknown> | undefined, templateCode: string, templateId: string): Promise<{
+    inlineForLocale(locale: string, translation: Record<string, ɵParsedTranslation> | undefined, translationIntegrity?: string): Promise<LocaleInlineResult>;
+    inlineTemplateUpdate(locale: string, translation: Record<string, ɵParsedTranslation> | undefined, templateCode: string, templateId: string): Promise<{
         code: string;
         errors: string[];
         warnings: string[];

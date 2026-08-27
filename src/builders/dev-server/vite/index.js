@@ -217,8 +217,8 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                 assetFiles.clear();
                 componentStyles.clear();
                 generatedFiles.clear();
-                for (const [outputPath, file] of Object.entries(result.files)) {
-                    (0, utils_3.updateResultRecord)(outputPath, file, normalizePath, htmlIndexPath, generatedFiles, assetFiles, componentStyles, 
+                for (const file of result.files) {
+                    (0, utils_3.updateResultRecord)(file, normalizePath, htmlIndexPath, generatedFiles, assetFiles, componentStyles, 
                     // The initial build will not yet have a server setup
                     !server);
                 }
@@ -234,11 +234,8 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                     generatedFiles.delete(filePath);
                     assetFiles.delete(filePath);
                 }
-                for (const modified of result.modified) {
-                    (0, utils_3.updateResultRecord)(modified, result.files[modified], normalizePath, htmlIndexPath, generatedFiles, assetFiles, componentStyles);
-                }
-                for (const added of result.added) {
-                    (0, utils_3.updateResultRecord)(added, result.files[added], normalizePath, htmlIndexPath, generatedFiles, assetFiles, componentStyles);
+                for (const file of result.files) {
+                    (0, utils_3.updateResultRecord)(file, normalizePath, htmlIndexPath, generatedFiles, assetFiles, componentStyles);
                 }
                 break;
             case results_1.ResultKind.ComponentUpdate:

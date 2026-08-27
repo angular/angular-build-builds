@@ -11,7 +11,7 @@ import { ResultFile } from '../builders/application/results';
  * This function handles both in-memory and on-disk files, creating subdirectories
  * as needed.
  *
- * @param files A map of file paths to `ResultFile` objects, representing the build output.
+ * @param files A collection of `ResultFile` objects, representing the build output.
  * @param testDir The absolute path to the directory where the files should be written.
  */
-export declare function writeTestFiles(files: Record<string, ResultFile>, testDir: string): Promise<void>;
+export declare function writeTestFiles(files: readonly ResultFile[], testDir: string): Promise<void>;
