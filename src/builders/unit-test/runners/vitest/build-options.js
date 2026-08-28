@@ -233,9 +233,8 @@ async function getVitestBuildOptions(options, baseBuildOptions) {
         entryPoints,
         // Vitest's Node-based module loading emulation (vite-node) is not fully spec compliant and lacks
         // live ESM bindings across chunk boundaries. This can cause uninitialized exports or break mocking.
-        // In browser tests, however, the real browser adheres to the ECMAScript spec, so code splitting can
-        // be safely enabled.
-        disableCodeSplitting: options.browsers?.length ? false : true,
+        // Disabling code splitting avoids shared chunks, but increases build and coverage memory/time.
+        disableCodeSplitting: !options.splitting,
         // Enable support for vitest browser prebundling. Excludes can be controlled with a runnerConfig
         // and the `optimizeDeps.exclude` option.
         externalPackages: true,

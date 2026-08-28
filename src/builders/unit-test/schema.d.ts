@@ -141,6 +141,13 @@ export type Schema = {
      */
     setupFiles?: string[];
     /**
+     * Enables code splitting for test execution. When enabled, shared code between test files
+     * is split into separate chunks. Issues with live ESM bindings in Node.js environments
+     * (such as uninitialized exports or mocking failures) can be resolved by disabling
+     * splitting. This option is only available for the Vitest runner.
+     */
+    splitting?: boolean;
+    /**
      * The path to the TypeScript configuration file, relative to the workspace root. Defaults
      * to `tsconfig.spec.json` in the project root if it exists. If not specified and the
      * default does not exist, the `tsConfig` from the specified `buildTarget` will be used.
