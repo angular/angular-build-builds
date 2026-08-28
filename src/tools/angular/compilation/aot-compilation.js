@@ -15,7 +15,6 @@ const node_assert_1 = __importDefault(require("node:assert"));
 const node_path_1 = require("node:path");
 const typescript_1 = __importDefault(require("typescript"));
 const environment_options_1 = require("../../../utils/environment-options");
-const path_1 = require("../../../utils/path");
 const profiling_1 = require("../../esbuild/profiling");
 const angular_host_1 = require("../angular-host");
 const jit_bootstrap_transformer_1 = require("../transformers/jit-bootstrap-transformer");
@@ -23,6 +22,7 @@ const lazy_routes_transformer_1 = require("../transformers/lazy-routes-transform
 const web_worker_transformer_1 = require("../transformers/web-worker-transformer");
 const angular_compilation_1 = require("./angular-compilation");
 const hmr_candidates_1 = require("./hmr-candidates");
+const typescript_compilation_1 = require("./typescript-compilation");
 const typescript_printer_1 = require("./typescript-printer");
 /**
  * The modified files count limit for performing component HMR analysis.
@@ -53,10 +53,9 @@ class AngularCompilationState {
         return this.angularProgram.compiler;
     }
 }
-class AotCompilation extends angular_compilation_1.AngularCompilation {
+class AotCompilation extends typescript_compilation_1.TypeScriptCompilation {
     browserOnlyBuild;
     #state;
-    #sourceFiles = new Map();
     constructor(browserOnlyBuild) {
         super();
         this.browserOnlyBuild = browserOnlyBuild;
@@ -82,8 +81,8 @@ class AotCompilation extends angular_compilation_1.AngularCompilation {
         let staleSourceFiles;
         let clearPackageJsonCache = false;
         if (hostOptions.modifiedFiles) {
+            this.invalidateFiles(hostOptions.modifiedFiles);
             for (const modifiedFile of hostOptions.modifiedFiles) {
-                this.#sourceFiles.delete((0, path_1.toPosixPath)(modifiedFile));
                 if (this.#state) {
                     // Clear package.json cache if a node modules file was modified
                     if (!clearPackageJsonCache && modifiedFile.includes('node_modules')) {
@@ -102,7 +101,7 @@ class AotCompilation extends angular_compilation_1.AngularCompilation {
             }
         }
         // Create Angular compiler host
-        const host = (0, angular_host_1.createAngularCompilerHost)(typescript_1.default, compilerOptions, hostOptions, packageJsonCache, this.#sourceFiles);
+        const host = (0, angular_host_1.createAngularCompilerHost)(typescript_1.default, compilerOptions, hostOptions, packageJsonCache, this.sourceFiles);
         // Create the Angular specific program that contains the Angular compiler
         const angularProgram = (0, profiling_1.profileSync)('NG_CREATE_PROGRAM', () => new NgtscProgram(rootNames, compilerOptions, host, this.#state?.angularProgram));
         const angularCompiler = angularProgram.compiler;
@@ -315,11 +314,6 @@ class AotCompilation extends angular_compilation_1.AngularCompilation {
             emittedFiles.set(sourceFile, { filename: sourceFile.fileName, contents });
         }
         return emittedFiles.values();
-    }
-    async update(files) {
-        for (const file of files) {
-            this.#sourceFiles.delete((0, path_1.toPosixPath)(file));
-        }
     }
 }
 exports.AotCompilation = AotCompilation;

@@ -47,14 +47,14 @@ exports.inlineFileBatch = inlineFileBatch;
 exports.inlineCode = inlineCode;
 const remapping_1 = __importDefault(require("@ampproject/remapping"));
 const magic_string_1 = require("magic-string");
-const node_assert_1 = __importDefault(require("node:assert"));
 const node_v8_1 = require("node:v8");
 const node_worker_threads_1 = require("node:worker_threads");
 const oxc_parser_1 = require("oxc-parser");
+const traversal_1 = require("../oxc/traversal");
 const i18n_locale_plugin_1 = require("./i18n-locale-plugin");
 const i18n_translation_reader_1 = require("./i18n-translation-reader");
-// Extract the application files and common options used for inline requests from the Worker context
-const { files, missingTranslation } = (node_worker_threads_1.workerData || {});
+// Extract common options used for inline requests from the Worker context
+const { missingTranslation } = (node_worker_threads_1.workerData || {});
 /**
  * Cache of file data promises keyed by filename.
  */
@@ -70,18 +70,17 @@ const deserializedTranslations = new Map();
  * to be garbage-collected once the batch request finishes.
  *
  * @param filename The name of the file to load.
+ * @param codeBlob The source code file as a Blob.
  * @param cache Whether to cache the loaded file data in the Worker's long-term cache.
  * @returns The cached or newly extracted code and localization metadata.
  */
-function loadFileData(filename, cache = true) {
+function loadFileData(filename, codeBlob, cache = true) {
     const existing = fileDataCache.get(filename);
     if (existing) {
         return existing;
     }
     const fileDataPromise = (async () => {
-        const data = files.get(filename);
-        (0, node_assert_1.default)(data !== undefined, `Invalid inline request for file '${filename}'.`);
-        const code = await data.text();
+        const code = await codeBlob.text();
         const metadata = extractLocalizeMetadata(filename, code);
         return { code, metadata };
     })();
@@ -137,7 +136,7 @@ async function inlineFileBatch(request) {
             }
         }
     }
-    const { code, metadata } = await loadFileData(request.filename, !request.ephemeral);
+    const { code, metadata } = await loadFileData(request.filename, request.code, !request.ephemeral);
     // Fast path: file has no $localize call sites or locale insert sites
     if (metadata.callSites.length === 0 && metadata.localeInsertSites.length === 0) {
         return {
@@ -149,10 +148,13 @@ async function inlineFileBatch(request) {
             })),
         };
     }
-    // Parse the sourcemap once for the entire batch.
+    // Parse the sourcemap once for the entire batch if provided.
     // It will naturally be garbage-collected after this batch action returns.
-    const rawMap = await files.get(request.filename + '.map')?.text();
-    const map = rawMap ? JSON.parse(rawMap) : undefined;
+    let map;
+    if (request.map) {
+        const rawMap = await request.map.text();
+        map = rawMap ? JSON.parse(rawMap) : undefined;
+    }
     const results = await Promise.all(Array.from(request.locales, async ([locale, translation]) => {
         const result = await inlineLocalize(code, map, metadata, locale, await loadTranslation(locale, translation), request.filename);
         return {
@@ -200,49 +202,6 @@ async function loadLocalizeTools() {
     return localizeToolsModule;
 }
 /**
- * Traverses ESTree AST nodes in post-order (bottom-up) without recursion.
- * Bottom-up traversal ensures that nested `$localize` expressions are transformed and
- * written to MagicString before outer containing templates are evaluated.
- *
- * @param root The root AST node to traverse.
- * @param onExit Callback invoked on each AST node in post-order.
- */
-function walkAstPostOrder(root, onExit) {
-    const traverseStack = [root];
-    const postOrderNodes = [];
-    while (traverseStack.length > 0) {
-        const current = traverseStack.pop();
-        if (!current) {
-            continue;
-        }
-        postOrderNodes.push(current);
-        const keys = oxc_parser_1.visitorKeys[current.type];
-        if (!keys) {
-            continue;
-        }
-        for (let i = 0; i < keys.length; i++) {
-            const child = current[keys[i]];
-            if (!child) {
-                continue;
-            }
-            if (Array.isArray(child)) {
-                for (const item of child) {
-                    if (item) {
-                        traverseStack.push(item);
-                    }
-                }
-            }
-            else {
-                traverseStack.push(child);
-            }
-        }
-    }
-    // Process collected nodes in reverse order to achieve bottom-up (post-order) traversal
-    for (let i = postOrderNodes.length - 1; i >= 0; i--) {
-        onExit(postOrderNodes[i]);
-    }
-}
-/**
  * Extracts localization call sites and locale insertion points from JavaScript code using OXC.
  *
  * @param filename The name of the file being processed.
@@ -259,7 +218,7 @@ function extractLocalizeMetadata(filename, code) {
     const callSites = [];
     const localeInsertSites = [];
     let diagnostics;
-    walkAstPostOrder(program, (node) => {
+    (0, traversal_1.traversePostOrder)(program, (node) => {
         if (node.type === 'Literal') {
             if (typeof node.value === 'string' && node.value === '___NG_LOCALE_INSERT___') {
                 localeInsertSites.push({ start: node.start, end: node.end });

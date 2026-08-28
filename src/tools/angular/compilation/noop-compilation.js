@@ -16,9 +16,6 @@ class NoopCompilation extends angular_compilation_1.AngularCompilation {
         const compilerOptions = compilerOptionsTransformer?.(originalCompilerOptions) ?? originalCompilerOptions;
         return { compilerOptions, referencedFiles: [] };
     }
-    collectDiagnostics() {
-        throw new Error('Not available when using noop compilation.');
-    }
     emitAffectedFiles() {
         throw new Error('Not available when using noop compilation.');
     }

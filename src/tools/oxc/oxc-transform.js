@@ -12,6 +12,7 @@ const linker_1 = require("@angular/compiler-cli/linker");
 const magic_string_1 = require("magic-string");
 const oxc_parser_1 = require("oxc-parser");
 const oxc_linker_1 = require("../angular/linker/oxc-linker");
+const traversal_1 = require("./traversal");
 /**
  * A set of constructor names that are considered to be side-effect free.
  */
@@ -282,10 +283,6 @@ function transform(filename, code, options) {
     function isAlreadyEdited(start, end) {
         return editedRanges.some((r) => start >= r.start && end <= r.end);
     }
-    // Track function nesting depth and closest function expression wrapper
-    let functionDepth = 0;
-    let classDepth = 0;
-    const functionStack = [];
     /**
      * Scans and rewrites TypeScript emitted enum declarations in the statement block.
      * Wraps enum statements inside a pure IIFE assignable directly to the enum variable.
@@ -532,129 +529,90 @@ function transform(filename, code, options) {
             }
         }
     }
-    const visitor = new oxc_parser_1.Visitor({
-        ClassDeclaration(node) {
-            classDepth++;
-        },
-        'ClassDeclaration:exit'() {
-            classDepth--;
-        },
-        ClassExpression(node) {
-            classDepth++;
-        },
-        'ClassExpression:exit'() {
-            classDepth--;
-        },
-        FunctionDeclaration(node) {
-            functionDepth++;
-            functionStack.push(node);
-        },
-        'FunctionDeclaration:exit'() {
-            functionDepth--;
-            functionStack.pop();
-        },
-        FunctionExpression(node) {
-            functionDepth++;
-            functionStack.push(node);
-        },
-        'FunctionExpression:exit'() {
-            functionDepth--;
-            functionStack.pop();
-        },
-        ArrowFunctionExpression(node) {
-            functionDepth++;
-            functionStack.push(node);
-        },
-        'ArrowFunctionExpression:exit'() {
-            functionDepth--;
-            functionStack.pop();
-        },
-        'Program:exit'(node) {
-            if (advancedOptimizations) {
-                adjustTypeScriptEnumsInStatements(node.body);
-                adjustStaticMembersInStatements(node.body);
-            }
-        },
-        'BlockStatement:exit'(node) {
-            if (advancedOptimizations) {
-                adjustTypeScriptEnumsInStatements(node.body);
-                adjustStaticMembersInStatements(node.body);
-            }
-        },
-        CallExpression(node) {
-            if (isAlreadyEdited(node.start, node.end)) {
-                return;
-            }
-            if (linker) {
-                const linkedCode = linker.linkCallExpression(node);
-                if (linkedCode !== undefined) {
-                    source.overwrite(node.start, node.end, linkedCode);
-                    markEdited(node.start, node.end);
+    (0, traversal_1.traversePostOrder)(program, (node, { functionDepth, classDepth, parentFunc }) => {
+        switch (node.type) {
+            case 'Program':
+            case 'BlockStatement':
+                if (advancedOptimizations) {
+                    adjustTypeScriptEnumsInStatements(node.body);
+                    adjustStaticMembersInStatements(node.body);
+                }
+                break;
+            case 'CallExpression': {
+                if (isAlreadyEdited(node.start, node.end)) {
                     return;
                 }
-            }
-            if (!advancedOptimizations) {
-                return;
-            }
-            // 1. Elide Angular Metadata check
-            let calleeName;
-            if (node.callee.type === 'Identifier') {
-                calleeName = node.callee.name;
-            }
-            else if (node.callee.type === 'MemberExpression' &&
-                node.callee.property.type === 'Identifier') {
-                calleeName = node.callee.property.name;
-            }
-            if (calleeName && angularMetadataFunctions.has(calleeName)) {
-                const parentFunc = functionStack[functionStack.length - 1];
-                if (parentFunc &&
-                    (parentFunc.type === 'FunctionExpression' ||
-                        parentFunc.type === 'ArrowFunctionExpression')) {
-                    source.overwrite(node.start, node.end, 'void 0');
-                    markEdited(node.start, node.end);
+                if (linker) {
+                    const linkedCode = linker.linkCallExpression(node);
+                    if (linkedCode !== undefined) {
+                        source.overwrite(node.start, node.end, linkedCode);
+                        markEdited(node.start, node.end);
+                        return;
+                    }
+                }
+                if (!advancedOptimizations) {
                     return;
                 }
-            }
-            // 2. Mark Top-Level Pure Functions check
-            if (!pureAnnotate || functionDepth > 0 || classDepth > 0 || topLevelSafeMode) {
-                return;
-            }
-            const callee = unwrapParentheses(node.callee);
-            if ((callee.type === 'FunctionExpression' || callee.type === 'ArrowFunctionExpression') &&
-                node.arguments.length !== 0) {
-                return;
-            }
-            if (callee.type === 'Identifier' &&
-                (isTslibHelperName(callee.name) || isBabelHelperName(callee.name))) {
-                return;
-            }
-            if (!hasPureComment(node.start)) {
-                source.appendLeft(node.start, '/*#__PURE__*/ ');
-            }
-        },
-        NewExpression(node) {
-            if (!advancedOptimizations ||
-                !pureAnnotate ||
-                functionDepth > 0 ||
-                classDepth > 0 ||
-                isAlreadyEdited(node.start, node.end)) {
-                return;
-            }
-            if (!topLevelSafeMode) {
+                // 1. Elide Angular Metadata check
+                let calleeName;
+                if (node.callee.type === 'Identifier') {
+                    calleeName = node.callee.name;
+                }
+                else if (node.callee.type === 'MemberExpression' &&
+                    node.callee.property.type === 'Identifier') {
+                    calleeName = node.callee.property.name;
+                }
+                if (calleeName && angularMetadataFunctions.has(calleeName)) {
+                    if (parentFunc &&
+                        (parentFunc.type === 'FunctionExpression' ||
+                            parentFunc.type === 'ArrowFunctionExpression')) {
+                        source.overwrite(node.start, node.end, 'void 0');
+                        markEdited(node.start, node.end);
+                        return;
+                    }
+                }
+                // 2. Mark Top-Level Pure Functions check
+                if (!pureAnnotate || functionDepth > 0 || classDepth > 0 || topLevelSafeMode) {
+                    return;
+                }
+                const callee = unwrapParentheses(node.callee);
+                if ((callee.type === 'FunctionExpression' || callee.type === 'ArrowFunctionExpression') &&
+                    node.arguments.length !== 0) {
+                    return;
+                }
+                if (callee.type === 'Identifier' &&
+                    (isTslibHelperName(callee.name) || isBabelHelperName(callee.name))) {
+                    return;
+                }
                 if (!hasPureComment(node.start)) {
                     source.appendLeft(node.start, '/*#__PURE__*/ ');
                 }
-                return;
+                break;
             }
-            const callee = node.callee;
-            if (callee.type === 'Identifier' && sideEffectFreeConstructors.has(callee.name)) {
-                if (!hasPureComment(node.start)) {
-                    source.appendLeft(node.start, '/*#__PURE__*/ ');
+            case 'NewExpression': {
+                if (!advancedOptimizations ||
+                    !pureAnnotate ||
+                    functionDepth > 0 ||
+                    classDepth > 0 ||
+                    isAlreadyEdited(node.start, node.end)) {
+                    return;
                 }
+                if (!topLevelSafeMode) {
+                    if (!hasPureComment(node.start)) {
+                        source.appendLeft(node.start, '/*#__PURE__*/ ');
+                    }
+                    return;
+                }
+                const newCallee = node.callee;
+                if (newCallee.type === 'Identifier' && sideEffectFreeConstructors.has(newCallee.name)) {
+                    if (!hasPureComment(node.start)) {
+                        source.appendLeft(node.start, '/*#__PURE__*/ ');
+                    }
+                }
+                break;
             }
-        },
+        }
     });
-    visitor.visit(program);
     let map;
     if (options.sourcemap) {
         const rawMap = source.generateDecodedMap({ hires: true, source: filename });

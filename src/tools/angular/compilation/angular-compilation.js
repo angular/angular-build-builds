@@ -41,7 +41,6 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AngularCompilation = exports.DiagnosticModes = void 0;
-const diagnostics_1 = require("../../esbuild/angular/diagnostics");
 const profiling_1 = require("../../esbuild/profiling");
 var DiagnosticModes;
 (function (DiagnosticModes) {
@@ -53,14 +52,9 @@ var DiagnosticModes;
 })(DiagnosticModes || (exports.DiagnosticModes = DiagnosticModes = {}));
 class AngularCompilation {
     static #angularCompilerCliModule;
-    static #typescriptModule;
     static async loadCompilerCli() {
         AngularCompilation.#angularCompilerCliModule ??= await Promise.resolve().then(() => __importStar(require('@angular/compiler-cli')));
         return AngularCompilation.#angularCompilerCliModule;
-    }
-    static async loadTypescript() {
-        AngularCompilation.#typescriptModule ??= await Promise.resolve().then(() => __importStar(require('typescript')));
-        return AngularCompilation.#typescriptModule;
     }
     async loadConfiguration(tsconfig) {
         const { readConfiguration } = await AngularCompilation.loadCompilerCli();
@@ -84,30 +78,8 @@ class AngularCompilation {
     emitAffectedFiles() {
         return [];
     }
-    async diagnoseFiles(modes = DiagnosticModes.All) {
-        if (!this.collectDiagnostics) {
-            return {};
-        }
-        const result = {};
-        // Avoid loading typescript until actually needed.
-        // This allows for avoiding the load of typescript in the main thread when using the parallel compilation.
-        const typescript = await AngularCompilation.loadTypescript();
-        await (0, profiling_1.profileAsync)('NG_DIAGNOSTICS_TOTAL', async () => {
-            const diagnostics = await this.collectDiagnostics?.(modes);
-            if (!diagnostics) {
-                return;
-            }
-            for (const diagnostic of diagnostics) {
-                const message = (0, diagnostics_1.convertTypeScriptDiagnostic)(typescript, diagnostic);
-                if (diagnostic.category === typescript.DiagnosticCategory.Error) {
-                    (result.errors ??= []).push(message);
-                }
-                else {
-                    (result.warnings ??= []).push(message);
-                }
-            }
-        });
-        return result;
+    async diagnoseFiles(modes) {
+        return {};
     }
 }
 exports.AngularCompilation = AngularCompilation;

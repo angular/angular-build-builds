@@ -33,10 +33,17 @@ interface InlineCodeRequest {
  */
 interface InlineFileBatchRequest {
     /**
-     * The filename that should be processed. The data for the file is provided to the Worker
-     * during Worker initialization.
+     * The filename that should be processed.
      */
     filename: string;
+    /**
+     * The file content as a Blob.
+     */
+    code: Blob;
+    /**
+     * Optional sourcemap content as a Blob.
+     */
+    map?: Blob;
     /**
      * The locale specifiers and optional translations to use during the inlining process of the file.
      */

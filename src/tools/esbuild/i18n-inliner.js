@@ -37,13 +37,35 @@ const DEFAULT_LOCALE_WINDOW_SIZE = 8;
  * SharedArrayBuffer is unavailable.
  *
  * @param translation The translation messages for a locale, if the locale has any.
+ * @param translationIntegrity Optional content hash of the translation file for cache lookup.
+ * @param translationCache Optional Cache instance for binary translation buffers.
  * @returns A SharedArrayBuffer or Blob containing the serialized messages, or undefined if none.
  */
-function serializeTranslation(translation) {
+async function serializeTranslation(translation, translationIntegrity, translationCache) {
     if (!translation) {
         return undefined;
     }
     if (typeof SharedArrayBuffer !== 'undefined') {
+        if (translationIntegrity && translationCache) {
+            // Look up or generate binary translation data in the persistent cache.
+            // A Uint8Array view is stored in the cache store to allow binary persistence.
+            const binaryData = await translationCache.getOrCreate(translationIntegrity, () => {
+                return new Uint8Array((0, i18n_translation_encoder_1.encodeTranslationToBuffer)(translation));
+            });
+            // On a cache miss, getOrCreate returns the newly created Uint8Array backed by the
+            // original SharedArrayBuffer. Return it directly to avoid an unnecessary allocation and copy.
+            if (binaryData.buffer instanceof SharedArrayBuffer &&
+                binaryData.byteOffset === 0 &&
+                binaryData.byteLength === binaryData.buffer.byteLength) {
+                return binaryData.buffer;
+            }
+            // On a warm cache hit, the restored data is backed by a standard ArrayBuffer from disk.
+            // Copy it into a SharedArrayBuffer so worker threads can access it via zero-copy shared memory.
+            const buffer = new SharedArrayBuffer(binaryData.byteLength);
+            new Uint8Array(buffer).set(binaryData);
+            return buffer;
+        }
+        // When persistent caching is not configured, encode directly into a SharedArrayBuffer.
         return (0, i18n_translation_encoder_1.encodeTranslationToBuffer)(translation);
     }
     return new Blob([(0, node_v8_1.serialize)(translation)]);
@@ -59,7 +81,8 @@ class I18nInliner {
     #cacheInitFailed = false;
     #workerPool;
     #cacheStore;
-    #cache;
+    #transformedFileCache;
+    #translationCache;
     #localizeFiles;
     #unmodifiedFiles;
     constructor(options, maxThreads) {
@@ -110,11 +133,6 @@ class I18nInliner {
             // Extract options to ensure only the named options are serialized and sent to the worker
             workerData: {
                 missingTranslation,
-                // A Blob is an immutable data structure that allows sharing the data between workers
-                // without copying until the data is actually used within a Worker. This is useful here
-                // since each file may not actually be processed in each Worker and the Blob avoids
-                // unneeded repeat copying of potentially large JavaScript files.
-                files: new Map(Array.from(files, ([name, file]) => [name, new Blob([file.contents])])),
             },
         });
     }
@@ -136,6 +154,7 @@ class I18nInliner {
         }
         const fileResultsByLocale = new Map();
         for (const { locale } of localeList) {
+            (0, node_assert_1.default)(!fileResultsByLocale.has(locale), 'Duplicate locale provided to inliner: ' + locale);
             fileResultsByLocale.set(locale, new Map());
         }
         const filenames = Array.from(this.#localizeFiles.keys()).filter((name) => !name.endsWith('.map'));
@@ -147,8 +166,9 @@ class I18nInliner {
             // Pre-calculate cache key bases and serialized Blobs for each locale in this window
             const localeCacheBases = new Map();
             const localeBlobs = new Map();
-            for (const { locale, translation, translationIntegrity } of windowLocales) {
-                localeBlobs.set(locale, serializeTranslation(translation));
+            await Promise.all(windowLocales.map(async ({ locale, translation, translationIntegrity }) => {
+                const serialized = await serializeTranslation(translation, translationIntegrity, this.#translationCache);
+                localeBlobs.set(locale, serialized);
                 if (this.#cacheStore) {
                     localeCacheBases.set(locale, (0, hash_1.calculateHash)(JSON.stringify({
                         locale,
@@ -157,7 +177,7 @@ class I18nInliner {
                         localizeVersion,
                     })));
                 }
-            }
+            }));
             const cacheChecks = [];
             for (const filename of filenames) {
                 const file = this.#localizeFiles.get(filename);
@@ -165,7 +185,7 @@ class I18nInliner {
                 for (const { locale } of windowLocales) {
                     let cacheKey;
                     let cachedResultPromise = Promise.resolve(null);
-                    if (this.#cache) {
+                    if (this.#transformedFileCache) {
                         const fileCacheKeyBase = localeCacheBases.get(locale);
                         (0, node_assert_1.default)(fileCacheKeyBase !== undefined, 'Cache base must exist for locale: ' + locale);
                         const hasher = (0, hash_1.createContentHash)();
@@ -173,7 +193,7 @@ class I18nInliner {
                         hasher.update(filename);
                         hasher.update(fileCacheKeyBase);
                         cacheKey = hasher.digest();
-                        cachedResultPromise = this.#cache
+                        cachedResultPromise = this.#transformedFileCache
                             .get(cacheKey)
                             .then((val) => val ?? null)
                             .catch(() => null);
@@ -272,12 +292,17 @@ class I18nInliner {
         const localesPerBatch = Math.max(1, Math.ceil(localeCount / (targetTaskCount / (uncachedByFile.size || 1))));
         const workerTasks = [];
         for (const [filename, entries] of uncachedByFile) {
+            const codeFile = this.#localizeFiles.get(filename);
+            (0, node_assert_1.default)(codeFile !== undefined, 'Localize file must exist: ' + filename);
+            const mapFile = this.#localizeFiles.get(filename + '.map');
             const ephemeral = isLastWindow && entries.length <= localesPerBatch;
             for (let i = 0; i < entries.length; i += localesPerBatch) {
                 const batchEntries = entries.slice(i, i + localesPerBatch);
                 const task = (async () => {
                     const batchResult = (await this.#workerPool.run({
                         filename,
+                        code: new Blob([codeFile.contents]),
+                        map: mapFile ? new Blob([mapFile.contents]) : undefined,
                         locales: new Map(batchEntries.map((e) => [e.locale, e.translation])),
                         ephemeral,
                         activeLocales,
@@ -290,8 +315,8 @@ class I18nInliner {
                         const cachePromises = [];
                         for (const { locale, cacheKey } of batchEntries) {
                             fileResultsByLocale.get(locale)?.set(filename, unmodifiedResult);
-                            if (this.#cache && cacheKey) {
-                                cachePromises.push(this.#cache.put(cacheKey, unmodifiedResult));
+                            if (this.#transformedFileCache && cacheKey) {
+                                cachePromises.push(this.#transformedFileCache.put(cacheKey, unmodifiedResult));
                             }
                         }
                         await Promise.allSettled(cachePromises);
@@ -301,8 +326,8 @@ class I18nInliner {
                         for (const res of batchResult.results) {
                             const matchingEntry = batchEntries.find((e) => e.locale === res.locale);
                             const cacheKey = matchingEntry?.cacheKey;
-                            if (this.#cache && cacheKey) {
-                                cachePromises.push(this.#cache.put(cacheKey, {
+                            if (this.#transformedFileCache && cacheKey) {
+                                cachePromises.push(this.#transformedFileCache.put(cacheKey, {
                                     file: filename,
                                     code: res.code,
                                     map: res.map,
@@ -334,7 +359,7 @@ class I18nInliner {
         (0, node_assert_1.default)(result !== undefined, `Result for locale '${locale}' should be present.`);
         return result;
     }
-    async inlineTemplateUpdate(locale, translation, templateCode, templateId) {
+    async inlineTemplateUpdate(locale, translation, templateCode, templateId, translationIntegrity) {
         const hasLocalize = templateCode.includes(LOCALIZE_KEYWORD);
         if (!hasLocalize) {
             return {
@@ -347,7 +372,7 @@ class I18nInliner {
             code: templateCode,
             filename: templateId,
             locale,
-            translation: serializeTranslation(translation),
+            translation: await serializeTranslation(translation, translationIntegrity, this.#translationCache),
         }, { name: 'inlineCode' });
         const errors = [];
         const warnings = [];
@@ -394,7 +419,8 @@ class I18nInliner {
                 (0, cache_1.createPersistentCacheStore)((0, node_path_1.join)(persistentCachePath, 'angular-i18n')),
             ]);
             this.#cacheStore = cacheStore;
-            this.#cache = cacheStore.createCache('transforms');
+            this.#transformedFileCache = cacheStore.createCache('transforms');
+            this.#translationCache = cacheStore.createCache('translations');
         }
         catch {
             this.#cacheInitFailed = true;

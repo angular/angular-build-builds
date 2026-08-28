@@ -71,7 +71,7 @@ export declare class I18nInliner {
      * @returns A promise that resolves to an array of OutputFiles representing a translated result.
      */
     inlineForLocale(locale: string, translation: Record<string, ɵParsedTranslation> | undefined, translationIntegrity?: string): Promise<LocaleInlineResult>;
-    inlineTemplateUpdate(locale: string, translation: Record<string, ɵParsedTranslation> | undefined, templateCode: string, templateId: string): Promise<{
+    inlineTemplateUpdate(locale: string, translation: Record<string, ɵParsedTranslation> | undefined, templateCode: string, templateId: string, translationIntegrity?: string): Promise<{
         code: string;
         errors: string[];
         warnings: string[];

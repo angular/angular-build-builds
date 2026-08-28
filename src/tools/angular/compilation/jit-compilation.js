@@ -46,13 +46,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.JitCompilation = void 0;
 const node_assert_1 = __importDefault(require("node:assert"));
 const typescript_1 = __importDefault(require("typescript"));
-const path_1 = require("../../../utils/path");
 const profiling_1 = require("../../esbuild/profiling");
 const angular_host_1 = require("../angular-host");
 const jit_resource_transformer_1 = require("../transformers/jit-resource-transformer");
 const lazy_routes_transformer_1 = require("../transformers/lazy-routes-transformer");
 const web_worker_transformer_1 = require("../transformers/web-worker-transformer");
 const angular_compilation_1 = require("./angular-compilation");
+const typescript_compilation_1 = require("./typescript-compilation");
 class JitCompilationState {
     compilerHost;
     typeScriptProgram;
@@ -67,10 +67,9 @@ class JitCompilationState {
         this.webWorkerTransform = webWorkerTransform;
     }
 }
-class JitCompilation extends angular_compilation_1.AngularCompilation {
+class JitCompilation extends typescript_compilation_1.TypeScriptCompilation {
     browserOnlyBuild;
     #state;
-    #sourceFiles = new Map();
     constructor(browserOnlyBuild) {
         super();
         this.browserOnlyBuild = browserOnlyBuild;
@@ -82,12 +81,10 @@ class JitCompilation extends angular_compilation_1.AngularCompilation {
         const { options: originalCompilerOptions, rootNames, errors: configurationDiagnostics, } = await this.loadConfiguration(tsconfig);
         const compilerOptions = compilerOptionsTransformer?.(originalCompilerOptions) ?? originalCompilerOptions;
         if (hostOptions.modifiedFiles) {
-            for (const modifiedFile of hostOptions.modifiedFiles) {
-                this.#sourceFiles.delete((0, path_1.toPosixPath)(modifiedFile));
-            }
+            this.invalidateFiles(hostOptions.modifiedFiles);
         }
         // Create Angular compiler host
-        const host = (0, angular_host_1.createAngularCompilerHost)(typescript_1.default, compilerOptions, hostOptions, undefined, this.#sourceFiles);
+        const host = (0, angular_host_1.createAngularCompilerHost)(typescript_1.default, compilerOptions, hostOptions, undefined, this.sourceFiles);
         // Create the TypeScript Program
         const typeScriptProgram = (0, profiling_1.profileSync)('TS_CREATE_PROGRAM', () => typescript_1.default.createEmitAndSemanticDiagnosticsBuilderProgram(rootNames, compilerOptions, host, this.#state?.typeScriptProgram ?? typescript_1.default.readBuilderProgram(compilerOptions, host), configurationDiagnostics));
         this.#state = new JitCompilationState(host, typeScriptProgram, constructorParametersDownlevelTransform(typeScriptProgram.getProgram()), (0, jit_resource_transformer_1.createJitResourceTransformer)(() => typeScriptProgram.getProgram().getTypeChecker()), (0, web_worker_transformer_1.createWorkerTransformer)(hostOptions.processWebWorker.bind(hostOptions)));
@@ -142,11 +139,6 @@ class JitCompilation extends angular_compilation_1.AngularCompilation {
             /* empty */
         }
         return emittedFiles;
-    }
-    async update(files) {
-        for (const file of files) {
-            this.#sourceFiles.delete((0, path_1.toPosixPath)(file));
-        }
     }
 }
 exports.JitCompilation = JitCompilation;

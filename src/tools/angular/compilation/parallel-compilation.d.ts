@@ -23,11 +23,6 @@ export declare class ParallelCompilation extends AngularCompilation {
     private readonly browserOnlyBuild;
     constructor(jit: boolean, browserOnlyBuild: boolean);
     initialize(tsconfig: string, hostOptions: AngularHostOptions, compilerOptionsTransformer?: (compilerOptions: CompilerOptions) => CompilerOptions): Promise<AngularCompilationResult>;
-    /**
-     * This is not needed with this compilation type since the worker will already send a response
-     * with the serializable esbuild compatible diagnostics.
-     */
-    protected collectDiagnostics(): never;
     diagnoseFiles(modes?: DiagnosticModes): Promise<{
         errors?: PartialMessage[];
         warnings?: PartialMessage[];

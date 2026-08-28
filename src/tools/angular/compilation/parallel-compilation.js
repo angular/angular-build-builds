@@ -112,13 +112,6 @@ class ParallelCompilation extends angular_compilation_1.AngularCompilation {
             }
         }
     }
-    /**
-     * This is not needed with this compilation type since the worker will already send a response
-     * with the serializable esbuild compatible diagnostics.
-     */
-    collectDiagnostics() {
-        throw new Error('Not implemented in ParallelCompilation.');
-    }
     async diagnoseFiles(modes = angular_compilation_1.DiagnosticModes.All) {
         const { timings, ...result } = await this.#worker.run(modes, { name: 'diagnose' });
         if (timings) {

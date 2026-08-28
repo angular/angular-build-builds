@@ -10,6 +10,5 @@ import { AngularHostOptions } from '../angular-host';
 import { AngularCompilation, AngularCompilationResult } from './angular-compilation';
 export declare class NoopCompilation extends AngularCompilation {
     initialize(tsconfig: string, hostOptions: AngularHostOptions, compilerOptionsTransformer?: (compilerOptions: ng.CompilerOptions) => ng.CompilerOptions): Promise<AngularCompilationResult>;
-    protected collectDiagnostics(): never;
     emitAffectedFiles(): never;
 }

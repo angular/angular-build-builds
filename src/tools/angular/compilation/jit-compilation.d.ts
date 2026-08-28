@@ -8,13 +8,13 @@
 import type * as ng from '@angular/compiler-cli';
 import ts from 'typescript';
 import { AngularHostOptions } from '../angular-host';
-import { AngularCompilation, AngularCompilationResult, DiagnosticModes, EmitFileResult } from './angular-compilation';
-export declare class JitCompilation extends AngularCompilation {
+import { AngularCompilationResult, DiagnosticModes, EmitFileResult } from './angular-compilation';
+import { TypeScriptCompilation } from './typescript-compilation';
+export declare class JitCompilation extends TypeScriptCompilation {
     #private;
     private readonly browserOnlyBuild;
     constructor(browserOnlyBuild: boolean);
     initialize(tsconfig: string, hostOptions: AngularHostOptions, compilerOptionsTransformer?: (compilerOptions: ng.CompilerOptions) => ng.CompilerOptions): Promise<AngularCompilationResult>;
     protected collectDiagnostics(modes: DiagnosticModes): Iterable<ts.Diagnostic>;
     emitAffectedFiles(): Iterable<EmitFileResult>;
-    update(files: Set<string>): Promise<void>;
 }
