@@ -54,7 +54,7 @@ async function normalizeOptions(context, projectName, options) {
     // Gather persistent caching option and provide a project specific cache location
     const cacheOptions = (0, normalize_cache_1.normalizeCacheOptions)(projectMetadata, workspaceRoot);
     cacheOptions.path = node_path_1.default.join(cacheOptions.path, projectName);
-    const { runner, browsers, progress, filter, browserViewport, ui, runnerConfig, isolate } = options;
+    const { runner, browsers, progress, filter, browserViewport, ui, runnerConfig, isolate, splitting = true, } = options;
     if (ui && runner !== schema_1.Runner.Vitest) {
         throw new Error('The "ui" option is only available for the "vitest" runner.');
     }
@@ -114,6 +114,7 @@ async function normalizeOptions(context, projectName, options) {
         debug: options.debug ?? false,
         ui: process.env['CI'] ? false : ui,
         isolate,
+        splitting,
         quiet: options.quiet ?? (process.env['CI'] ? false : true),
         providersFile: options.providersFile && node_path_1.default.join(workspaceRoot, options.providersFile),
         setupFiles: options.setupFiles
