@@ -70,16 +70,6 @@ export declare class RelativeUrlRebasingImporter extends UrlRebasingImporter {
     private checkFound;
 }
 /**
- * Provides the Sass importer logic to resolve module (npm package) stylesheet imports via both import and
- * use rules and also rebase any `url()` function usage within those stylesheets. The rebasing will ensure that
- * the URLs in the output of the Sass compiler reflect the final filesystem location of the output CSS file.
- */
-export declare class ModuleUrlRebasingImporter extends RelativeUrlRebasingImporter {
-    private finder;
-    constructor(entryDirectory: string, directoryCache: Map<string, DirectoryEntry>, rebaseSourceMaps: Map<string, DecodedSourceMap> | undefined, finder: (specifier: string, options: CanonicalizeContext) => URL | null);
-    canonicalize(url: string, options: CanonicalizeContext): URL | null;
-}
-/**
  * Provides the Sass importer logic to resolve module (npm package) stylesheet imports asynchronously
  * and also rebase any `url()` function usage within those stylesheets.
  */
@@ -102,11 +92,4 @@ export declare class LoadPathsUrlRebasingImporter extends RelativeUrlRebasingImp
         fromImport: boolean;
     }): URL | null;
 }
-/**
- * Workaround for Sass not calling instance methods with `this`.
- * The `canonicalize` and `load` methods will be bound to the class instance.
- * @param importer A Sass importer to bind.
- * @returns The bound Sass importer.
- */
-export declare function sassBindWorkaround<T extends Importer>(importer: T): T;
 export {};

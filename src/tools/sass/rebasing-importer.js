@@ -7,8 +7,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.LoadPathsUrlRebasingImporter = exports.AsyncModuleUrlRebasingImporter = exports.ModuleUrlRebasingImporter = exports.RelativeUrlRebasingImporter = void 0;
-exports.sassBindWorkaround = sassBindWorkaround;
+exports.LoadPathsUrlRebasingImporter = exports.AsyncModuleUrlRebasingImporter = exports.RelativeUrlRebasingImporter = void 0;
 const magic_string_1 = require("magic-string");
 const node_fs_1 = require("node:fs");
 const node_path_1 = require("node:path");
@@ -38,6 +37,7 @@ class UrlRebasingImporter {
     constructor(entryDirectory, rebaseSourceMaps) {
         this.entryDirectory = entryDirectory;
         this.rebaseSourceMaps = rebaseSourceMaps;
+        this.load = this.load.bind(this);
     }
     load(canonicalUrl) {
         const stylesheetPath = (0, node_url_1.fileURLToPath)(canonicalUrl);
@@ -116,6 +116,7 @@ class RelativeUrlRebasingImporter extends UrlRebasingImporter {
     constructor(entryDirectory, directoryCache = new Map(), rebaseSourceMaps) {
         super(entryDirectory, rebaseSourceMaps);
         this.directoryCache = directoryCache;
+        this.canonicalize = this.canonicalize.bind(this);
     }
     canonicalize(url, options) {
         return this.resolveImport(url, options.fromImport, true);
@@ -273,27 +274,6 @@ class RelativeUrlRebasingImporter extends UrlRebasingImporter {
 }
 exports.RelativeUrlRebasingImporter = RelativeUrlRebasingImporter;
 /**
- * Provides the Sass importer logic to resolve module (npm package) stylesheet imports via both import and
- * use rules and also rebase any `url()` function usage within those stylesheets. The rebasing will ensure that
- * the URLs in the output of the Sass compiler reflect the final filesystem location of the output CSS file.
- */
-class ModuleUrlRebasingImporter extends RelativeUrlRebasingImporter {
-    finder;
-    constructor(entryDirectory, directoryCache, rebaseSourceMaps, finder) {
-        super(entryDirectory, directoryCache, rebaseSourceMaps);
-        this.finder = finder;
-    }
-    canonicalize(url, options) {
-        if (url.startsWith('file://')) {
-            return super.canonicalize(url, options);
-        }
-        let result = this.finder(url, options);
-        result &&= super.canonicalize(result.href, options);
-        return result;
-    }
-}
-exports.ModuleUrlRebasingImporter = ModuleUrlRebasingImporter;
-/**
  * Provides the Sass importer logic to resolve module (npm package) stylesheet imports asynchronously
  * and also rebase any `url()` function usage within those stylesheets.
  */
@@ -303,6 +283,8 @@ class AsyncModuleUrlRebasingImporter {
     constructor(entryDirectory, directoryCache, rebaseSourceMaps, finder) {
         this.finder = finder;
         this.relativeImporter = new RelativeUrlRebasingImporter(entryDirectory, directoryCache, rebaseSourceMaps);
+        this.canonicalize = this.canonicalize.bind(this);
+        this.load = this.load.bind(this);
     }
     async canonicalize(url, options) {
         if (url.startsWith('file://')) {
@@ -342,15 +324,4 @@ class LoadPathsUrlRebasingImporter extends RelativeUrlRebasingImporter {
     }
 }
 exports.LoadPathsUrlRebasingImporter = LoadPathsUrlRebasingImporter;
-/**
- * Workaround for Sass not calling instance methods with `this`.
- * The `canonicalize` and `load` methods will be bound to the class instance.
- * @param importer A Sass importer to bind.
- * @returns The bound Sass importer.
- */
-function sassBindWorkaround(importer) {
-    importer.canonicalize = importer.canonicalize.bind(importer);
-    importer.load = importer.load.bind(importer);
-    return importer;
-}
 //# sourceMappingURL=rebasing-importer.js.map

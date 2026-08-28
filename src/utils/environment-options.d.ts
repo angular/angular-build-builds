@@ -70,10 +70,11 @@ export declare const usePartialSsrBuild: boolean;
  */
 export declare const useBabelLinker: boolean;
 /**
- * When `NG_BUILD_SASS_WORKER` is enabled (`1` or `true`), the worker-based
- * Sass implementation will be used instead of the native asynchronous compiler.
+ * When `NG_BUILD_SASS_EMBEDDED` is set to `0` or `false`, or when running within a
+ * WebContainer environment, the native embedded Sass compiler is disabled
+ * and the pure-JavaScript Sass compiler is used instead.
  */
-export declare const useSassWorker: boolean;
+export declare const useSassEmbedded: boolean;
 export declare const bazelEsbuildPluginPath: string | undefined;
 /**
  * The persistent cache store configuration to use.

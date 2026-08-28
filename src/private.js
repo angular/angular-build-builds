@@ -21,7 +21,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.loadPostcssConfiguration = exports.generateSearchDirectories = exports.findTailwindConfiguration = exports.getTestEntrypoints = exports.findTests = exports.assertCompatibleAngularVersion = exports.getSupportedBrowsers = exports.generateBuildStatsTable = exports.augmentAppWithServiceWorker = exports.purgeStaleBuildCache = exports.createTranslationLoader = exports.loadProxyConfiguration = exports.InlineCriticalCssProcessor = exports.IndexHtmlGenerator = exports.loadTranslations = exports.createI18nOptions = exports.deleteOutputDir = exports.checkPort = exports.ComponentStylesheetBundler = exports.createAngularCompilation = exports.DiagnosticModes = exports.JavaScriptTransformer = exports.createJitResourceTransformer = exports.Cache = exports.SourceFileCache = exports.SassWorkerImplementation = exports.transformSupportedBrowsersToTargets = exports.emitFilesToDisk = exports.normalizeDevServerOptions = exports.serveWithVite = exports.ResultKind = exports.buildApplicationInternal = void 0;
+exports.loadPostcssConfiguration = exports.generateSearchDirectories = exports.findTailwindConfiguration = exports.getTestEntrypoints = exports.findTests = exports.assertCompatibleAngularVersion = exports.getSupportedBrowsers = exports.generateBuildStatsTable = exports.augmentAppWithServiceWorker = exports.purgeStaleBuildCache = exports.createTranslationLoader = exports.loadProxyConfiguration = exports.InlineCriticalCssProcessor = exports.IndexHtmlGenerator = exports.loadTranslations = exports.createI18nOptions = exports.deleteOutputDir = exports.checkPort = exports.ComponentStylesheetBundler = exports.createAngularCompilation = exports.DiagnosticModes = exports.JavaScriptTransformer = exports.createJitResourceTransformer = exports.Cache = exports.SourceFileCache = exports.SassCompiler = exports.transformSupportedBrowsersToTargets = exports.emitFilesToDisk = exports.normalizeDevServerOptions = exports.serveWithVite = exports.ResultKind = exports.buildApplicationInternal = void 0;
 exports.createCompilerPlugin = createCompilerPlugin;
 /**
  * @fileoverview
@@ -46,8 +46,8 @@ var utils_1 = require("./tools/esbuild/utils");
 Object.defineProperty(exports, "emitFilesToDisk", { enumerable: true, get: function () { return utils_1.emitFilesToDisk; } });
 var target_1 = require("./tools/esbuild/target");
 Object.defineProperty(exports, "transformSupportedBrowsersToTargets", { enumerable: true, get: function () { return target_1.transformSupportedBrowsersToTargets; } });
-var sass_worker_implementation_1 = require("./tools/sass/sass-worker-implementation");
-Object.defineProperty(exports, "SassWorkerImplementation", { enumerable: true, get: function () { return sass_worker_implementation_1.SassWorkerImplementation; } });
+var sass_service_1 = require("./tools/sass/sass-service");
+Object.defineProperty(exports, "SassCompiler", { enumerable: true, get: function () { return sass_service_1.SassCompiler; } });
 var source_file_cache_1 = require("./tools/esbuild/angular/source-file-cache");
 Object.defineProperty(exports, "SourceFileCache", { enumerable: true, get: function () { return source_file_cache_1.SourceFileCache; } });
 var cache_1 = require("./tools/esbuild/cache");

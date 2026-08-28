@@ -44,7 +44,6 @@ exports.SassStylesheetLanguage = void 0;
 exports.shutdownSassWorkerPool = shutdownSassWorkerPool;
 const node_path_1 = require("node:path");
 const node_url_1 = require("node:url");
-const environment_options_1 = require("../../../utils/environment-options");
 const cache_1 = require("../cache");
 let sassService;
 let sassServicePromise;
@@ -98,9 +97,7 @@ async function compileString(data, filePath, syntax, options, resolveUrl) {
     // Lazily load Sass when a Sass file is found
     if (sassService === undefined) {
         if (sassServicePromise === undefined) {
-            sassServicePromise = environment_options_1.useSassWorker
-                ? Promise.resolve().then(() => __importStar(require('../../sass/sass-worker-implementation'))).then((sassService) => new sassService.SassWorkerImplementation(true))
-                : Promise.resolve().then(() => __importStar(require('../../sass/sass-async-compiler-implementation'))).then((sassService) => new sassService.SassAsyncCompilerImplementation());
+            sassServicePromise = Promise.resolve().then(() => __importStar(require('../../sass/sass-service'))).then((sassService) => new sassService.SassCompiler(true));
         }
         try {
             sassService = await sassServicePromise;
