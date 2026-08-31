@@ -38,7 +38,7 @@ class ParallelCompilation extends angular_compilation_1.AngularCompilation {
             filename: localRequire.resolve('./parallel-worker'),
         });
     }
-    async initialize(tsconfig, hostOptions, compilerOptionsTransformer) {
+    async initialize(tsconfig, hostOptions, compilerOptionOverrides) {
         const stylesheetChannel = new node_worker_threads_1.MessageChannel();
         // The request identifier is required because Angular can issue multiple concurrent requests
         stylesheetChannel.port1.on('message', ({ requestId, data, containingFile, stylesheetFile, order, className }) => {
@@ -66,23 +66,6 @@ class ParallelCompilation extends angular_compilation_1.AngularCompilation {
                 Atomics.notify(webWorkerSignal, 0);
             }
         });
-        // The compiler options transformation is a synchronous operation and uses shared memory combined
-        // with the Atomics API to block execution here until a response is received.
-        const optionsChannel = new node_worker_threads_1.MessageChannel();
-        const optionsSignal = new Int32Array(new SharedArrayBuffer(4));
-        optionsChannel.port1.on('message', (compilerOptions) => {
-            try {
-                const transformedOptions = compilerOptionsTransformer?.(compilerOptions) ?? compilerOptions;
-                optionsChannel.port1.postMessage({ transformedOptions });
-            }
-            catch (error) {
-                optionsChannel.port1.postMessage({ error });
-            }
-            finally {
-                Atomics.store(optionsSignal, 0, 1);
-                Atomics.notify(optionsSignal, 0);
-            }
-        });
         let success = false;
         try {
             // Execute the initialize function in the worker thread
@@ -91,21 +74,19 @@ class ParallelCompilation extends angular_compilation_1.AngularCompilation {
                 tsconfig,
                 jit: this.jit,
                 browserOnlyBuild: this.browserOnlyBuild,
+                compilerOptionOverrides,
                 stylesheetPort: stylesheetChannel.port2,
-                optionsPort: optionsChannel.port2,
-                optionsSignal,
                 webWorkerPort: webWorkerChannel.port2,
                 webWorkerSignal,
             }, {
                 name: 'initialize',
-                transferList: [stylesheetChannel.port2, optionsChannel.port2, webWorkerChannel.port2],
+                transferList: [stylesheetChannel.port2, webWorkerChannel.port2],
             });
             success = true;
             return result;
         }
         finally {
             stylesheetChannel.port1.close();
-            optionsChannel.port1.close();
             if (!success) {
                 this.#webWorkerChannel?.port1.close();
                 this.#webWorkerChannel = undefined;

@@ -64,6 +64,10 @@ const fileDataCache = new Map();
  */
 const deserializedTranslations = new Map();
 /**
+ * The current inlining generation for this worker.
+ */
+let currentGeneration;
+/**
  * Retrieves the file data for a filename, loading and extracting localization metadata.
  * If `cache` is true, the result is cached in `fileDataCache` across requests in this Worker.
  * If `cache` is false (ephemeral), the result is not retained in `fileDataCache`, allowing it
@@ -77,6 +81,9 @@ const deserializedTranslations = new Map();
 function loadFileData(filename, codeBlob, cache = true) {
     const existing = fileDataCache.get(filename);
     if (existing) {
+        if (!cache) {
+            fileDataCache.delete(filename);
+        }
         return existing;
     }
     const fileDataPromise = (async () => {
@@ -128,6 +135,11 @@ function loadTranslation(locale, translation) {
  * @returns An object containing the inlined results for each requested locale.
  */
 async function inlineFileBatch(request) {
+    if (request.generation !== undefined && request.generation !== currentGeneration) {
+        currentGeneration = request.generation;
+        fileDataCache.clear();
+        deserializedTranslations.clear();
+    }
     if (request.activeLocales) {
         const activeSet = new Set(request.activeLocales);
         for (const locale of deserializedTranslations.keys()) {
@@ -244,17 +256,29 @@ function extractLocalizeMetadata(filename, code) {
                         start: expr.start,
                         end: expr.end,
                     }));
+                    const expressionIndexes = expressions.map((_, index) => index);
                     callSites.push({
                         start: node.start,
                         end: node.end,
                         messageParts,
                         expressions,
+                        expressionIndexes,
                     });
                 }
             }
         }
     });
     return { callSites, localeInsertSites, diagnostics };
+}
+/**
+ * Escapes a template literal string part for insertion into an ES template literal (backticks).
+ * Uses JSON.stringify for base escaping of control characters and backslashes, then unescapes
+ * double quotes and escapes backticks and `${` expression delimiters in a single pass.
+ */
+function escapeTemplatePart(part) {
+    return JSON.stringify(part)
+        .slice(1, -1)
+        .replace(/\\"|`|\$\{/g, (match) => (match === '\\"' ? '"' : '\\' + match));
 }
 /**
  * Inlines translations into code using previously extracted localization metadata.
@@ -291,7 +315,7 @@ async function inlineLocalize(code, map, metadata, locale, translation, filename
         }
     }
     for (const callSite of metadata.callSites) {
-        const [translatedParts, translatedSubstitutions] = translate(diagnostics, translation || {}, callSite.messageParts, callSite.expressions.map((_, index) => index), translation === undefined ? 'ignore' : missingTranslation);
+        const [translatedParts, translatedSubstitutions] = translate(diagnostics, translation || {}, callSite.messageParts, callSite.expressionIndexes, translation === undefined ? 'ignore' : missingTranslation);
         // Reconstruct the new template/string literal replacement
         let replacement;
         if (translatedSubstitutions.length === 0) {
@@ -300,12 +324,7 @@ async function inlineLocalize(code, map, metadata, locale, translation, filename
         else {
             replacement = '`';
             for (let i = 0; i < translatedParts.length; i++) {
-                const escapedPart = JSON.stringify(translatedParts[i])
-                    .slice(1, -1)
-                    .replace(/\\"/g, '"')
-                    .replace(/`/g, '\\`')
-                    .replace(/\$\{/g, '\\${');
-                replacement += escapedPart;
+                replacement += escapeTemplatePart(translatedParts[i]);
                 if (i < translatedSubstitutions.length) {
                     const originalIndex = translatedSubstitutions[i];
                     const expr = callSite.expressions[originalIndex];

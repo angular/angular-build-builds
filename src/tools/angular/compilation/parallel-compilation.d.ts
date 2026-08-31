@@ -5,10 +5,10 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-import type { CompilerOptions } from '@angular/compiler-cli';
 import type { PartialMessage } from 'esbuild';
 import type { AngularHostOptions } from '../angular-host';
 import { AngularCompilation, AngularCompilationResult, DiagnosticModes, EmitFileResult } from './angular-compilation';
+import type { CompilerOptionOverrides } from './compiler-options';
 /**
  * An Angular compilation which uses a Node.js Worker thread to load and execute
  * the TypeScript and Angular compilers. This allows for longer synchronous actions
@@ -22,7 +22,7 @@ export declare class ParallelCompilation extends AngularCompilation {
     private readonly jit;
     private readonly browserOnlyBuild;
     constructor(jit: boolean, browserOnlyBuild: boolean);
-    initialize(tsconfig: string, hostOptions: AngularHostOptions, compilerOptionsTransformer?: (compilerOptions: CompilerOptions) => CompilerOptions): Promise<AngularCompilationResult>;
+    initialize(tsconfig: string, hostOptions: AngularHostOptions, compilerOptionOverrides?: CompilerOptionOverrides): Promise<AngularCompilationResult>;
     diagnoseFiles(modes?: DiagnosticModes): Promise<{
         errors?: PartialMessage[];
         warnings?: PartialMessage[];

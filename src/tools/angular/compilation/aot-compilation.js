@@ -21,6 +21,7 @@ const jit_bootstrap_transformer_1 = require("../transformers/jit-bootstrap-trans
 const lazy_routes_transformer_1 = require("../transformers/lazy-routes-transformer");
 const web_worker_transformer_1 = require("../transformers/web-worker-transformer");
 const angular_compilation_1 = require("./angular-compilation");
+const compiler_options_1 = require("./compiler-options");
 const hmr_candidates_1 = require("./hmr-candidates");
 const typescript_compilation_1 = require("./typescript-compilation");
 const typescript_printer_1 = require("./typescript-printer");
@@ -60,12 +61,12 @@ class AotCompilation extends typescript_compilation_1.TypeScriptCompilation {
         super();
         this.browserOnlyBuild = browserOnlyBuild;
     }
-    async initialize(tsconfig, hostOptions, compilerOptionsTransformer) {
+    async initialize(tsconfig, hostOptions, compilerOptionOverrides) {
         // Dynamically load the Angular compiler CLI package
         const { NgtscProgram, OptimizeFor } = await angular_compilation_1.AngularCompilation.loadCompilerCli();
         // Load the compiler configuration and transform as needed
         const { options: originalCompilerOptions, rootNames, errors: configurationDiagnostics, } = await this.loadConfiguration(tsconfig);
-        const compilerOptions = compilerOptionsTransformer?.(originalCompilerOptions) ?? originalCompilerOptions;
+        const { compilerOptions, warnings } = (0, compiler_options_1.transformCompilerOptions)(typescript_1.default, originalCompilerOptions, compilerOptionOverrides, tsconfig);
         const useTypeScriptTranspilation = compilerOptions['_useTypeScriptTranspilation'] ??
             !compilerOptions.isolatedModules;
         if (compilerOptions.externalRuntimeStyles) {
@@ -177,6 +178,7 @@ class AotCompilation extends typescript_compilation_1.TypeScriptCompilation {
             externalStylesheets: hostOptions.externalStylesheets,
             templateUpdates,
             componentResourcesDependencies,
+            warnings,
         };
     }
     *collectDiagnostics(modes) {

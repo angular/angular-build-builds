@@ -58,6 +58,11 @@ interface InlineFileBatchRequest {
      * not present in this list will be evicted from the Worker's memory cache.
      */
     activeLocales?: string[];
+    /**
+     * The current inlining generation counter. When a request with a new generation is received,
+     * all long-term worker caches are cleared.
+     */
+    generation?: number;
 }
 /**
  * The result for a single locale within a batch file request.

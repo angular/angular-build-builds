@@ -48,7 +48,7 @@ async function initialize(request) {
                 }
             }
         });
-        const { compilerOptions, referencedFiles, externalStylesheets, templateUpdates, componentResourcesDependencies, } = await compilation.initialize(request.tsconfig, {
+        const { compilerOptions, referencedFiles, externalStylesheets, templateUpdates, componentResourcesDependencies, warnings, } = await compilation.initialize(request.tsconfig, {
             fileReplacements: request.fileReplacements,
             modifiedFiles: currentModifiedFiles,
             transformStylesheet(data, containingFile, stylesheetFile, order, className) {
@@ -74,21 +74,13 @@ async function initialize(request) {
                 }
                 return result?.workerCodeFile ?? workerFile;
             },
-        }, (compilerOptions) => {
-            Atomics.store(request.optionsSignal, 0, 0);
-            request.optionsPort.postMessage(compilerOptions);
-            Atomics.wait(request.optionsSignal, 0, 0);
-            const result = (0, node_worker_threads_1.receiveMessageOnPort)(request.optionsPort)?.message;
-            if (result?.error) {
-                throw result.error;
-            }
-            return result?.transformedOptions ?? compilerOptions;
-        });
+        }, request.compilerOptionOverrides);
         success = true;
         return {
             externalStylesheets,
             templateUpdates,
             referencedFiles,
+            warnings,
             // TODO: Expand? `allowJs`, `isolatedModules`, `sourceMap`, `inlineSourceMap` are the only fields needed currently.
             compilerOptions: {
                 allowJs: compilerOptions.allowJs,
@@ -102,7 +94,6 @@ async function initialize(request) {
     }
     finally {
         request.stylesheetPort.close();
-        request.optionsPort.close();
         if (!success) {
             activeWebWorkerPort?.close();
             activeWebWorkerPort = undefined;

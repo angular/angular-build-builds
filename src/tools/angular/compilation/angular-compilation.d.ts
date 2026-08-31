@@ -8,6 +8,7 @@
 import type * as ng from '@angular/compiler-cli';
 import type { PartialMessage } from 'esbuild';
 import type { AngularHostOptions } from '../angular-host';
+import type { CompilerOptionOverrides } from './compiler-options';
 export interface EmitFileResult {
     filename: string;
     contents: string;
@@ -31,6 +32,7 @@ export interface AngularCompilationResult {
     externalStylesheets?: ReadonlyMap<string, string>;
     templateUpdates?: ReadonlyMap<string, string>;
     componentResourcesDependencies?: ReadonlyMap<string, readonly string[]>;
+    warnings?: readonly PartialMessage[];
 }
 export declare enum DiagnosticModes {
     None = 0,
@@ -43,7 +45,7 @@ export declare abstract class AngularCompilation {
     #private;
     static loadCompilerCli(): Promise<typeof ng>;
     protected loadConfiguration(tsconfig: string): Promise<ng.CompilerOptions>;
-    abstract initialize(tsconfig: string, hostOptions: AngularHostOptions, compilerOptionsTransformer?: (compilerOptions: ng.CompilerOptions) => ng.CompilerOptions): Promise<AngularCompilationResult>;
+    abstract initialize(tsconfig: string, hostOptions: AngularHostOptions, compilerOptionOverrides?: CompilerOptionOverrides): Promise<AngularCompilationResult>;
     emitAffectedFiles(): Iterable<EmitFileResult> | Promise<Iterable<EmitFileResult>>;
     transformFile?(filename: string, content: string): Promise<FileTransformResult | null>;
     diagnoseFiles(modes?: DiagnosticModes): Promise<{

@@ -8,14 +8,14 @@
 import type { PartialMessage } from 'esbuild';
 import { type MessagePort } from 'node:worker_threads';
 import type { AngularCompilationResult, DiagnosticModes } from './angular-compilation';
+import type { CompilerOptionOverrides } from './compiler-options';
 export interface InitRequest {
     jit: boolean;
     browserOnlyBuild: boolean;
     tsconfig: string;
     fileReplacements?: Record<string, string>;
+    compilerOptionOverrides?: CompilerOptionOverrides;
     stylesheetPort: MessagePort;
-    optionsPort: MessagePort;
-    optionsSignal: Int32Array;
     webWorkerPort: MessagePort;
     webWorkerSignal: Int32Array;
 }
