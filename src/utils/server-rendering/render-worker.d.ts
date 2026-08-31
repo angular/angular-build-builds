@@ -12,11 +12,13 @@ export interface RenderWorkerData extends ESMInMemoryFileLoaderWorkerData {
     outputMode: OutputMode | undefined;
     hasSsrEntry: boolean;
 }
-export interface RenderResultItem {
+export type RenderResultItem = {
     url: string;
-    content: string | null;
-    error?: string;
-}
+    content: string;
+} | {
+    url: string;
+    error: string;
+};
 export type RenderResult = RenderResultItem[];
 /**
  * Renders routes in batch or individual URL.

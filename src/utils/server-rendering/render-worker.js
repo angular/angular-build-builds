@@ -74,13 +74,15 @@ async function renderPages(urls) {
     for (const currentUrl of urls) {
         try {
             const content = await renderPage(currentUrl, angularServerApp);
+            if (content === null) {
+                throw new Error('The content returned was empty.');
+            }
             results.push({ url: currentUrl, content });
         }
         catch (err) {
             (0, error_1.assertIsError)(err);
             results.push({
                 url: currentUrl,
-                content: null,
                 error: err.stack ?? err.message ?? err.code ?? `${err}`,
             });
         }

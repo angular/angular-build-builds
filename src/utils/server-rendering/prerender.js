@@ -95,6 +95,7 @@ async function prerenderPages(workspaceRoot, baseHref, appShellOptions, prerende
             errors,
             warnings,
             output: {},
+            prerenderedRoutes: {},
             serializableRouteTreeNode,
         };
     }
@@ -108,10 +109,19 @@ async function prerenderPages(workspaceRoot, baseHref, appShellOptions, prerende
     // Render routes
     const { errors: renderingErrors, output } = await renderPages(baseHref, sourcemap, serializableRouteTreeNodeForPrerender, maxThreads, workspaceRoot, outputFilesForWorker, assetsReversed, outputMode, appShellRoute ?? appShellOptions?.route);
     errors.push(...renderingErrors);
+    const prerenderedRoutes = {};
+    const baseHrefPathnameWithLeadingSlash = new URL(baseHref, 'http://localhost').pathname;
+    for (const metadata of serializableRouteTreeNodeForPrerender) {
+        const outPath = getRouteOutPath(metadata.route, baseHrefPathnameWithLeadingSlash);
+        if (output[outPath]) {
+            prerenderedRoutes[metadata.route] = { headers: metadata.headers };
+        }
+    }
     return {
         errors,
         warnings,
         output,
+        prerenderedRoutes,
         serializableRouteTreeNode,
     };
 }
@@ -120,17 +130,13 @@ async function renderPages(baseHref, sourcemap, serializableRouteTreeNode, maxTh
     const errors = [];
     const baseHrefPathnameWithLeadingSlash = new URL(baseHref, 'http://localhost').pathname;
     const appShellRouteWithoutBaseHref = appShellRoute
-        ? (0, url_1.addTrailingSlash)(appShellRoute).startsWith(baseHrefPathnameWithLeadingSlash)
-            ? (0, url_1.addLeadingSlash)(appShellRoute.slice(baseHrefPathnameWithLeadingSlash.length))
-            : (0, url_1.addLeadingSlash)(appShellRoute)
+        ? (0, url_1.addLeadingSlash)(getRouteWithoutBaseHref(appShellRoute, baseHrefPathnameWithLeadingSlash))
         : undefined;
     const routesToRender = [];
     for (const { route, redirectTo } of serializableRouteTreeNode) {
         // Remove the base href from the file output path.
-        const routeWithoutBaseHref = (0, url_1.addTrailingSlash)(route).startsWith(baseHrefPathnameWithLeadingSlash)
-            ? (0, url_1.addLeadingSlash)(route.slice(baseHrefPathnameWithLeadingSlash.length))
-            : route;
-        const outPath = (0, url_1.stripLeadingSlash)(node_path_1.posix.join(routeWithoutBaseHref, 'index.html'));
+        const routeWithoutBaseHref = getRouteWithoutBaseHref(route, baseHrefPathnameWithLeadingSlash);
+        const outPath = getRouteOutPath(route, baseHrefPathnameWithLeadingSlash);
         if (typeof redirectTo === 'string') {
             output[outPath] = { content: (0, utils_2.generateRedirectStaticPage)(redirectTo), appShellRoute: false };
             continue;
@@ -183,19 +189,17 @@ async function renderPages(baseHref, sourcemap, serializableRouteTreeNode, maxTh
             const renderBatchPromise = renderWorker.run(urls);
             const batchResultPromise = renderBatchPromise
                 .then((results) => {
-                for (const { url, content, error } of results) {
-                    if (error) {
-                        errors.push(`An error occurred while prerendering route '${url}'.\n\n${error}`);
+                for (const result of results) {
+                    if ('error' in result) {
+                        errors.push(`An error occurred while prerendering route '${result.url}'.\n\n${result.error}`);
                         continue;
                     }
-                    if (content !== null) {
-                        const routeInfo = routeOutPathMap.get(url);
-                        if (routeInfo) {
-                            output[routeInfo.outPath] = {
-                                content,
-                                appShellRoute: routeInfo.isAppShell,
-                            };
-                        }
+                    const routeInfo = routeOutPathMap.get(result.url);
+                    if (routeInfo) {
+                        output[routeInfo.outPath] = {
+                            content: result.content,
+                            appShellRoute: routeInfo.isAppShell,
+                        };
                     }
                 }
             })
@@ -286,5 +290,14 @@ async function getAllRoutes(workspaceRoot, baseHref, outputFilesForWorker, asset
     finally {
         void renderWorker.destroy();
     }
+}
+function getRouteWithoutBaseHref(route, baseHrefPathname) {
+    return (0, url_1.addTrailingSlash)(route).startsWith(baseHrefPathname)
+        ? (0, url_1.addLeadingSlash)(route.slice(baseHrefPathname.length))
+        : route;
+}
+function getRouteOutPath(route, baseHrefPathname) {
+    const routeWithoutBaseHref = getRouteWithoutBaseHref(route, baseHrefPathname);
+    return (0, url_1.stripLeadingSlash)(node_path_1.posix.join(routeWithoutBaseHref, 'index.html'));
 }
 //# sourceMappingURL=prerender.js.map

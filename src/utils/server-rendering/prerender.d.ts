@@ -7,7 +7,7 @@
  */
 import { NormalizedApplicationBuildOptions } from '../../builders/application/options';
 import { OutputMode } from '../../builders/application/schema';
-import { BuildOutputAsset } from '../../tools/esbuild/bundler-execution-result';
+import { BuildOutputAsset, PrerenderedRoutesRecord } from '../../tools/esbuild/bundler-execution-result';
 import { BuildOutputFile } from '../../tools/esbuild/bundler-files';
 import { SerializableRouteTreeNode } from './models';
 type PrerenderOptions = NormalizedApplicationBuildOptions['prerenderOptions'];
@@ -34,6 +34,7 @@ export declare function prerenderPages(workspaceRoot: string, baseHref: string, 
     output: PrerenderOutput;
     warnings: string[];
     errors: string[];
+    prerenderedRoutes: PrerenderedRoutesRecord;
     serializableRouteTreeNode: SerializableRouteTreeNode;
 }>;
 export {};
