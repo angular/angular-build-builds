@@ -16,7 +16,6 @@ const bundler_files_1 = require("../../tools/esbuild/bundler-files");
 const index_html_generator_1 = require("../../tools/esbuild/index-html-generator");
 const environment_options_1 = require("../../utils/environment-options");
 const manifest_1 = require("../../utils/server-rendering/manifest");
-const models_1 = require("../../utils/server-rendering/models");
 const prerender_1 = require("../../utils/server-rendering/prerender");
 const service_worker_1 = require("../../utils/service-worker");
 const inject_debug_ids_1 = require("./inject-debug-ids");
@@ -74,9 +73,10 @@ async function executePostBundleSteps(browserMetafile, options, outputFiles, ass
         (prerenderOptions || appShellOptions || (outputMode && serverEntryPoint)) &&
         !allErrors.length) {
         (0, node_assert_1.default)(indexHtmlOptions, 'The "index" option is required when using the "ssg" or "appShell" options.');
-        const { output, warnings, errors, serializableRouteTreeNode } = await (0, prerender_1.prerenderPages)(workspaceRoot, baseHref, appShellOptions, prerenderOptions, [...outputFiles, ...additionalOutputFiles], assetFiles, outputMode, sourcemapOptions.scripts, environment_options_1.maxWorkers);
+        const { output, warnings, errors, serializableRouteTreeNode, prerenderedRoutes: generatedPrerenderedRoutes, } = await (0, prerender_1.prerenderPages)(workspaceRoot, baseHref, appShellOptions, prerenderOptions, [...outputFiles, ...additionalOutputFiles], assetFiles, outputMode, sourcemapOptions.scripts, environment_options_1.maxWorkers);
         allErrors.push(...errors);
         allWarnings.push(...warnings);
+        Object.assign(prerenderedRoutes, generatedPrerenderedRoutes);
         const indexHasBeenPrerendered = output[indexHtmlOptions.output];
         for (const [path, { content, appShellRoute }] of Object.entries(output)) {
             // Update the index contents with the app shell under these conditions:
@@ -96,9 +96,6 @@ async function executePostBundleSteps(browserMetafile, options, outputFiles, ass
         const serializableRouteTreeNodeForManifest = [];
         for (const metadata of serializableRouteTreeNode) {
             serializableRouteTreeNodeForManifest.push(metadata);
-            if (metadata.renderMode === models_1.RouteRenderMode.Prerender && !metadata.route.includes('*')) {
-                prerenderedRoutes[metadata.route] = { headers: metadata.headers };
-            }
         }
         if (outputMode === schema_1.OutputMode.Server) {
             // Regenerate the manifest to append route tree. This is only needed if SSR is enabled.
