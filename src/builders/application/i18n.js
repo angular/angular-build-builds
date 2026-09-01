@@ -33,10 +33,9 @@ const options_1 = require("./options");
  */
 async function inlineI18n(metafile, options, executionResult, initialFiles) {
     const { i18nOptions, baseHref, cacheOptions } = options;
-    // Create the multi-threaded inliner with common options and the files generated from the build.
+    // Create the multi-threaded inliner with common options.
     const inliner = new i18n_inliner_1.I18nInliner({
         missingTranslation: i18nOptions.missingTranslationBehavior ?? 'warning',
-        outputFiles: executionResult.outputFiles,
         persistentCachePath: cacheOptions.enabled ? cacheOptions.path : undefined,
         localizeVersion: i18nOptions.localizeVersion,
     }, environment_options_1.maxWorkers);
@@ -67,7 +66,7 @@ async function inlineI18n(metafile, options, executionResult, initialFiles) {
                 translationIntegrity,
             };
         });
-        const inlinedLocales = await inliner.inlineAll(localesToInline);
+        const inlinedLocales = await inliner.inlineAll(executionResult.outputFiles, localesToInline);
         for (const locale of i18nOptions.inlineLocales) {
             const localeInlineResult = inlinedLocales.get(locale);
             (0, node_assert_1.default)(localeInlineResult !== undefined, 'Inlined result must exist for locale: ' + locale);

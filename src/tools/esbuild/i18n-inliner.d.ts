@@ -12,7 +12,6 @@ import { type BuildOutputFile } from './bundler-files';
  */
 export interface I18nInlinerOptions {
     missingTranslation: 'error' | 'warning' | 'ignore';
-    outputFiles: BuildOutputFile[];
     persistentCachePath?: string;
     localizeVersion?: string;
 }
@@ -57,20 +56,21 @@ export declare class I18nInliner {
      * An adaptive 2D task-partitioning algorithm distributes (files x locales) work units
      * across all worker threads while caching AST metadata and sourcemaps in worker memory.
      *
+     * @param files The build output files to transform.
      * @param locales The locales and translations to inline.
      * @returns A map of locale names to their inlined output files and diagnostics.
      */
-    inlineAll(locales: Iterable<LocaleInlineOptions>): Promise<Map<string, LocaleInlineResult>>;
+    inlineAll(files: Iterable<BuildOutputFile>, locales: Iterable<LocaleInlineOptions>): Promise<Map<string, LocaleInlineResult>>;
     /**
-     * Performs inlining of translations for the provided locale and translations. The files that
-     * are processed originate from the files passed to the class constructor and filter by presence
-     * of the localize function keyword.
+     * Performs inlining of translations for the provided locale and translations.
+     *
+     * @param files The build output files to transform.
      * @param locale The string representing the locale to inline.
      * @param translation The translation messages to use when inlining.
      * @param translationIntegrity An optional integrity value for the translation messages to use for caching.
      * @returns A promise that resolves to an array of OutputFiles representing a translated result.
      */
-    inlineForLocale(locale: string, translation: Record<string, ɵParsedTranslation> | undefined, translationIntegrity?: string): Promise<LocaleInlineResult>;
+    inlineForLocale(files: Iterable<BuildOutputFile>, locale: string, translation: Record<string, ɵParsedTranslation> | undefined, translationIntegrity?: string): Promise<LocaleInlineResult>;
     inlineTemplateUpdate(locale: string, translation: Record<string, ɵParsedTranslation> | undefined, templateCode: string, templateId: string, translationIntegrity?: string): Promise<{
         code: string;
         errors: string[];
