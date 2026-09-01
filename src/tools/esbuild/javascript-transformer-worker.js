@@ -45,7 +45,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = transformJavaScript;
 const remapping_1 = __importDefault(require("@ampproject/remapping"));
-const core_1 = require("@babel/core");
 const node_module_1 = require("node:module");
 const node_worker_threads_1 = require("node:worker_threads");
 const piscina_1 = __importDefault(require("piscina"));
@@ -53,6 +52,7 @@ const environment_options_js_1 = require("../../utils/environment-options.js");
 const source_map_1 = require("../../utils/source-map");
 const oxc_transform_js_1 = require("../oxc/oxc-transform.js");
 const { sourcemap = false, thirdPartySourcemaps = false, advancedOptimizations = false, jit = false, } = (node_worker_threads_1.workerData || {});
+let babelLinkerDeps;
 const textDecoder = new TextDecoder();
 const textEncoder = new TextEncoder();
 async function instrumentCoverage(filename, data, useInputSourcemap) {
@@ -153,9 +153,13 @@ async function transformJavaScriptImpl(filename, data, options) {
         coverageMap = result.map;
     }
     if (shouldLink && environment_options_js_1.useBabelLinker) {
-        const { createEs2015LinkerPlugin } = await Promise.resolve().then(() => __importStar(require('@angular/compiler-cli/linker/babel')));
-        const { ConsoleLogger, LogLevel } = await Promise.resolve().then(() => __importStar(require('@angular/compiler-cli')));
-        const result = await (0, core_1.transformAsync)(code, {
+        babelLinkerDeps ??= Promise.all([
+            Promise.resolve().then(() => __importStar(require('@angular/compiler-cli/linker/babel'))),
+            Promise.resolve().then(() => __importStar(require('@angular/compiler-cli'))),
+            Promise.resolve().then(() => __importStar(require('@babel/core'))),
+        ]);
+        const [{ createEs2015LinkerPlugin }, { ConsoleLogger, LogLevel }, { transformAsync }] = await babelLinkerDeps;
+        const result = await transformAsync(code, {
             filename,
             inputSourceMap: false,
             sourceMaps: !!useInputSourcemap,

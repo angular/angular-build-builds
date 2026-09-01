@@ -615,7 +615,7 @@ function transform(filename, code, options) {
     });
     let map;
     if (options.sourcemap) {
-        const rawMap = source.generateDecodedMap({ hires: true, source: filename });
+        const rawMap = source.generateDecodedMap({ hires: 'boundary', source: filename });
         map = { ...rawMap, version: 3 };
     }
     return {
