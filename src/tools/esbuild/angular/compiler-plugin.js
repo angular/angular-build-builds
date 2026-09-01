@@ -102,7 +102,7 @@ function createCompilerPlugin(pluginOptions, compilationContextOrCompilation, st
             // TODO: Update private API in the next major to allow compilation function factory removal here.
             const angularCompilationContext = compilationContextOrCompilation instanceof compilation_state_1.AngularCompilationContext
                 ? compilationContextOrCompilation
-                : new compilation_state_1.AngularCompilationContext(typeof compilationContextOrCompilation === 'function'
+                : new compilation_state_1.PrimaryCompilationContext(typeof compilationContextOrCompilation === 'function'
                     ? await compilationContextOrCompilation()
                     : compilationContextOrCompilation);
             const compilation = angularCompilationContext.compilation;
@@ -123,18 +123,25 @@ function createCompilerPlugin(pluginOptions, compilationContextOrCompilation, st
             // eslint-disable-next-line max-lines-per-function
             build.onStart(async () => {
                 await (0, hash_1.initializeHash)();
-                angularCompilationContext.markAsInProgress();
                 const result = {
                     warnings: setupWarnings,
                 };
+                if (!angularCompilationContext.isPrimary()) {
+                    hasCompilationErrors = await angularCompilationContext.waitUntilReady;
+                    const compilerOptions = await angularCompilationContext.getCompilerOptions();
+                    shouldTsIgnoreJs = !compilerOptions.allowJs;
+                    useTypeScriptTranspilation = !!compilerOptions['_useTypeScriptTranspilation'];
+                    return result;
+                }
+                angularCompilationContext.markAsInProgress();
+                const compilation = angularCompilationContext.compilation;
                 // Reset debug performance tracking
                 (0, profiling_1.resetCumulativeDurations)();
                 // Update the reference tracker and generate a full set of modified files for the
                 // Angular compiler which does not have direct knowledge of transitive resource
                 // dependencies or web worker processing.
                 let modifiedFiles;
-                if (!(compilation instanceof compilation_1.NoopCompilation) &&
-                    pluginOptions.sourceFileCache?.modifiedFiles.size) {
+                if (pluginOptions.sourceFileCache?.modifiedFiles.size) {
                     // TODO: Differentiate between changed input files and stale output files
                     modifiedFiles = referencedFileTracker.update(pluginOptions.sourceFileCache.modifiedFiles);
                     pluginOptions.sourceFileCache.invalidate(modifiedFiles);
@@ -252,6 +259,7 @@ function createCompilerPlugin(pluginOptions, compilationContextOrCompilation, st
                     if (initializationResult.warnings?.length) {
                         setupWarnings?.push(...initializationResult.warnings);
                     }
+                    angularCompilationContext.setCompilerOptions(initializationResult.compilerOptions);
                     shouldTsIgnoreJs = !initializationResult.compilerOptions.allowJs;
                     useTypeScriptTranspilation =
                         !!initializationResult.compilerOptions['_useTypeScriptTranspilation'];
@@ -275,10 +283,7 @@ function createCompilerPlugin(pluginOptions, compilationContextOrCompilation, st
                     });
                     // Initialization failure prevents further compilation steps
                     hasCompilationErrors = true;
-                    return result;
-                }
-                if (compilation instanceof compilation_1.NoopCompilation) {
-                    hasCompilationErrors = await angularCompilationContext.waitUntilReady;
+                    angularCompilationContext.markAsReady(true);
                     return result;
                 }
                 if (externalStylesheets) {
@@ -349,7 +354,7 @@ function createCompilerPlugin(pluginOptions, compilationContextOrCompilation, st
                 // would need to be added to the key as well as a check for any change of content.
                 let contents = typeScriptFileCache.get(request);
                 let directContents;
-                if (contents === undefined && compilation.transformFile) {
+                if (contents === undefined && compilation?.transformFile) {
                     try {
                         directContents = await (0, promises_1.readFile)(request, 'utf-8');
                         const transformResult = await compilation.transformFile(request, directContents);
@@ -474,7 +479,9 @@ function createCompilerPlugin(pluginOptions, compilationContextOrCompilation, st
             }
             build.onEnd((result) => {
                 // Ensure other compilations are unblocked if the main compilation throws during start
-                angularCompilationContext.markAsReady(hasCompilationErrors);
+                if (angularCompilationContext.isPrimary()) {
+                    angularCompilationContext.markAsReady(hasCompilationErrors);
+                }
                 for (const { outputFiles, metafile } of additionalResults.values()) {
                     // Add any additional output files to the main output files
                     if (outputFiles?.length) {

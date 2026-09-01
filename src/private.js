@@ -31,6 +31,7 @@ exports.createCompilerPlugin = createCompilerPlugin;
  */
 const compilation_1 = require("./tools/angular/compilation");
 Object.defineProperty(exports, "createAngularCompilation", { enumerable: true, get: function () { return compilation_1.createAngularCompilation; } });
+const compilation_state_1 = require("./tools/esbuild/angular/compilation-state");
 const compiler_plugin_1 = require("./tools/esbuild/angular/compiler-plugin");
 const component_stylesheets_1 = require("./tools/esbuild/angular/component-stylesheets");
 // Builders
@@ -58,7 +59,7 @@ var javascript_transformer_1 = require("./tools/esbuild/javascript-transformer")
 Object.defineProperty(exports, "JavaScriptTransformer", { enumerable: true, get: function () { return javascript_transformer_1.JavaScriptTransformer; } });
 function createCompilerPlugin(pluginOptions, styleOptions) {
     return (0, compiler_plugin_1.createCompilerPlugin)(pluginOptions, pluginOptions.noopTypeScriptCompilation
-        ? new compilation_1.NoopCompilation()
+        ? new compilation_state_1.SecondaryCompilationContext()
         : () => (0, compilation_1.createAngularCompilation)(!!pluginOptions.jit, !!pluginOptions.browserOnlyBuild), new component_stylesheets_1.ComponentStylesheetBundler(styleOptions, styleOptions.inlineStyleLanguage, pluginOptions.incremental));
 }
 var compilation_2 = require("./tools/angular/compilation");

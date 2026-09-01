@@ -114,7 +114,7 @@ async function executeBuild(options, context, rebuildState) {
                 templateUpdates = new Map();
             }
             const angularCompilation = await (0, compilation_1.createAngularCompilation)(!!options.jit, !options.serverEntryPoint);
-            angularCompilationContext = new compilation_state_1.AngularCompilationContext(angularCompilation);
+            angularCompilationContext = new compilation_state_1.PrimaryCompilationContext(angularCompilation);
             bundlerContexts = (0, setup_bundling_1.setupBundlerContexts)(options, target, codeBundleCache, componentStyleBundler, angularCompilationContext, templateUpdates);
             executionResult = new bundler_execution_result_1.ExecutionResult(bundlerContexts, componentStyleBundler, codeBundleCache, templateUpdates);
             // Bundle everything on initial build

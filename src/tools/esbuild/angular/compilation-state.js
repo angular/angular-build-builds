@@ -7,16 +7,28 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AngularCompilationContext = void 0;
-const compilation_1 = require("../../angular/compilation");
+exports.SecondaryCompilationContext = exports.PrimaryCompilationContext = exports.AngularCompilationContext = void 0;
 class AngularCompilationContext {
+    createSecondaryContext() {
+        return new SecondaryCompilationContext(this);
+    }
+}
+exports.AngularCompilationContext = AngularCompilationContext;
+class PrimaryCompilationContext extends AngularCompilationContext {
     #compilation;
     #pendingCompilation = true;
     #resolveCompilationReady;
     #compilationReadyPromise;
     #hasErrors = true;
+    #compilerOptions;
+    #resolveCompilerOptions;
+    #compilerOptionsPromise;
     constructor(compilation) {
+        super();
         this.#compilation = compilation;
+    }
+    isPrimary() {
+        return true;
     }
     get compilation() {
         return this.#compilation;
@@ -30,14 +42,39 @@ class AngularCompilationContext {
         });
         return this.#compilationReadyPromise;
     }
+    getCompilerOptions() {
+        if (this.#compilerOptions) {
+            return Promise.resolve(this.#compilerOptions);
+        }
+        if (!this.#pendingCompilation) {
+            return Promise.resolve({});
+        }
+        this.#compilerOptionsPromise ??= new Promise((resolve) => {
+            this.#resolveCompilerOptions = resolve;
+        });
+        return this.#compilerOptionsPromise;
+    }
+    setCompilerOptions(options) {
+        this.#compilerOptions = options;
+        this.#resolveCompilerOptions?.(options);
+        this.#resolveCompilerOptions = undefined;
+        this.#compilerOptionsPromise = undefined;
+    }
     markAsReady(hasErrors) {
         this.#hasErrors = hasErrors;
         this.#resolveCompilationReady?.(hasErrors);
+        this.#resolveCompilationReady = undefined;
         this.#compilationReadyPromise = undefined;
         this.#pendingCompilation = false;
+        if (this.#resolveCompilerOptions) {
+            this.#resolveCompilerOptions(this.#compilerOptions ?? {});
+            this.#resolveCompilerOptions = undefined;
+            this.#compilerOptionsPromise = undefined;
+        }
     }
     markAsInProgress() {
         this.#pendingCompilation = true;
+        this.#compilerOptions = undefined;
     }
     #disposal;
     dispose() {
@@ -53,28 +90,29 @@ class AngularCompilationContext {
             // Suppress closure errors to avoid unhandled rejections during teardown.
         }
     }
-    createSecondaryContext() {
-        return new SecondaryCompilationContext(this);
-    }
 }
-exports.AngularCompilationContext = AngularCompilationContext;
+exports.PrimaryCompilationContext = PrimaryCompilationContext;
 class SecondaryCompilationContext extends AngularCompilationContext {
     primaryContext;
     constructor(primaryContext) {
-        super(new compilation_1.NoopCompilation());
+        super();
         this.primaryContext = primaryContext;
     }
+    isPrimary() {
+        return false;
+    }
+    get compilation() {
+        return undefined;
+    }
     get waitUntilReady() {
-        return this.primaryContext.waitUntilReady;
+        return this.primaryContext?.waitUntilReady ?? Promise.resolve(false);
     }
-    markAsReady(hasErrors) {
-        // No-op: secondary contexts do not control compilation state
-    }
-    markAsInProgress() {
-        // No-op: secondary contexts do not control compilation state
+    getCompilerOptions() {
+        return this.primaryContext?.getCompilerOptions() ?? Promise.resolve({});
     }
     async dispose() {
         // No-op for secondary context to avoid disposing the primary compilation worker
     }
 }
+exports.SecondaryCompilationContext = SecondaryCompilationContext;
 //# sourceMappingURL=compilation-state.js.map
