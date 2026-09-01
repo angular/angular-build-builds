@@ -11,7 +11,7 @@ exports.normalizeCacheOptions = normalizeCacheOptions;
 const node_fs_1 = require("node:fs");
 const node_path_1 = require("node:path");
 /** Version placeholder is replaced during the build process with actual package version */
-const VERSION = '22.1.6+sha-e9db85c';
+const VERSION = '22.1.6+sha-40feffd';
 function hasCacheMetadata(value) {
     return (!!value &&
         typeof value === 'object' &&
@@ -57,7 +57,7 @@ function getCacheBasePath(workspaceRoot, cachePathSetting) {
     catch { }
     return (0, node_path_1.resolve)(workspaceRoot, cachePathSetting);
 }
-function normalizeCacheOptions(projectMetadata, worspaceRoot) {
+function normalizeCacheOptions(projectMetadata, workspaceRoot) {
     const cacheMetadata = hasCacheMetadata(projectMetadata) ? projectMetadata.cli.cache : {};
     const { 
     // Webcontainers do not currently benefit from persistent disk caching and can lead to increased browser memory usage
@@ -74,11 +74,14 @@ function normalizeCacheOptions(projectMetadata, worspaceRoot) {
                 break;
         }
     }
-    const cacheBasePath = getCacheBasePath(worspaceRoot, path);
+    const cacheBasePath = getCacheBasePath(workspaceRoot, path);
+    const localCacheBasePath = (0, node_path_1.isAbsolute)(path) ? path : (0, node_path_1.resolve)(workspaceRoot, path);
     return {
         enabled: cacheEnabled,
         basePath: cacheBasePath,
         path: (0, node_path_1.join)(cacheBasePath, VERSION),
+        localBasePath: localCacheBasePath,
+        localPath: (0, node_path_1.join)(localCacheBasePath, VERSION),
     };
 }
 //# sourceMappingURL=normalize-cache.js.map

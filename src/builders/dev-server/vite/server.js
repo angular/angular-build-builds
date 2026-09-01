@@ -138,7 +138,7 @@ async function setupServer(serverOptions, outputFiles, assets, preserveSymlinks,
      *       (e.g., 'foo/bar'), as they are not correctly re-based from the base href.
      */
     const preTransformRequests = externalMetadata.explicitBrowser.length === 0 && ssrMode === plugins_1.ServerSsrMode.NoSsr;
-    const cacheDir = (0, node_path_1.join)(serverOptions.cacheOptions.path, serverOptions.buildTarget.project, 'vite');
+    const cacheDir = (0, node_path_1.join)(serverOptions.cacheOptions.localPath ?? serverOptions.cacheOptions.path, serverOptions.buildTarget.project, 'vite');
     const configuration = {
         configFile: false,
         envDir: false,
