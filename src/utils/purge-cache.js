@@ -18,23 +18,34 @@ async function purgeStaleBuildCache(context) {
         return;
     }
     const metadata = await context.getProjectMetadata(projectName);
-    const { basePath, path, enabled } = (0, normalize_cache_1.normalizeCacheOptions)(metadata, context.workspaceRoot);
+    const { basePath, path, localBasePath, localPath, enabled } = (0, normalize_cache_1.normalizeCacheOptions)(metadata, context.workspaceRoot);
     if (!enabled) {
         return;
     }
-    let baseEntries;
-    try {
-        baseEntries = await (0, promises_1.readdir)(basePath, { withFileTypes: true });
+    const basePaths = new Set([basePath]);
+    if (localBasePath) {
+        basePaths.add(localBasePath);
     }
-    catch {
-        // No purging possible if base path does not exist or cannot otherwise be accessed
-        return;
+    for (const base of basePaths) {
+        let baseEntries;
+        try {
+            baseEntries = await (0, promises_1.readdir)(base, { withFileTypes: true });
+        }
+        catch {
+            // No purging possible if base path does not exist or cannot otherwise be accessed
+            continue;
+        }
+        const currentPath = base === localBasePath ? localPath : path;
+        if (!currentPath) {
+            // Avoid purging if current path is unavailable to prevent deleting the active cache
+            continue;
+        }
+        const entriesToDelete = baseEntries
+            .filter((d) => d.isDirectory())
+            .map((d) => (0, node_path_1.join)(base, d.name))
+            .filter((cachePath) => cachePath !== currentPath)
+            .map((stalePath) => (0, promises_1.rm)(stalePath, { force: true, recursive: true, maxRetries: 3 }));
+        await Promise.allSettled(entriesToDelete);
     }
-    const entriesToDelete = baseEntries
-        .filter((d) => d.isDirectory())
-        .map((d) => (0, node_path_1.join)(basePath, d.name))
-        .filter((cachePath) => cachePath !== path)
-        .map((stalePath) => (0, promises_1.rm)(stalePath, { force: true, recursive: true, maxRetries: 3 }));
-    await Promise.allSettled(entriesToDelete);
 }
 //# sourceMappingURL=purge-cache.js.map

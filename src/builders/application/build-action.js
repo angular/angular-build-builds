@@ -103,6 +103,10 @@ async function* runEsBuildBuildAction(action, options) {
                 `${normalizedCacheBase}/**`,
                 `${(0, path_1.toPosixPath)(workspaceRoot)}/**/.*/**`,
             ];
+            if (cacheOptions.localBasePath && cacheOptions.localBasePath !== cacheOptions.basePath) {
+                const normalizedLocalCacheBase = (0, path_1.toPosixPath)(cacheOptions.localBasePath);
+                ignored.push(normalizedLocalCacheBase, `${normalizedLocalCacheBase}/**`);
+            }
             // Setup a watcher
             const { createWatcher } = await Promise.resolve().then(() => __importStar(require('../../tools/esbuild/watcher')));
             watcher = await createWatcher({
