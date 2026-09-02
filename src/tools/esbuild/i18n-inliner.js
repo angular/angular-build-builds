@@ -12,6 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.I18nInliner = void 0;
 const node_assert_1 = __importDefault(require("node:assert"));
+const node_module_1 = require("node:module");
 const node_path_1 = require("node:path");
 const node_v8_1 = require("node:v8");
 const hash_1 = require("../../utils/hash");
@@ -19,6 +20,9 @@ const worker_pool_1 = require("../../utils/worker-pool");
 const bundler_files_1 = require("./bundler-files");
 const cache_1 = require("./cache");
 const i18n_translation_encoder_1 = require("./i18n-translation-encoder");
+// TODO: Convert to import.meta usage during ESM transition
+const localRequire = (0, node_module_1.createRequire)(__filename);
+const INLINER_WORKER_PATH = localRequire.resolve('./i18n-inliner-worker');
 /**
  * A keyword used to indicate if a JavaScript file may require inlining of translations.
  * This keyword is used to avoid processing files that would not otherwise need i18n processing.
@@ -96,14 +100,8 @@ class I18nInliner {
     #generation = 0;
     constructor(options, maxThreads) {
         this.options = options;
-        const { missingTranslation } = options;
         this.#workerPool = new worker_pool_1.WorkerPool({
-            filename: require.resolve('./i18n-inliner-worker'),
             maxThreads,
-            // Extract options to ensure only the named options are serialized and sent to the worker
-            workerData: {
-                missingTranslation,
-            },
         });
     }
     #partitionFiles(files) {
@@ -340,15 +338,16 @@ class I18nInliner {
             for (let i = 0; i < entries.length; i += localesPerBatch) {
                 const batchEntries = entries.slice(i, i + localesPerBatch);
                 const task = (async () => {
-                    const batchResult = (await this.#workerPool.run({
+                    const batchResult = await this.#runWorkerTask('inlineFileBatch', {
                         filename,
                         code: codeBlob,
                         map: mapBlob,
                         locales: new Map(batchEntries.map((e) => [e.locale, e.translation])),
+                        missingTranslation: this.options.missingTranslation,
                         ephemeral,
                         activeLocales,
                         generation,
-                    }, { name: 'inlineFileBatch' }));
+                    });
                     if (batchResult.unmodified) {
                         const unmodifiedResult = {
                             file: filename,
@@ -368,15 +367,16 @@ class I18nInliner {
                         for (const res of batchResult.results) {
                             const matchingEntry = batchEntries.find((e) => e.locale === res.locale);
                             const cacheKey = matchingEntry?.cacheKey;
+                            const fileResult = {
+                                file: filename,
+                                code: res.code,
+                                map: res.map,
+                                messages: res.messages,
+                            };
                             if (this.#transformedFileCache && cacheKey) {
-                                cachePromises.push(this.#transformedFileCache.put(cacheKey, {
-                                    file: filename,
-                                    code: res.code,
-                                    map: res.map,
-                                    messages: res.messages,
-                                }));
+                                cachePromises.push(this.#transformedFileCache.put(cacheKey, fileResult));
                             }
-                            fileResultsByLocale.get(res.locale)?.set(filename, res);
+                            fileResultsByLocale.get(res.locale)?.set(filename, fileResult);
                         }
                         await Promise.allSettled(cachePromises);
                     }
@@ -385,6 +385,12 @@ class I18nInliner {
             }
         }
         await Promise.all(workerTasks);
+    }
+    #runWorkerTask(name, request) {
+        return this.#workerPool.run(request, {
+            filename: INLINER_WORKER_PATH,
+            name,
+        });
     }
     /**
      * Performs inlining of translations for the provided locale and translations.
@@ -410,12 +416,13 @@ class I18nInliner {
                 warnings: [],
             };
         }
-        const { output, messages } = await this.#workerPool.run({
+        const { output, messages } = await this.#runWorkerTask('inlineCode', {
             code: templateCode,
             filename: templateId,
             locale,
+            missingTranslation: this.options.missingTranslation,
             translation: await serializeTranslation(translation, translationIntegrity, this.#translationCache),
-        }, { name: 'inlineCode' });
+        });
         const errors = [];
         const warnings = [];
         for (const message of messages) {

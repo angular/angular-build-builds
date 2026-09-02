@@ -63,7 +63,7 @@ class AotCompilation extends typescript_compilation_1.TypeScriptCompilation {
     }
     async initialize(tsconfig, hostOptions, compilerOptionOverrides) {
         // Dynamically load the Angular compiler CLI package
-        const { NgtscProgram, OptimizeFor } = await angular_compilation_1.AngularCompilation.loadCompilerCli();
+        const { NgtscProgram, OptimizeFor } = await typescript_compilation_1.TypeScriptCompilation.loadCompilerCli();
         // Load the compiler configuration and transform as needed
         const { options: originalCompilerOptions, rootNames, errors: configurationDiagnostics, } = await this.loadConfiguration(tsconfig);
         const { compilerOptions, warnings } = (0, compiler_options_1.transformCompilerOptions)(typescript_1.default, originalCompilerOptions, compilerOptionOverrides, tsconfig);

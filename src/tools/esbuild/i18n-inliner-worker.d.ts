@@ -8,7 +8,7 @@
 /**
  * The options passed to the inliner for each code request
  */
-interface InlineCodeRequest {
+export interface InlineCodeRequest {
     /**
      * The code that should be processed.
      */
@@ -27,11 +27,25 @@ interface InlineCodeRequest {
      * the Worker by reference instead of being copied into it for every request.
      */
     translation?: Blob | SharedArrayBuffer;
+    /**
+     * How to handle missing translations.
+     */
+    missingTranslation?: 'error' | 'warning' | 'ignore';
+}
+/**
+ * The response returned from a code request.
+ */
+export interface InlineCodeResult {
+    output: string;
+    messages: {
+        type: 'error' | 'warning';
+        message: string;
+    }[];
 }
 /**
  * The options passed to the inliner for a batch file request
  */
-interface InlineFileBatchRequest {
+export interface InlineFileBatchRequest {
     /**
      * The filename that should be processed.
      */
@@ -48,6 +62,10 @@ interface InlineFileBatchRequest {
      * The locale specifiers and optional translations to use during the inlining process of the file.
      */
     locales: ReadonlyMap<string, Blob | SharedArrayBuffer | undefined>;
+    /**
+     * How to handle missing translations.
+     */
+    missingTranslation?: 'error' | 'warning' | 'ignore';
     /**
      * Whether the file data should be treated as ephemeral and not cached long-term in the Worker.
      * Typically true when all remaining locales for the file are processed in a single batch.
@@ -67,7 +85,7 @@ interface InlineFileBatchRequest {
 /**
  * The result for a single locale within a batch file request.
  */
-interface InlineLocaleResult {
+export interface InlineLocaleResult {
     locale: string;
     code?: string;
     map?: string;
@@ -79,7 +97,7 @@ interface InlineLocaleResult {
 /**
  * The response returned from a batch file request.
  */
-type InlineFileBatchResult = {
+export type InlineFileBatchResult = {
     file: string;
     unmodified: true;
     messages: {
@@ -105,11 +123,4 @@ export declare function inlineFileBatch(request: InlineFileBatchRequest): Promis
  * @param request An InlineRequest object representing the options for inlining
  * @returns An object containing the inlined code.
  */
-export declare function inlineCode(request: InlineCodeRequest): Promise<{
-    output: string;
-    messages: {
-        type: "warning" | "error";
-        message: string;
-    }[];
-}>;
-export {};
+export declare function inlineCode(request: InlineCodeRequest): Promise<InlineCodeResult>;

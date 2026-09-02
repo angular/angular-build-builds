@@ -48,13 +48,10 @@ exports.inlineCode = inlineCode;
 const remapping_1 = __importDefault(require("@ampproject/remapping"));
 const magic_string_1 = require("magic-string");
 const node_v8_1 = require("node:v8");
-const node_worker_threads_1 = require("node:worker_threads");
 const oxc_parser_1 = require("oxc-parser");
 const traversal_1 = require("../oxc/traversal");
 const i18n_locale_plugin_1 = require("./i18n-locale-plugin");
 const i18n_translation_reader_1 = require("./i18n-translation-reader");
-// Extract common options used for inline requests from the Worker context
-const { missingTranslation } = (node_worker_threads_1.workerData || {});
 /**
  * Cache of file data promises keyed by filename.
  */
@@ -168,7 +165,7 @@ async function inlineFileBatch(request) {
         map = rawMap ? JSON.parse(rawMap) : undefined;
     }
     const results = await Promise.all(Array.from(request.locales, async ([locale, translation]) => {
-        const result = await inlineLocalize(code, map, metadata, locale, await loadTranslation(locale, translation), request.filename);
+        const result = await inlineLocalize(code, map, metadata, locale, await loadTranslation(locale, translation), request.filename, request.missingTranslation);
         return {
             locale,
             code: result.code,
@@ -190,7 +187,7 @@ async function inlineFileBatch(request) {
  */
 async function inlineCode(request) {
     const metadata = extractLocalizeMetadata(request.filename, request.code);
-    const result = await inlineLocalize(request.code, undefined, metadata, request.locale, await loadTranslation(request.locale, request.translation), request.filename);
+    const result = await inlineLocalize(request.code, undefined, metadata, request.locale, await loadTranslation(request.locale, request.translation), request.filename, request.missingTranslation);
     return {
         output: result.code ?? request.code,
         messages: result.diagnostics.messages,
@@ -289,9 +286,10 @@ function escapeTemplatePart(part) {
  * @param locale The target locale identifier.
  * @param translation The translation messages dictionary, or undefined for untranslated locale.
  * @param filename The name of the file being transformed.
+ * @param missingTranslation How to handle missing translations.
  * @returns The transformed code, optional remapped source map, and diagnostics.
  */
-async function inlineLocalize(code, map, metadata, locale, translation, filename) {
+async function inlineLocalize(code, map, metadata, locale, translation, filename, missingTranslation = 'warning') {
     const magicString = new magic_string_1.MagicString(code);
     const { Diagnostics, translate } = await loadLocalizeTools();
     const diagnostics = new Diagnostics();
