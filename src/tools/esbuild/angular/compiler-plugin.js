@@ -89,12 +89,16 @@ function createCompilerPlugin(pluginOptions, compilationContextOrCompilation, st
                     });
                 }
             }
+            // During bundling, esbuild runs its own multi-threaded Go process across all available cores.
+            // Unless explicitly configured via NG_BUILD_MAX_WORKERS, cap transformation concurrency to at
+            // most 4 to prevent CPU contention during bundling.
+            const maxTransformWorkers = environment_options_1.hasCustomMaxWorkers ? environment_options_1.maxWorkers : Math.min(4, environment_options_1.maxWorkers);
             const javascriptTransformer = new javascript_transformer_1.JavaScriptTransformer({
                 sourcemap: !!pluginOptions.sourcemap,
                 thirdPartySourcemaps: pluginOptions.thirdPartySourcemaps,
                 advancedOptimizations: pluginOptions.advancedOptimizations,
                 jit: pluginOptions.jit || pluginOptions.includeTestMetadata,
-            }, environment_options_1.maxWorkers, cacheStore?.createCache('jstransformer'));
+            }, maxTransformWorkers, cacheStore?.createCache('jstransformer'));
             // Setup defines based on the values used by the Angular compiler-cli
             build.initialOptions.define ??= {};
             build.initialOptions.define['ngI18nClosureMode'] ??= 'false';

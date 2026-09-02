@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.persistentCacheStoreSetting = exports.bazelEsbuildPluginPath = exports.useSassEmbedded = exports.useBabelLinker = exports.usePartialSsrBuild = exports.useComponentTemplateHmr = exports.useComponentStyleHmr = exports.optimizeChunksThreshold = exports.useJSONBuildLogs = exports.useTypeChecking = exports.shouldWatchRoot = exports.debugPerformance = exports.useParallelTs = exports.maxWorkers = exports.useRolldownChunks = exports.allowMinify = exports.shouldBeautify = exports.allowMangle = void 0;
+exports.persistentCacheStoreSetting = exports.bazelEsbuildPluginPath = exports.useSassEmbedded = exports.useBabelLinker = exports.usePartialSsrBuild = exports.useComponentTemplateHmr = exports.useComponentStyleHmr = exports.optimizeChunksThreshold = exports.useJSONBuildLogs = exports.useTypeChecking = exports.shouldWatchRoot = exports.debugPerformance = exports.useParallelTs = exports.maxWorkers = exports.hasCustomMaxWorkers = exports.useRolldownChunks = exports.allowMinify = exports.shouldBeautify = exports.allowMangle = void 0;
 const node_os_1 = require("node:os");
 /** A set of strings that are considered "truthy" when parsing environment variables. */
 const TRUTHY_VALUES = new Set(['1', 'true']);
@@ -94,23 +94,25 @@ exports.allowMinify = debugOptimize.minify;
  * This is useful for debugging and testing scenarios.
  */
 exports.useRolldownChunks = parseTristate(process.env['NG_BUILD_CHUNKS_ROLLDOWN']) ?? true;
-/**
- * Some environments, like CircleCI which use Docker report a number of CPUs by the host and not the count of available.
- * This cause `Error: Call retries were exceeded` errors when trying to use them.
- *
- * @see https://github.com/nodejs/node/issues/28762
- * @see https://github.com/webpack-contrib/terser-webpack-plugin/issues/143
- * @see https://ithub.com/angular/angular-cli/issues/16860#issuecomment-588828079
- *
- */
 const maxWorkersVariable = process.env['NG_BUILD_MAX_WORKERS'];
+let customMaxWorkers;
+if (isPresent(maxWorkersVariable)) {
+    const parsed = +maxWorkersVariable;
+    if (Number.isInteger(parsed) && parsed >= 1) {
+        customMaxWorkers = parsed;
+    }
+}
+/**
+ * Whether the maximum number of workers was explicitly configured via the
+ * `NG_BUILD_MAX_WORKERS` environment variable.
+ */
+exports.hasCustomMaxWorkers = customMaxWorkers !== undefined;
 /**
  * The maximum number of workers to use for parallel processing.
  * This can be controlled by the `NG_BUILD_MAX_WORKERS` environment variable.
+ * When not set, defaults to available parallelism minus one to ensure the main thread is not starved.
  */
-exports.maxWorkers = isPresent(maxWorkersVariable)
-    ? +maxWorkersVariable
-    : Math.min(4, Math.max((0, node_os_1.availableParallelism)() - 1, 1));
+exports.maxWorkers = customMaxWorkers ?? Math.max((0, node_os_1.availableParallelism)() - 1, 1);
 /**
  * When `NG_BUILD_PARALLEL_TS` is set to `0` or `false`, parallel TypeScript compilation is disabled.
  */

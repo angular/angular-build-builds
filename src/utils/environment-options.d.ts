@@ -26,8 +26,14 @@ export declare const allowMinify: boolean;
  */
 export declare const useRolldownChunks: boolean;
 /**
+ * Whether the maximum number of workers was explicitly configured via the
+ * `NG_BUILD_MAX_WORKERS` environment variable.
+ */
+export declare const hasCustomMaxWorkers: boolean;
+/**
  * The maximum number of workers to use for parallel processing.
  * This can be controlled by the `NG_BUILD_MAX_WORKERS` environment variable.
+ * When not set, defaults to available parallelism minus one to ensure the main thread is not starved.
  */
 export declare const maxWorkers: number;
 /**
