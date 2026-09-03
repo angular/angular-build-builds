@@ -46,6 +46,7 @@ class SqliteCacheStore {
             this.#db.exec('PRAGMA temp_store = MEMORY;');
             this.#db.exec('PRAGMA mmap_size = 268435456;');
             this.#db.exec('CREATE TABLE IF NOT EXISTS cache (key TEXT PRIMARY KEY, value BLOB, last_accessed INTEGER NOT NULL) WITHOUT ROWID;');
+            this.#db.exec('CREATE INDEX IF NOT EXISTS idx_cache_accessed ON cache (last_accessed DESC, key DESC);');
             this.#getStmt = this.#db.prepare('SELECT value FROM cache WHERE key = ?');
             this.#hasStmt = this.#db.prepare('SELECT 1 FROM cache WHERE key = ?');
             this.#setStmt = this.#db.prepare('INSERT OR REPLACE INTO cache (key, value, last_accessed) VALUES (?, ?, unixepoch())');
@@ -126,21 +127,40 @@ class SqliteCacheStore {
             try {
                 // Flush any pending access updates in one transaction before pruning
                 this.#flushAccessUpdates();
-                // 1. Delete items older than N days
-                this.#db
-                    .prepare("DELETE FROM cache WHERE last_accessed < unixepoch('now', ?);")
-                    .run(`-${this.ttlDays} days`);
-                // 2. Prune oldest items if payload exceeds maxPayloadSize
-                const pruneStmt = this.#db.prepare(`
-          DELETE FROM cache WHERE key IN (
-            SELECT key FROM (
-              SELECT key, 
-                     sum(length(key) + length(value)) OVER (ORDER BY last_accessed DESC, key DESC) as running_size
-              FROM cache
-            ) WHERE running_size > ?
-          );
-        `);
-                pruneStmt.run(this.maxPayloadSize);
+                this.#db.exec('BEGIN IMMEDIATE TRANSACTION;');
+                try {
+                    // 1. Delete items older than N days
+                    this.#db
+                        .prepare("DELETE FROM cache WHERE last_accessed < unixepoch('now', ?);")
+                        .run(`-${this.ttlDays} days`);
+                    // 2. Prune oldest items if payload exceeds maxPayloadSize
+                    // Skip the expensive window aggregate query if total database size is below maxPayloadSize
+                    const sizeResult = this.#db
+                        .prepare('SELECT (page_count - freelist_count) * page_size AS total_size ' +
+                        'FROM pragma_page_count(), pragma_freelist_count(), pragma_page_size();')
+                        .get();
+                    if ((sizeResult?.total_size ?? 0) > this.maxPayloadSize) {
+                        this.#db
+                            .prepare(`DELETE FROM cache WHERE key IN (
+                  SELECT key FROM (
+                    SELECT key,
+                           sum(length(key) + length(value)) OVER (ORDER BY last_accessed DESC, key DESC) as running_size
+                    FROM cache
+                  ) WHERE running_size > ?
+                );`)
+                            .run(this.maxPayloadSize);
+                    }
+                    this.#db.exec('COMMIT;');
+                }
+                catch (error) {
+                    try {
+                        this.#db.exec('ROLLBACK;');
+                    }
+                    catch {
+                        // Ignore rollback errors if transaction was not active
+                    }
+                    throw error;
+                }
             }
             catch {
                 // Pruning errors should not block build success
@@ -155,7 +175,12 @@ class SqliteCacheStore {
                 this.#hasStmt = undefined;
                 this.#setStmt = undefined;
                 this.#updateAccessedStmt = undefined;
-                this.#db.close();
+                try {
+                    this.#db.close();
+                }
+                catch {
+                    // Failure to close should not block build success
+                }
                 this.#db = undefined;
             }
         }
