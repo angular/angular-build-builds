@@ -36,9 +36,10 @@ async function inlineI18n(metafile, options, executionResult, initialFiles) {
     // Create the multi-threaded inliner with common options.
     const inliner = new i18n_inliner_1.I18nInliner({
         missingTranslation: i18nOptions.missingTranslationBehavior ?? 'warning',
+        maxConcurrency: environment_options_1.maxWorkers,
         persistentCachePath: cacheOptions.enabled ? cacheOptions.path : undefined,
         localizeVersion: i18nOptions.localizeVersion,
-    }, environment_options_1.maxWorkers);
+    });
     const inlineResult = {
         errors: [],
         warnings: [],

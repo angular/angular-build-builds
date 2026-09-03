@@ -12,6 +12,11 @@ import { type BuildOutputFile } from './bundler-files';
  */
 export interface I18nInlinerOptions {
     missingTranslation: 'error' | 'warning' | 'ignore';
+    /**
+     * The maximum number of concurrent translation inlining operations.
+     * When omitted, concurrency defaults to the available worker pool threads.
+     */
+    maxConcurrency?: number;
     persistentCachePath?: string;
     localizeVersion?: string;
 }
@@ -49,7 +54,7 @@ export interface LocaleInlineResult {
 export declare class I18nInliner {
     #private;
     private readonly options;
-    constructor(options: I18nInlinerOptions, maxThreads?: number);
+    constructor(options: I18nInlinerOptions);
     /**
      * Performs inlining of translations across multiple locales in parallel.
      *
