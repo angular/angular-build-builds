@@ -44,7 +44,6 @@ export { deleteOutputDir } from './utils/delete-output-dir';
 export { type I18nOptions, createI18nOptions, loadTranslations } from './utils/i18n-options';
 export { IndexHtmlGenerator, type IndexHtmlGeneratorOptions, type IndexHtmlGeneratorProcessOptions, type IndexHtmlTransform, } from './utils/index-file/index-html-generator';
 export type { FileInfo } from './utils/index-file/augment-index-html';
-export { type InlineCriticalCssProcessOptions, InlineCriticalCssProcessor, type InlineCriticalCssProcessorOptions, } from './utils/index-file/inline-critical-css';
 export { loadProxyConfiguration } from './utils/load-proxy-config';
 export { type TranslationLoader, createTranslationLoader } from './utils/load-translations';
 export { purgeStaleBuildCache } from './utils/purge-cache';

@@ -12,7 +12,6 @@ export type HintMode = 'prefetch' | 'preload' | 'modulepreload' | 'preconnect' |
 export interface IndexHtmlGeneratorProcessOptions {
     lang: string | undefined;
     baseHref: string | undefined;
-    outputPath: string;
     files: FileInfo[];
     hints?: {
         url: string;
@@ -35,6 +34,7 @@ export interface IndexHtmlGeneratorOptions {
     imageDomains?: string[];
     generateDedicatedSSRContent?: boolean;
     autoCsp?: AutoCspOptions;
+    outputPath: string;
     /**
      * Integrity metadata for module URLs not directly referenced in the index
      * (typically lazy-loaded chunks). Forwarded to {@link augmentIndexHtml} so

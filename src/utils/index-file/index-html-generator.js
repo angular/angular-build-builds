@@ -32,7 +32,7 @@ class IndexHtmlGenerator {
         this.plugins = [augmentIndexHtmlPlugin(this), ...extraCommonPlugins, postTransformPlugin(this)];
         // CSR plugins
         if (options?.optimization?.styles?.inlineCritical) {
-            this.csrPlugins.push(inlineCriticalCssPlugin(this, !!options.autoCsp));
+            this.csrPlugins.push(inlineCriticalCssPlugin(this));
         }
         this.csrPlugins.push(addNoncePlugin());
         // SSR plugins
@@ -103,9 +103,9 @@ class IndexHtmlGenerator {
 }
 exports.IndexHtmlGenerator = IndexHtmlGenerator;
 function augmentIndexHtmlPlugin(generator) {
-    const { deployUrl, crossOrigin, sri = false, entrypoints, imageDomains, chunksIntegrity, } = generator.options;
-    return async (html, options) => {
-        const { lang, baseHref, outputPath = '', files, hints } = options;
+    const { deployUrl, crossOrigin, sri = false, entrypoints, imageDomains, chunksIntegrity, outputPath, } = generator.options;
+    return (html, options) => {
+        const { lang, baseHref, files, hints } = options;
         return (0, augment_index_html_1.augmentIndexHtml)({
             html,
             baseHref,
@@ -126,16 +126,12 @@ function inlineFontsPlugin({ options }) {
     const inlineFontsProcessor = new inline_fonts_1.InlineFontsProcessor({
         minify: options.optimization?.styles.minify,
     });
-    return async (html) => inlineFontsProcessor.process(html);
+    return (html) => inlineFontsProcessor.process(html);
 }
-function inlineCriticalCssPlugin(generator, autoCsp) {
-    const inlineCriticalCssProcessor = new inline_critical_css_1.InlineCriticalCssProcessor({
-        minify: generator.options.optimization?.styles.minify,
-        deployUrl: generator.options.deployUrl,
-        readAsset: (filePath) => generator.readAsset(filePath),
-        autoCsp,
-    });
-    return async (html, options) => inlineCriticalCssProcessor.process(html, { outputPath: options.outputPath });
+function inlineCriticalCssPlugin(generator) {
+    const { outputPath, deployUrl, optimization } = generator.options;
+    const { minify = false } = optimization?.styles ?? {};
+    return (html) => (0, inline_critical_css_1.inlineCriticalCss)(html, outputPath, deployUrl, minify, (path) => generator.readAsset(path));
 }
 function addNoncePlugin() {
     return (html) => (0, nonce_1.addNonce)(html);
