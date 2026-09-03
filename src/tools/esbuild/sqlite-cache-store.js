@@ -8,6 +8,8 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SqliteCacheStore = void 0;
+const node_fs_1 = require("node:fs");
+const node_path_1 = require("node:path");
 const node_sqlite_1 = require("node:sqlite");
 const node_v8_1 = require("node:v8");
 const cache_1 = require("./cache");
@@ -37,7 +39,20 @@ class SqliteCacheStore {
     }
     #ensureDb() {
         if (!this.#db) {
-            this.#db = new node_sqlite_1.DatabaseSync(this.cachePath);
+            if (this.cachePath === ':memory:') {
+                this.#db = new node_sqlite_1.DatabaseSync(this.cachePath);
+            }
+            else {
+                // Optimistically attempt to open the database file first to avoid directory creation
+                // syscalls on warm builds where the parent directory already exists.
+                try {
+                    this.#db = new node_sqlite_1.DatabaseSync(this.cachePath);
+                }
+                catch {
+                    (0, node_fs_1.mkdirSync)((0, node_path_1.dirname)(this.cachePath), { recursive: true });
+                    this.#db = new node_sqlite_1.DatabaseSync(this.cachePath);
+                }
+            }
             // Optimize SQLite for cache usage
             this.#db.exec('PRAGMA auto_vacuum = FULL;');
             this.#db.exec('PRAGMA journal_mode = WAL;');
