@@ -10,3 +10,5 @@
  * @param html Markup that should be processed.
  */
 export declare function addNonce(html: string): Promise<string>;
+/** Finds the Angular nonce in an HTML string. */
+export declare function findNonce(html: string): Promise<string | null>;

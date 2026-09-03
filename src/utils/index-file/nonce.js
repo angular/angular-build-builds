@@ -8,6 +8,7 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.addNonce = addNonce;
+exports.findNonce = findNonce;
 const html_rewriting_stream_1 = require("./html-rewriting-stream");
 /**
  * Pattern matching the name of the Angular nonce attribute. Note that this is

@@ -61,7 +61,7 @@ export declare function generateAngularServerAppEngineManifest(i18nOptions: Norm
  * - `manifestContent`: A string of the SSR manifest content.
  * - `serverAssetsChunks`: An array of build output files containing the generated assets for the server.
  */
-export declare function generateAngularServerAppManifest(additionalHtmlOutputFiles: Map<string, BuildOutputFile>, outputFiles: BuildOutputFile[], inlineCriticalCss: boolean, routes: readonly unknown[] | undefined, locale: string | undefined, baseHref: string, initialFiles: Set<string>, metafile: Metafile, publicPath: string | undefined): {
+export declare function generateAngularServerAppManifest(additionalHtmlOutputFiles: Map<string, BuildOutputFile>, outputFiles: BuildOutputFile[], inlineCriticalCss: boolean, routes: readonly unknown[] | undefined, locale: string | undefined, baseHref: string, initialFiles: Set<string>, metafile: Metafile, publicPath: string | undefined): Promise<{
     manifestContent: string;
     serverAssetsChunks: BuildOutputFile[];
-};
+}>;

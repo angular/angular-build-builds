@@ -64,7 +64,7 @@ async function executePostBundleSteps(browserMetafile, options, outputFiles, ass
     // Create server manifest
     const initialFilesPaths = new Set(initialFiles.keys());
     if (serverEntryPoint && (outputMode || prerenderOptions || appShellOptions || ssrOptions)) {
-        const { manifestContent, serverAssetsChunks } = (0, manifest_1.generateAngularServerAppManifest)(additionalHtmlOutputFiles, outputFiles, optimizationOptions.styles.inlineCritical ?? false, undefined, locale, baseHref, initialFilesPaths, browserMetafile, publicPath);
+        const { manifestContent, serverAssetsChunks } = await (0, manifest_1.generateAngularServerAppManifest)(additionalHtmlOutputFiles, outputFiles, optimizationOptions.styles.inlineCritical ?? false, undefined, locale, baseHref, initialFilesPaths, browserMetafile, publicPath);
         additionalOutputFiles.push(...serverAssetsChunks, (0, bundler_files_1.createOutputFile)(manifest_1.SERVER_APP_MANIFEST_FILENAME, manifestContent, bundler_files_1.BuildOutputFileType.ServerApplication));
     }
     // Pre-render (SSG) and App-shell
@@ -101,7 +101,7 @@ async function executePostBundleSteps(browserMetafile, options, outputFiles, ass
             // Regenerate the manifest to append route tree. This is only needed if SSR is enabled.
             const manifest = additionalOutputFiles.find((f) => f.path === manifest_1.SERVER_APP_MANIFEST_FILENAME);
             (0, node_assert_1.default)(manifest, `${manifest_1.SERVER_APP_MANIFEST_FILENAME} was not found in output files.`);
-            const { manifestContent, serverAssetsChunks } = (0, manifest_1.generateAngularServerAppManifest)(additionalHtmlOutputFiles, outputFiles, optimizationOptions.styles.inlineCritical ?? false, serializableRouteTreeNodeForManifest, locale, baseHref, initialFilesPaths, browserMetafile, publicPath);
+            const { manifestContent, serverAssetsChunks } = await (0, manifest_1.generateAngularServerAppManifest)(additionalHtmlOutputFiles, outputFiles, optimizationOptions.styles.inlineCritical ?? false, serializableRouteTreeNodeForManifest, locale, baseHref, initialFilesPaths, browserMetafile, publicPath);
             for (const chunk of serverAssetsChunks) {
                 const idx = additionalOutputFiles.findIndex(({ path }) => path === chunk.path);
                 if (idx === -1) {

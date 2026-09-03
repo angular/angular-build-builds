@@ -6,13 +6,49 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SERVER_GENERATED_EXTERNALS = exports.SERVER_APP_ENGINE_MANIFEST_FILENAME = exports.SERVER_APP_MANIFEST_FILENAME = void 0;
 exports.generateAngularServerAppEngineManifest = generateAngularServerAppEngineManifest;
 exports.generateAngularServerAppManifest = generateAngularServerAppManifest;
 const node_buffer_1 = require("node:buffer");
 const node_path_1 = require("node:path");
+const options_1 = require("../../builders/application/options");
 const bundler_files_1 = require("../../tools/esbuild/bundler-files");
+const nonce_1 = require("../index-file/nonce");
+const url_1 = require("../url");
 exports.SERVER_APP_MANIFEST_FILENAME = 'angular-app-manifest.mjs';
 exports.SERVER_APP_ENGINE_MANIFEST_FILENAME = 'angular-app-engine-manifest.mjs';
 /**
@@ -122,12 +158,16 @@ export default {
  * - `manifestContent`: A string of the SSR manifest content.
  * - `serverAssetsChunks`: An array of build output files containing the generated assets for the server.
  */
-function generateAngularServerAppManifest(additionalHtmlOutputFiles, outputFiles, inlineCriticalCss, routes, locale, baseHref, initialFiles, metafile, publicPath) {
+async function generateAngularServerAppManifest(additionalHtmlOutputFiles, outputFiles, inlineCriticalCss, routes, locale, baseHref, initialFiles, metafile, publicPath) {
     const serverAssetsChunks = [];
     const serverAssets = {};
+    const criticalCssPlans = [];
+    let nonce;
+    // TODO(alanagius): This is done here as we do not use module resolution bundler/node16
+    const { compileSheet, encodePlan } = (await Promise.resolve(`${'beasties/compiler'}`).then(s => __importStar(require(s))));
     for (const file of [...additionalHtmlOutputFiles.values(), ...outputFiles]) {
         const extension = (0, node_path_1.extname)(file.path);
-        if (extension === '.html' || (inlineCriticalCss && extension === '.css')) {
+        if (extension === '.html') {
             const jsChunkFilePath = `assets-chunks/${file.path.replace(/[./]/g, '_')}.mjs`;
             const escapedContent = escapeUnsafeChars(file.text);
             serverAssetsChunks.push((0, bundler_files_1.createOutputFile)(jsChunkFilePath, `export default \`${escapedContent}\`;`, bundler_files_1.BuildOutputFileType.ServerApplication));
@@ -142,6 +182,16 @@ function generateAngularServerAppManifest(additionalHtmlOutputFiles, outputFiles
             serverAssets[file.path] =
                 `{size: ${size}, hash: '${file.hash}', text: () => import('./${jsChunkFilePath}').then(m => m.default)}`;
         }
+        else if (inlineCriticalCss && extension === '.css') {
+            const sheet = compileSheet(file.text, {
+                href: (0, url_1.joinUrlParts)(publicPath ?? '', file.path),
+            });
+            criticalCssPlans.push(encodePlan(sheet));
+        }
+    }
+    const indexHtml = additionalHtmlOutputFiles.get(options_1.INDEX_HTML_SERVER)?.text;
+    if (indexHtml) {
+        nonce = (await (0, nonce_1.findNonce)(indexHtml)) ?? undefined;
     }
     // When routes have been extracted, mappings are no longer needed, as preloads will be included in the metadata.
     const entryPointToBrowserMapping = routes?.length
@@ -150,9 +200,8 @@ function generateAngularServerAppManifest(additionalHtmlOutputFiles, outputFiles
     const manifestContent = `
 export default {
   bootstrap: () => import('./main.server.mjs').then(m => m.default),
-  inlineCriticalCss: ${inlineCriticalCss},
   baseHref: '${baseHref}',
-  locale: ${JSON.stringify(locale)},
+${criticalCssPlans.length ? `  criticalCssPlans: ${JSON.stringify(criticalCssPlans)},\n` : ''}${nonce ? `  nonce: ${JSON.stringify(nonce)},\n` : ''}  locale: ${JSON.stringify(locale)},
   routes: ${JSON.stringify(routes, undefined, 2)},
   entryPointToBrowserMapping: ${JSON.stringify(entryPointToBrowserMapping, undefined, 2)},
   assets: {
