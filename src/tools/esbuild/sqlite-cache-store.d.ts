@@ -19,7 +19,7 @@ export declare class SqliteCacheStore implements PersistentCacheStore<unknown> {
     readonly cachePath: string;
     private readonly maxPayloadSize;
     private readonly ttlDays;
-    constructor(cachePath: string, maxPayloadSize?: number, ttlDays?: number);
+    constructor(cachePath: string, maxPayloadSize?: number, ttlDays?: number, busyTimeoutMs?: number);
     get(key: string): Promise<any>;
     has(key: string): boolean;
     set(key: string, value: unknown): Promise<this>;
