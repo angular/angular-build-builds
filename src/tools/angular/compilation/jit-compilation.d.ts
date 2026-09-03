@@ -8,7 +8,7 @@
 import ts from 'typescript';
 import { AngularHostOptions } from '../angular-host';
 import { type AngularCompilationResult, DiagnosticModes, type EmitFileResult } from './angular-compilation';
-import { CompilerOptionOverrides } from './compiler-options';
+import type { CompilerOptionOverrides } from './compiler-options';
 import { TypeScriptCompilation } from './typescript-compilation';
 export declare class JitCompilation extends TypeScriptCompilation {
     #private;

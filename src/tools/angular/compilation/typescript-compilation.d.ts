@@ -9,10 +9,17 @@ import type * as ng from '@angular/compiler-cli';
 import type { PartialMessage } from 'esbuild';
 import ts from 'typescript';
 import { AngularCompilation, DiagnosticModes } from './angular-compilation';
+import { type CompilerOptionOverrides } from './compiler-options';
+export interface TransformedConfiguration {
+    compilerOptions: ng.CompilerOptions;
+    rootNames: string[];
+    errors: ts.Diagnostic[];
+    warnings: PartialMessage[];
+}
 export declare abstract class TypeScriptCompilation extends AngularCompilation {
     #private;
     static loadCompilerCli(): Promise<typeof ng>;
-    protected loadConfiguration(tsconfig: string): Promise<ng.ParsedConfiguration>;
+    protected loadConfiguration(tsconfig: string, compilerOptionOverrides?: CompilerOptionOverrides): Promise<TransformedConfiguration>;
     protected readonly sourceFiles: Map<string, ts.SourceFile>;
     protected invalidateFiles(files: Iterable<string>): void;
     update(files: Set<string>): Promise<void>;

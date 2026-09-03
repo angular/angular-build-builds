@@ -52,7 +52,6 @@ const jit_resource_transformer_1 = require("../transformers/jit-resource-transfo
 const lazy_routes_transformer_1 = require("../transformers/lazy-routes-transformer");
 const web_worker_transformer_1 = require("../transformers/web-worker-transformer");
 const angular_compilation_1 = require("./angular-compilation");
-const compiler_options_1 = require("./compiler-options");
 const typescript_compilation_1 = require("./typescript-compilation");
 class JitCompilationState {
     compilerHost;
@@ -79,8 +78,7 @@ class JitCompilation extends typescript_compilation_1.TypeScriptCompilation {
         // Dynamically load the Angular compiler CLI package
         const { constructorParametersDownlevelTransform } = await Promise.resolve().then(() => __importStar(require('@angular/compiler-cli/private/tooling')));
         // Load the compiler configuration and transform as needed
-        const { options: originalCompilerOptions, rootNames, errors: configurationDiagnostics, } = await this.loadConfiguration(tsconfig);
-        const { compilerOptions, warnings } = (0, compiler_options_1.transformCompilerOptions)(typescript_1.default, originalCompilerOptions, compilerOptionOverrides, tsconfig);
+        const { compilerOptions, rootNames, errors: configurationDiagnostics, warnings, } = await this.loadConfiguration(tsconfig, compilerOptionOverrides);
         if (hostOptions.modifiedFiles) {
             this.invalidateFiles(hostOptions.modifiedFiles);
         }

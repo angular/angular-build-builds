@@ -48,6 +48,7 @@ const typescript_1 = __importDefault(require("typescript"));
 const path_1 = require("../../../utils/path");
 const profiling_1 = require("../../esbuild/profiling");
 const angular_compilation_1 = require("./angular-compilation");
+const compiler_options_1 = require("./compiler-options");
 const diagnostics_1 = require("./diagnostics");
 class TypeScriptCompilation extends angular_compilation_1.AngularCompilation {
     static #angularCompilerCliModule;
@@ -55,9 +56,9 @@ class TypeScriptCompilation extends angular_compilation_1.AngularCompilation {
         TypeScriptCompilation.#angularCompilerCliModule ??= await Promise.resolve().then(() => __importStar(require('@angular/compiler-cli')));
         return TypeScriptCompilation.#angularCompilerCliModule;
     }
-    async loadConfiguration(tsconfig) {
+    async loadConfiguration(tsconfig, compilerOptionOverrides) {
         const { readConfiguration } = await TypeScriptCompilation.loadCompilerCli();
-        return (0, profiling_1.profileSync)('NG_READ_CONFIG', () => readConfiguration(tsconfig, {
+        const { options: originalCompilerOptions, rootNames, errors, } = (0, profiling_1.profileSync)('NG_READ_CONFIG', () => readConfiguration(tsconfig, {
             // Angular specific configuration defaults and overrides to ensure a functioning compilation.
             suppressOutputPathCheck: true,
             outDir: undefined,
@@ -73,6 +74,13 @@ class TypeScriptCompilation extends angular_compilation_1.AngularCompilation {
             // remove important annotations, such as /* @__PURE__ */ and comments like /* vite-ignore */.
             removeComments: false,
         }));
+        const { compilerOptions, warnings } = (0, compiler_options_1.transformCompilerOptions)(typescript_1.default, originalCompilerOptions, compilerOptionOverrides, tsconfig);
+        return {
+            compilerOptions,
+            rootNames,
+            errors,
+            warnings,
+        };
     }
     sourceFiles = new Map();
     invalidateFiles(files) {
