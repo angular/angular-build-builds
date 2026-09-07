@@ -11,8 +11,28 @@ exports.SqliteCacheStore = void 0;
 const node_fs_1 = require("node:fs");
 const node_path_1 = require("node:path");
 const node_sqlite_1 = require("node:sqlite");
+const node_util_1 = require("node:util");
 const node_v8_1 = require("node:v8");
+const node_zlib_1 = require("node:zlib");
 const cache_1 = require("./cache");
+const deflateRawAsync = (0, node_util_1.promisify)(node_zlib_1.deflateRaw);
+/**
+ * Minimum payload size (in bytes) required to attempt compression.
+ * Smaller payloads generally do not achieve meaningful compression ratios, while larger payloads
+ * (such as transformed JavaScript modules from node_modules) achieve 70-80% size reduction
+ * and drastically reduce SQLite overflow pages.
+ */
+const COMPRESSION_THRESHOLD = 32 * 1024; // 32 KB
+/**
+ * Storage format discriminator values for cache table entries.
+ */
+var CacheFormat;
+(function (CacheFormat) {
+    CacheFormat[CacheFormat["V8"] = 0] = "V8";
+    CacheFormat[CacheFormat["V8Compressed"] = 1] = "V8Compressed";
+    CacheFormat[CacheFormat["RawBinary"] = 2] = "RawBinary";
+    CacheFormat[CacheFormat["RawBinaryCompressed"] = 3] = "RawBinaryCompressed";
+})(CacheFormat || (CacheFormat = {}));
 /**
  * Common SQLite primary result codes.
  * @see https://www.sqlite.org/rescode.html
@@ -79,11 +99,22 @@ class SqliteCacheStore {
             db.exec('PRAGMA synchronous = NORMAL;');
             db.exec('PRAGMA temp_store = MEMORY;');
             db.exec('PRAGMA mmap_size = 268435456;');
-            db.exec('CREATE TABLE IF NOT EXISTS cache (key TEXT PRIMARY KEY, value BLOB, last_accessed INTEGER NOT NULL) WITHOUT ROWID;');
+            db.exec('CREATE TABLE IF NOT EXISTS cache (' +
+                'key TEXT PRIMARY KEY, ' +
+                'value BLOB, ' +
+                'format INTEGER NOT NULL DEFAULT 0, ' +
+                'last_accessed INTEGER NOT NULL' +
+                ') WITHOUT ROWID;');
+            try {
+                db.exec('ALTER TABLE cache ADD COLUMN format INTEGER NOT NULL DEFAULT 0;');
+            }
+            catch {
+                // Ignore error if format column already exists
+            }
             db.exec('CREATE INDEX IF NOT EXISTS idx_cache_accessed ON cache (last_accessed DESC, key DESC);');
-            this.#getStmt = db.prepare('SELECT value FROM cache WHERE key = ?');
+            this.#getStmt = db.prepare('SELECT value, format FROM cache WHERE key = ?');
             this.#hasStmt = db.prepare('SELECT 1 FROM cache WHERE key = ?');
-            this.#setStmt = db.prepare('INSERT OR REPLACE INTO cache (key, value, last_accessed) VALUES (?, ?, unixepoch())');
+            this.#setStmt = db.prepare('INSERT OR REPLACE INTO cache (key, value, format, last_accessed) VALUES (?, ?, ?, unixepoch())');
             this.#updateAccessedStmt = db.prepare('UPDATE cache SET last_accessed = unixepoch() WHERE key = ?');
             this.#db = db;
             return db;
@@ -185,7 +216,19 @@ class SqliteCacheStore {
                 this.#queueAccessUpdate(key);
                 if (row.value instanceof Uint8Array) {
                     try {
-                        return (0, node_v8_1.deserialize)(row.value);
+                        switch (row.format) {
+                            case CacheFormat.RawBinary:
+                                return row.value;
+                            case CacheFormat.RawBinaryCompressed: {
+                                const decompressed = (0, node_zlib_1.inflateRawSync)(row.value);
+                                return new Uint8Array(decompressed.buffer, decompressed.byteOffset, decompressed.byteLength);
+                            }
+                            case CacheFormat.V8Compressed:
+                                return (0, node_v8_1.deserialize)((0, node_zlib_1.inflateRawSync)(row.value));
+                            case CacheFormat.V8:
+                            default:
+                                return (0, node_v8_1.deserialize)(row.value);
+                        }
                     }
                     catch {
                         // Treat corrupt or unparseable cached payloads as a cache miss.
@@ -215,7 +258,18 @@ class SqliteCacheStore {
         }
         try {
             this.#pendingAccessedKeys.delete(key);
-            this.#setStmt?.run(key, (0, node_v8_1.serialize)(value));
+            const isBinary = value instanceof Uint8Array;
+            const data = isBinary ? value : (0, node_v8_1.serialize)(value);
+            let format = isBinary ? CacheFormat.RawBinary : CacheFormat.V8;
+            let payload = data;
+            if (data.byteLength >= COMPRESSION_THRESHOLD) {
+                const compressed = await deflateRawAsync(data, { level: 1 });
+                if (compressed.byteLength < data.byteLength) {
+                    payload = compressed;
+                    format = isBinary ? CacheFormat.RawBinaryCompressed : CacheFormat.V8Compressed;
+                }
+            }
+            this.#setStmt?.run(key, payload, format);
         }
         catch {
             // Writing to cache is non-fatal and should not fail the build.
