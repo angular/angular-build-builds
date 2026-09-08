@@ -15,16 +15,13 @@ const node_url_1 = require("node:url");
 const hash_1 = require("../../utils/hash");
 const load_result_cache_1 = require("./load-result-cache");
 /**
- * Calculates a unique cache key by updating the hash incrementally.
- * This prevents implicit string coercion of large binary content buffers.
+ * Calculates a unique cache key from the global configuration hash and path.
  */
-function calculateCacheKey(globalConfigHash, path, content) {
+function calculateCacheKey(globalConfigHash, path) {
     const hasher = (0, hash_1.createContentHash)();
     hasher.update(globalConfigHash);
     hasher.update('\0');
     hasher.update(path);
-    hasher.update('\0');
-    hasher.update(content);
     return hasher.digest();
 }
 /**
@@ -75,7 +72,7 @@ async function mapConcurrent(items, limit, fn) {
  * Performs a fast-path metadata check (mtime + size) first, falling back to content hashing.
  * Heals/updates the cached metadata on disk if the content hash was valid but the metadata changed.
  */
-async function validateAndHealCacheEntry(watchFilesMetadata, store, cacheKey, cached, targetFilePath) {
+async function validateAndHealCacheEntry(watchFilesMetadata, store, cacheKey, cached) {
     if (!watchFilesMetadata) {
         return false;
     }
@@ -92,17 +89,7 @@ async function validateAndHealCacheEntry(watchFilesMetadata, store, cacheKey, ca
             if (stats.size === expected.size && stats.mtimeMs === expected.mtimeMs) {
                 return true;
             }
-            // 2. Target File Path: content hash was already verified by cacheKey lookup, heal metadata if mtime changed
-            if (targetFilePath && filePath === targetFilePath) {
-                watchFilesMetadata[filePath] = {
-                    ...expected,
-                    mtimeMs: stats.mtimeMs,
-                    size: stats.size,
-                };
-                healed = true;
-                return true;
-            }
-            // 3. Slow Path for dependencies: content hash fallback
+            // 2. Slow Path: content hash fallback
             const currentContent = await (0, promises_1.readFile)(filePath);
             const currentHash = (0, hash_1.calculateHash)(currentContent);
             if (currentHash === expected.hash) {
@@ -183,20 +170,10 @@ class PersistentLoadResultCache {
             return undefined;
         }
         // 2. Check L2 Persistent Disk Cache
-        let content = '';
-        const filePath = extractDiskFilePath(path);
-        if (filePath) {
-            try {
-                content = await (0, promises_1.readFile)(filePath);
-            }
-            catch {
-                return undefined;
-            }
-        }
-        const cacheKey = calculateCacheKey(this.globalConfigHash, path, content);
+        const cacheKey = calculateCacheKey(this.globalConfigHash, path);
         const cached = await this.persistentStore.get(cacheKey);
         if (cached &&
-            (await validateAndHealCacheEntry(cached.watchFilesMetadata, this.persistentStore, cacheKey, cached, filePath))) {
+            (await validateAndHealCacheEntry(cached.watchFilesMetadata, this.persistentStore, cacheKey, cached))) {
             const result = {
                 contents: cached.contents,
                 loader: cached.loader,
@@ -229,13 +206,14 @@ class PersistentLoadResultCache {
                     return;
                 }
             }
-            const cacheKey = calculateCacheKey(this.globalConfigHash, path, content);
+            const cacheKey = calculateCacheKey(this.globalConfigHash, path);
             // Reuse the target file's pre-read content buffer to avoid redundant disk reads (readFile)
             // during dependency watch file metadata computation.
             const knownContents = filePath
                 ? new Map([[filePath, content]])
                 : undefined;
-            const watchFilesMetadata = await computeMetadataForWatchFiles(result.watchFiles ?? [], knownContents);
+            const allWatchFiles = Array.from(new Set(filePath ? [filePath, ...(result.watchFiles ?? [])] : result.watchFiles));
+            const watchFilesMetadata = await computeMetadataForWatchFiles(allWatchFiles, knownContents);
             await this.persistentStore.put(cacheKey, {
                 contents: result.contents,
                 loader: result.loader,

@@ -167,11 +167,8 @@ class SqliteCacheStore {
     }
     #queueAccessUpdate(key) {
         this.#pendingAccessedKeys.add(key);
-        if (this.#pendingAccessedKeys.size >= 100) {
-            this.#flushAccessUpdates();
-        }
-        else if (!this.#flushTimeout) {
-            this.#flushTimeout = setTimeout(() => this.#flushAccessUpdates(), 500);
+        if (!this.#flushTimeout) {
+            this.#flushTimeout = setTimeout(() => this.#flushAccessUpdates(), 1000);
             this.#flushTimeout.unref?.();
         }
     }
