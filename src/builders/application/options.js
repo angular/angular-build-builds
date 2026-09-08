@@ -220,6 +220,7 @@ async function normalizeOptions(context, projectName, options, extensions) {
             (ssrOptions || prerenderOptions) && indexBaseName === 'index.html'
                 ? exports.INDEX_HTML_CSR
                 : indexBaseName;
+        const preloadInitialDefault = !options.serviceWorker;
         indexHtmlOptions = {
             input: indexInput,
             output: indexOutput,
@@ -231,8 +232,10 @@ async function normalizeOptions(context, projectName, options, extensions) {
                 // [name, esm]
             ],
             transformer: extensions?.indexHtmlTransformer,
-            // Preload initial defaults to true
-            preloadInitial: typeof options.index !== 'object' || (options.index.preloadInitial ?? true),
+            // Preload initial defaults to false when using a service worker, true otherwise
+            preloadInitial: typeof options.index === 'object'
+                ? (options.index?.preloadInitial ?? preloadInitialDefault)
+                : preloadInitialDefault,
         };
     }
     if (appShellOptions || ssrOptions || prerenderOptions) {

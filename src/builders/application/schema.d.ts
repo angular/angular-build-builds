@@ -339,7 +339,8 @@ export type IndexObject = {
     output?: string;
     /**
      * Generates 'preload', 'modulepreload', and 'preconnect' link elements for initial
-     * application files and resources.
+     * application files and resources. Defaults to false when a service worker is enabled;
+     * otherwise true.
      */
     preloadInitial?: boolean;
     [property: string]: any;
