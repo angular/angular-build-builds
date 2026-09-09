@@ -147,10 +147,17 @@ function isPathWatched(fileLookupKey, watchedFiles) {
     return false;
 }
 class WatcherQueue {
+    debounceMs;
+    maxWaitMs;
     nextQueue = [];
     currentChangedFiles;
     isClosed = false;
     timeoutId;
+    firstChangeTime;
+    constructor(debounceMs = 100, maxWaitMs = 500) {
+        this.debounceMs = debounceMs;
+        this.maxWaitMs = maxWaitMs;
+    }
     addChange(type, file) {
         if (this.isClosed) {
             return;
@@ -170,15 +177,21 @@ class WatcherQueue {
         this.scheduleFlush();
     }
     scheduleFlush() {
+        const now = Date.now();
+        const firstChangeTime = (this.firstChangeTime ??= now);
         if (this.timeoutId) {
             clearTimeout(this.timeoutId);
         }
+        const elapsed = now - firstChangeTime;
+        const remainingMaxWait = Math.max(0, this.maxWaitMs - elapsed);
+        const delay = Math.min(this.debounceMs, remainingMaxWait);
         this.timeoutId = setTimeout(() => {
             this.timeoutId = undefined;
             this.flush();
-        }, 250);
+        }, delay);
     }
     flush() {
+        this.firstChangeTime = undefined;
         if (this.currentChangedFiles &&
             this.currentChangedFiles.all.length > 0 &&
             this.nextQueue.length > 0) {
@@ -214,6 +227,7 @@ class WatcherQueue {
             clearTimeout(this.timeoutId);
             this.timeoutId = undefined;
         }
+        this.firstChangeTime = undefined;
         this.isClosed = true;
         this.currentChangedFiles = undefined;
         let next;
@@ -447,7 +461,16 @@ async function createParcelWatcher(options, parcelWatcher) {
 async function createChokidarWatcher(options, chokidarModule) {
     const chokidar = chokidarModule ?? (await Promise.resolve().then(() => __importStar(require('chokidar'))));
     const watchedFiles = new Set();
-    const queue = new WatcherQueue();
+    let queue;
+    if (options?.polling) {
+        const pollingInterval = options.interval ?? 100;
+        const debounceMs = Math.min(250, Math.max(100, Math.ceil(pollingInterval * 1.5)));
+        const maxWaitMs = Math.max(500, debounceMs * 3);
+        queue = new WatcherQueue(debounceMs, maxWaitMs);
+    }
+    else {
+        queue = new WatcherQueue();
+    }
     const rootDir = options?.cwd ?? process.cwd();
     const isCaseSensitive = isFileSystemCaseSensitive(rootDir);
     const rootDirPosix = toPosixPathNormalized(rootDir);
