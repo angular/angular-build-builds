@@ -20,6 +20,87 @@ const IGNORE_LIST_ID = 'x_google_ignoreList';
  */
 const NODE_MODULE_BYTES = Buffer.from('node_modules/', 'utf-8');
 /**
+ * The UTF-8 bytes for the "sources" property key used to locate the sources array.
+ */
+const SOURCES_KEY_BYTES = Buffer.from('"sources"', 'utf-8');
+/**
+ * The UTF-8 bytes for the ignore list identifier to check if already present.
+ */
+const IGNORE_LIST_BYTES = Buffer.from(`"${IGNORE_LIST_ID}"`, 'utf-8');
+function extractSources(contents) {
+    const sourcesKeyIndex = contents.indexOf(SOURCES_KEY_BYTES);
+    if (sourcesKeyIndex === -1) {
+        return undefined;
+    }
+    // Find the ':' after "sources"
+    let colonIndex = sourcesKeyIndex + SOURCES_KEY_BYTES.length;
+    while (colonIndex < contents.length && contents[colonIndex] <= 0x20) {
+        colonIndex++;
+    }
+    if (contents[colonIndex] !== 0x3a /* : */) {
+        return undefined;
+    }
+    // Find the '[' for the array
+    let arrayStartIndex = colonIndex + 1;
+    while (arrayStartIndex < contents.length && contents[arrayStartIndex] <= 0x20) {
+        arrayStartIndex++;
+    }
+    if (contents[arrayStartIndex] !== 0x5b /* [ */) {
+        return undefined;
+    }
+    // Scan until matching ']'
+    let depth = 0;
+    let inString = false;
+    for (let i = arrayStartIndex; i < contents.length; i++) {
+        const byte = contents[i];
+        if (inString) {
+            if (byte === 0x5c /* \ */) {
+                i++; // skip escaped character
+            }
+            else if (byte === 0x22 /* " */) {
+                inString = false;
+            }
+        }
+        else if (byte === 0x22 /* " */) {
+            inString = true;
+        }
+        else if (byte === 0x5b /* [ */) {
+            depth++;
+        }
+        else if (byte === 0x5d /* ] */) {
+            depth--;
+            if (depth === 0) {
+                try {
+                    const slice = contents.toString('utf-8', arrayStartIndex, i + 1);
+                    const parsed = JSON.parse(slice);
+                    return Array.isArray(parsed) && parsed.every((s) => typeof s === 'string')
+                        ? parsed
+                        : undefined;
+                }
+                catch {
+                    return undefined;
+                }
+            }
+        }
+    }
+    return undefined;
+}
+function updateSourcemapFast(contents, ignoreList) {
+    let braceIndex = 0;
+    while (braceIndex < contents.length && contents[braceIndex] <= 0x20) {
+        braceIndex++;
+    }
+    if (contents[braceIndex] !== 0x7b /* { */) {
+        return undefined;
+    }
+    const injection = Buffer.from(`"${IGNORE_LIST_ID}":${JSON.stringify(ignoreList)},`, 'utf-8');
+    return Buffer.concat([
+        contents.subarray(0, braceIndex + 1),
+        injection,
+        contents.subarray(braceIndex + 1),
+    ]);
+}
+/**
  * Creates an esbuild plugin that updates generated sourcemaps to include the Chrome
  * DevTools ignore list extension. All source files that originate from a node modules
  * directory are added to the ignore list by this plugin.
@@ -49,7 +130,35 @@ function createSourcemapIgnorelistPlugin() {
                     if (!contents.includes(NODE_MODULE_BYTES)) {
                         continue;
                     }
+                    let fastPathSuccess = false;
+                    if (!contents.includes(IGNORE_LIST_BYTES)) {
+                        const sources = extractSources(contents);
+                        if (sources) {
+                            const ignoreList = [];
+                            for (let index = 0; index < sources.length; ++index) {
+                                const location = sources[index].indexOf('node_modules/');
+                                if (location === 0 || (location > 0 && sources[index][location - 1] === '/')) {
+                                    ignoreList.push(index);
+                                }
+                            }
+                            if (ignoreList.length === 0) {
+                                continue;
+                            }
+                            const updated = updateSourcemapFast(contents, ignoreList);
+                            if (updated) {
+                                file.contents = updated;
+                                fastPathSuccess = true;
+                            }
+                        }
+                    }
+                    if (fastPathSuccess) {
+                        continue;
+                    }
+                    // Fallback to full JSON parse/stringify if fast scanning or splicing fails
                     const map = JSON.parse(contents.toString('utf-8'));
+                    if (map[IGNORE_LIST_ID]) {
+                        continue;
+                    }
                     const ignoreList = [];
                     // Check and store the index of each source originating from a node modules directory
                     for (let index = 0; index < map.sources.length; ++index) {

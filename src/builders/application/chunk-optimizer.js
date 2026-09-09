@@ -87,9 +87,12 @@ function bundleOutputToEsbuildMetafile(bundleOutput, originalMetafile) {
                 if (totalOriginalBytesInModule === 0) {
                     continue;
                 }
+                // Read once per module: in Rolldown, `renderedLength` is an uncached getter that
+                // copies the entire module code across the NAPI bridge on each access.
+                const { renderedLength } = renderedModule;
                 for (const [originalInputPath, originalInputInfo] of Object.entries(originalOutputEntry.inputs)) {
                     const proportion = originalInputInfo.bytesInOutput / totalOriginalBytesInModule;
-                    const newBytesInOutput = Math.floor(renderedModule.renderedLength * proportion);
+                    const newBytesInOutput = Math.floor(renderedLength * proportion);
                     const existing = newOutputInputs[originalInputPath];
                     if (existing) {
                         existing.bytesInOutput += newBytesInOutput;
