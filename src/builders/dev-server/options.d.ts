@@ -7,7 +7,9 @@
  */
 import { BuilderContext } from '@angular-devkit/architect';
 import { Schema as DevServerOptions } from './schema';
-export type NormalizedDevServerOptions = Awaited<ReturnType<typeof normalizeOptions>>;
+export type NormalizedDevServerOptions = Omit<Awaited<ReturnType<typeof normalizeOptions>>, 'strictPort'> & {
+    strictPort?: boolean;
+};
 /**
  * Normalize the user provided options by creating full paths for all path based options
  * and converting multi-form options into a single form that can be directly used
@@ -22,6 +24,7 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     buildTarget: import("@angular-devkit/architect").Target;
     host: string;
     port: number;
+    strictPort: boolean;
     poll: number | undefined;
     open: boolean | undefined;
     verbose: boolean | undefined;

@@ -88,6 +88,7 @@ async function normalizeOptions(context, projectName, options) {
         buildTarget,
         host: host ?? 'localhost',
         port,
+        strictPort: port !== 0,
         poll,
         open,
         verbose,

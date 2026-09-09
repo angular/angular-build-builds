@@ -65,7 +65,7 @@ async function createServerConfig(serverOptions, assets, ssrMode, preTransformRe
             ssrFiles,
         },
         port: serverOptions.port,
-        strictPort: true,
+        strictPort: serverOptions.strictPort ?? true,
         host: serverOptions.host,
         open: serverOptions.open,
         allowedHosts: serverOptions.allowedHosts,
