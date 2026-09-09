@@ -33,6 +33,10 @@ export declare class SassCompiler {
      */
     compileStringAsync(source: string, options: StringOptions<'async'>): Promise<CompileResult>;
     /**
+     * Clear the directory cache.
+     */
+    clearCache(): void;
+    /**
      * Shutdown the Sass compiler.
      * @returns A void promise that resolves when closing is complete.
      */

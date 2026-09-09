@@ -61,6 +61,7 @@ class SassCompiler {
     rebase;
     #asyncCompiler;
     #asyncCompilerPromise;
+    #directoryCache = new Map();
     constructor(rebase = false) {
         this.rebase = rebase;
     }
@@ -118,7 +119,7 @@ class SassCompiler {
         let finalImporters;
         let loadPaths = options.loadPaths;
         const entryDirectory = url ? (0, node_path_1.dirname)((0, node_url_1.fileURLToPath)(url)) : process.cwd();
-        const directoryCache = new Map();
+        const directoryCache = this.#directoryCache;
         const rebaseSourceMaps = options.sourceMap ? new Map() : undefined;
         if (importers?.length) {
             if (importers.some((i) => !isFileImporter(i))) {
@@ -156,10 +157,17 @@ class SassCompiler {
         return result;
     }
     /**
+     * Clear the directory cache.
+     */
+    clearCache() {
+        this.#directoryCache.clear();
+    }
+    /**
      * Shutdown the Sass compiler.
      * @returns A void promise that resolves when closing is complete.
      */
     async close() {
+        this.clearCache();
         if (this.#asyncCompilerPromise) {
             try {
                 await this.#ensureAsyncCompiler();

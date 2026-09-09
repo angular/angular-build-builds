@@ -41,16 +41,30 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SassStylesheetLanguage = void 0;
+exports.resetSassWorkerPoolCaches = resetSassWorkerPoolCaches;
 exports.shutdownSassWorkerPool = shutdownSassWorkerPool;
 const node_path_1 = require("node:path");
 const node_url_1 = require("node:url");
 const cache_1 = require("../cache");
 let sassService;
 let sassServicePromise;
+let resolutionCache;
+let packageRootCache;
 function isSassException(error) {
     return !!error && typeof error === 'object' && 'sassMessage' in error;
 }
+function resetSassWorkerPoolCaches() {
+    resolutionCache?.clear();
+    packageRootCache?.clear();
+    if (sassService) {
+        sassService.clearCache();
+    }
+    else if (sassServicePromise) {
+        void sassServicePromise.then((service) => service.clearCache());
+    }
+}
 function shutdownSassWorkerPool() {
+    resetSassWorkerPoolCaches();
     if (sassService) {
         void sassService.close();
         sassService = undefined;
@@ -106,14 +120,15 @@ async function compileString(data, filePath, syntax, options, resolveUrl) {
             sassServicePromise = undefined;
         }
     }
-    // Cache is currently local to individual compile requests.
-    // Caching follows Sass behavior where a given url will always resolve to the same value
-    // regardless of its importer's path.
+    // Caching follows Sass behavior where a given package url will always resolve to the same value
+    // regardless of its importer's path. Relative paths are qualified with the containing URL.
     // A null value indicates that the cached resolution attempt failed to find a location and
     // later stage resolution should be attempted. This avoids potentially expensive repeat
     // failing resolution attempts.
-    const resolutionCache = new cache_1.MemoryCache();
-    const packageRootCache = new cache_1.MemoryCache();
+    resolutionCache ??= new cache_1.MemoryCache();
+    packageRootCache ??= new cache_1.MemoryCache();
+    const currentResolutionCache = resolutionCache;
+    const currentPackageRootCache = packageRootCache;
     const warnings = [];
     const { silenceDeprecations, futureDeprecations, fatalDeprecations } = options.sass ?? {};
     try {
@@ -130,30 +145,36 @@ async function compileString(data, filePath, syntax, options, resolveUrl) {
             quietDeps: true,
             importers: [
                 {
-                    findFileUrl: (url, options) => resolutionCache.getOrCreate(url, async () => {
-                        const result = await resolveUrl(url, options);
-                        if (result.path) {
-                            return (0, node_url_1.pathToFileURL)(result.path);
-                        }
-                        // Check for package deep imports
-                        const { packageName, pathSegments } = parsePackageName(url);
-                        // Caching package root locations is particularly beneficial for `@material/*` packages
-                        // which extensively use deep imports.
-                        const packageRoot = await packageRootCache.getOrCreate(packageName, async () => {
-                            // Use the required presence of a package root `package.json` file to resolve the location
-                            const packageResult = await resolveUrl(packageName + '/package.json', options);
-                            return packageResult.path ? (0, node_path_1.dirname)(packageResult.path) : null;
+                    findFileUrl: (url, options) => {
+                        const cacheKey = url.startsWith('pkg:')
+                            ? url
+                            : `${options.containingUrl?.href ?? ''}:${url}`;
+                        return currentResolutionCache.getOrCreate(cacheKey, async () => {
+                            const result = await resolveUrl(url, options);
+                            if (result.path) {
+                                return (0, node_url_1.pathToFileURL)(result.path);
+                            }
+                            // Check for package deep imports
+                            const { packageName, pathSegments } = parsePackageName(url);
+                            // Caching package root locations is particularly beneficial for `@material/*` packages
+                            // which extensively use deep imports.
+                            const packageRootKey = `${options.containingUrl?.href ?? ''}:${packageName}`;
+                            const packageRoot = await currentPackageRootCache.getOrCreate(packageRootKey, async () => {
+                                // Use the required presence of a package root `package.json` file to resolve the location
+                                const packageResult = await resolveUrl(packageName + '/package.json', options);
+                                return packageResult.path ? (0, node_path_1.dirname)(packageResult.path) : null;
+                            });
+                            // Package not found could be because of an error or the specifier is intended to be found
+                            // via a later stage of the resolution process (`loadPaths`, etc.).
+                            // Errors are reported after the full completion of the resolution process. Exceptions for
+                            // not found packages should not be raised here.
+                            if (packageRoot) {
+                                return (0, node_url_1.pathToFileURL)((0, node_path_1.join)(packageRoot, ...pathSegments));
+                            }
+                            // Not found
+                            return null;
                         });
-                        // Package not found could be because of an error or the specifier is intended to be found
-                        // via a later stage of the resolution process (`loadPaths`, etc.).
-                        // Errors are reported after the full completion of the resolution process. Exceptions for
-                        // not found packages should not be raised here.
-                        if (packageRoot) {
-                            return (0, node_url_1.pathToFileURL)((0, node_path_1.join)(packageRoot, ...pathSegments));
-                        }
-                        // Not found
-                        return null;
-                    }),
+                    },
                 },
             ],
             logger: {
