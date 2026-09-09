@@ -65,6 +65,7 @@ function createCompilerPlugin(pluginOptions, compilationContextOrCompilation, st
         // eslint-disable-next-line max-lines-per-function
         async setup(build) {
             let setupWarnings = [];
+            let diagnosticsPromise;
             const preserveSymlinks = build.initialOptions.preserveSymlinks;
             // Initialize a worker pool for JavaScript transformations.
             // Webcontainers currently do not support this persistent cache store.
@@ -126,6 +127,7 @@ function createCompilerPlugin(pluginOptions, compilationContextOrCompilation, st
             const referencedFileTracker = new file_reference_tracker_1.FileReferenceTracker();
             // eslint-disable-next-line max-lines-per-function
             build.onStart(async () => {
+                hasCompilationErrors = true;
                 await (0, hash_1.initializeHash)();
                 const result = {
                     warnings: setupWarnings,
@@ -317,13 +319,21 @@ function createCompilerPlugin(pluginOptions, compilationContextOrCompilation, st
                             ],
                         });
                     }
-                }
-                const diagnostics = await compilation.diagnoseFiles(environment_options_1.useTypeChecking ? compilation_1.DiagnosticModes.All : compilation_1.DiagnosticModes.All & ~compilation_1.DiagnosticModes.Semantic);
-                if (diagnostics.errors?.length) {
-                    (result.errors ??= []).push(...diagnostics.errors);
-                }
-                if (diagnostics.warnings?.length) {
-                    (result.warnings ??= []).push(...diagnostics.warnings);
+                    const diagnosticModes = environment_options_1.useTypeChecking
+                        ? compilation_1.DiagnosticModes.All
+                        : compilation_1.DiagnosticModes.All & ~compilation_1.DiagnosticModes.Semantic;
+                    diagnosticsPromise = compilation.diagnoseFiles(diagnosticModes).catch((error) => ({
+                        errors: [
+                            {
+                                text: 'Angular compilation diagnostics failed.',
+                                notes: [
+                                    {
+                                        text: error instanceof Error ? (error.stack ?? error.message) : String(error),
+                                    },
+                                ],
+                            },
+                        ],
+                    }));
                 }
                 // Add errors from failed additional results.
                 // This must be done after emit to capture latest web worker results.
@@ -481,7 +491,7 @@ function createCompilerPlugin(pluginOptions, compilationContextOrCompilation, st
             if (pluginOptions.jit) {
                 (0, jit_plugin_callbacks_1.setupJitPluginCallbacks)(build, stylesheetBundler, additionalResults, pluginOptions.loadResultCache);
             }
-            build.onEnd((result) => {
+            build.onEnd(async (result) => {
                 // Ensure other compilations are unblocked if the main compilation throws during start
                 if (angularCompilationContext.isPrimary()) {
                     angularCompilationContext.markAsReady(hasCompilationErrors);
@@ -501,6 +511,19 @@ function createCompilerPlugin(pluginOptions, compilationContextOrCompilation, st
                     }
                 }
                 (0, profiling_1.logCumulativeDurations)();
+                if (diagnosticsPromise) {
+                    try {
+                        const diagnostics = await diagnosticsPromise;
+                        const errors = diagnostics.errors?.length ? diagnostics.errors : undefined;
+                        const warnings = diagnostics.warnings?.length ? diagnostics.warnings : undefined;
+                        if (errors || warnings) {
+                            return { errors, warnings };
+                        }
+                    }
+                    finally {
+                        diagnosticsPromise = undefined;
+                    }
+                }
             });
             build.onDispose(() => {
                 void angularCompilationContext.dispose();
