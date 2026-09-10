@@ -128,7 +128,7 @@ export type Schema = {
     /**
      * Specifies the configuration file for the selected test runner. If a string is provided,
      * it will be used as the path to the configuration file. If `true`, the builder will search
-     * for a default configuration file (e.g., `vitest-base.config.ts` or `karma.conf.js`). If
+     * for a default configuration file (e.g., `vitest-base.config.mts` or `karma.conf.js`). If
      * `false`, no external configuration file will be used.\nFor Vitest, this enables advanced
      * options and the use of custom plugins. Please note that while the file is loaded, the
      * Angular team does not provide direct support for its specific contents or any third-party
@@ -145,6 +145,7 @@ export type Schema = {
      * is split into separate chunks. Issues with live ESM bindings in Node.js environments
      * (such as uninitialized exports or mocking failures) can be resolved by disabling
      * splitting. This option is only available for the Vitest runner.
+     * @deprecated No longer needed with Vitest 5.
      */
     splitting?: boolean;
     /**
@@ -240,7 +241,7 @@ export declare enum Runner {
 /**
  * Specifies the configuration file for the selected test runner. If a string is provided,
  * it will be used as the path to the configuration file. If `true`, the builder will search
- * for a default configuration file (e.g., `vitest-base.config.ts` or `karma.conf.js`). If
+ * for a default configuration file (e.g., `vitest-base.config.mts` or `karma.conf.js`). If
  * `false`, no external configuration file will be used.\nFor Vitest, this enables advanced
  * options and the use of custom plugins. Please note that while the file is loaded, the
  * Angular team does not provide direct support for its specific contents or any third-party

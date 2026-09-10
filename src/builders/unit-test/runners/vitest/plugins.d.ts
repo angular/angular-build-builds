@@ -5,10 +5,9 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-import type { BrowserConfigOptions, Vite, VitestPlugin } from 'vitest/node';
+import type { BrowserConfigOptions, Vite } from 'vitest/node';
 import type { ResultFile } from '../../../application/results';
 import type { NormalizedUnitTestBuilderOptions } from '../../options';
-type VitestPlugins = Awaited<ReturnType<typeof VitestPlugin>>;
 interface PluginOptions {
     workspaceRoot: string;
     projectSourceRoot: string;
@@ -30,6 +29,6 @@ interface VitestConfigPluginOptions {
     isolate: boolean | undefined;
     preserveSymlinks?: boolean;
 }
-export declare function createVitestConfigPlugin(options: VitestConfigPluginOptions): Promise<VitestPlugins[0]>;
-export declare function createVitestPlugins(pluginOptions: PluginOptions): VitestPlugins;
+export declare function createVitestConfigPlugin(options: VitestConfigPluginOptions): Promise<Vite.Plugin>;
+export declare function createVitestPlugins(pluginOptions: PluginOptions): Vite.Plugin[];
 export {};

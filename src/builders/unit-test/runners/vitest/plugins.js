@@ -177,6 +177,7 @@ async function createVitestConfigPlugin(options) {
             }
             const projectResolver = (0, resolve_project_1.createProjectResolver)(projectSourceRoot);
             const projectDefaults = {
+                extends: false,
                 test: {
                     setupFiles,
                     globals: true,
@@ -196,6 +197,7 @@ async function createVitestConfigPlugin(options) {
             };
             const { optimizeDeps, resolve } = config;
             const projectOverrides = {
+                extends: false,
                 test: {
                     name: projectName,
                     include,
