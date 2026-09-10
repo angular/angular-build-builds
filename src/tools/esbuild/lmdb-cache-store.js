@@ -40,7 +40,7 @@ class LmdbCacheStore {
         return this;
     }
     createCache(namespace) {
-        return new cache_1.Cache(this, namespace);
+        return new cache_1.Cache(new cache_1.NamespacedCacheStore(this, namespace));
     }
     async close() {
         try {

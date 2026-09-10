@@ -237,7 +237,7 @@ class WatcherQueue {
     }
 }
 async function createWatcher(options) {
-    if (options?.polling) {
+    if (options?.polling || options?.followSymlinks) {
         return createChokidarWatcher(options);
     }
     try {

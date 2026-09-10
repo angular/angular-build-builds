@@ -38,6 +38,20 @@ export interface PersistentCacheStore<V = any> extends CacheStore<V> {
     close(): void | Promise<void>;
 }
 /**
+ * A backing data store wrapper that namespaces all keys using length-prefix framing.
+ * Prevents key collisions between namespaces regardless of characters (such as colons)
+ * in the namespace or key.
+ */
+export declare class NamespacedCacheStore<V> implements CacheStore<V> {
+    #private;
+    private readonly store;
+    readonly namespace: string;
+    constructor(store: CacheStore<V>, namespace: string);
+    get(key: string): V | undefined | Promise<V | undefined>;
+    has(key: string): boolean | Promise<boolean>;
+    set(key: string, value: V): this | Promise<this>;
+}
+/**
  * A cache object that allows accessing and storing key/value pairs in
  * an underlying CacheStore. This class is the primary method for consumers
  * to use a cache.
@@ -45,14 +59,7 @@ export interface PersistentCacheStore<V = any> extends CacheStore<V> {
 export declare class Cache<V, S extends CacheStore<V> = CacheStore<V>> {
     #private;
     protected readonly store: S;
-    readonly namespace?: string | undefined;
-    constructor(store: S, namespace?: string | undefined);
-    /**
-     * Prefixes a key with the cache namespace if present.
-     * @param key A key string to prefix.
-     * @returns A prefixed key if a namespace is present. Otherwise the provided key.
-     */
-    protected withNamespace(key: string): string;
+    constructor(store: S);
     /**
      * Gets the value associated with a provided key if available.
      * Otherwise, creates a value using the factory creator function, puts the value
@@ -76,9 +83,9 @@ export declare class Cache<V, S extends CacheStore<V> = CacheStore<V>> {
      */
     put(key: string, value: V): Promise<void>;
     /**
-     * Clears internal state for a specific namespaced key (requests, write counts, and pending gets).
+     * Clears internal state for a specific key (requests, write counts, and pending gets).
      */
-    protected deleteInternal(namespacedKey: string): void;
+    protected deleteInternal(key: string): void;
     /**
      * Clears the base class internal state (requests, write counts, and pending gets).
      */
