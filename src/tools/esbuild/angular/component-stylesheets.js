@@ -163,7 +163,7 @@ class ComponentStylesheetBundler {
             const filename = secondSemi !== -1 ? entry.slice(secondSemi + 1) : '';
             if (filename && normalizedFiles.has(node_path_1.default.normalize(filename))) {
                 this.#inlineContexts.delete(entry);
-                void bundler.dispose();
+                void bundler.dispose().catch(() => { });
             }
             else {
                 bundler.invalidate(normalizedFiles);
@@ -174,6 +174,9 @@ class ComponentStylesheetBundler {
     collectReferencedFiles() {
         const files = [];
         for (const context of this.#fileContexts.values()) {
+            files.push(...context.watchFiles);
+        }
+        for (const context of this.#inlineContexts.values()) {
             files.push(...context.watchFiles);
         }
         return files;

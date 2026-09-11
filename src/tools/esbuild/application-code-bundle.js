@@ -97,7 +97,7 @@ function createBrowserPolyfillBundleOptions(options, target, sourceFileCache, st
     // Only add the Angular TypeScript compiler if TypeScript files are provided in the polyfills
     if (hasTypeScriptEntries) {
         buildOptions.plugins ??= [];
-        const pluginOptions = (0, compiler_plugin_options_1.createCompilerPluginOptions)(options, sourceFileCache);
+        const pluginOptions = (0, compiler_plugin_options_1.createCompilerPluginOptions)(options, sourceFileCache, sourceFileCache.loadResultCache);
         buildOptions.plugins.push((0, compiler_plugin_1.createCompilerPlugin)(
         // JS/TS options
         pluginOptions, angularCompilationContext, 
@@ -342,7 +342,7 @@ function createSsrEntryCodeBundleOptions(options, target, sourceFileCache, style
                     // The below is needed to avoid
                     // `Import "default" will always be undefined because there is no matching export` warning when no default is present.
                     `const defaultExportName = 'default';`,
-                    `export default server[defaultExportName]`,
+                    `export default server[defaultExportName];`,
                     // Add @angular/ssr exports
                     `export { AngularAppEngine } from '@angular/ssr';`,
                 ];
@@ -544,7 +544,7 @@ function getEsBuildCommonPolyfillsOptions(options, namespace, tryToResolvePolyfi
     return buildOptions;
 }
 function entryFileToWorkspaceRelative(workspaceRoot, entryFile) {
-    return './' + (0, path_1.toPosixPath)((0, node_path_1.relative)(workspaceRoot, entryFile).replace(/.[mc]?ts$/, ''));
+    return './' + (0, path_1.toPosixPath)((0, node_path_1.relative)(workspaceRoot, entryFile).replace(/\.[mc]?ts$/, ''));
 }
 /**
  * Determines if a polyfill path is a local file.

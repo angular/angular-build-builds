@@ -38,6 +38,7 @@ class BundlerContext {
     #optionsFactory;
     #shouldCacheResult;
     #loadCache;
+    #invalidationEpoch = 0;
     watchFiles = new Set();
     constructor(workspaceRoot, incremental, options, useContext = incremental, initialFilter, sharedLoadCache) {
         this.workspaceRoot = workspaceRoot;
@@ -136,6 +137,7 @@ class BundlerContext {
         if (!force && this.#activeBundlePromise) {
             return this.#activeBundlePromise;
         }
+        const bundleEpoch = this.#invalidationEpoch;
         const bundlePromise = this.#performBundle().finally(() => {
             if (this.#activeBundlePromise === bundlePromise) {
                 this.#activeBundlePromise = undefined;
@@ -143,7 +145,7 @@ class BundlerContext {
         });
         this.#activeBundlePromise = bundlePromise;
         const result = await bundlePromise;
-        if (this.#shouldCacheResult) {
+        if (this.#shouldCacheResult && bundleEpoch === this.#invalidationEpoch) {
             this.#esbuildResult = result;
         }
         return result;
@@ -214,9 +216,9 @@ class BundlerContext {
                     this.watchFiles.add(normalizedAbsoluteInput);
                 }
                 if (this.#loadCache) {
-                    const cachedLoad = await (this.#loadCache.get(input) ??
-                        this.#loadCache.get(input.replace(';', ':')) ??
-                        this.#loadCache.get('file:' + normalizedAbsoluteInput));
+                    const cachedLoad = (await this.#loadCache.get(input)) ??
+                        (await this.#loadCache.get(input.replace(';', ':'))) ??
+                        (await this.#loadCache.get('file:' + normalizedAbsoluteInput));
                     if (cachedLoad?.watchFiles) {
                         for (const file of cachedLoad.watchFiles) {
                             if (!isInternalAngularFile(file)) {
@@ -440,6 +442,7 @@ class BundlerContext {
             }
         }
         if (invalid) {
+            this.#invalidationEpoch++;
             this.#esbuildResult = undefined;
         }
         return invalid;
