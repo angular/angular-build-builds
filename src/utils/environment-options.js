@@ -7,7 +7,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.persistentCacheStoreSetting = exports.bazelEsbuildPluginPath = exports.useSassEmbedded = exports.useBabelLinker = exports.usePartialSsrBuild = exports.useComponentTemplateHmr = exports.useComponentStyleHmr = exports.optimizeChunksThreshold = exports.useJSONBuildLogs = exports.useTypeChecking = exports.shouldWatchRoot = exports.debugPerformance = exports.useParallelTs = exports.maxWorkers = exports.hasCustomMaxWorkers = exports.useRolldownChunks = exports.allowMinify = exports.shouldBeautify = exports.allowMangle = void 0;
+exports.persistentCacheStoreSetting = exports.bazelEsbuildPluginPath = exports.useSassEmbedded = exports.useBabelLinker = exports.usePartialSsrBuild = exports.useComponentTemplateHmr = exports.useComponentStyleHmr = exports.optimizeChunksThreshold = exports.useJSONBuildLogs = exports.useTypeChecking = exports.shouldWatchRoot = exports.debugPerformance = exports.useParallelTs = exports.maxTransformWorkers = exports.maxWorkers = exports.hasCustomMaxWorkers = exports.useRolldownChunks = exports.allowMinify = exports.shouldBeautify = exports.allowMangle = void 0;
 const node_os_1 = require("node:os");
 /** A set of strings that are considered "truthy" when parsing environment variables. */
 const TRUTHY_VALUES = new Set(['1', 'true']);
@@ -113,6 +113,14 @@ exports.hasCustomMaxWorkers = customMaxWorkers !== undefined;
  * When not set, defaults to available parallelism minus one to ensure the main thread is not starved.
  */
 exports.maxWorkers = customMaxWorkers ?? Math.max((0, node_os_1.availableParallelism)() - 1, 1);
+/**
+ * The maximum number of workers to use for JavaScript transformations during bundling.
+ * Transformation tasks are short-lived, and esbuild concurrently utilizes all CPU cores
+ * for bundling. To prevent CPU starvation and thread startup overhead, concurrency is
+ * budgeted to a fraction of available cores, capped at 6, unless overridden by
+ * `NG_BUILD_MAX_WORKERS`.
+ */
+exports.maxTransformWorkers = customMaxWorkers ?? Math.max(1, Math.min(6, Math.floor((0, node_os_1.availableParallelism)() / 4)));
 /**
  * When `NG_BUILD_PARALLEL_TS` is set to `0` or `false`, parallel TypeScript compilation is disabled.
  */

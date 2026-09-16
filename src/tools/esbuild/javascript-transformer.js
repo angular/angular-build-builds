@@ -96,7 +96,7 @@ function requiresLinking(path, data) {
  * and advanced optimizations.
  */
 class JavaScriptTransformer {
-    maxThreads;
+    options;
     cache;
     #workerPool;
     #commonOptions;
@@ -105,13 +105,16 @@ class JavaScriptTransformer {
     #pendingTasks = [];
     /** Current count of actively executing transformation tasks. */
     #activeTasks = 0;
-    /** Maximum number of transformation tasks allowed to execute concurrently. */
-    #maxConcurrent;
-    constructor(options, maxThreads, cache) {
-        this.maxThreads = maxThreads;
+    get #maxConcurrency() {
+        return this.options.maxConcurrency ?? (this.#workerPool?.maxThreads || 1);
+    }
+    constructor(options, cache) {
+        this.options = options;
         this.cache = cache;
-        // Maintain 2 active tasks per worker thread to keep transformation pipelines fully saturated
-        this.#maxConcurrent = Math.max(1, maxThreads * 2);
+        if (options.maxConcurrency !== undefined &&
+            (!Number.isInteger(options.maxConcurrency) || options.maxConcurrency < 1)) {
+            throw new RangeError('options.maxConcurrency must be an integer greater than or equal to 1.');
+        }
         // Extract options to ensure only the named options are serialized and sent to the worker
         const { sourcemap, thirdPartySourcemaps = false, advancedOptimizations = false, jit = false, } = options;
         this.#commonOptions = {
@@ -130,7 +133,7 @@ class JavaScriptTransformer {
      * @returns A promise resolving to the transformation result.
      */
     async #runWithThrottle(action) {
-        if (this.#activeTasks >= this.#maxConcurrent) {
+        if (this.#activeTasks >= this.#maxConcurrency) {
             await new Promise((resolve, reject) => {
                 this.#pendingTasks.push({ resolve, reject });
             });
@@ -157,9 +160,11 @@ class JavaScriptTransformer {
         }
         const workerPoolOptions = {
             filename: require.resolve('./javascript-transformer-worker'),
-            maxThreads: this.maxThreads,
-            minThreads: this.maxThreads,
             workerData: this.#commonOptions,
+            ...(this.options.maxConcurrency !== undefined && {
+                minThreads: this.options.maxConcurrency,
+                maxThreads: this.options.maxConcurrency,
+            }),
         };
         // Prevent passing SSR `--import` (loader-hooks) from parent to child worker.
         const filteredExecArgv = process.execArgv.filter((v) => v !== utils_1.IMPORT_EXEC_ARGV);
@@ -179,7 +184,7 @@ class JavaScriptTransformer {
     async transformFile(filename, options) {
         return this.#runWithThrottle(async () => {
             const data = await (0, promises_1.readFile)(filename);
-            return this.transformData(filename, data, options);
+            return this.#transform(filename, data, options);
         });
     }
     /**
@@ -191,6 +196,9 @@ class JavaScriptTransformer {
      * @returns A promise that resolves to a UTF-8 encoded Uint8Array containing the result.
      */
     async transformData(filename, data, options) {
+        return this.#runWithThrottle(() => this.#transform(filename, data, options));
+    }
+    async #transform(filename, data, options) {
         let resolvedSideEffects;
         let sideEffectsQueried = false;
         const sideEffectsGetter = options?.sideEffects

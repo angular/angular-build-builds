@@ -14,6 +14,11 @@ export interface JavaScriptTransformerOptions {
     thirdPartySourcemaps?: boolean;
     advancedOptimizations?: boolean;
     jit?: boolean;
+    /**
+     * The maximum number of concurrent transformation operations.
+     * When omitted, concurrency defaults to the available worker pool threads.
+     */
+    maxConcurrency?: number;
 }
 /**
  * Transformation options for an individual file or data transform request.
@@ -38,9 +43,9 @@ export interface TransformOptions {
  */
 export declare class JavaScriptTransformer {
     #private;
-    readonly maxThreads: number;
+    private readonly options;
     private readonly cache?;
-    constructor(options: JavaScriptTransformerOptions, maxThreads: number, cache?: Cache<Uint8Array> | undefined);
+    constructor(options: JavaScriptTransformerOptions, cache?: Cache<Uint8Array> | undefined);
     /**
      * Performs JavaScript transformations on a file from the filesystem.
      * If no transformations are required, the data for the original file will be returned.

@@ -9,3 +9,4 @@ import { StylesheetLanguage } from './stylesheet-plugin-factory';
 export declare function resetSassWorkerPoolCaches(): void;
 export declare function shutdownSassWorkerPool(): void;
 export declare const SassStylesheetLanguage: Readonly<StylesheetLanguage>;
+export declare function isPackageUrl(url: string): boolean;

@@ -37,6 +37,14 @@ export declare const hasCustomMaxWorkers: boolean;
  */
 export declare const maxWorkers: number;
 /**
+ * The maximum number of workers to use for JavaScript transformations during bundling.
+ * Transformation tasks are short-lived, and esbuild concurrently utilizes all CPU cores
+ * for bundling. To prevent CPU starvation and thread startup overhead, concurrency is
+ * budgeted to a fraction of available cores, capped at 6, unless overridden by
+ * `NG_BUILD_MAX_WORKERS`.
+ */
+export declare const maxTransformWorkers: number;
+/**
  * When `NG_BUILD_PARALLEL_TS` is set to `0` or `false`, parallel TypeScript compilation is disabled.
  */
 export declare const useParallelTs: boolean;

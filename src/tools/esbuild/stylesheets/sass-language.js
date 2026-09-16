@@ -43,6 +43,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SassStylesheetLanguage = void 0;
 exports.resetSassWorkerPoolCaches = resetSassWorkerPoolCaches;
 exports.shutdownSassWorkerPool = shutdownSassWorkerPool;
+exports.isPackageUrl = isPackageUrl;
 const node_path_1 = require("node:path");
 const node_url_1 = require("node:url");
 const cache_1 = require("../cache");
@@ -95,6 +96,16 @@ exports.SassStylesheetLanguage = Object.freeze({
         return compileString(data, file, syntax, options, resolveUrl);
     },
 });
+function isPackageUrl(url) {
+    if (url.startsWith('pkg:')) {
+        return true;
+    }
+    return (url.length > 0 &&
+        !url.startsWith('.') &&
+        !url.startsWith('/') &&
+        !url.startsWith('\\') &&
+        !url.includes(':'));
+}
 function parsePackageName(url) {
     const parts = (url.startsWith('pkg:') ? url.slice(4) : url).split('/');
     const hasScope = parts.length >= 2 && parts[0][0] === '@';
@@ -146,20 +157,21 @@ async function compileString(data, filePath, syntax, options, resolveUrl) {
             importers: [
                 {
                     findFileUrl: (url, options) => {
-                        const cacheKey = url.startsWith('pkg:')
-                            ? url
-                            : `${options.containingUrl?.href ?? ''}:${url}`;
+                        const isPackage = isPackageUrl(url);
+                        const cacheKey = isPackage ? url : `${options.containingUrl?.href ?? ''}:${url}`;
                         return currentResolutionCache.getOrCreate(cacheKey, async () => {
                             const result = await resolveUrl(url, options);
                             if (result.path) {
                                 return (0, node_url_1.pathToFileURL)(result.path);
                             }
                             // Check for package deep imports
+                            if (!isPackage) {
+                                return null;
+                            }
                             const { packageName, pathSegments } = parsePackageName(url);
                             // Caching package root locations is particularly beneficial for `@material/*` packages
                             // which extensively use deep imports.
-                            const packageRootKey = `${options.containingUrl?.href ?? ''}:${packageName}`;
-                            const packageRoot = await currentPackageRootCache.getOrCreate(packageRootKey, async () => {
+                            const packageRoot = await currentPackageRootCache.getOrCreate(packageName, async () => {
                                 // Use the required presence of a package root `package.json` file to resolve the location
                                 const packageResult = await resolveUrl(packageName + '/package.json', options);
                                 return packageResult.path ? (0, node_path_1.dirname)(packageResult.path) : null;
