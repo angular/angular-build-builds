@@ -9,6 +9,7 @@ import { BuilderContext } from '@angular-devkit/architect';
 import type { Metafile } from 'esbuild';
 import { ExecutionResult, PrerenderedRoutesRecord } from '../../tools/esbuild/bundler-execution-result';
 import { InitialFileRecord } from '../../tools/esbuild/bundler-files';
+import type { WorkerPool } from '../../utils/worker-pool';
 import { NormalizedApplicationBuildOptions } from './options';
 /**
  * Inlines all active locales as specified by the application build options into all
@@ -17,8 +18,9 @@ import { NormalizedApplicationBuildOptions } from './options';
  * @param options The normalized application builder options used to create the build.
  * @param executionResult The result of an executed build.
  * @param initialFiles A map containing initial file information for the executed build.
+ * @param workerPool An optional worker pool to use for running transformation tasks.
  */
-export declare function inlineI18n(metafile: Metafile, options: NormalizedApplicationBuildOptions, executionResult: ExecutionResult, initialFiles: Map<string, InitialFileRecord>): Promise<{
+export declare function inlineI18n(metafile: Metafile, options: NormalizedApplicationBuildOptions, executionResult: ExecutionResult, initialFiles: Map<string, InitialFileRecord>, workerPool?: WorkerPool): Promise<{
     errors: string[];
     warnings: string[];
     prerenderedRoutes: PrerenderedRoutesRecord;

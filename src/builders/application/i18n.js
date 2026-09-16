@@ -30,16 +30,17 @@ const options_1 = require("./options");
  * @param options The normalized application builder options used to create the build.
  * @param executionResult The result of an executed build.
  * @param initialFiles A map containing initial file information for the executed build.
+ * @param workerPool An optional worker pool to use for running transformation tasks.
  */
-async function inlineI18n(metafile, options, executionResult, initialFiles) {
+async function inlineI18n(metafile, options, executionResult, initialFiles, workerPool) {
     const { i18nOptions, baseHref, cacheOptions } = options;
     // Create the multi-threaded inliner with common options.
     const inliner = new i18n_inliner_1.I18nInliner({
         missingTranslation: i18nOptions.missingTranslationBehavior ?? 'warning',
-        maxConcurrency: environment_options_1.maxWorkers,
+        maxConcurrency: workerPool ? undefined : environment_options_1.maxWorkers,
         persistentCachePath: cacheOptions.enabled ? cacheOptions.path : undefined,
         localizeVersion: i18nOptions.localizeVersion,
-    });
+    }, workerPool);
     const inlineResult = {
         errors: [],
         warnings: [],

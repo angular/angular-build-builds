@@ -6,6 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 import type { ɵParsedTranslation } from '@angular/localize';
+import { WorkerPool } from '../../utils/worker-pool';
 import { type BuildOutputFile } from './bundler-files';
 /**
  * Inlining options that should apply to all transformed code.
@@ -54,7 +55,7 @@ export interface LocaleInlineResult {
 export declare class I18nInliner {
     #private;
     private readonly options;
-    constructor(options: I18nInlinerOptions);
+    constructor(options: I18nInlinerOptions, workerPool?: WorkerPool);
     /**
      * Performs inlining of translations across multiple locales in parallel.
      *

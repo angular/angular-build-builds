@@ -94,6 +94,7 @@ class I18nInliner {
     options;
     #cacheInitFailed = false;
     #workerPool;
+    #ownsWorkerPool;
     #cacheStore;
     #transformedFileCache;
     #translationCache;
@@ -101,18 +102,21 @@ class I18nInliner {
     get #maxConcurrency() {
         return this.options.maxConcurrency ?? (this.#workerPool.maxThreads || 1);
     }
-    constructor(options) {
+    constructor(options, workerPool) {
         this.options = options;
         if (options.maxConcurrency !== undefined &&
             (!Number.isInteger(options.maxConcurrency) || options.maxConcurrency < 1)) {
             throw new RangeError('options.maxConcurrency must be an integer greater than or equal to 1.');
         }
+        this.#ownsWorkerPool = !workerPool;
         // Piscina uses object spread against default options internally. Only define
         // maxThreads when specified to avoid overwriting Piscina's default thread count
         // with undefined.
-        this.#workerPool = new worker_pool_1.WorkerPool({
-            ...(options.maxConcurrency !== undefined && { maxThreads: options.maxConcurrency }),
-        });
+        this.#workerPool =
+            workerPool ??
+                new worker_pool_1.WorkerPool({
+                    ...(options.maxConcurrency !== undefined && { maxThreads: options.maxConcurrency }),
+                });
     }
     #partitionFiles(files) {
         const filenames = [];
@@ -454,7 +458,10 @@ class I18nInliner {
      * @returns A void promise that resolves when closing is complete.
      */
     async close() {
-        await Promise.allSettled([this.#cacheStore?.close(), this.#workerPool.destroy()]);
+        await Promise.allSettled([
+            this.#cacheStore?.close(),
+            this.#ownsWorkerPool ? this.#workerPool.destroy() : undefined,
+        ]);
     }
     /**
      * Initializes the cache for storing translated bundles.
