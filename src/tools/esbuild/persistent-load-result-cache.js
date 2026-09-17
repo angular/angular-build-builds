@@ -12,6 +12,7 @@ exports.extractDiskFilePath = extractDiskFilePath;
 const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
 const node_url_1 = require("node:url");
+const concurrency_1 = require("../../utils/concurrency");
 const hash_1 = require("../../utils/hash");
 const load_result_cache_1 = require("./load-result-cache");
 /**
@@ -53,21 +54,6 @@ function extractDiskFilePath(path) {
 /** Maximum number of concurrent file system read/stat operations to prevent OS file descriptor exhaustion. */
 const MAX_CONCURRENT_READS = 16;
 /**
- * Maps an array asynchronously with a sliding worker pool to maintain full concurrency saturation.
- */
-async function mapConcurrent(items, limit, fn) {
-    const results = new Array(items.length);
-    let index = 0;
-    const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
-        while (index < items.length) {
-            const i = index++;
-            results[i] = await fn(items[i]);
-        }
-    });
-    await Promise.all(workers);
-    return results;
-}
-/**
  * Validates that all imported watch files exist on disk and their contents match.
  * Performs a fast-path metadata check (mtime + size) first, falling back to content hashing.
  * Heals/updates the cached metadata on disk if the content hash was valid but the metadata changed.
@@ -78,7 +64,7 @@ async function validateAndHealCacheEntry(watchFilesMetadata, store, cacheKey, ca
     }
     const watchFiles = Object.keys(watchFilesMetadata);
     let healed = false;
-    const isValidResults = await mapConcurrent(watchFiles, MAX_CONCURRENT_READS, async (filePath) => {
+    const isValidResults = await (0, concurrency_1.mapConcurrent)(watchFiles, MAX_CONCURRENT_READS, async (filePath) => {
         try {
             const stats = await (0, promises_1.stat)(filePath);
             const expected = watchFilesMetadata[filePath];
@@ -127,7 +113,7 @@ async function validateAndHealCacheEntry(watchFilesMetadata, store, cacheKey, ca
  */
 async function computeMetadataForWatchFiles(watchFiles, knownContents) {
     const watchFilesMetadata = {};
-    await mapConcurrent(watchFiles, MAX_CONCURRENT_READS, async (filePath) => {
+    await (0, concurrency_1.runConcurrent)(watchFiles, MAX_CONCURRENT_READS, async (filePath) => {
         try {
             const knownContent = knownContents?.get(filePath);
             const [content, stats] = await Promise.all([

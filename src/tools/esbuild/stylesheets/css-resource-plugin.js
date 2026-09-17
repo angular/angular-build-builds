@@ -23,9 +23,11 @@ const CSS_RESOURCE_RESOLUTION = Symbol('CSS_RESOURCE_RESOLUTION');
  * and types to be supported without needing to manually specify all extensions
  * within the build configuration.
  *
+ * @param cache An optional load result cache.
+ * @param dataurl If true, resources will be loaded with the 'dataurl' loader to inline them as base64 data URIs.
  * @returns An esbuild {@link Plugin} instance.
  */
-function createCssResourcePlugin(cache) {
+function createCssResourcePlugin(cache, dataurl) {
     return {
         name: 'angular-css-resource',
         setup(build) {
@@ -104,7 +106,7 @@ function createCssResourcePlugin(cache) {
                 const resourcePath = (0, node_path_1.join)(build.initialOptions.absWorkingDir ?? '', args.path);
                 return {
                     contents: await (0, promises_1.readFile)(resourcePath),
-                    loader: 'file',
+                    loader: dataurl ? 'dataurl' : 'file',
                     watchFiles: [resourcePath],
                 };
             }));

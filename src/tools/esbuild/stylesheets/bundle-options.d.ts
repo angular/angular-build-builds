@@ -14,6 +14,7 @@ export interface BundleStylesheetOptions {
     workspaceRoot: string;
     optimization: boolean;
     inlineFonts: boolean;
+    dataurl?: boolean;
     preserveSymlinks?: boolean;
     sourcemap: boolean | 'external' | 'inline' | 'linked';
     sourcesContent?: boolean;

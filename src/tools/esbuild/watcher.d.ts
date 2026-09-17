@@ -24,6 +24,23 @@ export interface WatcherOptions {
     followSymlinks?: boolean;
     cwd?: string;
 }
+export interface SetupWatcherOptions {
+    workspaceRoot: string;
+    projectRoot: string;
+    outputPath: string;
+    cacheOptions: {
+        basePath: string;
+        localBasePath?: string;
+    };
+    poll?: number;
+    preserveSymlinks?: boolean;
+    signal?: AbortSignal;
+    watchFiles?: Iterable<string>;
+}
+/**
+ * Sets up and initializes a file watcher with proper ignore patterns for build outputs and caches.
+ */
+export declare function setupWatcher(options: SetupWatcherOptions): Promise<BuildWatcher>;
 /**
  * Normalizes a file system path string to POSIX format (forward slashes '/')
  * and strips trailing slashes (except root '/' or Windows drive root 'C:/').

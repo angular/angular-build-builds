@@ -9,8 +9,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateSearchDirectories = generateSearchDirectories;
 exports.findTailwindConfiguration = findTailwindConfiguration;
+exports.getTailwindConfig = getTailwindConfig;
 exports.loadPostcssConfiguration = loadPostcssConfiguration;
 const promises_1 = require("node:fs/promises");
+const node_module_1 = require("node:module");
 const node_path_1 = require("node:path");
 const postcssConfigurationFiles = ['postcss.config.json', '.postcssrc.json'];
 const tailwindConfigFiles = [
@@ -37,6 +39,27 @@ function findFile(searchDirectories, potentialFiles) {
 }
 function findTailwindConfiguration(searchDirectories) {
     return findFile(searchDirectories, tailwindConfigFiles);
+}
+async function getTailwindConfig(searchDirectories, workspaceRoot, logger) {
+    const tailwindConfigurationPath = findTailwindConfiguration(searchDirectories);
+    if (!tailwindConfigurationPath) {
+        return undefined;
+    }
+    // Create a node resolver from the configuration file
+    const resolver = (0, node_module_1.createRequire)(tailwindConfigurationPath);
+    try {
+        return {
+            file: tailwindConfigurationPath,
+            package: resolver.resolve('tailwindcss'),
+        };
+    }
+    catch {
+        const relativeTailwindConfigPath = (0, node_path_1.relative)(workspaceRoot, tailwindConfigurationPath);
+        logger?.warn(`Tailwind CSS configuration file found (${relativeTailwindConfigPath})` +
+            ` but the 'tailwindcss' package is not installed.` +
+            ` To enable Tailwind CSS, please install the 'tailwindcss' package.`);
+    }
+    return undefined;
 }
 async function readPostcssConfiguration(configurationFile) {
     const data = await (0, promises_1.readFile)(configurationFile, 'utf-8');

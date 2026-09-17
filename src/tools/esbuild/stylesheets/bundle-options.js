@@ -33,7 +33,7 @@ function createStylesheetBundleOptions(options, cache, inlineComponentData) {
         pluginFactory.create(sass_language_1.SassStylesheetLanguage),
         pluginFactory.create(less_language_1.LessStylesheetLanguage),
         pluginFactory.create(css_language_1.CssStylesheetLanguage),
-        (0, css_resource_plugin_1.createCssResourcePlugin)(cache),
+        (0, css_resource_plugin_1.createCssResourcePlugin)(cache, options.dataurl),
     ];
     if (options.inlineFonts) {
         plugins.unshift((0, css_inline_fonts_plugin_1.createCssInlineFontsPlugin)({ cache, cacheOptions: options.cacheOptions }));

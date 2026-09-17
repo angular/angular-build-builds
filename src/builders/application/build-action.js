@@ -39,33 +39,13 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.runEsBuildBuildAction = runEsBuildBuildAction;
-const node_fs_1 = require("node:fs");
-const node_path_1 = __importDefault(require("node:path"));
 const bundler_files_1 = require("../../tools/esbuild/bundler-files");
 const sass_language_1 = require("../../tools/esbuild/stylesheets/sass-language");
 const utils_1 = require("../../tools/esbuild/utils");
-const environment_options_1 = require("../../utils/environment-options");
 const hash_1 = require("../../utils/hash");
-const path_1 = require("../../utils/path");
 const results_1 = require("./results");
-// Watch workspace for package manager changes
-const packageWatchFiles = [
-    // manifest can affect module resolution
-    'package.json',
-    // npm lock file
-    'package-lock.json',
-    // pnpm lock file
-    'pnpm-lock.yaml',
-    // yarn lock file including Yarn PnP manifest files (https://yarnpkg.com/advanced/pnp-spec/)
-    'yarn.lock',
-    '.pnp.cjs',
-    '.pnp.data.json',
-];
 // eslint-disable-next-line max-lines-per-function
 async function* runEsBuildBuildAction(action, options) {
     const { watch, poll, clearScreen, logger, cacheOptions, outputOptions, verbose, projectRoot, workspaceRoot, progress, preserveSymlinks, colors, jsonLogs, incrementalResults, } = options;
@@ -93,46 +73,18 @@ async function* runEsBuildBuildAction(action, options) {
             if (progress) {
                 logger.info('Watch mode enabled. Watching for file changes...');
             }
-            const normalizedOutputBase = (0, path_1.toPosixPath)(outputOptions.base);
-            const normalizedCacheBase = (0, path_1.toPosixPath)(cacheOptions.basePath);
-            const ignored = [
-                // Ignore the output and cache paths to avoid infinite rebuild cycles
-                normalizedOutputBase,
-                `${normalizedOutputBase}/**`,
-                normalizedCacheBase,
-                `${normalizedCacheBase}/**`,
-                `${(0, path_1.toPosixPath)(workspaceRoot)}/**/.*/**`,
-            ];
-            if (cacheOptions.localBasePath && cacheOptions.localBasePath !== cacheOptions.basePath) {
-                const normalizedLocalCacheBase = (0, path_1.toPosixPath)(cacheOptions.localBasePath);
-                ignored.push(normalizedLocalCacheBase, `${normalizedLocalCacheBase}/**`);
-            }
             // Setup a watcher
-            const { createWatcher } = await Promise.resolve().then(() => __importStar(require('../../tools/esbuild/watcher')));
-            watcher = await createWatcher({
-                polling: typeof poll === 'number',
-                interval: poll,
-                followSymlinks: preserveSymlinks,
-                ignored,
-                cwd: workspaceRoot,
+            const { setupWatcher } = await Promise.resolve().then(() => __importStar(require('../../tools/esbuild/watcher')));
+            watcher = await setupWatcher({
+                workspaceRoot,
+                projectRoot,
+                outputPath: outputOptions.base,
+                cacheOptions,
+                poll,
+                preserveSymlinks,
+                signal: options.signal,
+                watchFiles: result.watchFiles,
             });
-            // Setup abort support
-            options.signal?.addEventListener('abort', () => void watcher?.close());
-            // Watch the entire project root if 'NG_BUILD_WATCH_ROOT' environment variable is set
-            if (environment_options_1.shouldWatchRoot) {
-                if (!preserveSymlinks) {
-                    // Ignore all node modules directories to avoid excessive file watchers.
-                    // Package changes are handled below by watching manifest and lock files.
-                    // NOTE: this is not enable when preserveSymlinks is true as this would break `npm link` usages.
-                    ignored.push('**/node_modules/**');
-                    watcher.add(packageWatchFiles
-                        .map((file) => node_path_1.default.join(workspaceRoot, file))
-                        .filter((file) => (0, node_fs_1.existsSync)(file)));
-                }
-                watcher.add(projectRoot);
-            }
-            // Watch locations provided by the initial build result
-            watcher.add(result.watchFiles);
         }
         // Output the first build results after setting up the watcher to ensure that any code executed
         // higher in the iterator call stack will trigger the watcher. This is particularly relevant for

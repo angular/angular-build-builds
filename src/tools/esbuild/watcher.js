@@ -44,6 +44,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ChangedFiles = void 0;
+exports.setupWatcher = setupWatcher;
 exports.toPosixPathNormalized = toPosixPathNormalized;
 exports.getDirectoryPath = getDirectoryPath;
 exports.createWatcher = createWatcher;
@@ -51,6 +52,7 @@ exports.isPathInside = isPathInside;
 const fs = __importStar(require("node:fs"));
 const path = __importStar(require("node:path"));
 const picomatch_1 = __importDefault(require("picomatch"));
+const environment_options_1 = require("../../utils/environment-options");
 const path_1 = require("../../utils/path");
 class ChangedFiles {
     added = new Set();
@@ -69,6 +71,75 @@ class ChangedFiles {
     }
 }
 exports.ChangedFiles = ChangedFiles;
+// Watch workspace for package manager changes
+const packageWatchFiles = [
+    // manifest can affect module resolution
+    'package.json',
+    // npm lock file
+    'package-lock.json',
+    // pnpm lock file
+    'pnpm-lock.yaml',
+    // yarn lock file including Yarn PnP manifest files (https://yarnpkg.com/advanced/pnp-spec/)
+    'yarn.lock',
+    '.pnp.cjs',
+    '.pnp.data.json',
+];
+/**
+ * Sets up and initializes a file watcher with proper ignore patterns for build outputs and caches.
+ */
+async function setupWatcher(options) {
+    const { workspaceRoot, projectRoot, outputPath, cacheOptions, poll, preserveSymlinks, signal, watchFiles, } = options;
+    const normalizedOutputBase = (0, path_1.toPosixPath)(outputPath);
+    const normalizedCacheBase = (0, path_1.toPosixPath)(cacheOptions.basePath);
+    const ignored = [
+        // Ignore the output and cache paths to avoid infinite rebuild cycles
+        normalizedOutputBase,
+        `${normalizedOutputBase}/**`,
+        normalizedCacheBase,
+        `${normalizedCacheBase}/**`,
+        `${(0, path_1.toPosixPath)(workspaceRoot)}/**/.*/**`,
+    ];
+    if (cacheOptions.localBasePath && cacheOptions.localBasePath !== cacheOptions.basePath) {
+        const normalizedLocalCacheBase = (0, path_1.toPosixPath)(cacheOptions.localBasePath);
+        ignored.push(normalizedLocalCacheBase, `${normalizedLocalCacheBase}/**`);
+    }
+    if (environment_options_1.shouldWatchRoot && !preserveSymlinks) {
+        // Ignore all node modules directories to avoid excessive file watchers.
+        // Package changes are handled below by watching manifest and lock files.
+        // NOTE: this is not enabled when preserveSymlinks is true as this would break `npm link` usages.
+        ignored.push('**/node_modules/**');
+    }
+    const watcher = await createWatcher({
+        polling: typeof poll === 'number',
+        interval: poll,
+        followSymlinks: preserveSymlinks,
+        ignored,
+        cwd: workspaceRoot,
+    });
+    // Setup abort support
+    if (signal) {
+        const onAbort = () => void watcher.close();
+        signal.addEventListener('abort', onAbort, { once: true });
+        const originalClose = watcher.close.bind(watcher);
+        watcher.close = async () => {
+            signal.removeEventListener('abort', onAbort);
+            await originalClose();
+        };
+    }
+    // Watch the entire project root if 'NG_BUILD_WATCH_ROOT' environment variable is set
+    if (environment_options_1.shouldWatchRoot) {
+        if (!preserveSymlinks) {
+            watcher.add(packageWatchFiles
+                .map((file) => path.join(workspaceRoot, file))
+                .filter((file) => fs.existsSync(file)));
+        }
+        watcher.add(projectRoot);
+    }
+    if (watchFiles) {
+        watcher.add(Array.isArray(watchFiles) ? watchFiles : Array.from(watchFiles));
+    }
+    return watcher;
+}
 /**
  * Probes the filesystem at the specified target directory to determine whether it is case-sensitive.
  */
