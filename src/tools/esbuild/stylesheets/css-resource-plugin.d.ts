@@ -13,6 +13,8 @@ import { LoadResultCache } from '../load-result-cache';
  * and types to be supported without needing to manually specify all extensions
  * within the build configuration.
  *
+ * @param cache An optional load result cache.
+ * @param dataurl If true, resources will be loaded with the 'dataurl' loader to inline them as base64 data URIs.
  * @returns An esbuild {@link Plugin} instance.
  */
-export declare function createCssResourcePlugin(cache?: LoadResultCache): Plugin;
+export declare function createCssResourcePlugin(cache?: LoadResultCache, dataurl?: boolean): Plugin;

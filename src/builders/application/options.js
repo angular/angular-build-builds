@@ -14,7 +14,6 @@ exports.INDEX_HTML_SERVER = exports.INDEX_HTML_CSR = void 0;
 exports.normalizeOptions = normalizeOptions;
 exports.getLocaleBaseHref = getLocaleBaseHref;
 const promises_1 = require("node:fs/promises");
-const node_module_1 = require("node:module");
 const node_path_1 = __importDefault(require("node:path"));
 const utils_1 = require("../../utils");
 const color_1 = require("../../utils/color");
@@ -131,7 +130,7 @@ async function normalizeOptions(context, projectName, options, extensions) {
     // Skip tailwind configuration if postcss is customized
     const tailwindConfiguration = postcssConfiguration
         ? undefined
-        : await getTailwindConfig(searchDirectories, workspaceRoot, context);
+        : await (0, postcss_configuration_1.getTailwindConfig)(searchDirectories, workspaceRoot, context.logger);
     let serverEntryPoint;
     if (typeof options.server === 'string') {
         if (options.server === '') {
@@ -328,27 +327,6 @@ async function normalizeOptions(context, projectName, options, extensions) {
         customConditions: options.conditions,
         frameworkVersion: await findFrameworkVersion(projectRoot),
     };
-}
-async function getTailwindConfig(searchDirectories, workspaceRoot, context) {
-    const tailwindConfigurationPath = (0, postcss_configuration_1.findTailwindConfiguration)(searchDirectories);
-    if (!tailwindConfigurationPath) {
-        return undefined;
-    }
-    // Create a node resolver from the configuration file
-    const resolver = (0, node_module_1.createRequire)(tailwindConfigurationPath);
-    try {
-        return {
-            file: tailwindConfigurationPath,
-            package: resolver.resolve('tailwindcss'),
-        };
-    }
-    catch {
-        const relativeTailwindConfigPath = node_path_1.default.relative(workspaceRoot, tailwindConfigurationPath);
-        context.logger.warn(`Tailwind CSS configuration file found (${relativeTailwindConfigPath})` +
-            ` but the 'tailwindcss' package is not installed.` +
-            ` To enable Tailwind CSS, please install the 'tailwindcss' package.`);
-    }
-    return undefined;
 }
 /**
  * Normalize entry point options. To maintain compatibility with the legacy browser builder, we need a single `browser`
