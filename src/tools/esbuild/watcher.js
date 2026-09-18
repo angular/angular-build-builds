@@ -49,6 +49,7 @@ exports.toPosixPathNormalized = toPosixPathNormalized;
 exports.getDirectoryPath = getDirectoryPath;
 exports.createWatcher = createWatcher;
 exports.isPathInside = isPathInside;
+const node_events_1 = require("node:events");
 const fs = __importStar(require("node:fs"));
 const path = __importStar(require("node:path"));
 const picomatch_1 = __importDefault(require("picomatch"));
@@ -561,6 +562,11 @@ async function createChokidarWatcher(options, chokidarModule) {
         interval: options?.interval,
     });
     const initTime = Date.now();
+    // Wait for the watcher to complete its initial filesystem scan before returning.
+    // With `ignoreInitial: true`, any file visited during the initial scan is treated as the initial baseline
+    // and will not emit 'add' or 'change' events. Awaiting 'ready' ensures that rapid file modifications
+    // made right after watcher setup (e.g. in rebuild tests) are not swallowed as initial files.
+    await (0, node_events_1.once)(watcher, 'ready');
     const handleEvent = (type, rawPath) => {
         const posixPath = toPosixPathNormalized(rawPath);
         const lookupKey = toLookupKey(posixPath, isCaseSensitive);
