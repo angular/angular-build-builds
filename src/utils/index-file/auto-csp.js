@@ -40,6 +40,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.isJavascriptMimeType = isJavascriptMimeType;
 exports.hashTextContent = hashTextContent;
 exports.autoCsp = autoCsp;
 const crypto = __importStar(require("node:crypto"));
@@ -58,14 +59,37 @@ function getScriptAttributeValue(tag, attrName) {
     return tag.attrs.find((attr) => attr.name === attrName)?.value;
 }
 /**
+ * All MIME types associated with JavaScript according to the HTML specification:
+ * https://html.spec.whatwg.org/multipage/scripting.html#javascript-mime-type
+ */
+const JAVASCRIPT_MIME_TYPES = new Set([
+    'application/ecmascript',
+    'application/javascript',
+    'application/x-ecmascript',
+    'application/x-javascript',
+    'text/ecmascript',
+    'text/javascript',
+    'text/javascript1.0',
+    'text/javascript1.1',
+    'text/javascript1.2',
+    'text/javascript1.3',
+    'text/javascript1.4',
+    'text/javascript1.5',
+    'text/jscript',
+    'text/livescript',
+    'text/x-ecmascript',
+    'text/x-javascript',
+]);
+/**
  * Checks whether a particular string is a MIME type associated with JavaScript, according to
- * https://developer.mozilla.org/en-US/docs/Web/HTTP/MIME_types#textjavascript
+ * https://html.spec.whatwg.org/multipage/scripting.html#javascript-mime-type
  *
  * @param mimeType a string that may be a MIME type
  * @returns whether the string is a MIME type that is associated with JavaScript
  */
 function isJavascriptMimeType(mimeType) {
-    return mimeType.split(';')[0] === 'text/javascript';
+    const [essence] = mimeType.split(';', 1);
+    return JAVASCRIPT_MIME_TYPES.has(essence.trim().toLowerCase());
 }
 /**
  * Which of the type attributes on the script tag we should try passing along
@@ -74,7 +98,10 @@ function isJavascriptMimeType(mimeType) {
  * @returns whether to add the script tag to the dynamically loaded script tag
  */
 function shouldDynamicallyLoadScriptTagBasedOnType(scriptType) {
-    return !scriptType || scriptType === 'module' || isJavascriptMimeType(scriptType);
+    if (!scriptType) {
+        return true;
+    }
+    return scriptType.trim().toLowerCase() === 'module' || isJavascriptMimeType(scriptType);
 }
 /**
  * Calculates a CSP compatible hash of an inline script.

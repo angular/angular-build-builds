@@ -6,6 +6,14 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 /**
+ * Checks whether a particular string is a MIME type associated with JavaScript, according to
+ * https://html.spec.whatwg.org/multipage/scripting.html#javascript-mime-type
+ *
+ * @param mimeType a string that may be a MIME type
+ * @returns whether the string is a MIME type that is associated with JavaScript
+ */
+export declare function isJavascriptMimeType(mimeType: string): boolean;
+/**
  * Calculates a CSP compatible hash of an inline script.
  * @param scriptText Text between opening and closing script tag. Has to
  *     include whitespaces and newlines!
