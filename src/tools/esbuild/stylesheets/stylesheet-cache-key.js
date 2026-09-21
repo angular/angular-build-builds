@@ -26,6 +26,7 @@ const hash_1 = require("../../../utils/hash");
  * - `publicPath`: Affects relative asset URL rewriting (`url('...')`) inside CSS output.
  * - `outputNames`: Affects asset output filename hashing schemes.
  * - `inlineFonts`: Controls whether external web font `@import` / `<link>` directives are inlined.
+ * - `dataurl`: Controls whether referenced assets are inlined as base64 data URIs.
  * - `preserveSymlinks`: Controls symlink realpath resolution in monorepos/pnpm workspace packages.
  * - `externalDependencies`: Controls which CSS modules/urls are excluded from bundling.
  * - `postcssConfig`: Path to custom PostCSS configuration file.
@@ -52,6 +53,7 @@ function calculateGlobalStylesheetConfigHash(options, packageVersion = '') {
         publicPath: options.publicPath,
         outputNames: options.outputNames,
         inlineFonts: options.inlineFonts,
+        dataurl: options.dataurl ?? false,
         preserveSymlinks: options.preserveSymlinks,
         externalDependencies: options.externalDependencies,
         postcssConfig: options.postcssConfiguration?.configPath
