@@ -16,7 +16,7 @@ const node_assert_1 = __importDefault(require("node:assert"));
 const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
 const bundler_files_1 = require("../../tools/esbuild/bundler-files");
-const i18n_inliner_1 = require("../../tools/esbuild/i18n-inliner");
+const i18n_1 = require("../../tools/i18n");
 const environment_options_1 = require("../../utils/environment-options");
 const i18n_options_1 = require("../../utils/i18n-options");
 const load_translations_1 = require("../../utils/load-translations");
@@ -35,7 +35,7 @@ const options_1 = require("./options");
 async function inlineI18n(metafile, options, executionResult, initialFiles, workerPool) {
     const { i18nOptions, baseHref, cacheOptions } = options;
     // Create the multi-threaded inliner with common options.
-    const inliner = new i18n_inliner_1.I18nInliner({
+    const inliner = new i18n_1.I18nInliner({
         missingTranslation: i18nOptions.missingTranslationBehavior ?? 'warning',
         maxConcurrency: workerPool
             ? Math.min(workerPool.maxThreads, environment_options_1.maxInlinerWorkers)

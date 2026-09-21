@@ -13,7 +13,7 @@ exports.mergeCumulativeDurations = mergeCumulativeDurations;
 exports.logCumulativeDurations = logCumulativeDurations;
 exports.profileAsync = profileAsync;
 exports.profileSync = profileSync;
-const environment_options_1 = require("../../utils/environment-options");
+const environment_options_1 = require("./environment-options");
 let cumulativeDurations;
 function resetCumulativeDurations() {
     cumulativeDurations?.clear();

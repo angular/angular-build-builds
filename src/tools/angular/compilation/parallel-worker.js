@@ -18,7 +18,7 @@ const node_assert_1 = __importDefault(require("node:assert"));
 const node_crypto_1 = require("node:crypto");
 const node_worker_threads_1 = require("node:worker_threads");
 const hash_1 = require("../../../utils/hash");
-const profiling_1 = require("../../esbuild/profiling");
+const profiling_1 = require("../../../utils/profiling");
 const aot_compilation_1 = require("./aot-compilation");
 const jit_compilation_1 = require("./jit-compilation");
 let compilation;

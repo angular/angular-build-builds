@@ -26,7 +26,7 @@
  * - {@link CachedDependencyMetadata}: Per-dependency file metadata (`hash`, `mtimeMs`, `size`) used for cache validation and healing.
  */
 import type { Loader, OnLoadResult, PartialMessage } from 'esbuild';
-import type { Cache as PersistentCacheStore } from './cache';
+import type { Cache as PersistentCacheStore } from '../../utils/cache';
 import { LoadResultCache } from './load-result-cache';
 /**
  * Metadata for a single watch file dependency.

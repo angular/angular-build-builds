@@ -74,7 +74,7 @@ async function* runEsBuildBuildAction(action, options) {
                 logger.info('Watch mode enabled. Watching for file changes...');
             }
             // Setup a watcher
-            const { setupWatcher } = await Promise.resolve().then(() => __importStar(require('../../tools/esbuild/watcher')));
+            const { setupWatcher } = await Promise.resolve().then(() => __importStar(require('../../utils/watcher')));
             watcher = await setupWatcher({
                 workspaceRoot,
                 projectRoot,

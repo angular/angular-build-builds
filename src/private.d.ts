@@ -24,9 +24,9 @@ export { emitFilesToDisk } from './tools/esbuild/utils';
 export { transformSupportedBrowsersToTargets } from './tools/esbuild/target';
 export { SassCompiler } from './tools/sass/sass-service';
 export { SourceFileCache } from './tools/esbuild/angular/source-file-cache';
-export { Cache } from './tools/esbuild/cache';
+export { Cache } from './utils/cache';
 export { createJitResourceTransformer } from './tools/angular/transformers/jit-resource-transformer';
-export { JavaScriptTransformer } from './tools/esbuild/javascript-transformer';
+export { JavaScriptTransformer } from './tools/javascript-transformer';
 export declare function createCompilerPlugin(pluginOptions: CompilerPluginOptions & {
     browserOnlyBuild?: boolean;
     noopTypeScriptCompilation?: boolean;

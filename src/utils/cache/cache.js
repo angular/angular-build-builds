@@ -46,8 +46,8 @@ exports.createPersistentCacheStore = createPersistentCacheStore;
  * @fileoverview
  * Provides infrastructure for common caching functionality within the build system.
  */
-const environment_options_1 = require("../../utils/environment-options");
-const error_1 = require("../../utils/error");
+const environment_options_1 = require("../environment-options");
+const error_1 = require("../error");
 /**
  * A backing data store wrapper that namespaces all keys using length-prefix framing.
  * Prevents key collisions between namespaces regardless of characters (such as colons)

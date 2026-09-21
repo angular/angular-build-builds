@@ -9,7 +9,7 @@ import type { DepOptimizationConfig } from 'vite' with {
     'resolution-mode': 'import'
 };
 import type { ExternalResultMetadata } from '../esbuild/bundler-execution-result';
-import { JavaScriptTransformer } from '../esbuild/javascript-transformer';
+import { JavaScriptTransformer } from '../javascript-transformer';
 export type AngularMemoryOutputFiles = Map<string, {
     contents: Uint8Array;
     hash: string;

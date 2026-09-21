@@ -53,8 +53,8 @@ const node_events_1 = require("node:events");
 const fs = __importStar(require("node:fs"));
 const path = __importStar(require("node:path"));
 const picomatch_1 = __importDefault(require("picomatch"));
-const environment_options_1 = require("../../utils/environment-options");
-const path_1 = require("../../utils/path");
+const environment_options_1 = require("./environment-options");
+const path_1 = require("./path");
 class ChangedFiles {
     added = new Set();
     modified = new Set();

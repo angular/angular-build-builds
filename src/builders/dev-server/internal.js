@@ -12,7 +12,7 @@ var bundler_files_1 = require("../../tools/esbuild/bundler-files");
 Object.defineProperty(exports, "BuildOutputFileType", { enumerable: true, get: function () { return bundler_files_1.BuildOutputFileType; } });
 var rxjs_esm_resolution_plugin_1 = require("../../tools/esbuild/rxjs-esm-resolution-plugin");
 Object.defineProperty(exports, "createRxjsEsmResolutionPlugin", { enumerable: true, get: function () { return rxjs_esm_resolution_plugin_1.createRxjsEsmResolutionPlugin; } });
-var javascript_transformer_1 = require("../../tools/esbuild/javascript-transformer");
+var javascript_transformer_1 = require("../../tools/javascript-transformer");
 Object.defineProperty(exports, "JavaScriptTransformer", { enumerable: true, get: function () { return javascript_transformer_1.JavaScriptTransformer; } });
 var utils_1 = require("../../tools/esbuild/utils");
 Object.defineProperty(exports, "getFeatureSupport", { enumerable: true, get: function () { return utils_1.getFeatureSupport; } });
