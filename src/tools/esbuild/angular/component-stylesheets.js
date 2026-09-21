@@ -13,10 +13,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ComponentStylesheetBundler = void 0;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_path_1 = __importDefault(require("node:path"));
+const cache_1 = require("../../../utils/cache");
 const hash_1 = require("../../../utils/hash");
 const bundler_context_1 = require("../bundler-context");
 const bundler_files_1 = require("../bundler-files");
-const cache_1 = require("../cache");
 const load_result_cache_1 = require("../load-result-cache");
 const bundle_options_1 = require("../stylesheets/bundle-options");
 /**

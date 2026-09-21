@@ -46,7 +46,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TypeScriptCompilation = void 0;
 const typescript_1 = __importDefault(require("typescript"));
 const path_1 = require("../../../utils/path");
-const profiling_1 = require("../../esbuild/profiling");
+const profiling_1 = require("../../../utils/profiling");
 const angular_compilation_1 = require("./angular-compilation");
 const compiler_options_1 = require("./compiler-options");
 const diagnostics_1 = require("./diagnostics");

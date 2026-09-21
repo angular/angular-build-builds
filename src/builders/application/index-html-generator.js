@@ -14,8 +14,8 @@ exports.generateIndexHtml = generateIndexHtml;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_crypto_1 = require("node:crypto");
 const node_path_1 = __importDefault(require("node:path"));
+const bundler_files_1 = require("../../tools/esbuild/bundler-files");
 const index_html_generator_1 = require("../../utils/index-file/index-html-generator");
-const bundler_files_1 = require("./bundler-files");
 /**
  * The maximum number of module preload link elements that should be added for
  * initial scripts.

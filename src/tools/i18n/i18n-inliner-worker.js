@@ -50,8 +50,8 @@ const magic_string_1 = require("magic-string");
 const node_v8_1 = require("node:v8");
 const oxc_parser_1 = require("oxc-parser");
 const traversal_1 = require("../oxc/traversal");
-const i18n_locale_plugin_1 = require("./i18n-locale-plugin");
 const i18n_translation_reader_1 = require("./i18n-translation-reader");
+const locale_data_1 = require("./locale-data");
 /**
  * Cache of file data promises keyed by filename.
  */
@@ -299,7 +299,7 @@ async function inlineLocalize(code, map, metadata, locale, translation, filename
         }
     }
     if (metadata.localeInsertSites.length > 0) {
-        const localeData = await (0, i18n_locale_plugin_1.loadLocaleData)(locale);
+        const localeData = await (0, locale_data_1.loadLocaleData)(locale);
         if (localeData.error) {
             diagnostics.error(localeData.error);
         }

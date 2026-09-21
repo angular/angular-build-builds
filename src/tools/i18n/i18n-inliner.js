@@ -15,10 +15,10 @@ const node_assert_1 = __importDefault(require("node:assert"));
 const node_module_1 = require("node:module");
 const node_path_1 = require("node:path");
 const node_v8_1 = require("node:v8");
+const cache_1 = require("../../utils/cache");
 const hash_1 = require("../../utils/hash");
 const worker_pool_1 = require("../../utils/worker-pool");
-const bundler_files_1 = require("./bundler-files");
-const cache_1 = require("./cache");
+const bundler_files_1 = require("../esbuild/bundler-files");
 const i18n_translation_encoder_1 = require("./i18n-translation-encoder");
 // TODO: Convert to import.meta usage during ESM transition
 const localRequire = (0, node_module_1.createRequire)(__filename);

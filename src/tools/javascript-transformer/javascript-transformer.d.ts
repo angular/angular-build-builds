@@ -5,7 +5,7 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-import { Cache } from './cache';
+import { Cache } from '../../utils/cache';
 /**
  * Transformation options that should apply to all transformed files and data.
  */

@@ -7,7 +7,7 @@
  */
 import type { ɵParsedTranslation } from '@angular/localize';
 import { WorkerPool } from '../../utils/worker-pool';
-import { type BuildOutputFile } from './bundler-files';
+import { type BuildOutputFile } from '../esbuild/bundler-files';
 /**
  * Inlining options that should apply to all transformed code.
  */

@@ -46,7 +46,7 @@ exports.shutdownSassWorkerPool = shutdownSassWorkerPool;
 exports.isPackageUrl = isPackageUrl;
 const node_path_1 = require("node:path");
 const node_url_1 = require("node:url");
-const cache_1 = require("../cache");
+const cache_1 = require("../../../utils/cache");
 let sassService;
 let sassServicePromise;
 let resolutionCache;
