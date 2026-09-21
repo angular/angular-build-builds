@@ -12,11 +12,18 @@ const linker_1 = require("@angular/compiler-cli/linker");
 function isNode(node) {
     return typeof node === 'object' && node !== null && 'type' in node;
 }
+function unwrapParentheses(node) {
+    while (isNode(node) && node.type === 'ParenthesizedExpression') {
+        node = node.expression;
+    }
+    return node;
+}
 /**
  * An implementation of `AstHost` that queries information from `oxc-parser` AST nodes.
  */
 class OxcAstHost {
     getSymbolName(node) {
+        node = unwrapParentheses(node);
         if (!isNode(node)) {
             return null;
         }
@@ -31,30 +38,36 @@ class OxcAstHost {
         return null;
     }
     isStringLiteral(node) {
+        node = unwrapParentheses(node);
         return isNode(node) && node.type === 'Literal' && typeof node.value === 'string';
     }
     parseStringLiteral(str) {
+        str = unwrapParentheses(str);
         if (!this.isStringLiteral(str)) {
             throw new linker_1.FatalLinkerError(str, 'Unsupported syntax, expected a string literal.');
         }
         return str.value;
     }
     isNumericLiteral(node) {
+        node = unwrapParentheses(node);
         return isNode(node) && node.type === 'Literal' && typeof node.value === 'number';
     }
     parseNumericLiteral(num) {
+        num = unwrapParentheses(num);
         if (!this.isNumericLiteral(num)) {
             throw new linker_1.FatalLinkerError(num, 'Unsupported syntax, expected a numeric literal.');
         }
         return num.value;
     }
     isBooleanLiteral(node) {
+        node = unwrapParentheses(node);
         if (!isNode(node)) {
             return false;
         }
         return ((node.type === 'Literal' && typeof node.value === 'boolean') || isMinifiedBooleanLiteral(node));
     }
     parseBooleanLiteral(bool) {
+        bool = unwrapParentheses(bool);
         if (isNode(bool)) {
             if (bool.type === 'Literal' && typeof bool.value === 'boolean') {
                 return bool.value;
@@ -66,12 +79,15 @@ class OxcAstHost {
         throw new linker_1.FatalLinkerError(bool, 'Unsupported syntax, expected a boolean literal.');
     }
     isNull(node) {
+        node = unwrapParentheses(node);
         return isNode(node) && node.type === 'Literal' && node.value === null;
     }
     isArrayLiteral(node) {
+        node = unwrapParentheses(node);
         return isNode(node) && node.type === 'ArrayExpression';
     }
     parseArrayLiteral(array) {
+        array = unwrapParentheses(array);
         if (!this.isArrayLiteral(array)) {
             throw new linker_1.FatalLinkerError(array, 'Unsupported syntax, expected an array literal.');
         }
@@ -80,17 +96,20 @@ class OxcAstHost {
             if (element === null) {
                 throw new linker_1.FatalLinkerError(array, 'Unsupported syntax, element in array not to be empty.');
             }
-            if (element.type === 'SpreadElement') {
-                throw new linker_1.FatalLinkerError(element, 'Unsupported syntax, element in array not to use spread syntax.');
+            const unwrappedElement = unwrapParentheses(element);
+            if (isNode(unwrappedElement) && unwrappedElement.type === 'SpreadElement') {
+                throw new linker_1.FatalLinkerError(unwrappedElement, 'Unsupported syntax, element in array not to use spread syntax.');
             }
-            result.push(element);
+            result.push(unwrappedElement);
         }
         return result;
     }
     isObjectLiteral(node) {
+        node = unwrapParentheses(node);
         return isNode(node) && node.type === 'ObjectExpression';
     }
     parseObjectLiteral(obj) {
+        obj = unwrapParentheses(obj);
         if (!this.isObjectLiteral(obj)) {
             throw new linker_1.FatalLinkerError(obj, 'Unsupported syntax, expected an object literal.');
         }
@@ -99,7 +118,10 @@ class OxcAstHost {
             if (property.type !== 'Property') {
                 throw new linker_1.FatalLinkerError(property, 'Unsupported syntax, expected a property assignment.');
             }
-            const keyNode = property.key;
+            const keyNode = unwrapParentheses(property.key);
+            if (!isNode(keyNode)) {
+                throw new linker_1.FatalLinkerError(property.key, 'Unsupported syntax, expected a property name.');
+            }
             let key;
             if (keyNode.type === 'Identifier') {
                 key = keyNode.name;
@@ -113,11 +135,12 @@ class OxcAstHost {
             else {
                 throw new linker_1.FatalLinkerError(keyNode, 'Unsupported syntax, expected a property name.');
             }
-            result.set(key, property.value);
+            result.set(key, unwrapParentheses(property.value));
         }
         return result;
     }
     isFunctionExpression(node) {
+        node = unwrapParentheses(node);
         if (!isNode(node)) {
             return false;
         }
@@ -126,6 +149,7 @@ class OxcAstHost {
             node.type === 'ArrowFunctionExpression');
     }
     parseReturnValue(fn) {
+        fn = unwrapParentheses(fn);
         if (!this.isFunctionExpression(fn)) {
             throw new linker_1.FatalLinkerError(fn, 'Unsupported syntax, expected a function.');
         }
@@ -134,7 +158,7 @@ class OxcAstHost {
             throw new linker_1.FatalLinkerError(fn, 'Unsupported syntax, expected a function body.');
         }
         if (body.type !== 'BlockStatement') {
-            return body;
+            return unwrapParentheses(body);
         }
         const statements = body.body;
         if (statements.length !== 1) {
@@ -147,37 +171,43 @@ class OxcAstHost {
         if (!stmt.argument) {
             throw new linker_1.FatalLinkerError(stmt, 'Unsupported syntax, expected function to return a value.');
         }
-        return stmt.argument;
+        return unwrapParentheses(stmt.argument);
     }
     parseParameters(fn) {
+        fn = unwrapParentheses(fn);
         if (!this.isFunctionExpression(fn)) {
             throw new linker_1.FatalLinkerError(fn, 'Unsupported syntax, expected a function.');
         }
         return fn.params;
     }
     isCallExpression(node) {
+        node = unwrapParentheses(node);
         return isNode(node) && node.type === 'CallExpression';
     }
     parseCallee(call) {
+        call = unwrapParentheses(call);
         if (!this.isCallExpression(call)) {
             throw new linker_1.FatalLinkerError(call, 'Unsupported syntax, expected a call expression.');
         }
-        return call.callee;
+        return unwrapParentheses(call.callee);
     }
     parseArguments(call) {
+        call = unwrapParentheses(call);
         if (!this.isCallExpression(call)) {
             throw new linker_1.FatalLinkerError(call, 'Unsupported syntax, expected a call expression.');
         }
         const result = [];
         for (const arg of call.arguments) {
-            if (arg.type === 'SpreadElement') {
-                throw new linker_1.FatalLinkerError(arg, 'Unsupported syntax, argument not to use spread syntax.');
+            const unwrappedArg = unwrapParentheses(arg);
+            if (isNode(unwrappedArg) && unwrappedArg.type === 'SpreadElement') {
+                throw new linker_1.FatalLinkerError(unwrappedArg, 'Unsupported syntax, argument not to use spread syntax.');
             }
-            result.push(arg);
+            result.push(unwrappedArg);
         }
         return result;
     }
     getRange(node) {
+        node = unwrapParentheses(node);
         if (!isNode(node) || typeof node.start !== 'number' || typeof node.end !== 'number') {
             throw new linker_1.FatalLinkerError(node, 'Unable to read range for node - it is missing location information.');
         }
