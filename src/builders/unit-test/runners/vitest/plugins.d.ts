@@ -14,6 +14,7 @@ interface PluginOptions {
     projectName: string;
     buildResultFiles: ReadonlyMap<string, ResultFile>;
     testFileToEntryPoint: ReadonlyMap<string, string>;
+    setupFiles: readonly string[];
 }
 interface VitestConfigPluginOptions {
     browser: BrowserConfigOptions | undefined;

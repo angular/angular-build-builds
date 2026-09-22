@@ -234,8 +234,9 @@ async function loadResultFile(file) {
     return (0, promises_1.readFile)(file.inputPath, 'utf-8');
 }
 function createVitestPlugins(pluginOptions) {
-    const { workspaceRoot, buildResultFiles, testFileToEntryPoint } = pluginOptions;
+    const { workspaceRoot, buildResultFiles, testFileToEntryPoint, setupFiles } = pluginOptions;
     const isWindows = (0, node_os_1.platform)() === 'win32';
+    const setupFileSet = new Set(setupFiles.map((file) => (0, path_1.toPosixPath)(node_path_1.default.isAbsolute(file) ? file : node_path_1.default.join(workspaceRoot, file))));
     let vitestConfig;
     return [
         {
@@ -301,7 +302,11 @@ function createVitestPlugins(pluginOptions) {
                 let outputPath;
                 if (entryPoint) {
                     outputPath = entryPoint + '.js';
-                    if (vitestConfig?.coverage?.enabled) {
+                    // Setup files must not be wrapped in a virtual import stub because Vitest only invalidates
+                    // the setup file itself between test files; wrapping it would cause the underlying bundle
+                    // to be cached, preventing per-test hooks from running on subsequent test files.
+                    const isSetupFile = setupFileSet.has(id);
+                    if (vitestConfig?.coverage?.enabled && !isSetupFile) {
                         // To support coverage exclusion of the actual test file, the virtual
                         // test entry point only references the built and bundled intermediate file.
                         // If vitest supported an "excludeOnlyAfterRemap" option, this could be removed completely.
