@@ -258,6 +258,7 @@ function createCompilerPlugin(pluginOptions, compilationContextOrCompilation, st
                         instrumentForCoverage: !!pluginOptions.instrumentForCoverage,
                         includeTestMetadata: !!pluginOptions.includeTestMetadata,
                         customConditions: build.initialOptions.conditions,
+                        rootFiles: pluginOptions.rootFiles,
                     });
                     if (initializationResult.warnings?.length) {
                         setupWarnings?.push(...initializationResult.warnings);

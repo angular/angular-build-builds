@@ -17,6 +17,7 @@ export interface CompilerOptionOverrides {
     instrumentForCoverage?: boolean;
     includeTestMetadata?: boolean;
     customConditions?: string[];
+    rootFiles?: string[];
 }
 export declare function transformCompilerOptions(typeScript: typeof ts, baseCompilerOptions: ng.CompilerOptions, overrides?: CompilerOptionOverrides, tsconfig?: string): {
     compilerOptions: ng.CompilerOptions;

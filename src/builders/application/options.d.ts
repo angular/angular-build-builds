@@ -102,6 +102,10 @@ interface InternalOptions {
      * there. Used exclusively for tests and shouldn't be used for other kinds of builds.
      */
     disableCodeSplitting?: boolean;
+    /**
+     * An array of files to restrict the TypeScript compilation root names to.
+     */
+    rootFiles?: string[];
 }
 /** Full set of options for `application` builder. */
 export type ApplicationBuilderInternalOptions = Omit<ApplicationBuilderOptions & InternalOptions, 'browser'> & {
@@ -159,6 +163,7 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     workspaceRoot: string;
     entryPoints: Record<string, string>;
     disableCodeSplitting: boolean | undefined;
+    rootFiles: string[] | undefined;
     optimizationOptions: import("../../utils").NormalizedOptimizationOptions;
     outputOptions: NormalizedOutputOptions;
     outExtension: "js" | "mjs" | undefined;

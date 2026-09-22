@@ -180,7 +180,7 @@ function getZoneTestingStrategy(buildOptions, projectSourceRoot) {
  * @returns An async RunnerOptions configuration.
  */
 async function getVitestBuildOptions(options, baseBuildOptions) {
-    const { workspaceRoot, projectSourceRoot, include, exclude = [], watch, providersFile } = options;
+    const { workspaceRoot, projectSourceRoot, include, exclude = [], watch, providersFile, setupFiles, } = options;
     // Find test files
     const testFiles = await (0, test_discovery_1.findTests)(include, exclude, workspaceRoot, projectSourceRoot);
     if (testFiles.length === 0) {
@@ -194,8 +194,13 @@ async function getVitestBuildOptions(options, baseBuildOptions) {
         workspaceRoot,
         removeTestExtension: true,
     });
-    if (options.setupFiles?.length) {
-        const setupEntryPoints = (0, test_discovery_1.getTestEntrypoints)(options.setupFiles, {
+    const rootFiles = [...testFiles];
+    if (providersFile) {
+        rootFiles.push(providersFile);
+    }
+    if (setupFiles?.length) {
+        rootFiles.push(...setupFiles);
+        const setupEntryPoints = (0, test_discovery_1.getTestEntrypoints)(setupFiles, {
             projectSourceRoot,
             workspaceRoot,
             removeTestExtension: false,
@@ -231,6 +236,7 @@ async function getVitestBuildOptions(options, baseBuildOptions) {
         optimization: false,
         namedChunks: false,
         entryPoints,
+        rootFiles,
         // Vitest's Node-based module loading emulation (vite-node) is not fully spec compliant and lacks
         // live ESM bindings across chunk boundaries. This can cause uninitialized exports or break mocking.
         // Disabling code splitting avoids shared chunks, but increases build and coverage memory/time.

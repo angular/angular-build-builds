@@ -58,7 +58,7 @@ class TypeScriptCompilation extends angular_compilation_1.AngularCompilation {
     }
     async loadConfiguration(tsconfig, compilerOptionOverrides) {
         const { readConfiguration } = await TypeScriptCompilation.loadCompilerCli();
-        const { options: originalCompilerOptions, rootNames, errors, } = (0, profiling_1.profileSync)('NG_READ_CONFIG', () => readConfiguration(tsconfig, {
+        const { options: originalCompilerOptions, rootNames: originalRootNames, errors, } = (0, profiling_1.profileSync)('NG_READ_CONFIG', () => readConfiguration(tsconfig, {
             // Angular specific configuration defaults and overrides to ensure a functioning compilation.
             suppressOutputPathCheck: true,
             outDir: undefined,
@@ -74,6 +74,16 @@ class TypeScriptCompilation extends angular_compilation_1.AngularCompilation {
             // remove important annotations, such as /* @__PURE__ */ and comments like /* vite-ignore */.
             removeComments: false,
         }));
+        let rootNames = originalRootNames;
+        if (compilerOptionOverrides?.rootFiles?.length) {
+            const rootFilesSet = new Set(compilerOptionOverrides.rootFiles.map((file) => (0, path_1.canonicalizePath)((0, path_1.toPosixPath)(file))));
+            for (const file of originalRootNames) {
+                if (/\.d\.[cm]?ts$/i.test(file)) {
+                    rootFilesSet.add((0, path_1.canonicalizePath)((0, path_1.toPosixPath)(file)));
+                }
+            }
+            rootNames = [...rootFilesSet];
+        }
         const { compilerOptions, warnings } = (0, compiler_options_1.transformCompilerOptions)(typescript_1.default, originalCompilerOptions, compilerOptionOverrides, tsconfig);
         return {
             compilerOptions,

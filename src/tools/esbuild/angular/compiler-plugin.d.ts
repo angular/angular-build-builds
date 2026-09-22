@@ -31,5 +31,6 @@ export interface CompilerPluginOptions {
     externalRuntimeStyles?: boolean;
     instrumentForCoverage?: (request: string) => boolean;
     templateUpdates?: Map<string, string>;
+    rootFiles?: string[];
 }
 export declare function createCompilerPlugin(pluginOptions: CompilerPluginOptions, compilationContextOrCompilation: AngularCompilationContext | AngularCompilation | (() => Promise<AngularCompilation>), stylesheetBundler: ComponentStylesheetBundler): Plugin;
