@@ -44,6 +44,7 @@ exports.SassStylesheetLanguage = void 0;
 exports.resetSassWorkerPoolCaches = resetSassWorkerPoolCaches;
 exports.shutdownSassWorkerPool = shutdownSassWorkerPool;
 exports.isPackageUrl = isPackageUrl;
+exports.getPackageScope = getPackageScope;
 const node_path_1 = require("node:path");
 const node_url_1 = require("node:url");
 const cache_1 = require("../../../utils/cache");
@@ -81,11 +82,7 @@ exports.SassStylesheetLanguage = Object.freeze({
     fileFilter: /\.s[ac]ss$/,
     process(data, file, format, options, build) {
         const syntax = format === 'sass' ? 'indented' : 'scss';
-        const resolveUrl = async (url, options) => {
-            let resolveDir = build.initialOptions.absWorkingDir;
-            if (options.containingUrl) {
-                resolveDir = (0, node_path_1.dirname)((0, node_url_1.fileURLToPath)(options.containingUrl));
-            }
+        const resolveUrl = async (url, resolveDir) => {
             const path = url.startsWith('pkg:') ? url.slice(4) : url;
             const result = await build.resolve(path, {
                 kind: 'import-rule',
@@ -93,7 +90,7 @@ exports.SassStylesheetLanguage = Object.freeze({
             });
             return result;
         };
-        return compileString(data, file, syntax, options, resolveUrl);
+        return compileString(data, file, syntax, options, resolveUrl, build.initialOptions.absWorkingDir);
     },
 });
 function isPackageUrl(url) {
@@ -118,7 +115,23 @@ function parsePackageName(url) {
         },
     };
 }
-async function compileString(data, filePath, syntax, options, resolveUrl) {
+/**
+ * Returns the scope that qualifies the cached package resolutions of a stylesheet. A stylesheet
+ * within `node_modules` uses the root of its enclosing package, since every file of a package
+ * resolves its dependencies against the same `node_modules` directories. All other stylesheets use
+ * the working directory, allowing component stylesheets to share package resolutions.
+ */
+function getPackageScope(containingPath, workingDirectory) {
+    // The directory segments of the stylesheet, excluding the file name
+    const segments = containingPath?.split(/[\\/]/).slice(0, -1) ?? [];
+    const index = segments.lastIndexOf('node_modules');
+    if (index === -1) {
+        return workingDirectory ?? '';
+    }
+    const packageNameLength = segments[index + 1]?.[0] === '@' ? 2 : 1;
+    return segments.slice(0, index + 1 + packageNameLength).join('/');
+}
+async function compileString(data, filePath, syntax, options, resolveUrl, workingDirectory) {
     // Lazily load Sass when a Sass file is found
     if (sassService === undefined) {
         if (sassServicePromise === undefined) {
@@ -132,7 +145,8 @@ async function compileString(data, filePath, syntax, options, resolveUrl) {
         }
     }
     // Caching follows Sass behavior where a given package url will always resolve to the same value
-    // regardless of its importer's path. Relative paths are qualified with the containing URL.
+    // regardless of its importer's path, except for importers within `node_modules`, which are
+    // scoped to their enclosing package. Relative paths are qualified with the containing URL.
     // A null value indicates that the cached resolution attempt failed to find a location and
     // later stage resolution should be attempted. This avoids potentially expensive repeat
     // failing resolution attempts.
@@ -157,10 +171,17 @@ async function compileString(data, filePath, syntax, options, resolveUrl) {
             importers: [
                 {
                     findFileUrl: (url, options) => {
+                        const containingPath = options.containingUrl?.protocol === 'file:'
+                            ? (0, node_url_1.fileURLToPath)(options.containingUrl)
+                            : undefined;
+                        const resolveDir = containingPath ? (0, node_path_1.dirname)(containingPath) : workingDirectory;
                         const isPackage = isPackageUrl(url);
-                        const cacheKey = isPackage ? url : `${options.containingUrl?.href ?? ''}:${url}`;
+                        const scope = getPackageScope(containingPath, workingDirectory);
+                        const cacheKey = isPackage
+                            ? `${scope}:${url}`
+                            : `${options.containingUrl?.href ?? ''}:${url}`;
                         return currentResolutionCache.getOrCreate(cacheKey, async () => {
-                            const result = await resolveUrl(url, options);
+                            const result = await resolveUrl(url, resolveDir);
                             if (result.path) {
                                 return (0, node_url_1.pathToFileURL)(result.path);
                             }
@@ -171,9 +192,9 @@ async function compileString(data, filePath, syntax, options, resolveUrl) {
                             const { packageName, pathSegments } = parsePackageName(url);
                             // Caching package root locations is particularly beneficial for `@material/*` packages
                             // which extensively use deep imports.
-                            const packageRoot = await currentPackageRootCache.getOrCreate(packageName, async () => {
+                            const packageRoot = await currentPackageRootCache.getOrCreate(`${scope}:${packageName}`, async () => {
                                 // Use the required presence of a package root `package.json` file to resolve the location
-                                const packageResult = await resolveUrl(packageName + '/package.json', options);
+                                const packageResult = await resolveUrl(packageName + '/package.json', resolveDir);
                                 return packageResult.path ? (0, node_path_1.dirname)(packageResult.path) : null;
                             });
                             // Package not found could be because of an error or the specifier is intended to be found
