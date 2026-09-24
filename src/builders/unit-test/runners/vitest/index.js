@@ -47,8 +47,8 @@ const VitestTestRunner = {
         }
         checker.report();
     },
-    getBuildOptions(options, baseBuildOptions) {
-        return (0, build_options_1.getVitestBuildOptions)(options, baseBuildOptions);
+    getBuildOptions(options, baseBuildOptions, logger) {
+        return (0, build_options_1.getVitestBuildOptions)(options, baseBuildOptions, logger);
     },
     async createExecutor(context, options, testEntryPointMappings) {
         const projectName = context.target?.project;
