@@ -100,6 +100,12 @@ export type Schema = {
      */
     outputFile?: string;
     /**
+     * A list of polyfills to include in the build. Can be a full path for a file, relative to
+     * the current workspace or module specifier. Example: 'zone.js'. If not specified,
+     * polyfills will be inherited from the build target.
+     */
+    polyfills?: string[];
+    /**
      * Shows build progress information in the console. Defaults to the `progress` setting of
      * the specified `buildTarget`.
      */

@@ -163,7 +163,7 @@ function getZoneTestingStrategy(buildOptions, projectSourceRoot) {
         if (buildOptions.polyfills === undefined) {
             return 'dynamic-zone';
         }
-        return 'dynamic';
+        return 'none';
     }
     catch {
         return 'none';
@@ -219,6 +219,7 @@ async function getVitestBuildOptions(options, baseBuildOptions) {
     }
     const buildOptions = {
         ...baseBuildOptions,
+        ...(options.polyfills !== undefined ? { polyfills: options.polyfills } : {}),
         watch,
         incrementalResults: watch,
         index: false,

@@ -91,7 +91,7 @@ class KarmaExecutor {
         const karmaOptions = {
             karmaConfig,
             tsConfig: unitTestOptions.tsConfig ?? buildTargetOptions.tsConfig,
-            polyfills: (0, options_1.injectTestingPolyfills)(buildTargetOptions.polyfills),
+            polyfills: (0, options_1.injectTestingPolyfills)(unitTestOptions.polyfills ?? buildTargetOptions.polyfills),
             assets: buildTargetOptions.assets,
             scripts: buildTargetOptions.scripts,
             styles: buildTargetOptions.styles,
