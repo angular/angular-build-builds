@@ -59,3 +59,10 @@ export declare function createWatcher(options?: WatcherOptions): Promise<BuildWa
  * - Both paths must share the same casing normalization (e.g., lowercased on case-insensitive file systems).
  */
 export declare function isPathInside(file: string, dir: string): boolean;
+/**
+ * Extracts the package directory inside node_modules for a given POSIX path.
+ *
+ * Input Expectations:
+ * - `posixPath` must be a normalized POSIX-style path (using forward slashes '/').
+ */
+export declare function extractNodeModulesPackageDir(posixPath: string): string | undefined;
