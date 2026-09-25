@@ -93,11 +93,11 @@ function createAngularSetupMiddlewaresPlugin(options) {
                 (0, middlewares_1.patchHostValidationMiddleware)(server.middlewares);
                 if (ssrMode === ServerSsrMode.ExternalSsrMiddleware) {
                     (0, middlewares_1.patchBaseMiddleware)(server.middlewares, server.config.base);
-                    middlewares.use(await (0, middlewares_1.createAngularSsrExternalMiddleware)(server, indexHtmlTransformer));
+                    middlewares.use(await (0, middlewares_1.createAngularSsrExternalMiddleware)(server, resetComponentUpdates, indexHtmlTransformer));
                     return;
                 }
                 if (ssrMode === ServerSsrMode.InternalSsrMiddleware) {
-                    middlewares.use((0, middlewares_1.createAngularSsrInternalMiddleware)(server, indexHtmlTransformer));
+                    middlewares.use((0, middlewares_1.createAngularSsrInternalMiddleware)(server, resetComponentUpdates, indexHtmlTransformer));
                 }
                 middlewares.use(middlewares_1.angularHtmlFallbackMiddleware);
                 middlewares.use((0, middlewares_1.createAngularIndexHtmlMiddleware)(server, outputFiles, resetComponentUpdates, indexHtmlTransformer));

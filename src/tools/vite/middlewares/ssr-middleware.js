@@ -43,7 +43,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createAngularSsrInternalMiddleware = createAngularSsrInternalMiddleware;
 exports.createAngularSsrExternalMiddleware = createAngularSsrExternalMiddleware;
 const utils_1 = require("../../../utils/server-rendering/utils");
-function createAngularSsrInternalMiddleware(server, indexHtmlTransformer) {
+function createAngularSsrInternalMiddleware(server, resetComponentUpdates, indexHtmlTransformer) {
     let cachedAngularServerApp;
     return function angularSsrMiddleware(req, res, next) {
         if (req.url === undefined) {
@@ -61,6 +61,7 @@ function createAngularSsrInternalMiddleware(server, indexHtmlTransformer) {
             // Only Add the transform hook only if it's a different instance.
             if (cachedAngularServerApp !== angularServerApp) {
                 angularServerApp.hooks.on('html:transform:pre', async ({ html, url }) => {
+                    resetComponentUpdates();
                     const processedHtml = await server.transformIndexHtml(url.pathname, html);
                     return indexHtmlTransformer?.(processedHtml) ?? processedHtml;
                 });
@@ -77,7 +78,7 @@ function createAngularSsrInternalMiddleware(server, indexHtmlTransformer) {
         })().catch(next);
     };
 }
-async function createAngularSsrExternalMiddleware(server, indexHtmlTransformer) {
+async function createAngularSsrExternalMiddleware(server, resetComponentUpdates, indexHtmlTransformer) {
     let fallbackWarningShown = false;
     let cachedAngularAppEngine;
     let angularSsrInternalMiddleware;
@@ -98,7 +99,7 @@ async function createAngularSsrExternalMiddleware(server, indexHtmlTransformer) 
                         'Using the internal SSR middleware instead.');
                     fallbackWarningShown = true;
                 }
-                angularSsrInternalMiddleware ??= createAngularSsrInternalMiddleware(server, indexHtmlTransformer);
+                angularSsrInternalMiddleware ??= createAngularSsrInternalMiddleware(server, resetComponentUpdates, indexHtmlTransformer);
                 angularSsrInternalMiddleware(req, res, next);
                 return;
             }
@@ -106,6 +107,7 @@ async function createAngularSsrExternalMiddleware(server, indexHtmlTransformer) 
                 AngularAppEngine.ɵdisableAllowedHostsCheck = disableAllowedHostsCheck;
                 AngularAppEngine.ɵallowStaticRouteRender = true;
                 AngularAppEngine.ɵhooks.on('html:transform:pre', async ({ html, url }) => {
+                    resetComponentUpdates();
                     const processedHtml = await server.transformIndexHtml(url.pathname, html);
                     return indexHtmlTransformer?.(processedHtml) ?? processedHtml;
                 });
