@@ -5,6 +5,10 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
+/**
+ * Default glob ignore patterns for assets.
+ */
+export declare const DEFAULT_ASSET_IGNORE: readonly [".gitkeep", "**/.DS_Store", "**/Thumbs.db"];
 export declare function resolveAssets(entries: {
     glob: string;
     ignore?: string[];

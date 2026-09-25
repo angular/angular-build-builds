@@ -8,5 +8,5 @@
 import type { Connect, ViteDevServer } from 'vite' with {
     'resolution-mode': 'import'
 };
-export declare function createAngularSsrInternalMiddleware(server: ViteDevServer, indexHtmlTransformer?: (content: string) => Promise<string>): Connect.NextHandleFunction;
-export declare function createAngularSsrExternalMiddleware(server: ViteDevServer, indexHtmlTransformer?: (content: string) => Promise<string>): Promise<Connect.NextHandleFunction>;
+export declare function createAngularSsrInternalMiddleware(server: ViteDevServer, resetComponentUpdates: () => void, indexHtmlTransformer?: (content: string) => Promise<string>): Connect.NextHandleFunction;
+export declare function createAngularSsrExternalMiddleware(server: ViteDevServer, resetComponentUpdates: () => void, indexHtmlTransformer?: (content: string) => Promise<string>): Promise<Connect.NextHandleFunction>;

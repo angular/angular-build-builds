@@ -10,12 +10,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.DEFAULT_ASSET_IGNORE = void 0;
 exports.resolveAssets = resolveAssets;
 const node_path_1 = __importDefault(require("node:path"));
 const tinyglobby_1 = require("tinyglobby");
 const path_1 = require("./path");
+/**
+ * Default glob ignore patterns for assets.
+ */
+exports.DEFAULT_ASSET_IGNORE = ['.gitkeep', '**/.DS_Store', '**/Thumbs.db'];
 async function resolveAssets(entries, root) {
-    const defaultIgnore = ['.gitkeep', '**/.DS_Store', '**/Thumbs.db'];
     const outputFiles = [];
     for (const entry of entries) {
         if (!(0, path_1.isSubDirectory)(root, entry.input)) {
@@ -25,7 +29,7 @@ async function resolveAssets(entries, root) {
         const files = await (0, tinyglobby_1.glob)(entry.glob, {
             cwd,
             dot: true,
-            ignore: entry.ignore ? defaultIgnore.concat(entry.ignore) : defaultIgnore,
+            ignore: entry.ignore ? [...exports.DEFAULT_ASSET_IGNORE, ...entry.ignore] : exports.DEFAULT_ASSET_IGNORE,
             followSymbolicLinks: entry.followSymlinks,
         });
         for (const file of files) {
