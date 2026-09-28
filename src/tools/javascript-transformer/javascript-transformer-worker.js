@@ -44,7 +44,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = transformJavaScript;
-const remapping_1 = __importDefault(require("@ampproject/remapping"));
 const node_module_1 = require("node:module");
 const node_worker_threads_1 = require("node:worker_threads");
 const piscina_1 = __importDefault(require("piscina"));
@@ -53,6 +52,7 @@ const source_map_1 = require("../../utils/source-map");
 const oxc_transform_js_1 = require("../oxc/oxc-transform.js");
 const { sourcemap = false, thirdPartySourcemaps = false, advancedOptimizations = false, jit = false, } = (node_worker_threads_1.workerData || {});
 let babelLinkerDeps;
+let remapping;
 const textDecoder = new TextDecoder();
 const textEncoder = new TextEncoder();
 async function instrumentCoverage(filename, data, useInputSourcemap) {
@@ -218,7 +218,8 @@ async function transformJavaScriptImpl(filename, data, options) {
                 remappingChain.push(baseMap);
             }
             if (remappingChain.length > 0) {
-                const finalMap = (0, remapping_1.default)(remappingChain, () => null).toString();
+                remapping ??= (await Promise.resolve().then(() => __importStar(require('@ampproject/remapping')))).default;
+                const finalMap = remapping(remappingChain, () => null).toString();
                 const base64Map = Buffer.from(finalMap).toString('base64');
                 code += `\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,${base64Map}`;
             }
