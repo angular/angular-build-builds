@@ -455,6 +455,7 @@ class ParcelExternalManager {
         this.pendingSubscriptions.set(dirKey, subPromise);
         try {
             const sub = await subPromise;
+            this.pendingSubscriptions.delete(dirKey);
             if (this.externalDirFiles.has(dirKey) && !this.isCoveredByExistingExternal(dirKey)) {
                 this.extraSubscriptions.set(dirKey, sub);
                 // Subsume any nested child subscriptions that are now covered by this parent subscription
