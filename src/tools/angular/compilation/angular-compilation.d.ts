@@ -19,6 +19,7 @@ export interface FileTransformResult {
 }
 export interface AngularCompilationOptions {
     allowJs?: boolean;
+    declarationMap?: boolean;
     isolatedModules?: boolean;
     sourceMap?: boolean;
     inlineSourceMap?: boolean;
@@ -41,7 +42,7 @@ export declare enum DiagnosticModes {
     All = 7
 }
 export declare abstract class AngularCompilation {
-    abstract initialize(tsconfig: string, hostOptions: AngularHostOptions, compilerOptionOverrides?: CompilerOptionOverrides): Promise<AngularCompilationResult>;
+    abstract initialize(tsconfig: string, hostOptions: AngularHostOptions, compilerOptionOverrides?: CompilerOptionOverrides, buildType?: 'application' | 'library'): Promise<AngularCompilationResult>;
     emitAffectedFiles(): Iterable<EmitFileResult> | Promise<Iterable<EmitFileResult>>;
     transformFile?(filename: string, content: string): Promise<FileTransformResult | null>;
     diagnoseFiles(modes?: DiagnosticModes): Promise<{

@@ -60,11 +60,12 @@ class AotCompilation extends typescript_compilation_1.TypeScriptCompilation {
         super();
         this.browserOnlyBuild = browserOnlyBuild;
     }
-    async initialize(tsconfig, hostOptions, compilerOptionOverrides) {
+    // eslint-disable-next-line max-lines-per-function
+    async initialize(tsconfig, hostOptions, compilerOptionOverrides, buildType = 'application') {
         // Dynamically load the Angular compiler CLI package
         const { NgtscProgram, OptimizeFor } = await typescript_compilation_1.TypeScriptCompilation.loadCompilerCli();
         // Load the compiler configuration and transform as needed
-        const { compilerOptions, rootNames, errors: configurationDiagnostics, warnings, } = await this.loadConfiguration(tsconfig, compilerOptionOverrides);
+        const { compilerOptions, rootNames, errors: configurationDiagnostics, warnings, } = await this.loadConfiguration(tsconfig, compilerOptionOverrides, buildType);
         const useTypeScriptTranspilation = compilerOptions['_useTypeScriptTranspilation'] ??
             !compilerOptions.isolatedModules;
         if (compilerOptions.externalRuntimeStyles) {
@@ -230,8 +231,10 @@ class AotCompilation extends typescript_compilation_1.TypeScriptCompilation {
         (0, node_assert_1.default)(this.#state, 'Angular compilation must be initialized prior to emitting files.');
         const { affectedFiles, angularCompiler, compilerHost, typeScriptProgram, webWorkerTransform, useTypeScriptTranspilation, } = this.#state;
         const compilerOptions = typeScriptProgram.getCompilerOptions();
+        const isLibraryEmit = !!compilerOptions.declaration;
         const buildInfoFilename = compilerOptions.tsBuildInfoFile ?? '.tsbuildinfo';
         const emittedFiles = new Map();
+        const emittedSourceFiles = new Set();
         const writeFileCallback = (filename, contents, _a, _b, sourceFiles) => {
             if (!sourceFiles?.length && filename.endsWith(buildInfoFilename)) {
                 // Save builder info contents to specified location
@@ -244,13 +247,17 @@ class AotCompilation extends typescript_compilation_1.TypeScriptCompilation {
                 return;
             }
             angularCompiler.incrementalCompilation.recordSuccessfulEmit(sourceFile);
-            emittedFiles.set(sourceFile, { filename: sourceFile.fileName, contents });
+            emittedSourceFiles.add(sourceFile);
+            const targetFilename = isLibraryEmit ? filename : sourceFile.fileName;
+            emittedFiles.set(targetFilename, { filename: targetFilename, contents });
         };
         const transformers = angularCompiler.prepareEmit().transformers;
-        transformers.before ??= [];
-        transformers.before.push((0, jit_bootstrap_transformer_1.replaceBootstrap)(() => typeScriptProgram.getProgram().getTypeChecker()), webWorkerTransform);
-        if (!this.browserOnlyBuild) {
-            transformers.before.push((0, lazy_routes_transformer_1.lazyRoutesTransformer)(compilerOptions, compilerHost));
+        if (!isLibraryEmit) {
+            transformers.before ??= [];
+            transformers.before.push((0, jit_bootstrap_transformer_1.replaceBootstrap)(() => typeScriptProgram.getProgram().getTypeChecker()), webWorkerTransform);
+            if (!this.browserOnlyBuild) {
+                transformers.before.push((0, lazy_routes_transformer_1.lazyRoutesTransformer)(compilerOptions, compilerHost));
+            }
         }
         // Emit is handled in write file callback when using TypeScript
         if (useTypeScriptTranspilation) {
@@ -269,7 +276,7 @@ class AotCompilation extends typescript_compilation_1.TypeScriptCompilation {
         }
         // Angular may have files that must be emitted but TypeScript does not consider affected
         for (const sourceFile of typeScriptProgram.getSourceFiles()) {
-            if (emittedFiles.has(sourceFile) || angularCompiler.ignoreForEmit.has(sourceFile)) {
+            if (emittedSourceFiles.has(sourceFile) || angularCompiler.ignoreForEmit.has(sourceFile)) {
                 continue;
             }
             if (sourceFile.isDeclarationFile) {
@@ -280,7 +287,8 @@ class AotCompilation extends typescript_compilation_1.TypeScriptCompilation {
                 continue;
             }
             if (useTypeScriptTranspilation) {
-                typeScriptProgram.emit(sourceFile, writeFileCallback, undefined, undefined, transformers);
+                const emitOnly = affectedFiles.has(sourceFile) ? undefined : false;
+                typeScriptProgram.emit(sourceFile, writeFileCallback, undefined, emitOnly, transformers);
                 continue;
             }
             // When not using TypeScript transpilation, directly apply only Angular specific transformations
@@ -306,12 +314,13 @@ class AotCompilation extends typescript_compilation_1.TypeScriptCompilation {
                     }
                     else if (compilerOptions.sourceMap) {
                         const mapFilename = sourceFile.fileName + '.map';
-                        emittedFiles.set(sourceFile, { filename: mapFilename, contents: printResult.map });
+                        emittedFiles.set(mapFilename, { filename: mapFilename, contents: printResult.map });
                     }
                 }
             }
             angularCompiler.incrementalCompilation.recordSuccessfulEmit(sourceFile);
-            emittedFiles.set(sourceFile, { filename: sourceFile.fileName, contents });
+            emittedSourceFiles.add(sourceFile);
+            emittedFiles.set(sourceFile.fileName, { filename: sourceFile.fileName, contents });
         }
         return emittedFiles.values();
     }

@@ -19,7 +19,7 @@ export interface TransformedConfiguration {
 export declare abstract class TypeScriptCompilation extends AngularCompilation {
     #private;
     static loadCompilerCli(): Promise<typeof ng>;
-    protected loadConfiguration(tsconfig: string, compilerOptionOverrides?: CompilerOptionOverrides): Promise<TransformedConfiguration>;
+    protected loadConfiguration(tsconfig: string, compilerOptionOverrides?: CompilerOptionOverrides, buildType?: 'application' | 'library'): Promise<TransformedConfiguration>;
     protected readonly sourceFiles: Map<string, ts.SourceFile>;
     protected invalidateFiles(files: Iterable<string>): void;
     update(files: Set<string>): Promise<void>;

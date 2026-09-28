@@ -15,6 +15,7 @@ export interface InitRequest {
     tsconfig: string;
     fileReplacements?: Record<string, string>;
     compilerOptionOverrides?: CompilerOptionOverrides;
+    buildType?: 'application' | 'library';
     stylesheetPort: MessagePort;
     webWorkerPort: MessagePort;
     webWorkerSignal: Int32Array;

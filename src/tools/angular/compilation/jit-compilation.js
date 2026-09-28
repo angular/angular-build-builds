@@ -74,11 +74,11 @@ class JitCompilation extends typescript_compilation_1.TypeScriptCompilation {
         super();
         this.browserOnlyBuild = browserOnlyBuild;
     }
-    async initialize(tsconfig, hostOptions, compilerOptionOverrides) {
+    async initialize(tsconfig, hostOptions, compilerOptionOverrides, buildType = 'application') {
         // Dynamically load the Angular compiler CLI package
         const { constructorParametersDownlevelTransform } = await Promise.resolve().then(() => __importStar(require('@angular/compiler-cli/private/tooling')));
         // Load the compiler configuration and transform as needed
-        const { compilerOptions, rootNames, errors: configurationDiagnostics, warnings, } = await this.loadConfiguration(tsconfig, compilerOptionOverrides);
+        const { compilerOptions, rootNames, errors: configurationDiagnostics, warnings, } = await this.loadConfiguration(tsconfig, compilerOptionOverrides, buildType);
         if (hostOptions.modifiedFiles) {
             this.invalidateFiles(hostOptions.modifiedFiles);
         }

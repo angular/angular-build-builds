@@ -74,7 +74,7 @@ async function initialize(request) {
                 }
                 return result?.workerCodeFile ?? workerFile;
             },
-        }, request.compilerOptionOverrides);
+        }, request.compilerOptionOverrides, request.buildType);
         success = true;
         return {
             externalStylesheets,
@@ -84,6 +84,7 @@ async function initialize(request) {
             // TODO: Expand? `allowJs`, `isolatedModules`, `sourceMap`, `inlineSourceMap` are the only fields needed currently.
             compilerOptions: {
                 allowJs: compilerOptions.allowJs,
+                declarationMap: compilerOptions.declarationMap,
                 isolatedModules: compilerOptions.isolatedModules,
                 sourceMap: compilerOptions.sourceMap,
                 inlineSourceMap: compilerOptions.inlineSourceMap,

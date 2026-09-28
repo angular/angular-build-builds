@@ -18,8 +18,11 @@ export interface CompilerOptionOverrides {
     includeTestMetadata?: boolean;
     customConditions?: string[];
     rootFiles?: string[];
+    declarationMap?: boolean;
+    compilationMode?: 'full' | 'partial';
+    paths?: Record<string, string[]>;
 }
-export declare function transformCompilerOptions(typeScript: typeof ts, baseCompilerOptions: ng.CompilerOptions, overrides?: CompilerOptionOverrides, tsconfig?: string): {
+export declare function transformCompilerOptions(typeScript: typeof ts, baseCompilerOptions: ng.CompilerOptions, overrides?: CompilerOptionOverrides, tsconfig?: string, buildType?: 'application' | 'library'): {
     compilerOptions: ng.CompilerOptions;
     warnings: PartialMessage[];
 };

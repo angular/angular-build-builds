@@ -42,9 +42,10 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.transformCompilerOptions = transformCompilerOptions;
 const path = __importStar(require("node:path"));
-function transformCompilerOptions(typeScript, baseCompilerOptions, overrides, tsconfig) {
+function transformCompilerOptions(typeScript, baseCompilerOptions, overrides, tsconfig, buildType = 'application') {
     const compilerOptions = { ...baseCompilerOptions };
     const warnings = [];
+    const isLibrary = buildType === 'library';
     if (compilerOptions.target === undefined ||
         compilerOptions.target < typeScript.ScriptTarget.ES2022) {
         // If 'useDefineForClassFields' is already defined in the users project leave the value as is.
@@ -64,13 +65,16 @@ function transformCompilerOptions(typeScript, baseCompilerOptions, overrides, ts
             ],
         });
     }
-    if (compilerOptions.compilationMode === 'partial') {
+    if (!isLibrary && compilerOptions.compilationMode === 'partial') {
         warnings.push({
             text: 'Angular partial compilation mode is not supported when building applications.',
             location: null,
             notes: [{ text: 'Full compilation mode will be used instead.' }],
         });
         compilerOptions.compilationMode = 'full';
+    }
+    else if (overrides?.compilationMode) {
+        compilerOptions.compilationMode = overrides.compilationMode;
     }
     // Enable incremental compilation by default if caching is enabled and incremental is not explicitly disabled
     if (compilerOptions.incremental !== false && overrides?.cachePath) {
@@ -102,6 +106,15 @@ function transformCompilerOptions(typeScript, baseCompilerOptions, overrides, ts
             ],
         });
     }
+    if (isLibrary) {
+        compilerOptions.target = typeScript.ScriptTarget.ES2022;
+        compilerOptions.module = typeScript.ModuleKind.ES2022;
+        compilerOptions.moduleResolution = typeScript.ModuleResolutionKind.Bundler;
+        compilerOptions.importHelpers = true;
+        compilerOptions.declaration = true;
+        compilerOptions.declarationMap = overrides?.declarationMap;
+        compilerOptions.declarationDir = undefined;
+    }
     // Synchronize custom resolve conditions.
     // Set if using the supported bundler resolution mode (bundler is the default in new projects)
     if (compilerOptions.moduleResolution === typeScript.ModuleResolutionKind.Bundler ||
@@ -114,20 +127,24 @@ function transformCompilerOptions(typeScript, baseCompilerOptions, overrides, ts
             noEmitOnError: false,
             composite: false,
             inlineSources: !!overrides?.sourcemap,
-            inlineSourceMap: !!overrides?.sourcemap,
-            sourceMap: undefined,
+            inlineSourceMap: !isLibrary && !!overrides?.sourcemap,
+            sourceMap: isLibrary ? !!overrides?.sourcemap : undefined,
             mapRoot: undefined,
             sourceRoot: undefined,
             preserveSymlinks: overrides?.preserveSymlinks,
             externalRuntimeStyles: overrides?.externalRuntimeStyles,
             _enableHmr: !!overrides?.enableHmr,
             // TypeScript transpilation is forced if:
+            // - Building a library (TypeScript emits both .js and .d.ts in a single pass).
             // - isolatedModules is disabled (TS needs full module types to emit JS).
             // - Karma code coverage is active (the coverage instrumentation transformer is Babel-based
             //   and cannot parse raw TypeScript code; Vitest handles coverage instrumentation downstream).
-            _useTypeScriptTranspilation: !compilerOptions.isolatedModules || !!overrides?.instrumentForCoverage,
-            supportTestBed: !!overrides?.includeTestMetadata,
-            supportJitMode: !!overrides?.includeTestMetadata,
+            _useTypeScriptTranspilation: isLibrary || !compilerOptions.isolatedModules || !!overrides?.instrumentForCoverage,
+            supportTestBed: isLibrary ? undefined : !!overrides?.includeTestMetadata,
+            supportJitMode: isLibrary ? undefined : !!overrides?.includeTestMetadata,
+            paths: overrides?.paths
+                ? { ...baseCompilerOptions.paths, ...overrides.paths }
+                : baseCompilerOptions.paths,
         },
         warnings,
     };

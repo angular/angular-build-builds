@@ -14,7 +14,7 @@ export declare class JitCompilation extends TypeScriptCompilation {
     #private;
     private readonly browserOnlyBuild;
     constructor(browserOnlyBuild: boolean);
-    initialize(tsconfig: string, hostOptions: AngularHostOptions, compilerOptionOverrides?: CompilerOptionOverrides): Promise<AngularCompilationResult>;
+    initialize(tsconfig: string, hostOptions: AngularHostOptions, compilerOptionOverrides?: CompilerOptionOverrides, buildType?: 'application' | 'library'): Promise<AngularCompilationResult>;
     protected collectDiagnostics(modes: DiagnosticModes): Iterable<ts.Diagnostic>;
     emitAffectedFiles(): Iterable<EmitFileResult>;
 }

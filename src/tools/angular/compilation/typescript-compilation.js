@@ -56,7 +56,7 @@ class TypeScriptCompilation extends angular_compilation_1.AngularCompilation {
         TypeScriptCompilation.#angularCompilerCliModule ??= await Promise.resolve().then(() => __importStar(require('@angular/compiler-cli')));
         return TypeScriptCompilation.#angularCompilerCliModule;
     }
-    async loadConfiguration(tsconfig, compilerOptionOverrides) {
+    async loadConfiguration(tsconfig, compilerOptionOverrides, buildType = 'application') {
         const { readConfiguration } = await TypeScriptCompilation.loadCompilerCli();
         const { options: originalCompilerOptions, rootNames: originalRootNames, errors, } = (0, profiling_1.profileSync)('NG_READ_CONFIG', () => readConfiguration(tsconfig, {
             // Angular specific configuration defaults and overrides to ensure a functioning compilation.
@@ -84,7 +84,7 @@ class TypeScriptCompilation extends angular_compilation_1.AngularCompilation {
             }
             rootNames = [...rootFilesSet];
         }
-        const { compilerOptions, warnings } = (0, compiler_options_1.transformCompilerOptions)(typescript_1.default, originalCompilerOptions, compilerOptionOverrides, tsconfig);
+        const { compilerOptions, warnings } = (0, compiler_options_1.transformCompilerOptions)(typescript_1.default, originalCompilerOptions, compilerOptionOverrides, tsconfig, buildType);
         return {
             compilerOptions,
             rootNames,

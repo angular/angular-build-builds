@@ -38,7 +38,7 @@ class ParallelCompilation extends angular_compilation_1.AngularCompilation {
             filename: localRequire.resolve('./parallel-worker'),
         });
     }
-    async initialize(tsconfig, hostOptions, compilerOptionOverrides) {
+    async initialize(tsconfig, hostOptions, compilerOptionOverrides, buildType = 'application') {
         const stylesheetChannel = new node_worker_threads_1.MessageChannel();
         // The request identifier is required because Angular can issue multiple concurrent requests
         stylesheetChannel.port1.on('message', ({ requestId, data, containingFile, stylesheetFile, order, className }) => {
@@ -75,6 +75,7 @@ class ParallelCompilation extends angular_compilation_1.AngularCompilation {
                 jit: this.jit,
                 browserOnlyBuild: this.browserOnlyBuild,
                 compilerOptionOverrides,
+                buildType,
                 stylesheetPort: stylesheetChannel.port2,
                 webWorkerPort: webWorkerChannel.port2,
                 webWorkerSignal,

@@ -22,7 +22,7 @@ export declare class ParallelCompilation extends AngularCompilation {
     private readonly jit;
     private readonly browserOnlyBuild;
     constructor(jit: boolean, browserOnlyBuild: boolean);
-    initialize(tsconfig: string, hostOptions: AngularHostOptions, compilerOptionOverrides?: CompilerOptionOverrides): Promise<AngularCompilationResult>;
+    initialize(tsconfig: string, hostOptions: AngularHostOptions, compilerOptionOverrides?: CompilerOptionOverrides, buildType?: 'application' | 'library'): Promise<AngularCompilationResult>;
     diagnoseFiles(modes?: DiagnosticModes): Promise<{
         errors?: PartialMessage[];
         warnings?: PartialMessage[];
