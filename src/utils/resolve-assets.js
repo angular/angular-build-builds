@@ -30,7 +30,7 @@ async function resolveAssets(entries, root) {
             cwd,
             dot: true,
             ignore: entry.ignore ? [...exports.DEFAULT_ASSET_IGNORE, ...entry.ignore] : exports.DEFAULT_ASSET_IGNORE,
-            followSymbolicLinks: entry.followSymlinks,
+            followSymbolicLinks: entry.followSymlinks ?? false,
         });
         for (const file of files) {
             const src = node_path_1.default.join(cwd, file);
