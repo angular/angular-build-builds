@@ -8,7 +8,6 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OxcLinker = void 0;
-const compiler_cli_1 = require("@angular/compiler-cli");
 const linker_1 = require("@angular/compiler-cli/linker");
 const oxc_ast_host_1 = require("./oxc-ast-host");
 const string_ast_factory_1 = require("./string-ast-factory");
@@ -39,7 +38,33 @@ const noopFileSystem = {
     dirname: (path) => path.split('/').slice(0, -1).join('/'),
     relative: (_from, to) => to,
 };
-let SHARED_LOGGER;
+const defaultLogger = {
+    level: 1, // LogLevel.info
+    debug(...args) {
+        if (this.level <= 0) {
+            // eslint-disable-next-line no-console
+            console.debug(...args);
+        }
+    },
+    info(...args) {
+        if (this.level <= 1) {
+            // eslint-disable-next-line no-console
+            console.info(...args);
+        }
+    },
+    warn(...args) {
+        if (this.level <= 2) {
+            // eslint-disable-next-line no-console
+            console.warn(...args);
+        }
+    },
+    error(...args) {
+        if (this.level <= 3) {
+            // eslint-disable-next-line no-console
+            console.error(...args);
+        }
+    },
+};
 let SHARED_AST_HOST;
 let SHARED_DECLARATION_SCOPE;
 /**
@@ -48,11 +73,10 @@ let SHARED_DECLARATION_SCOPE;
 class OxcLinker {
     #fileLinker;
     constructor(filename, code, jit = false) {
-        SHARED_LOGGER ??= new compiler_cli_1.ConsoleLogger(compiler_cli_1.LogLevel.info);
         SHARED_AST_HOST ??= new oxc_ast_host_1.OxcAstHost();
         SHARED_DECLARATION_SCOPE ??= new InlineDeclarationScope();
         const astFactory = new string_ast_factory_1.StringAstFactory(code);
-        const linkerEnvironment = linker_1.LinkerEnvironment.create(noopFileSystem, SHARED_LOGGER, SHARED_AST_HOST, astFactory, { linkerJitMode: jit, sourceMapping: false });
+        const linkerEnvironment = linker_1.LinkerEnvironment.create(noopFileSystem, defaultLogger, SHARED_AST_HOST, astFactory, { linkerJitMode: jit, sourceMapping: false });
         this.#fileLinker = new linker_1.FileLinker(linkerEnvironment, filename, code);
     }
     /**
