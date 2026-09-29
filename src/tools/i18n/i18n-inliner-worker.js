@@ -6,39 +6,6 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -46,6 +13,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.inlineFileBatch = inlineFileBatch;
 exports.inlineCode = inlineCode;
 const remapping_1 = __importDefault(require("@ampproject/remapping"));
+const localize_1 = require("@angular/localize");
 const magic_string_1 = require("magic-string");
 const node_v8_1 = require("node:v8");
 const oxc_parser_1 = require("oxc-parser");
@@ -170,7 +138,7 @@ async function inlineFileBatch(request) {
             locale,
             code: result.code,
             map: result.map,
-            messages: result.diagnostics.messages,
+            messages: result.diagnostics,
         };
     }));
     return {
@@ -190,25 +158,33 @@ async function inlineCode(request) {
     const result = await inlineLocalize(request.code, undefined, metadata, request.locale, await loadTranslation(request.locale, request.translation), request.filename, request.missingTranslation);
     return {
         output: result.code ?? request.code,
-        messages: result.diagnostics.messages,
+        messages: result.diagnostics,
     };
 }
 /**
- * Cached instance of the `@angular/localize/tools` module.
- * This is used to remove the need to repeatedly import the module per file translation.
+ * Translates a $localize message using @angular/localize low-level runtime functions.
+ * Handles missing translations and errors without requiring @angular/localize/tools.
  */
-let localizeToolsModule;
-/**
- * Attempts to load the `@angular/localize/tools` module containing the functionality to
- * perform the file translations.
- * This module must be dynamically loaded as it is an ESM module and this file is CommonJS.
- */
-async function loadLocalizeTools() {
-    // Load ESM `@angular/localize/tools` using the TypeScript dynamic import workaround.
-    // Once TypeScript provides support for keeping the dynamic import this workaround can be
-    // changed to a direct dynamic import.
-    localizeToolsModule ??= await Promise.resolve().then(() => __importStar(require('@angular/localize/tools')));
-    return localizeToolsModule;
+function translateMessage(diagnostics, translations, messageParts, substitutions, missingTranslation) {
+    try {
+        return (0, localize_1.ɵtranslate)(translations, messageParts, substitutions);
+    }
+    catch (error) {
+        if ((0, localize_1.ɵisMissingTranslationError)(error)) {
+            if (missingTranslation !== 'ignore') {
+                diagnostics.push({ type: missingTranslation, message: error.message });
+            }
+            return [
+                (0, localize_1.ɵmakeTemplateObject)(error.parsedMessage.messageParts, error.parsedMessage.messageParts),
+                substitutions,
+            ];
+        }
+        else {
+            const message = error instanceof Error ? error.message : String(error);
+            diagnostics.push({ type: 'error', message });
+            return [messageParts, substitutions];
+        }
+    }
 }
 /**
  * Extracts localization call sites and locale insertion points from JavaScript code using OXC.
@@ -291,20 +267,19 @@ function escapeTemplatePart(part) {
  */
 async function inlineLocalize(code, map, metadata, locale, translation, filename, missingTranslation = 'warning') {
     const magicString = new magic_string_1.MagicString(code);
-    const { Diagnostics, translate } = await loadLocalizeTools();
-    const diagnostics = new Diagnostics();
+    const diagnostics = [];
     if (metadata.diagnostics) {
         for (const message of metadata.diagnostics) {
-            diagnostics.error(message);
+            diagnostics.push({ type: 'error', message });
         }
     }
     if (metadata.localeInsertSites.length > 0) {
         const localeData = await (0, locale_data_1.loadLocaleData)(locale);
         if (localeData.error) {
-            diagnostics.error(localeData.error);
+            diagnostics.push({ type: 'error', message: localeData.error });
         }
         else if (localeData.warning) {
-            diagnostics.warn(localeData.warning);
+            diagnostics.push({ type: 'warning', message: localeData.warning });
         }
         let injected = false;
         for (const site of metadata.localeInsertSites) {
@@ -313,7 +288,7 @@ async function inlineLocalize(code, map, metadata, locale, translation, filename
         }
     }
     for (const callSite of metadata.callSites) {
-        const [translatedParts, translatedSubstitutions] = translate(diagnostics, translation || {}, callSite.messageParts, callSite.expressionIndexes, translation === undefined ? 'ignore' : missingTranslation);
+        const [translatedParts, translatedSubstitutions] = translateMessage(diagnostics, translation || {}, callSite.messageParts, callSite.expressionIndexes, translation === undefined ? 'ignore' : missingTranslation);
         // Reconstruct the new template/string literal replacement
         let replacement;
         if (translatedSubstitutions.length === 0) {
