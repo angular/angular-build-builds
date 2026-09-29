@@ -60,7 +60,8 @@ export type Schema = {
      */
     dumpVirtualFiles?: boolean;
     /**
-     * Specifies glob patterns of files to exclude from testing, relative to the project root.
+     * Specifies glob patterns of files to exclude from testing, relative to the project source
+     * root.
      */
     exclude?: string[];
     /**
@@ -76,8 +77,8 @@ export type Schema = {
      */
     headless?: boolean;
     /**
-     * Specifies glob patterns of files to include for testing, relative to the project root.
-     * This option also has special handling for directory paths (includes all test files
+     * Specifies glob patterns of files to include for testing, relative to the project source
+     * root. This option also has special handling for directory paths (includes all test files
      * within) and file paths (includes the corresponding test file if one exists).
      */
     include?: string[];
