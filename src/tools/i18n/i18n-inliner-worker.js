@@ -162,15 +162,16 @@ async function inlineFileBatch(request) {
         const rawMap = await request.map.text();
         map = rawMap ? JSON.parse(rawMap) : undefined;
     }
-    const results = await Promise.all(Array.from(request.locales, async ([locale, translation]) => {
+    const results = [];
+    for (const [locale, translation] of request.locales) {
         const result = await inlineLocalize(code, map, metadata, locale, await loadTranslation(locale, translation), request.filename, request.missingTranslation);
-        return {
+        results.push({
             locale,
             code: result.code,
             map: result.map,
             messages: result.diagnostics,
-        };
-    }));
+        });
+    }
     return {
         file: request.filename,
         results,
