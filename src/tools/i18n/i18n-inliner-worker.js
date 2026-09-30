@@ -197,6 +197,13 @@ async function inlineCode(request) {
  * Handles missing translations and errors without requiring @angular/localize/tools.
  */
 function translateMessage(diagnostics, translations, messageParts, substitutions, missingTranslation) {
+    // Fast path: untranslated locale (e.g. source locale without a translation dictionary).
+    // Directly parse the message parts to strip metadata and placeholder markers without
+    // throwing and catching a MissingTranslationError exception.
+    if (translations === undefined) {
+        const message = (0, localize_1.ɵparseMessage)(messageParts, substitutions);
+        return [(0, localize_1.ɵmakeTemplateObject)(message.messageParts, message.messageParts), substitutions];
+    }
     try {
         return (0, localize_1.ɵtranslate)(translations, messageParts, substitutions);
     }
@@ -319,7 +326,7 @@ async function inlineLocalize(code, map, metadata, locale, translation, filename
         }
     }
     for (const callSite of metadata.callSites) {
-        const [translatedParts, translatedSubstitutions] = translateMessage(diagnostics, translation || {}, callSite.messageParts, callSite.expressionIndexes, translation === undefined ? 'ignore' : missingTranslation);
+        const [translatedParts, translatedSubstitutions] = translateMessage(diagnostics, translation, callSite.messageParts, callSite.expressionIndexes, translation === undefined ? 'ignore' : missingTranslation);
         // Reconstruct the new template/string literal replacement
         let replacement;
         if (translatedSubstitutions.length === 0) {
