@@ -39,13 +39,10 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.inlineFileBatch = inlineFileBatch;
 exports.inlineCode = inlineCode;
-const remapping_1 = __importDefault(require("@ampproject/remapping"));
+const localize_1 = require("@angular/localize");
 const magic_string_1 = require("magic-string");
 const node_v8_1 = require("node:v8");
 const oxc_parser_1 = require("oxc-parser");
@@ -64,6 +61,7 @@ const deserializedTranslations = new Map();
  * The current inlining generation for this worker.
  */
 let currentGeneration;
+let remapping;
 /**
  * Retrieves the file data for a filename, loading and extracting localization metadata.
  * If `cache` is true, the result is cached in `fileDataCache` across requests in this Worker.
@@ -171,7 +169,7 @@ async function inlineFileBatch(request) {
             locale,
             code: result.code,
             map: result.map,
-            messages: result.diagnostics.messages,
+            messages: result.diagnostics,
         });
     }
     return {
@@ -191,25 +189,33 @@ async function inlineCode(request) {
     const result = await inlineLocalize(request.code, undefined, metadata, request.locale, await loadTranslation(request.locale, request.translation), request.filename, request.missingTranslation);
     return {
         output: result.code ?? request.code,
-        messages: result.diagnostics.messages,
+        messages: result.diagnostics,
     };
 }
 /**
- * Cached instance of the `@angular/localize/tools` module.
- * This is used to remove the need to repeatedly import the module per file translation.
+ * Translates a $localize message using @angular/localize low-level runtime functions.
+ * Handles missing translations and errors without requiring @angular/localize/tools.
  */
-let localizeToolsModule;
-/**
- * Attempts to load the `@angular/localize/tools` module containing the functionality to
- * perform the file translations.
- * This module must be dynamically loaded as it is an ESM module and this file is CommonJS.
- */
-async function loadLocalizeTools() {
-    // Load ESM `@angular/localize/tools` using the TypeScript dynamic import workaround.
-    // Once TypeScript provides support for keeping the dynamic import this workaround can be
-    // changed to a direct dynamic import.
-    localizeToolsModule ??= await Promise.resolve().then(() => __importStar(require('@angular/localize/tools')));
-    return localizeToolsModule;
+function translateMessage(diagnostics, translations, messageParts, substitutions, missingTranslation) {
+    try {
+        return (0, localize_1.ɵtranslate)(translations, messageParts, substitutions);
+    }
+    catch (error) {
+        if ((0, localize_1.ɵisMissingTranslationError)(error)) {
+            if (missingTranslation !== 'ignore') {
+                diagnostics.push({ type: missingTranslation, message: error.message });
+            }
+            return [
+                (0, localize_1.ɵmakeTemplateObject)(error.parsedMessage.messageParts, error.parsedMessage.messageParts),
+                substitutions,
+            ];
+        }
+        else {
+            const message = error instanceof Error ? error.message : String(error);
+            diagnostics.push({ type: 'error', message });
+            return [messageParts, substitutions];
+        }
+    }
 }
 /**
  * Extracts localization call sites and locale insertion points from JavaScript code using OXC.
@@ -292,20 +298,19 @@ function escapeTemplatePart(part) {
  */
 async function inlineLocalize(code, map, metadata, locale, translation, filename, missingTranslation = 'warning') {
     const magicString = new magic_string_1.MagicString(code);
-    const { Diagnostics, translate } = await loadLocalizeTools();
-    const diagnostics = new Diagnostics();
+    const diagnostics = [];
     if (metadata.diagnostics) {
         for (const message of metadata.diagnostics) {
-            diagnostics.error(message);
+            diagnostics.push({ type: 'error', message });
         }
     }
     if (metadata.localeInsertSites.length > 0) {
         const localeData = await (0, locale_data_1.loadLocaleData)(locale);
         if (localeData.error) {
-            diagnostics.error(localeData.error);
+            diagnostics.push({ type: 'error', message: localeData.error });
         }
         else if (localeData.warning) {
-            diagnostics.warn(localeData.warning);
+            diagnostics.push({ type: 'warning', message: localeData.warning });
         }
         let injected = false;
         for (const site of metadata.localeInsertSites) {
@@ -314,7 +319,7 @@ async function inlineLocalize(code, map, metadata, locale, translation, filename
         }
     }
     for (const callSite of metadata.callSites) {
-        const [translatedParts, translatedSubstitutions] = translate(diagnostics, translation || {}, callSite.messageParts, callSite.expressionIndexes, translation === undefined ? 'ignore' : missingTranslation);
+        const [translatedParts, translatedSubstitutions] = translateMessage(diagnostics, translation || {}, callSite.messageParts, callSite.expressionIndexes, translation === undefined ? 'ignore' : missingTranslation);
         // Reconstruct the new template/string literal replacement
         let replacement;
         if (translatedSubstitutions.length === 0) {
@@ -353,7 +358,8 @@ async function inlineLocalize(code, map, metadata, locale, translation, filename
             includeContent: true,
             hires: 'boundary',
         });
-        outputMap = (0, remapping_1.default)([{ ...rawMap, version: 3 }, map], () => null);
+        remapping ??= (await Promise.resolve().then(() => __importStar(require('@ampproject/remapping')))).default;
+        outputMap = remapping([{ ...rawMap, version: 3 }, map], () => null);
     }
     return {
         code: outputCode,
