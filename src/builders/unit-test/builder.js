@@ -274,13 +274,18 @@ async function* execute(options, context, extensions) {
         if (builderName === '@angular/build:application') {
             buildTargetOptions = (await context.validateOptions(await context.getTargetOptions(normalizedOptions.buildTarget), builderName));
         }
+        else if (builderName === '@angular/build:library') {
+            const libraryOptions = (await context.validateOptions(await context.getTargetOptions(normalizedOptions.buildTarget), builderName));
+            buildTargetOptions = transformLibraryOptions(libraryOptions);
+        }
         else if (builderName === '@angular/build:ng-packagr') {
             const ngPackagrOptions = await context.validateOptions(await context.getTargetOptions(normalizedOptions.buildTarget), builderName);
             buildTargetOptions = await transformNgPackagrOptions(context, ngPackagrOptions, normalizedOptions.projectRoot);
         }
         else {
             context.logger.warn(`The 'buildTarget' is configured to use '${builderName}', which is not supported. ` +
-                `The 'unit-test' builder is designed to work with '@angular/build:application' or '@angular/build:ng-packagr'. ` +
+                `The 'unit-test' builder is designed to work with '@angular/build:application', ` +
+                `'@angular/build:library', or '@angular/build:ng-packagr'. ` +
                 'Unexpected behavior or build failures may occur.');
             buildTargetOptions = (await context.validateOptions(await context.getTargetOptions(normalizedOptions.buildTarget), builderName));
         }
@@ -375,6 +380,22 @@ async function transformNgPackagrOptions(context, options, projectRoot) {
         stylePreprocessorOptions: includePaths.length ? { includePaths } : undefined,
         assets: assets.length ? assets : undefined,
         inlineStyleLanguage,
+    };
+}
+/**
+ * Transforms library builder options into internal application builder options for testing.
+ *
+ * @param options The raw validated options from the library build target.
+ * @returns Application builder options suitable for running tests.
+ */
+function transformLibraryOptions(options) {
+    const { stylePreprocessorOptions, assets, inlineStyleLanguage, preserveSymlinks, tsConfig } = options;
+    return {
+        stylePreprocessorOptions: stylePreprocessorOptions,
+        assets: Array.isArray(assets) && assets.length ? assets : undefined,
+        inlineStyleLanguage: inlineStyleLanguage,
+        preserveSymlinks: typeof preserveSymlinks === 'boolean' ? preserveSymlinks : undefined,
+        tsConfig: typeof tsConfig === 'string' ? tsConfig : undefined,
     };
 }
 //# sourceMappingURL=builder.js.map
