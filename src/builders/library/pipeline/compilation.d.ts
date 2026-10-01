@@ -5,22 +5,8 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-import { type AngularCompilation } from '../../../tools/angular/compilation';
 import type { ComponentStylesheetBundler } from '../../../tools/esbuild/angular/component-stylesheets';
-import type { NormalizedEntryPoint, NormalizedLibraryOptions } from '../options';
-/**
- * Cached state for the single unified library compilation.
- */
-export interface SingleProgramCache {
-    /** The active Angular compilation instance. */
-    readonly compilationInstance: AngularCompilation;
-    /** In-memory map of emitted JavaScript files keyed by relative output path. */
-    readonly esmFiles: Map<string, string>;
-    /** In-memory map of emitted TypeScript declaration files keyed by relative output path. */
-    readonly dtsFiles: Map<string, string>;
-    /** Set of file paths that failed during stylesheet bundling or compilation. */
-    readonly failedFiles?: ReadonlySet<string>;
-}
+import type { NormalizedEntryPoint, NormalizedLibraryOptions, SingleProgramCache } from '../types';
 /**
  * Output of the unified library compilation step.
  */

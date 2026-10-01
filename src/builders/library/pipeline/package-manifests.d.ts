@@ -5,7 +5,7 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-import type { NormalizedLibraryOptions } from '../options';
+import type { NormalizedLibraryOptions } from '../types';
 import { type MemoryOutputFile } from './utils';
 /**
  * Generates the APF package.json and secondary entry point package.json manifests.

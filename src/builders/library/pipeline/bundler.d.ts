@@ -5,17 +5,8 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-import type { NormalizedEntryPoint, NormalizedLibraryOptions } from '../options';
+import type { BundleResult, NormalizedEntryPoint, NormalizedLibraryOptions } from '../types';
 import { type MemoryOutputFile } from './utils';
-/**
- * Cached module ID sets for a bundled entry point.
- */
-export interface BundleResult {
-    /** Exact set of virtual ESM module IDs bundled into this entry point. */
-    esmModuleIds: ReadonlySet<string>;
-    /** Exact set of virtual DTS module IDs bundled into this entry point. */
-    dtsModuleIds: ReadonlySet<string>;
-}
 /**
  * Output of the entry point bundling process.
  */

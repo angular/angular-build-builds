@@ -5,7 +5,7 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-import type { NormalizedLibraryOptions } from '../options';
+import type { NormalizedLibraryOptions } from '../types';
 import { type DiskOutputFile } from './utils';
 /**
  * Resolves and collects configured library assets to be emitted to disk,

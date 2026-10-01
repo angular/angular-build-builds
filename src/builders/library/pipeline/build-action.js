@@ -48,7 +48,8 @@ async function buildAction(actionContext) {
     }
     const shouldCompileEntryPoints = !modifiedFiles ||
         !buildState.singleProgramCache ||
-        Boolean(buildState.hasCompilationError) ||
+        buildState.hasCompilationError ||
+        buildState.hasEntryPointsChanges ||
         pendingChangedEsmFiles.size > 0 ||
         pendingChangedDtsFiles.size > 0 ||
         hasModifiedWatchedFile(modifiedFiles, allWatchedFiles, posixPackageJsonPath);
@@ -59,6 +60,7 @@ async function buildAction(actionContext) {
     const filesToEmit = [];
     if (shouldCompileEntryPoints) {
         buildState.hasCompilationError = true;
+        buildState.hasEntryPointsChanges = false;
         const { esmFiles, dtsFiles, changedEsmFiles, changedDtsFiles, referencedFiles, cache, diagnosePromise, } = await (0, compilation_1.compileLibrary)(options.entryPoints.values(), options, stylesheetBundler, buildState.singleProgramCache, modifiedFiles);
         buildState.singleProgramCache = cache;
         for (const file of referencedFiles) {

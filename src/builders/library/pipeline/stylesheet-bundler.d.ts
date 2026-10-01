@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 import { ComponentStylesheetBundler } from '../../../tools/esbuild/angular/component-stylesheets';
-import type { NormalizedLibraryOptions } from '../options';
+import type { NormalizedLibraryOptions } from '../types';
 export type LibraryStylesheetBundlerOptions = Pick<NormalizedLibraryOptions, 'workspaceRoot' | 'preserveSymlinks' | 'styleIncludePaths' | 'sass' | 'cacheOptions' | 'inlineStyleLanguage' | 'postcssConfiguration' | 'tailwindConfiguration'>;
 /**
  * Creates a stylesheet bundler instance configured for library compilation.

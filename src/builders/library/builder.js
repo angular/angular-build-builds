@@ -57,6 +57,7 @@ const purge_cache_1 = require("../../utils/purge-cache");
 const supported_browsers_1 = require("../../utils/supported-browsers");
 const version_1 = require("../../utils/version");
 const options_1 = require("./options");
+const entry_points_1 = require("./pipeline/entry-points");
 /**
  * Executes the library builder to compile, bundle, and package an Angular library into the Angular Package Format (APF).
  *
@@ -216,6 +217,11 @@ async function* runWatchLoop(watcher, options, stylesheetBundler, allWatchedFile
             try {
                 const packageJson = await loadPackageJson(packageJsonPath);
                 options.packageJson = packageJson;
+                if (!packageJson.name) {
+                    throw new Error(`The package.json at '${packageJsonPath}' must contain a 'name'.`);
+                }
+                options.packageName = packageJson.name;
+                (0, entry_points_1.updateWatchedEntryPoints)(packageJson, options, buildState, allWatchedFiles, packageJsonPath);
                 hasPackageJsonChanges = true;
             }
             catch (error) {
@@ -230,7 +236,8 @@ async function* runWatchLoop(watcher, options, stylesheetBundler, allWatchedFile
             }
         }
         const hasSourceChanges = !buildState.singleProgramCache ||
-            Boolean(buildState.hasCompilationError) ||
+            buildState.hasCompilationError ||
+            buildState.hasEntryPointsChanges ||
             hasModifiedWatchedFile(changedFiles, allWatchedFiles, posixPackageJsonPath);
         if (!hasSourceChanges &&
             !hasPackageJsonChanges &&

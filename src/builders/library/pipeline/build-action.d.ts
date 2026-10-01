@@ -6,23 +6,8 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 import type { BuilderContext } from '@angular-devkit/architect';
-import type { NormalizedLibraryOptions } from '../options';
-import { type BundleResult } from './bundler';
-import { type SingleProgramCache } from './compilation';
+import type { NormalizedLibraryOptions, SingleBuildState } from '../types';
 import type { createComponentStylesheetBundlerForLibrary } from './stylesheet-bundler';
-/**
- * State preserved across incremental builds in watch mode.
- */
-export interface SingleBuildState {
-    singleProgramCache?: SingleProgramCache;
-    previousBundleResults: Map<string, BundleResult>;
-    pendingChangedEsmFiles: Set<string>;
-    pendingChangedDtsFiles: Set<string>;
-    hasCompilationError?: boolean;
-    hasEmittedManifests?: boolean;
-    hasEmittedAssets?: boolean;
-    directoryExists: Set<string>;
-}
 /**
  * Creates a fresh {@link SingleBuildState} instance.
  */

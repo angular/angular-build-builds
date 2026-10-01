@@ -51,7 +51,7 @@ async function normalizeLibraryOptions(context, projectName, options) {
     if (!packageName) {
         throw new Error(`The package.json at '${packageJsonPath}' must contain a 'name'.`);
     }
-    const entryPoints = normalizeEntryPoints(packageJson.exports, projectRoot, packageJsonPath, packageName);
+    const entryPoints = (0, entry_points_1.normalizeEntryPoints)(packageJson.exports, projectRoot, packageJsonPath, packageName);
     const allowedNonPeerDependencies = [/^tslib$/];
     for (const pattern of rawAllowedNonPeerDependencies) {
         try {
@@ -112,96 +112,5 @@ async function normalizeLibraryOptions(context, projectName, options) {
         postcssConfiguration,
         tailwindConfiguration,
     };
-}
-/**
- * Normalizes a single entry point specification.
- *
- * @param key The entry point key from package.json exports (e.g. '.' or './testing').
- * @param posixKey Normalized POSIX key without trailing slashes.
- * @param isPrimary Whether this is the primary entry point.
- * @param targetPath The relative file path string from exports.
- * @param projectRoot The library project root directory.
- * @param packageName The root package name (e.g. `@my/lib`).
- * @returns The normalized entry point descriptor.
- */
-function normalizeEntryPoint(key, posixKey, isPrimary, targetPath, projectRoot, packageName) {
-    const name = isPrimary
-        ? '.'
-        : posixKey[0] === '.' && posixKey[1] === '/'
-            ? posixKey.slice(2)
-            : posixKey;
-    if (name !== '.' && (node_path_1.default.posix.isAbsolute(name) || name.includes('..'))) {
-        throw new Error(`Invalid entry point key '${key}'. Entry point keys must be relative subpaths without '..' (e.g. './testing').`);
-    }
-    const subpath = isPrimary ? '.' : `./${name}`;
-    const displayName = isPrimary ? packageName : `${packageName}/${name}`;
-    const bundleName = (0, entry_points_1.getEntryPointBundleName)(packageName, name);
-    const entryFilePath = node_path_1.default.resolve(projectRoot, targetPath);
-    if (!/(?<!\.d)\.(?:ts|mts)$/.test(entryFilePath)) {
-        throw new Error(`Entry point '${key}' file path must be a TypeScript file ('.ts' or '.mts'): '${entryFilePath}'.`);
-    }
-    return {
-        subpath,
-        name,
-        displayName,
-        bundleName,
-        entryFilePath,
-        isPrimary,
-    };
-}
-/**
- * Normalizes all entry points from the library's `package.json` `exports` field.
- *
- * @param rawExports The `exports` field from `package.json`.
- * @param projectRoot The library project root directory.
- * @param packageJsonPath Path to `package.json` for error reporting.
- * @param packageName The root package name (e.g. `@my/lib`).
- * @returns A Map of normalized entry points keyed by name.
- */
-function normalizeEntryPoints(rawExports, projectRoot, packageJsonPath, packageName) {
-    if (!rawExports || (typeof rawExports !== 'string' && typeof rawExports !== 'object')) {
-        throw new Error(`The 'package.json' at '${packageJsonPath}' must contain an 'exports' field defining the primary entry point ('.').`);
-    }
-    const exportsRecord = typeof rawExports === 'string' ? { '.': rawExports } : rawExports;
-    const entryPoints = new Map();
-    let hasPrimary = false;
-    for (const [key, value] of Object.entries(exportsRecord)) {
-        let target;
-        if (typeof value === 'string') {
-            target = value;
-        }
-        else if (typeof value === 'object' &&
-            value !== null &&
-            !Array.isArray(value) &&
-            typeof value['default'] === 'string') {
-            target = value['default'];
-        }
-        const posixKey = (0, path_1.toPosixPath)(key).replace(/\/+$/, '');
-        const isPrimary = posixKey === '.' || posixKey === '';
-        if (!target) {
-            if (isPrimary) {
-                throw new Error(`The primary entry point '.' in '${packageJsonPath}' must specify a string path ` +
-                    `or a 'default' condition pointing to a TypeScript file.`);
-            }
-            // Non-JS/TS conditional export (e.g., sass/style-only subpath); preserve in package.json without compiling.
-            continue;
-        }
-        if (!isPrimary && !/\.m?ts$/.test(target)) {
-            // Static asset, stylesheet, or package.json export; preserve in package.json without compiling.
-            continue;
-        }
-        const entryPoint = normalizeEntryPoint(key, posixKey, isPrimary, target, projectRoot, packageName);
-        if (entryPoints.has(entryPoint.name)) {
-            throw new Error(`Duplicate entry point detected: '${key}' resolves to the same name ('${entryPoint.name}') as an existing entry point.`);
-        }
-        entryPoints.set(entryPoint.name, entryPoint);
-        if (entryPoint.isPrimary) {
-            hasPrimary = true;
-        }
-    }
-    if (!hasPrimary) {
-        throw new Error(`The 'exports' field in '${packageJsonPath}' must contain a primary entry point with key '.'.`);
-    }
-    return entryPoints;
 }
 //# sourceMappingURL=options.js.map
