@@ -11,7 +11,7 @@ exports.normalizeCacheOptions = normalizeCacheOptions;
 const node_fs_1 = require("node:fs");
 const node_path_1 = require("node:path");
 /** Version placeholder is replaced during the build process with actual package version */
-const VERSION = '22.2.0+sha-d12414d';
+const VERSION = '22.2.0+sha-4179605';
 function hasCacheMetadata(value) {
     return (!!value &&
         typeof value === 'object' &&
@@ -42,10 +42,15 @@ function getCacheBasePath(workspaceRoot, cachePathSetting) {
                             // It's a git worktree
                             const commondir = (0, node_fs_1.readFileSync)(commondirPath, 'utf8').trim();
                             const commonGitDir = (0, node_path_1.resolve)(gitdir, commondir);
-                            return (0, node_path_1.resolve)((0, node_path_1.dirname)(commonGitDir), cachePathSetting);
+                            const relativeWorkspacePath = (0, node_path_1.relative)(currentDir, workspaceRoot);
+                            const mainWorkspaceRoot = (0, node_path_1.resolve)((0, node_path_1.dirname)(commonGitDir), relativeWorkspacePath);
+                            if ((0, node_fs_1.existsSync)(mainWorkspaceRoot)) {
+                                return (0, node_path_1.resolve)(mainWorkspaceRoot, cachePathSetting);
+                            }
                         }
                     }
                 }
+                break;
             }
             const parentDir = (0, node_path_1.dirname)(currentDir);
             if (parentDir === currentDir) {

@@ -40,11 +40,11 @@ const DEFAULT_LOCALE_WINDOW_SIZE = 8;
 const SMALL_FILE_FLOOR_BYTES = 100 * 1024;
 /**
  * Ratio of the maximum file size in a window to consider a file "dominant".
- * Files within 70% of the largest file are sharded across all workers for maximum concurrency.
+ * Files within 70% of the largest file are sharded across bounded workers for concurrency.
  */
 const DOMINANT_FILE_RATIO = 0.7;
 /**
- * Maximum number of worker threads to allocate concurrently for a single dominant file.
+ * Maximum number of worker threads to allocate concurrently across dominant files.
  * Capping concurrency on dominant files (which hold large AST and sourcemap trees)
  * prevents V8 heap and RSS explosion on machines with high CPU core counts.
  */
@@ -332,6 +332,19 @@ class I18nInliner {
         // Heavy files (e.g. main.js) are queued first to saturate all worker threads immediately,
         // while small files act as gap fillers near the window barrier to prevent tail stragglers.
         sortedFiles.sort((a, b) => b.fileSize - a.fileSize);
+        const dominantThreshold = Math.max(SMALL_FILE_FLOOR_BYTES, maxFileSize * DOMINANT_FILE_RATIO);
+        let dominantCount = 0;
+        for (const { fileSize } of sortedFiles) {
+            if (fileSize >= dominantThreshold) {
+                dominantCount++;
+            }
+            else {
+                break;
+            }
+        }
+        const dominantTargetWorkers = dominantCount > 0
+            ? Math.max(1, Math.min(workerCount - 1, Math.floor(MAX_DOMINANT_WORKERS / dominantCount)))
+            : 1;
         const workerTasks = [];
         for (const { filename, entries, codeFile, fileSize } of sortedFiles) {
             const mapFile = localizeMaps.get(filename);
@@ -347,14 +360,18 @@ class I18nInliner {
                 // Small chunks (< 100 KB): process all locales in 1 batch to eliminate IPC overhead
                 localesPerBatch = entries.length;
             }
-            else if (fileSize >= maxFileSize * DOMINANT_FILE_RATIO) {
+            else if (fileSize >= dominantThreshold) {
                 // Dominant file(s) with multiple files: shard across bounded workers while always reserving
                 // at least one worker to process smaller chunks in parallel without starvation.
-                const targetWorkers = Math.max(1, Math.min(workerCount - 1, MAX_DOMINANT_WORKERS));
-                localesPerBatch = Math.max(1, Math.ceil(entries.length / targetWorkers));
+                localesPerBatch = Math.max(1, Math.ceil(entries.length / dominantTargetWorkers));
+            }
+            else if (uncachedByFile.size >= workerCount) {
+                // Worker pool is already saturated by file-level concurrency;
+                // process all locales in a single batch to avoid duplicate parsing and IPC overhead.
+                localesPerBatch = entries.length;
             }
             else {
-                // Intermediate files: moderate sharding
+                // Intermediate files with idle workers: moderate sharding
                 localesPerBatch = Math.max(1, Math.ceil(entries.length / 2));
             }
             const ephemeral = isLastWindow && entries.length <= localesPerBatch;
