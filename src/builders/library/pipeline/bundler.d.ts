@@ -15,6 +15,8 @@ export interface BundleEntryPointsOutput {
     filesToEmit: MemoryOutputFile[];
     /** Map of entry point names to their bundle results containing bundled module IDs. */
     bundleResults: Map<string, BundleResult>;
+    /** Warning messages emitted during bundling. */
+    warnings: string[];
 }
 /**
  * Input state for an individual entry point to be bundled.

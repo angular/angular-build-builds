@@ -32,7 +32,7 @@ const DTS_EXTENSIONS = ['.d.ts', '.d.mts', '/index.d.ts', '/index.d.mts'];
 async function bundleEntryPoints(items, esmFiles, dtsFiles, options) {
     const bundleResults = new Map();
     if (items.length === 0) {
-        return { filesToEmit: [], bundleResults };
+        return { filesToEmit: [], bundleResults, warnings: [] };
     }
     const esmEntryPoints = [];
     const dtsEntryPoints = [];
@@ -62,6 +62,7 @@ async function bundleEntryPoints(items, esmFiles, dtsFiles, options) {
     return {
         filesToEmit: [...esmOutput.filesToEmit, ...dtsOutput.filesToEmit],
         bundleResults,
+        warnings: [...esmOutput.warnings, ...dtsOutput.warnings],
     };
 }
 /**
@@ -216,6 +217,7 @@ async function executeMultiBundle(input, plugins, extension, options) {
         // FESM (.mjs) sourcemaps are always enabled.
         sourcemap = true;
     }
+    const warnings = [];
     const bundle = await (0, rolldown_1.rolldown)({
         context: 'this',
         input,
@@ -224,6 +226,11 @@ async function executeMultiBundle(input, plugins, extension, options) {
         treeshake: false,
         resolve: { symlinks: !preserveSymlinks },
         checks: { circularDependency: false },
+        onLog(level, log) {
+            if (level === 'warn') {
+                warnings.push(log.message);
+            }
+        },
         experimental: {
             attachDebugInfo: 'none',
         },
@@ -238,7 +245,10 @@ async function executeMultiBundle(input, plugins, extension, options) {
             hoistTransitiveImports: false,
             comments: { jsdoc: isDts, legal: true, annotation: true },
         });
-        return processRolldownOutput(output, dir);
+        return {
+            ...processRolldownOutput(output, dir),
+            warnings,
+        };
     }
     finally {
         await bundle.close();
@@ -254,7 +264,7 @@ async function executeMultiBundle(input, plugins, extension, options) {
  */
 async function bundleAllEsm(entryPoints, esmFiles, options) {
     if (entryPoints.length === 0) {
-        return { filesToEmit: [], moduleIdsByBundle: new Map() };
+        return { filesToEmit: [], moduleIdsByBundle: new Map(), warnings: [] };
     }
     return executeMultiBundle(resolveEntryInputMap(entryPoints, false), [createMemoryFileLoaderPlugin(esmFiles, ESM_EXTENSIONS, true)], 'mjs', options);
 }
@@ -268,7 +278,7 @@ async function bundleAllEsm(entryPoints, esmFiles, options) {
  */
 async function bundleAllDts(entryPoints, dtsFiles, options) {
     if (entryPoints.length === 0) {
-        return { filesToEmit: [], moduleIdsByBundle: new Map() };
+        return { filesToEmit: [], moduleIdsByBundle: new Map(), warnings: [] };
     }
     const dtsSourcemap = options.declarationMap;
     // Filter out `rolldown-plugin-dts:resolver` because all `.d.ts` files are already emitted

@@ -105,7 +105,7 @@ async function buildAction(actionContext) {
         buildState.hasCompilationError = false;
         pendingChangedEsmFiles.clear();
         pendingChangedDtsFiles.clear();
-        for (const warning of warnings) {
+        for (const warning of [...warnings, ...bundleOutput.warnings]) {
             context.logger.warn(warning);
         }
         filesToEmit.push(...bundleOutput.filesToEmit);
