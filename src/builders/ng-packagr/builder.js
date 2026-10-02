@@ -84,11 +84,11 @@ async function* execute(options, context) {
     if (options.tsConfig) {
         packager.withTsConfig((0, node_path_1.resolve)(workspaceRoot, options.tsConfig));
     }
-    const { enabled: cacheEnabled, path: cacheDirectory } = (0, normalize_cache_1.normalizeCacheOptions)(metadata, context.workspaceRoot);
+    const { enabled: cacheEnabled, path: cacheDirectory } = (0, normalize_cache_1.normalizeCacheOptions)(metadata, context.workspaceRoot, projectName, context.builder.builderName);
     const ngPackagrOptions = {
         cacheEnabled,
         poll: options.poll,
-        cacheDirectory: (0, node_path_1.join)(cacheDirectory, 'ng-packagr'),
+        cacheDirectory: cacheDirectory,
     };
     try {
         if (options.watch) {

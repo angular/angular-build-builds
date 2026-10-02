@@ -29,7 +29,7 @@ async function normalizeOptions(context, projectName, options) {
     const { workspaceRoot, logger } = context;
     const projectMetadata = await context.getProjectMetadata(projectName);
     const projectRoot = node_path_1.default.join(workspaceRoot, projectMetadata.root ?? '');
-    const cacheOptions = (0, normalize_cache_1.normalizeCacheOptions)(projectMetadata, workspaceRoot);
+    const cacheOptions = (0, normalize_cache_1.normalizeCacheOptions)(projectMetadata, workspaceRoot, projectName, context.builder.builderName);
     // Target specifier defaults to the current project's build target using a development configuration
     const buildTargetSpecifier = options.buildTarget ?? `::development`;
     const buildTarget = (0, architect_1.targetFromTargetString)(buildTargetSpecifier, projectName, 'build');

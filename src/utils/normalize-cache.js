@@ -11,7 +11,7 @@ exports.normalizeCacheOptions = normalizeCacheOptions;
 const node_fs_1 = require("node:fs");
 const node_path_1 = require("node:path");
 /** Version placeholder is replaced during the build process with actual package version */
-const VERSION = '22.3.0-next.0+sha-88ebc67';
+const VERSION = '22.3.0-next.0+sha-5ffed3f';
 function hasCacheMetadata(value) {
     return (!!value &&
         typeof value === 'object' &&
@@ -62,7 +62,20 @@ function getCacheBasePath(workspaceRoot, cachePathSetting) {
     catch { }
     return (0, node_path_1.resolve)(workspaceRoot, cachePathSetting);
 }
-function normalizeCacheOptions(projectMetadata, workspaceRoot) {
+/**
+ * Normalizes the persistent disk cache configuration for a project or workspace.
+ *
+ * Resolves whether disk caching is enabled based on the CLI cache metadata, current runtime
+ * environment (local vs. CI, or WebContainers), and computes the versioned cache directory paths
+ * (resolving shared Git worktree paths when applicable).
+ *
+ * @param projectMetadata The project or workspace metadata object containing optional `cli.cache` settings.
+ * @param workspaceRoot The absolute path to the workspace root directory.
+ * @param projectName Optional name of the project used to scope the resolved cache path.
+ * @param builderName Optional name of the builder or tool used to further scope the resolved cache path.
+ * @returns The normalized disk cache options including enabled state and resolved directory paths.
+ */
+function normalizeCacheOptions(projectMetadata, workspaceRoot, projectName = '', builderName = '') {
     const cacheMetadata = hasCacheMetadata(projectMetadata) ? projectMetadata.cli.cache : {};
     const { 
     // Webcontainers do not currently benefit from persistent disk caching and can lead to increased browser memory usage
@@ -81,12 +94,13 @@ function normalizeCacheOptions(projectMetadata, workspaceRoot) {
     }
     const cacheBasePath = getCacheBasePath(workspaceRoot, path);
     const localCacheBasePath = (0, node_path_1.isAbsolute)(path) ? path : (0, node_path_1.resolve)(workspaceRoot, path);
+    const normalizedBuilderName = builderName.replaceAll(':', '-');
     return {
         enabled: cacheEnabled,
         basePath: cacheBasePath,
-        path: (0, node_path_1.join)(cacheBasePath, VERSION),
+        path: (0, node_path_1.join)(cacheBasePath, VERSION, projectName, normalizedBuilderName),
         localBasePath: localCacheBasePath,
-        localPath: (0, node_path_1.join)(localCacheBasePath, VERSION),
+        localPath: (0, node_path_1.join)(localCacheBasePath, VERSION, projectName, normalizedBuilderName),
     };
 }
 //# sourceMappingURL=normalize-cache.js.map

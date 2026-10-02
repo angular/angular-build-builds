@@ -17,7 +17,6 @@ const utils_1 = require("../../utils");
 const color_1 = require("../../utils/color");
 const error_1 = require("../../utils/error");
 const normalize_cache_1 = require("../../utils/normalize-cache");
-const path_1 = require("../../utils/path");
 const postcss_configuration_1 = require("../../utils/postcss-configuration");
 const project_metadata_1 = require("../../utils/project-metadata");
 const entry_points_1 = require("./pipeline/entry-points");
@@ -25,14 +24,6 @@ async function normalizeLibraryOptions(context, projectName, options) {
     const { workspaceRoot } = context;
     const projectMetadata = await context.getProjectMetadata(projectName);
     const { projectRoot, projectSourceRoot } = (0, project_metadata_1.getProjectRootPaths)(workspaceRoot, projectMetadata);
-    const outputPath = options.outputPath ?? node_path_1.default.join(workspaceRoot, 'dist', projectName);
-    const resolvedOutputPath = node_path_1.default.resolve(workspaceRoot, outputPath);
-    if (resolvedOutputPath === projectRoot ||
-        (0, path_1.isSubDirectory)(resolvedOutputPath, projectRoot) ||
-        (0, path_1.isSubDirectory)(projectRoot, resolvedOutputPath)) {
-        throw new Error(`The 'outputPath' (${resolvedOutputPath}) cannot be the project root, ` +
-            `contain the project root, or be located within the project root.`);
-    }
     const { tsConfig, assets: rawAssets, stylePreprocessorOptions, inlineStyleLanguage = 'css', compilationMode = 'partial', declarationMap = false, allowedNonPeerDependencies: rawAllowedNonPeerDependencies = [], keepLifecycleScripts = false, watch = false, poll, preserveSymlinks = process.execArgv.includes('--preserve-symlinks'), deleteOutputPath = true, progress = true, clearScreen, } = options;
     const resolvedTsConfigPath = node_path_1.default.resolve(workspaceRoot, tsConfig);
     const packageJsonPath = node_path_1.default.join(projectRoot, 'package.json');
@@ -77,7 +68,7 @@ async function normalizeLibraryOptions(context, projectName, options) {
         });
     }
     const assets = (0, utils_1.normalizeAssetPatterns)([...defaultAssets, ...(rawAssets ?? [])], workspaceRoot, projectRoot, projectSourceRoot);
-    const cacheOptions = (0, normalize_cache_1.normalizeCacheOptions)(projectMetadata, workspaceRoot);
+    const cacheOptions = (0, normalize_cache_1.normalizeCacheOptions)(projectMetadata, workspaceRoot, projectName, context.builder.builderName);
     const styleIncludePaths = (stylePreprocessorOptions?.includePaths ?? []).map((p) => node_path_1.default.resolve(workspaceRoot, p));
     const searchDirectories = await (0, postcss_configuration_1.generateSearchDirectories)([projectRoot, workspaceRoot]);
     const postcssConfiguration = await (0, postcss_configuration_1.loadPostcssConfiguration)(searchDirectories);
@@ -89,7 +80,7 @@ async function normalizeLibraryOptions(context, projectName, options) {
         projectRoot,
         packageName,
         packageJson,
-        outputPath: resolvedOutputPath,
+        outputPath: node_path_1.default.resolve(workspaceRoot, options.outputPath ?? node_path_1.default.join('dist', projectName)),
         deleteOutputPath,
         packageJsonPath,
         tsConfigPath: resolvedTsConfigPath,

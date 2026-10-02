@@ -23,4 +23,17 @@ export interface NormalizedCachedOptions {
      */
     localBasePath?: string;
 }
-export declare function normalizeCacheOptions(projectMetadata: unknown, workspaceRoot: string): NormalizedCachedOptions;
+/**
+ * Normalizes the persistent disk cache configuration for a project or workspace.
+ *
+ * Resolves whether disk caching is enabled based on the CLI cache metadata, current runtime
+ * environment (local vs. CI, or WebContainers), and computes the versioned cache directory paths
+ * (resolving shared Git worktree paths when applicable).
+ *
+ * @param projectMetadata The project or workspace metadata object containing optional `cli.cache` settings.
+ * @param workspaceRoot The absolute path to the workspace root directory.
+ * @param projectName Optional name of the project used to scope the resolved cache path.
+ * @param builderName Optional name of the builder or tool used to further scope the resolved cache path.
+ * @returns The normalized disk cache options including enabled state and resolved directory paths.
+ */
+export declare function normalizeCacheOptions(projectMetadata: unknown, workspaceRoot: string, projectName?: string, builderName?: string): NormalizedCachedOptions;

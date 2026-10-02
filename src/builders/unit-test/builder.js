@@ -332,7 +332,7 @@ async function* execute(options, context, extensions) {
                 preserveSymlinks: normalizedOptions.preserveSymlinks,
             };
             const dumpDirectory = normalizedOptions.dumpVirtualFiles
-                ? node_path_1.default.join(normalizedOptions.cacheOptions.path, 'unit-test', 'output-files')
+                ? node_path_1.default.join(normalizedOptions.cacheOptions.path, 'output-files')
                 : undefined;
             yield* runBuildAndTest(executor, applicationBuildOptions, context, dumpDirectory, finalExtensions);
         }
