@@ -31,4 +31,4 @@ export declare function haveEntryPointsChanged(oldEntryPoints: ReadonlyMap<strin
 /**
  * Updates watched files, entry points in options, and cached bundle results when package.json entry points change.
  */
-export declare function updateWatchedEntryPoints(packageJson: PackageJsonData, options: NormalizedLibraryOptions, buildState: SingleBuildState, allWatchedFiles: Set<string>, packageJsonPath: string): void;
+export declare function updateWatchedEntryPoints(packageJson: PackageJsonData, options: NormalizedLibraryOptions, buildState: SingleBuildState, watchedCompilationFiles: Set<string>, packageJsonPath: string): void;

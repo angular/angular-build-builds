@@ -40,7 +40,7 @@ function createSingleBuildState() {
  * @param actionContext The build action state and configuration.
  */
 async function buildAction(actionContext) {
-    const { options, context, stylesheetBundler, isWatchMode, allWatchedFiles, buildState, modifiedFiles, } = actionContext;
+    const { options, context, stylesheetBundler, isWatchMode, watchedCompilationFiles, buildState, modifiedFiles, } = actionContext;
     const posixPackageJsonPath = (0, path_1.toPosixPath)(options.packageJsonPath);
     const { pendingChangedEsmFiles, pendingChangedDtsFiles, directoryExists } = buildState;
     if (!modifiedFiles || modifiedFiles.has(posixPackageJsonPath)) {
@@ -52,7 +52,7 @@ async function buildAction(actionContext) {
         buildState.hasEntryPointsChanges ||
         pendingChangedEsmFiles.size > 0 ||
         pendingChangedDtsFiles.size > 0 ||
-        hasModifiedWatchedFile(modifiedFiles, allWatchedFiles, posixPackageJsonPath);
+        hasModifiedWatchedFile(modifiedFiles, watchedCompilationFiles, posixPackageJsonPath);
     const shouldGenerateManifests = !buildState.hasEmittedManifests;
     if (shouldGenerateManifests) {
         verifyAllowedDependencies(options);
@@ -64,7 +64,7 @@ async function buildAction(actionContext) {
         const { esmFiles, dtsFiles, changedEsmFiles, changedDtsFiles, referencedFiles, cache, diagnosePromise, } = await (0, compilation_1.compileLibrary)(options.entryPoints.values(), options, stylesheetBundler, buildState.singleProgramCache, modifiedFiles);
         buildState.singleProgramCache = cache;
         for (const file of referencedFiles) {
-            allWatchedFiles.add(file);
+            watchedCompilationFiles.add(file);
         }
         for (const file of changedEsmFiles) {
             pendingChangedEsmFiles.add(file);
@@ -116,7 +116,8 @@ async function buildAction(actionContext) {
     if (shouldGenerateManifests) {
         filesToEmit.push(...(0, package_manifests_1.generatePackageManifests)(options, isWatchMode));
     }
-    filesToEmit.push(...(await (0, assets_1.collectAssetsToEmit)(options.assets, options.workspaceRoot, allWatchedFiles, buildState.hasEmittedAssets ? modifiedFiles : undefined)));
+    const resolvedAssetsToEmit = (actionContext.assetsToEmit ??= await (0, assets_1.collectAssetsToEmit)(options.assets, options.workspaceRoot, buildState.hasEmittedAssets ? modifiedFiles : undefined));
+    filesToEmit.push(...resolvedAssetsToEmit);
     await (0, utils_1.emitFilesToDisk)(filesToEmit, async (file) => {
         const fullFilePath = node_path_1.default.join(options.outputPath, file.path);
         const fileBasePath = node_path_1.default.dirname(fullFilePath);
@@ -134,9 +135,9 @@ async function buildAction(actionContext) {
     buildState.hasEmittedManifests = true;
     buildState.hasEmittedAssets = true;
 }
-function hasModifiedWatchedFile(modifiedFiles, allWatchedFiles, posixPackageJsonPath) {
+function hasModifiedWatchedFile(modifiedFiles, watchedCompilationFiles, posixPackageJsonPath) {
     for (const file of modifiedFiles) {
-        if (file !== posixPackageJsonPath && allWatchedFiles.has(file)) {
+        if (file !== posixPackageJsonPath && watchedCompilationFiles.has(file)) {
             return true;
         }
     }

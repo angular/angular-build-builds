@@ -171,11 +171,11 @@ function haveEntryPointsChanged(oldEntryPoints, newEntryPoints) {
 /**
  * Updates watched files, entry points in options, and cached bundle results when package.json entry points change.
  */
-function updateWatchedEntryPoints(packageJson, options, buildState, allWatchedFiles, packageJsonPath) {
+function updateWatchedEntryPoints(packageJson, options, buildState, watchedCompilationFiles, packageJsonPath) {
     const newEntryPoints = normalizeEntryPoints(packageJson.exports, options.projectRoot, packageJsonPath, options.packageName);
     if (haveEntryPointsChanged(options.entryPoints, newEntryPoints)) {
         for (const entryPoint of newEntryPoints.values()) {
-            allWatchedFiles.add((0, path_1.toPosixPath)(entryPoint.entryFilePath));
+            watchedCompilationFiles.add((0, path_1.toPosixPath)(entryPoint.entryFilePath));
         }
         for (const name of buildState.previousBundleResults.keys()) {
             const oldEp = options.entryPoints.get(name);
