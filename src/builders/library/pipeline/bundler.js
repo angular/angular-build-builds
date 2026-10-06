@@ -6,6 +6,39 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -13,8 +46,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.bundleEntryPoints = bundleEntryPoints;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_path_1 = __importDefault(require("node:path"));
-const rolldown_1 = require("rolldown");
-const rolldown_plugin_dts_1 = require("rolldown-plugin-dts");
+const load_rolldown_1 = require("../../../utils/load-rolldown");
 const path_1 = require("../../../utils/path");
 const utils_1 = require("./utils");
 const ESM_EXTENSIONS = ['.js', '.mjs', '/index.js', '/index.mjs'];
@@ -218,7 +250,8 @@ async function executeMultiBundle(input, plugins, extension, options) {
         sourcemap = true;
     }
     const warnings = [];
-    const bundle = await (0, rolldown_1.rolldown)({
+    const { rolldown } = await (0, load_rolldown_1.loadRolldown)();
+    const bundle = await rolldown({
         context: 'this',
         input,
         cwd: workspaceRoot,
@@ -280,13 +313,17 @@ async function bundleAllDts(entryPoints, dtsFiles, options) {
     if (entryPoints.length === 0) {
         return { filesToEmit: [], moduleIdsByBundle: new Map(), warnings: [] };
     }
+    // Ensure Rolldown's native binding is initialized via `loadRolldown()` before evaluating
+    // `rolldown-plugin-dts`, which has top-level imports of `rolldown/experimental`.
+    await (0, load_rolldown_1.loadRolldown)();
+    const { dts } = await Promise.resolve().then(() => __importStar(require('rolldown-plugin-dts')));
     const dtsSourcemap = options.declarationMap;
     // Filter out `rolldown-plugin-dts:resolver` because all `.d.ts` files are already emitted
     // in-memory by the Angular/TypeScript compilation and resolved via `createMemoryFileLoaderPlugin`.
     // The default `rolldown-plugin-dts:resolver` plugin performs filesystem resolution (`oxc-resolver`)
     // and calls `this.load()` on on-disk `.ts` source files, which is unnecessary and causes a
     // significant performance regression across multi-entry builds.
-    const rawDtsPlugins = (0, rolldown_plugin_dts_1.dts)({
+    const rawDtsPlugins = dts({
         dtsInput: true,
         tsconfig: false,
         sourcemap: dtsSourcemap,

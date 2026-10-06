@@ -48,6 +48,7 @@ const node_assert_1 = __importDefault(require("node:assert"));
 const bundler_files_1 = require("../../tools/esbuild/bundler-files");
 const environment_options_1 = require("../../utils/environment-options");
 const error_1 = require("../../utils/error");
+const load_rolldown_1 = require("../../utils/load-rolldown");
 const path_1 = require("../../utils/path");
 /**
  * Converts the output of a bundle build into an esbuild-compatible metafile.
@@ -240,7 +241,7 @@ async function optimizeChunks(original, sourcemap) {
             },
         ];
         if (environment_options_1.useRolldownChunks) {
-            const { rolldown } = await Promise.resolve().then(() => __importStar(require('rolldown')));
+            const { rolldown } = await (0, load_rolldown_1.loadRolldown)();
             bundle = await rolldown({
                 input: mainFile,
                 plugins,
