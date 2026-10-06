@@ -108,12 +108,13 @@ function normalizeProxyConfiguration(proxy) {
             if (!('context' in proxyEntry)) {
                 continue;
             }
-            if (!Array.isArray(proxyEntry.context)) {
+            // Array-form entries contain a context string array with the path(s)
+            // to use for the configuration entry. A single path string is also
+            // accepted, as with the Webpack-based development server.
+            const context = typeof proxyEntry.context === 'string' ? [proxyEntry.context] : proxyEntry.context;
+            if (!Array.isArray(context)) {
                 continue;
             }
-            // Array-form entries contain a context string array with the path(s)
-            // to use for the configuration entry.
-            const context = proxyEntry.context;
             delete proxyEntry.context;
             for (const contextEntry of context) {
                 if (typeof contextEntry !== 'string') {
@@ -127,13 +128,14 @@ function normalizeProxyConfiguration(proxy) {
         normalizedProxy = proxy;
     }
     // TODO: Consider upstreaming glob support
-    for (const key of Object.keys(normalizedProxy)) {
-        if (key[0] !== '^' && (0, tinyglobby_1.isDynamicPattern)(key)) {
-            const pattern = (0, picomatch_1.makeRe)(key).source;
-            normalizedProxy[pattern] = normalizedProxy[key];
-            delete normalizedProxy[key];
-        }
+    // The object is rebuilt so that converted glob entries keep their original position,
+    // since Vite proxies a request with the first entry that matches it.
+    const orderedProxy = {};
+    for (const [key, value] of Object.entries(normalizedProxy)) {
+        const context = key[0] !== '^' && (0, tinyglobby_1.isDynamicPattern)(key) ? (0, picomatch_1.makeRe)(key).source : key;
+        orderedProxy[context] = value;
     }
+    normalizedProxy = orderedProxy;
     // Replace `pathRewrite` field with a `rewrite` function
     for (const proxyEntry of Object.values(normalizedProxy)) {
         if (typeof proxyEntry === 'object' &&
