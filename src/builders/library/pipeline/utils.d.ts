@@ -5,6 +5,7 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
+import type { PackageJsonData } from '../types';
 /**
  * The output directory name for ES module format output files.
  */
@@ -67,3 +68,10 @@ export declare function isDeclarationFile(path: string): boolean;
  * @returns True if the path ends with `.d.ts.map`, `.d.mts.map`, or `.d.cts.map`.
  */
 export declare function isDeclarationSourceMapFile(path: string): boolean;
+/**
+ * Loads and parses a package.json file from disk.
+ *
+ * @param packageJsonPath The path to the package.json file.
+ * @returns The parsed package.json data.
+ */
+export declare function loadPackageJson(packageJsonPath: string): Promise<PackageJsonData>;

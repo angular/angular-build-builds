@@ -11,7 +11,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.normalizeLibraryOptions = normalizeLibraryOptions;
-const promises_1 = __importDefault(require("node:fs/promises"));
 const node_path_1 = __importDefault(require("node:path"));
 const utils_1 = require("../../utils");
 const color_1 = require("../../utils/color");
@@ -20,6 +19,7 @@ const normalize_cache_1 = require("../../utils/normalize-cache");
 const postcss_configuration_1 = require("../../utils/postcss-configuration");
 const project_metadata_1 = require("../../utils/project-metadata");
 const entry_points_1 = require("./pipeline/entry-points");
+const utils_2 = require("./pipeline/utils");
 async function normalizeLibraryOptions(context, projectName, options) {
     const { workspaceRoot } = context;
     const projectMetadata = await context.getProjectMetadata(projectName);
@@ -29,8 +29,7 @@ async function normalizeLibraryOptions(context, projectName, options) {
     const packageJsonPath = node_path_1.default.join(projectRoot, 'package.json');
     let packageJson;
     try {
-        const packageJsonContent = await promises_1.default.readFile(packageJsonPath, 'utf8');
-        packageJson = JSON.parse(packageJsonContent);
+        packageJson = await (0, utils_2.loadPackageJson)(packageJsonPath);
     }
     catch (error) {
         (0, error_1.assertIsError)(error);

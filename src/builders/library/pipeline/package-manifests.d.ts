@@ -12,6 +12,7 @@ import { type MemoryOutputFile } from './utils';
  *
  * @param options The normalized library options.
  * @param isWatchMode Whether the builder is running in watch mode.
+ * @param hasTslibImport Whether any output chunk imports 'tslib'.
  * @returns An array of memory output files containing generated package manifests and .npmignore.
  */
-export declare function generatePackageManifests(options: NormalizedLibraryOptions, isWatchMode: boolean): MemoryOutputFile[];
+export declare function generatePackageManifests(options: NormalizedLibraryOptions, isWatchMode: boolean, hasTslibImport?: boolean): Promise<MemoryOutputFile[]>;

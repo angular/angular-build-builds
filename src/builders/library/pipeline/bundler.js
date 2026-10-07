@@ -82,13 +82,15 @@ async function bundleEntryPoints(items, esmFiles, dtsFiles, options) {
     ]);
     for (const { entryPoint, previousBundleResult } of items) {
         const { bundleName, name } = entryPoint;
+        const esmModuleIds = esmOutput.moduleIdsByBundle.get(bundleName);
         bundleResults.set(name, {
-            esmModuleIds: esmOutput.moduleIdsByBundle.get(bundleName) ??
-                previousBundleResult?.esmModuleIds ??
-                new Set(),
+            esmModuleIds: esmModuleIds ?? previousBundleResult?.esmModuleIds ?? new Set(),
             dtsModuleIds: dtsOutput.moduleIdsByBundle.get(bundleName) ??
                 previousBundleResult?.dtsModuleIds ??
                 new Set(),
+            hasTslibImport: esmModuleIds
+                ? esmOutput.tslibBundles.has(bundleName)
+                : (previousBundleResult?.hasTslibImport ?? false),
         });
     }
     return {
@@ -186,6 +188,7 @@ function createMemoryFileLoaderPlugin(files, extensions, includeMap) {
 function processRolldownOutput(output, dir) {
     const filesToEmit = [];
     const moduleIdsByBundle = new Map();
+    const tslibBundles = new Set();
     const chunksByFileName = new Map();
     const entryChunks = [];
     for (const item of output) {
@@ -217,6 +220,9 @@ function processRolldownOutput(output, dir) {
                 }
             }
             for (const depFile of [...chunk.imports, ...chunk.dynamicImports]) {
+                if (depFile === 'tslib') {
+                    tslibBundles.add(entryChunk.name);
+                }
                 const depChunk = chunksByFileName.get(depFile);
                 if (depChunk && !visited.has(depChunk)) {
                     queue.push(depChunk);
@@ -224,7 +230,7 @@ function processRolldownOutput(output, dir) {
             }
         }
     }
-    return { filesToEmit, moduleIdsByBundle };
+    return { filesToEmit, moduleIdsByBundle, tslibBundles };
 }
 /**
  * Executes a Rolldown bundle build across all provided entry inputs.
@@ -297,7 +303,12 @@ async function executeMultiBundle(input, plugins, extension, options) {
  */
 async function bundleAllEsm(entryPoints, esmFiles, options) {
     if (entryPoints.length === 0) {
-        return { filesToEmit: [], moduleIdsByBundle: new Map(), warnings: [] };
+        return {
+            filesToEmit: [],
+            moduleIdsByBundle: new Map(),
+            tslibBundles: new Set(),
+            warnings: [],
+        };
     }
     return executeMultiBundle(resolveEntryInputMap(entryPoints, false), [createMemoryFileLoaderPlugin(esmFiles, ESM_EXTENSIONS, true)], 'mjs', options);
 }
@@ -311,7 +322,12 @@ async function bundleAllEsm(entryPoints, esmFiles, options) {
  */
 async function bundleAllDts(entryPoints, dtsFiles, options) {
     if (entryPoints.length === 0) {
-        return { filesToEmit: [], moduleIdsByBundle: new Map(), warnings: [] };
+        return {
+            filesToEmit: [],
+            moduleIdsByBundle: new Map(),
+            tslibBundles: new Set(),
+            warnings: [],
+        };
     }
     // Ensure Rolldown's native binding is initialized via `loadRolldown()` before evaluating
     // `rolldown-plugin-dts`, which has top-level imports of `rolldown/experimental`.

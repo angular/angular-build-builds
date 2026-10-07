@@ -6,12 +6,17 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TYPES_OUTPUT_DIR = exports.FESM_OUTPUT_DIR = void 0;
 exports.createDiskOutputFile = createDiskOutputFile;
 exports.createMemoryOutputFile = createMemoryOutputFile;
 exports.isDeclarationFile = isDeclarationFile;
 exports.isDeclarationSourceMapFile = isDeclarationSourceMapFile;
+exports.loadPackageJson = loadPackageJson;
+const promises_1 = __importDefault(require("node:fs/promises"));
 const IS_DTS_FILE_REGEXP = /\.d\.[cm]?ts$/i;
 const IS_DTS_MAP_FILE_REGEXP = /\.d\.[cm]?ts\.map$/i;
 /**
@@ -69,5 +74,15 @@ function isDeclarationFile(path) {
  */
 function isDeclarationSourceMapFile(path) {
     return IS_DTS_MAP_FILE_REGEXP.test(path);
+}
+/**
+ * Loads and parses a package.json file from disk.
+ *
+ * @param packageJsonPath The path to the package.json file.
+ * @returns The parsed package.json data.
+ */
+async function loadPackageJson(packageJsonPath) {
+    const content = await promises_1.default.readFile(packageJsonPath, 'utf-8');
+    return JSON.parse(content);
 }
 //# sourceMappingURL=utils.js.map

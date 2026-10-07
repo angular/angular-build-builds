@@ -113,8 +113,15 @@ async function buildAction(actionContext) {
             buildState.previousBundleResults.set(name, bundleResult);
         }
     }
-    if (shouldGenerateManifests) {
-        filesToEmit.push(...(0, package_manifests_1.generatePackageManifests)(options, isWatchMode));
+    let hasTslibImport = false;
+    for (const entryPoint of options.entryPoints.values()) {
+        if (buildState.previousBundleResults.get(entryPoint.name)?.hasTslibImport) {
+            hasTslibImport = true;
+            break;
+        }
+    }
+    if (shouldGenerateManifests || buildState.hasEmittedTslib !== hasTslibImport) {
+        filesToEmit.push(...(await (0, package_manifests_1.generatePackageManifests)(options, isWatchMode, hasTslibImport)));
     }
     const resolvedAssetsToEmit = (actionContext.assetsToEmit ??= await (0, assets_1.collectAssetsToEmit)(options.assets, options.workspaceRoot, buildState.hasEmittedAssets ? modifiedFiles : undefined));
     filesToEmit.push(...resolvedAssetsToEmit);
@@ -133,6 +140,7 @@ async function buildAction(actionContext) {
         }
     });
     buildState.hasEmittedManifests = true;
+    buildState.hasEmittedTslib = hasTslibImport;
     buildState.hasEmittedAssets = true;
 }
 function hasModifiedWatchedFile(modifiedFiles, watchedCompilationFiles, posixPackageJsonPath) {

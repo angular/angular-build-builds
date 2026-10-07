@@ -39,12 +39,8 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.executeLibraryBuilder = executeLibraryBuilder;
-const promises_1 = __importDefault(require("node:fs/promises"));
 const sass_language_1 = require("../../tools/esbuild/stylesheets/sass-language");
 const target_1 = require("../../tools/esbuild/target");
 const utils_1 = require("../../tools/esbuild/utils");
@@ -58,6 +54,7 @@ const supported_browsers_1 = require("../../utils/supported-browsers");
 const version_1 = require("../../utils/version");
 const options_1 = require("./options");
 const entry_points_1 = require("./pipeline/entry-points");
+const utils_2 = require("./pipeline/utils");
 /**
  * Executes the library builder to compile, bundle, and package an Angular library into the Angular Package Format (APF).
  *
@@ -221,7 +218,7 @@ async function* runWatchLoop(watcher, options, stylesheetBundler, watchedCompila
         let hasPackageJsonChanges = false;
         if (changedFiles.has(posixPackageJsonPath)) {
             try {
-                const packageJson = await loadPackageJson(packageJsonPath);
+                const packageJson = await (0, utils_2.loadPackageJson)(packageJsonPath);
                 options.packageJson = packageJson;
                 if (!packageJson.name) {
                     throw new Error(`The package.json at '${packageJsonPath}' must contain a 'name'.`);
@@ -260,13 +257,6 @@ async function* runWatchLoop(watcher, options, stylesheetBundler, watchedCompila
             assetsToEmit,
         }, withProgress, watcher, buildAction);
     }
-}
-/**
- * Loads and parses a JSON file from disk.
- */
-async function loadPackageJson(packageJsonPath) {
-    const content = await promises_1.default.readFile(packageJsonPath, 'utf-8');
-    return JSON.parse(content);
 }
 /**
  * Logs the build completion time and status.
