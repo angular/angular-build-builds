@@ -78,7 +78,7 @@ class JitCompilation extends typescript_compilation_1.TypeScriptCompilation {
         // Dynamically load the Angular compiler CLI package
         const { constructorParametersDownlevelTransform } = await Promise.resolve().then(() => __importStar(require('@angular/compiler-cli/private/tooling')));
         // Load the compiler configuration and transform as needed
-        const { compilerOptions, rootNames, errors: configurationDiagnostics, warnings, } = await this.loadConfiguration(tsconfig, compilerOptionOverrides, buildType);
+        const { compilerOptions, rootNames, errors: configurationDiagnostics, warnings, tsConfigFiles, } = await this.loadConfiguration(tsconfig, compilerOptionOverrides, buildType);
         if (hostOptions.modifiedFiles) {
             this.invalidateFiles(hostOptions.modifiedFiles);
         }
@@ -87,9 +87,10 @@ class JitCompilation extends typescript_compilation_1.TypeScriptCompilation {
         // Create the TypeScript Program
         const typeScriptProgram = (0, profiling_1.profileSync)('TS_CREATE_PROGRAM', () => typescript_1.default.createEmitAndSemanticDiagnosticsBuilderProgram(rootNames, compilerOptions, host, this.#state?.typeScriptProgram ?? typescript_1.default.readBuilderProgram(compilerOptions, host), configurationDiagnostics));
         this.#state = new JitCompilationState(host, typeScriptProgram, constructorParametersDownlevelTransform(typeScriptProgram.getProgram()), (0, jit_resource_transformer_1.createJitResourceTransformer)(() => typeScriptProgram.getProgram().getTypeChecker()), (0, web_worker_transformer_1.createWorkerTransformer)(hostOptions.processWebWorker.bind(hostOptions)));
-        const referencedFiles = typeScriptProgram
-            .getSourceFiles()
-            .map((sourceFile) => sourceFile.fileName);
+        const referencedFiles = [
+            ...tsConfigFiles,
+            ...typeScriptProgram.getSourceFiles().map((sourceFile) => sourceFile.fileName),
+        ];
         return { compilerOptions, referencedFiles, warnings };
     }
     *collectDiagnostics(modes) {

@@ -15,6 +15,7 @@ export interface TransformedConfiguration {
     rootNames: string[];
     errors: ts.Diagnostic[];
     warnings: PartialMessage[];
+    tsConfigFiles: readonly string[];
 }
 export declare abstract class TypeScriptCompilation extends AngularCompilation {
     #private;

@@ -52,6 +52,7 @@ const compiler_options_1 = require("./compiler-options");
 const diagnostics_1 = require("./diagnostics");
 class TypeScriptCompilation extends angular_compilation_1.AngularCompilation {
     static #angularCompilerCliModule;
+    #extendedConfigCache = new Map();
     static async loadCompilerCli() {
         TypeScriptCompilation.#angularCompilerCliModule ??= await Promise.resolve().then(() => __importStar(require('@angular/compiler-cli')));
         return TypeScriptCompilation.#angularCompilerCliModule;
@@ -73,7 +74,8 @@ class TypeScriptCompilation extends angular_compilation_1.AngularCompilation {
             // Disable removing of comments as TS is quite aggressive with these and can
             // remove important annotations, such as /* @__PURE__ */ and comments like /* vite-ignore */.
             removeComments: false,
-        }));
+        }, undefined, this.#extendedConfigCache));
+        const tsConfigFiles = [(0, path_1.toPosixPath)(tsconfig), ...this.#extendedConfigCache.keys()];
         let rootNames = originalRootNames;
         if (compilerOptionOverrides?.rootFiles?.length) {
             const rootFilesSet = new Set(compilerOptionOverrides.rootFiles.map((file) => (0, path_1.canonicalizePath)((0, path_1.toPosixPath)(file))));
@@ -90,12 +92,23 @@ class TypeScriptCompilation extends angular_compilation_1.AngularCompilation {
             rootNames,
             errors,
             warnings,
+            tsConfigFiles,
         };
     }
     sourceFiles = new Map();
     invalidateFiles(files) {
         for (const file of files) {
-            this.sourceFiles.delete((0, path_1.toPosixPath)(file));
+            const posixFile = (0, path_1.toPosixPath)(file);
+            this.sourceFiles.delete(posixFile);
+            if (this.#extendedConfigCache.size === 0) {
+                continue;
+            }
+            if (this.#extendedConfigCache.delete(posixFile)) {
+                continue;
+            }
+            // Check with lowercased key because TypeScript lowercases the keys
+            // of the extended config cache on case-insensitive operating systems.
+            this.#extendedConfigCache.delete(posixFile.toLowerCase());
         }
     }
     async update(files) {
