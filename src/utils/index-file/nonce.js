@@ -15,8 +15,10 @@ const html_rewriting_stream_1 = require("./html-rewriting-stream");
  * case-insensitive, because HTML attribute names are case-insensitive as well.
  */
 const NONCE_ATTR_PATTERN = /ngCspNonce/i;
+const TARGET_LINK_RELS = new Set(['stylesheet', 'modulepreload']);
 /**
- * Finds the `ngCspNonce` value and copies it to all inline `<style>` and `<script> `tags.
+ * Finds the `ngCspNonce` value and copies it to all `<style>` and `<script>` tags,
+ * as well as stylesheet and modulepreload `<link>` tags.
  * @param html Markup that should be processed.
  */
 async function addNonce(html) {
@@ -26,9 +28,25 @@ async function addNonce(html) {
     }
     const { rewriter, transformedContent } = await (0, html_rewriting_stream_1.htmlRewritingStream)(html);
     rewriter.on('startTag', (tag) => {
-        if ((tag.tagName === 'style' || tag.tagName === 'script') &&
-            !tag.attrs.some((attr) => attr.name === 'nonce')) {
-            tag.attrs.push({ name: 'nonce', value: nonce });
+        const { tagName, attrs } = tag;
+        if (tagName === 'style' || tagName === 'script' || tagName === 'link') {
+            let isTarget = tagName !== 'link';
+            let hasNonce = false;
+            for (const attr of attrs) {
+                if (attr.name === 'nonce') {
+                    hasNonce = true;
+                    break;
+                }
+                if (tagName === 'link' && attr.name === 'rel' && attr.value) {
+                    const tokens = attr.value.trim().toLowerCase().split(/\s+/);
+                    if (tokens.some((token) => TARGET_LINK_RELS.has(token))) {
+                        isTarget = true;
+                    }
+                }
+            }
+            if (isTarget && !hasNonce) {
+                attrs.push({ name: 'nonce', value: nonce });
+            }
         }
         rewriter.emitStartTag(tag);
     });

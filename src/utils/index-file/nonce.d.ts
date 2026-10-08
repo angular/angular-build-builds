@@ -6,7 +6,8 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 /**
- * Finds the `ngCspNonce` value and copies it to all inline `<style>` and `<script> `tags.
+ * Finds the `ngCspNonce` value and copies it to all `<style>` and `<script>` tags,
+ * as well as stylesheet and modulepreload `<link>` tags.
  * @param html Markup that should be processed.
  */
 export declare function addNonce(html: string): Promise<string>;
