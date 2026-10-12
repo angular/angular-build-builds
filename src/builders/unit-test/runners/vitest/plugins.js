@@ -201,6 +201,7 @@ async function createVitestConfigPlugin(options) {
                 test: {
                     name: projectName,
                     include,
+                    fsModuleCache: false,
                     // CLI provider browser options override, if present
                     ...(browser ? { browser } : {}),
                     // Only override if the user explicitly set it via CLI
@@ -218,6 +219,7 @@ async function createVitestConfigPlugin(options) {
             const projectConfig = mergeConfig(projectBase, projectOverrides);
             return {
                 test: {
+                    fsModuleCache: false,
                     coverage: await generateCoverageOption(options.coverage, testConfig?.coverage, projectName, determinedProvider),
                     ...(reporters ? { reporters } : {}),
                     projects: [projectConfig],
