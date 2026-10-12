@@ -64,8 +64,12 @@ class TypeScriptCompilation extends angular_compilation_1.AngularCompilation {
             suppressOutputPathCheck: true,
             outDir: undefined,
             sourceMap: false,
-            declaration: false,
-            declarationMap: false,
+            ...(buildType === 'library'
+                ? { declaration: true }
+                : {
+                    declaration: false,
+                    declarationMap: false,
+                }),
             allowEmptyCodegenFiles: false,
             annotationsAs: 'decorators',
             enableResourceInlining: false,

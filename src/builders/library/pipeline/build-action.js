@@ -61,8 +61,12 @@ async function buildAction(actionContext) {
     if (shouldCompileEntryPoints) {
         buildState.hasCompilationError = true;
         buildState.hasEntryPointsChanges = false;
-        const { esmFiles, dtsFiles, changedEsmFiles, changedDtsFiles, referencedFiles, cache, diagnosePromise, } = await (0, compilation_1.compileLibrary)(options.entryPoints.values(), options, stylesheetBundler, buildState.singleProgramCache, modifiedFiles);
+        const { esmFiles, dtsFiles, changedEsmFiles, changedDtsFiles, referencedFiles, cache, diagnosePromise, declarationMap, compilationMode, } = await (0, compilation_1.compileLibrary)(options.entryPoints.values(), options, stylesheetBundler, buildState.singleProgramCache, modifiedFiles);
         buildState.singleProgramCache = cache;
+        if (buildState.compilationMode !== compilationMode) {
+            buildState.compilationMode = compilationMode;
+            buildState.hasEmittedManifests = false;
+        }
         for (const file of referencedFiles) {
             watchedCompilationFiles.add(file);
         }
@@ -93,7 +97,11 @@ async function buildAction(actionContext) {
         let warnings;
         try {
             [bundleOutput, warnings] = await Promise.all([
-                (0, bundler_1.bundleEntryPoints)(itemsToBundle, esmFiles, dtsFiles, options),
+                (0, bundler_1.bundleEntryPoints)(itemsToBundle, esmFiles, dtsFiles, {
+                    ...options,
+                    declarationMap,
+                    compilationMode,
+                }),
                 diagnosePromise,
             ]);
         }
@@ -120,8 +128,11 @@ async function buildAction(actionContext) {
             break;
         }
     }
-    if (shouldGenerateManifests || buildState.hasEmittedTslib !== hasTslibImport) {
-        filesToEmit.push(...(await (0, package_manifests_1.generatePackageManifests)(options, isWatchMode, hasTslibImport)));
+    if (!buildState.hasEmittedManifests || buildState.hasEmittedTslib !== hasTslibImport) {
+        filesToEmit.push(...(await (0, package_manifests_1.generatePackageManifests)({
+            ...options,
+            compilationMode: buildState.compilationMode ?? options.compilationMode ?? 'partial',
+        }, isWatchMode, hasTslibImport)));
     }
     const resolvedAssetsToEmit = (actionContext.assetsToEmit ??= await (0, assets_1.collectAssetsToEmit)(options.assets, options.workspaceRoot, buildState.hasEmittedAssets ? modifiedFiles : undefined));
     filesToEmit.push(...resolvedAssetsToEmit);

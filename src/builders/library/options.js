@@ -24,7 +24,7 @@ async function normalizeLibraryOptions(context, projectName, options) {
     const { workspaceRoot } = context;
     const projectMetadata = await context.getProjectMetadata(projectName);
     const { projectRoot, projectSourceRoot } = (0, project_metadata_1.getProjectRootPaths)(workspaceRoot, projectMetadata);
-    const { tsConfig, assets: rawAssets, stylePreprocessorOptions, inlineStyleLanguage = 'css', compilationMode = 'partial', declarationMap = false, allowedNonPeerDependencies: rawAllowedNonPeerDependencies = [], keepLifecycleScripts = false, watch = false, poll, preserveSymlinks = process.execArgv.includes('--preserve-symlinks'), deleteOutputPath = true, progress = true, clearScreen, } = options;
+    const { tsConfig, assets: rawAssets, stylePreprocessorOptions, inlineStyleLanguage = 'css', compilationMode, declarationMap, allowedNonPeerDependencies: rawAllowedNonPeerDependencies = [], keepLifecycleScripts = false, watch = false, poll, preserveSymlinks = process.execArgv.includes('--preserve-symlinks'), deleteOutputPath = true, progress = true, clearScreen, } = options;
     const resolvedTsConfigPath = node_path_1.default.resolve(workspaceRoot, tsConfig);
     const packageJsonPath = node_path_1.default.join(projectRoot, 'package.json');
     let packageJson;

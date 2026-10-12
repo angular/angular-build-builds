@@ -233,6 +233,14 @@ function processRolldownOutput(output, dir) {
     return { filesToEmit, moduleIdsByBundle, tslibBundles };
 }
 /**
+ * Set of Rolldown warning codes that should be ignored.
+ */
+const IGNORED_ROLLDOWN_WARNING_CODES = new Set([
+    'EMPTY_BUNDLE',
+    'UNUSED_EXTERNAL_IMPORT',
+    'THIS_IS_UNDEFINED',
+]);
+/**
  * Executes a Rolldown bundle build across all provided entry inputs.
  *
  * @param input Map of bundle names to virtual entry file paths.
@@ -248,7 +256,7 @@ async function executeMultiBundle(input, plugins, extension, options) {
     let dir;
     if (isDts) {
         dir = utils_1.TYPES_OUTPUT_DIR;
-        sourcemap = declarationMap;
+        sourcemap = !!declarationMap;
     }
     else {
         dir = utils_1.FESM_OUTPUT_DIR;
@@ -266,7 +274,11 @@ async function executeMultiBundle(input, plugins, extension, options) {
         resolve: { symlinks: !preserveSymlinks },
         checks: { circularDependency: false },
         onLog(level, log) {
+            // Ignore specified warning codes
             if (level === 'warn') {
+                if (log.code && IGNORED_ROLLDOWN_WARNING_CODES.has(log.code)) {
+                    return;
+                }
                 warnings.push(log.message);
             }
         },
@@ -282,7 +294,7 @@ async function executeMultiBundle(input, plugins, extension, options) {
             chunkFileNames: `[name]-[hash].${extension}`,
             sourcemap,
             hoistTransitiveImports: false,
-            comments: { jsdoc: isDts, legal: true, annotation: true },
+            comments: { jsdoc: isDts, legal: true, annotation: !isDts },
         });
         return {
             ...processRolldownOutput(output, dir),
@@ -333,7 +345,7 @@ async function bundleAllDts(entryPoints, dtsFiles, options) {
     // `rolldown-plugin-dts`, which has top-level imports of `rolldown/experimental`.
     await (0, load_rolldown_1.loadRolldown)();
     const { dts } = await Promise.resolve().then(() => __importStar(require('rolldown-plugin-dts')));
-    const dtsSourcemap = options.declarationMap;
+    const dtsSourcemap = !!options.declarationMap;
     // Filter out `rolldown-plugin-dts:resolver` because all `.d.ts` files are already emitted
     // in-memory by the Angular/TypeScript compilation and resolved via `createMemoryFileLoaderPlugin`.
     // The default `rolldown-plugin-dts:resolver` plugin performs filesystem resolution (`oxc-resolver`)

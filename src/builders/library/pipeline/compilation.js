@@ -72,7 +72,7 @@ async function compileLibrary(entryPoints, options, stylesheetBundler, cached, m
             },
             processWebWorker: () => '',
         };
-        const { referencedFiles } = await compilationInstance.initialize(tsConfigPath, hostOptions, {
+        const { referencedFiles, compilerOptions } = await compilationInstance.initialize(tsConfigPath, hostOptions, {
             sourcemap: true,
             preserveSymlinks,
             rootFiles,
@@ -149,6 +149,8 @@ async function compileLibrary(entryPoints, options, stylesheetBundler, cached, m
                 failedFiles: failedFiles.size > 0 ? failedFiles : undefined,
             },
             diagnosePromise,
+            declarationMap: !!compilerOptions.declarationMap,
+            compilationMode: compilerOptions.compilationMode === 'full' ? 'full' : 'partial',
         };
     }
     catch (error) {

@@ -25,6 +25,10 @@ export interface LibraryCompilationOutput {
     readonly cache: SingleProgramCache;
     /** Promise that resolves to formatted compilation warnings or rejects on diagnostic errors. */
     readonly diagnosePromise: Promise<string[]>;
+    /** Effective declarationMap setting resolved from builder options and tsconfig. */
+    readonly declarationMap: boolean;
+    /** Effective compilationMode setting resolved from builder options and tsconfig. */
+    readonly compilationMode: 'partial' | 'full';
 }
 /**
  * Compiles all library entry points in a single TypeScript and Angular compilation pass.

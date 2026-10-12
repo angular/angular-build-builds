@@ -76,6 +76,9 @@ function transformCompilerOptions(typeScript, baseCompilerOptions, overrides, ts
     else if (overrides?.compilationMode) {
         compilerOptions.compilationMode = overrides.compilationMode;
     }
+    else if (isLibrary) {
+        compilerOptions.compilationMode ??= 'partial';
+    }
     // Enable incremental compilation by default if caching is enabled and incremental is not explicitly disabled
     if (compilerOptions.incremental !== false && overrides?.cachePath) {
         compilerOptions.incremental = true;
@@ -112,7 +115,7 @@ function transformCompilerOptions(typeScript, baseCompilerOptions, overrides, ts
         compilerOptions.moduleResolution = typeScript.ModuleResolutionKind.Bundler;
         compilerOptions.importHelpers = true;
         compilerOptions.declaration = true;
-        compilerOptions.declarationMap = overrides?.declarationMap;
+        compilerOptions.declarationMap = !!(overrides?.declarationMap ?? compilerOptions.declarationMap);
         compilerOptions.declarationDir = undefined;
     }
     // Synchronize custom resolve conditions.
