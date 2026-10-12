@@ -77,7 +77,7 @@ export declare class AsyncModuleUrlRebasingImporter implements Importer<'async'>
     private finder;
     private relativeImporter;
     constructor(entryDirectory: string, directoryCache: Map<string, DirectoryEntry>, rebaseSourceMaps: Map<string, DecodedSourceMap> | undefined, finder: (specifier: string, options: CanonicalizeContext) => Promise<URL | null> | URL | null);
-    canonicalize(url: string, options: CanonicalizeContext): Promise<URL | null>;
+    canonicalize(url: string, options: CanonicalizeContext): Promise<URL | null> | URL | null;
     load(canonicalUrl: URL): ImporterResult | null;
 }
 /**

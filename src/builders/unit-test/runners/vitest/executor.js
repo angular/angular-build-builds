@@ -319,11 +319,6 @@ class VitestExecutor {
         const vitestServerConfig = {
             // Note `.vitest` is auto appended to the path.
             cacheDir: cacheOptions.path,
-            server: {
-                // Disable the actual file watcher. The boolean watch option above should still
-                // be enabled as it controls other internal behavior related to rerunning tests.
-                watch: null,
-            },
             plugins: [
                 await (0, plugins_1.createVitestConfigPlugin)({
                     browser: browserOptions.browser,

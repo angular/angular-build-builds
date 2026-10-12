@@ -126,6 +126,16 @@ async function createVitestConfigPlugin(options) {
     const { mergeConfig } = await Promise.resolve().then(() => __importStar(require('vitest/config')));
     return {
         name: 'angular:vitest-configuration',
+        enforce: 'post',
+        configResolved: {
+            order: 'post',
+            handler(config) {
+                // Vitest's internal post-configResolved hook resets `server.watch` to `{}` when
+                // `watch` is enabled (`server.watch ??= {}`). Force it back to `null` so Vite uses
+                // a no-op watcher and relies solely on the Angular CLI build watcher.
+                config.server.watch = null;
+            },
+        },
         async config(config) {
             const testConfig = config.test;
             const determinedProvider = determineCoverageProvider(browser, testConfig, options.coverage.enabled, projectSourceRoot);
