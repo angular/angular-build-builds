@@ -20,6 +20,7 @@ async function extractMessages(options, builderName, context, extractorConstruct
     const messages = [];
     // Setup the build options for the application based on the buildTarget option
     const buildOptions = (await context.validateOptions(await context.getTargetOptions(options.buildTarget), builderName));
+    buildOptions.aot = true;
     buildOptions.optimization = false;
     buildOptions.sourceMap = { scripts: true, vendor: true, styles: false };
     buildOptions.localize = false;
