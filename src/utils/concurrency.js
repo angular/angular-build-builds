@@ -7,8 +7,13 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.MAX_CONCURRENT_READS = void 0;
 exports.runConcurrent = runConcurrent;
 exports.mapConcurrent = mapConcurrent;
+/**
+ * Maximum number of concurrent file system read/stat operations to prevent OS file descriptor exhaustion.
+ */
+exports.MAX_CONCURRENT_READS = 16;
 /**
  * Executes an asynchronous function for each item in an array concurrently up to a specified limit.
  *
