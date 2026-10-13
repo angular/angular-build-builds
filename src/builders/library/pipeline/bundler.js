@@ -344,7 +344,7 @@ async function bundleAllDts(entryPoints, dtsFiles, options) {
     // Ensure Rolldown's native binding is initialized via `loadRolldown()` before evaluating
     // `rolldown-plugin-dts`, which has top-level imports of `rolldown/experimental`.
     await (0, load_rolldown_1.loadRolldown)();
-    const { dts } = await Promise.resolve().then(() => __importStar(require('rolldown-plugin-dts')));
+    const { dts } = (await Promise.resolve(`${'rolldown-plugin-dts'}`).then(s => __importStar(require(s))));
     const dtsSourcemap = !!options.declarationMap;
     // Filter out `rolldown-plugin-dts:resolver` because all `.d.ts` files are already emitted
     // in-memory by the Angular/TypeScript compilation and resolved via `createMemoryFileLoaderPlugin`.
