@@ -16,10 +16,10 @@ export declare function generateSearchDirectories(roots: string[]): Promise<Sear
 export declare function findTailwindConfiguration(searchDirectories: SearchDirectory[]): string | undefined;
 export declare function getTailwindConfig(searchDirectories: SearchDirectory[], workspaceRoot: string, logger?: {
     warn(message: string): void;
-}): Promise<{
+}): {
     file: string;
     package: string;
-} | undefined>;
+} | undefined;
 export declare function loadPostcssConfiguration(searchDirectories: SearchDirectory[]): Promise<{
     configPath: string;
     config: PostcssConfiguration;

@@ -73,7 +73,7 @@ async function normalizeLibraryOptions(context, projectName, options) {
     const postcssConfiguration = await (0, postcss_configuration_1.loadPostcssConfiguration)(searchDirectories);
     const tailwindConfiguration = postcssConfiguration
         ? undefined
-        : await (0, postcss_configuration_1.getTailwindConfig)(searchDirectories, workspaceRoot, context.logger);
+        : (0, postcss_configuration_1.getTailwindConfig)(searchDirectories, workspaceRoot, context.logger);
     return {
         workspaceRoot,
         projectRoot,

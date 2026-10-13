@@ -51,8 +51,6 @@ function extractDiskFilePath(path) {
     }
     return (0, node_path_1.isAbsolute)(path) ? path : undefined;
 }
-/** Maximum number of concurrent file system read/stat operations to prevent OS file descriptor exhaustion. */
-const MAX_CONCURRENT_READS = 16;
 /**
  * Validates that all imported watch files exist on disk and their contents match.
  * Performs a fast-path metadata check (mtime + size) first, falling back to content hashing.
@@ -64,7 +62,7 @@ async function validateAndHealCacheEntry(watchFilesMetadata, store, cacheKey, ca
     }
     const watchFiles = Object.keys(watchFilesMetadata);
     let healed = false;
-    const isValidResults = await (0, concurrency_1.mapConcurrent)(watchFiles, MAX_CONCURRENT_READS, async (filePath) => {
+    const isValidResults = await (0, concurrency_1.mapConcurrent)(watchFiles, concurrency_1.MAX_CONCURRENT_READS, async (filePath) => {
         try {
             const stats = await (0, promises_1.stat)(filePath);
             const expected = watchFilesMetadata[filePath];
@@ -113,7 +111,7 @@ async function validateAndHealCacheEntry(watchFilesMetadata, store, cacheKey, ca
  */
 async function computeMetadataForWatchFiles(watchFiles, knownContents) {
     const watchFilesMetadata = {};
-    await (0, concurrency_1.runConcurrent)(watchFiles, MAX_CONCURRENT_READS, async (filePath) => {
+    await (0, concurrency_1.runConcurrent)(watchFiles, concurrency_1.MAX_CONCURRENT_READS, async (filePath) => {
         try {
             const knownContent = knownContents?.get(filePath);
             const [content, stats] = await Promise.all([

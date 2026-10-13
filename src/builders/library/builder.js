@@ -64,15 +64,17 @@ const utils_2 = require("./pipeline/utils");
  */
 async function* executeLibraryBuilder(options, context) {
     (0, version_1.assertCompatibleAngularVersion)(context.workspaceRoot);
-    await (0, hash_1.initializeHash)();
-    // Purge old build disk cache
-    await (0, purge_cache_1.purgeStaleBuildCache)(context);
     const projectName = context.target?.project;
     if (!projectName) {
         yield { success: false, error: 'The library builder requires a target.' };
         return;
     }
-    const normalizedOptions = await (0, options_1.normalizeLibraryOptions)(context, projectName, options);
+    const [normalizedOptions] = await Promise.all([
+        (0, options_1.normalizeLibraryOptions)(context, projectName, options),
+        (0, hash_1.initializeHash)(),
+        // Purge old build disk cache
+        (0, purge_cache_1.purgeStaleBuildCache)(context),
+    ]);
     const { workspaceRoot, projectRoot, outputPath, deleteOutputPath, packageJsonPath, tsConfigPath, watch: isWatchMode, poll, cacheOptions, preserveSymlinks, progress, } = normalizedOptions;
     let signal = context.signal;
     if (!signal) {

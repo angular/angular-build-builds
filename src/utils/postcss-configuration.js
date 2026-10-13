@@ -21,8 +21,8 @@ const tailwindConfigFiles = [
     'tailwind.config.mjs',
     'tailwind.config.ts',
 ];
-async function generateSearchDirectories(roots) {
-    return await Promise.all(roots.map((root) => (0, promises_1.readdir)(root, { withFileTypes: true }).then((entries) => ({
+function generateSearchDirectories(roots) {
+    return Promise.all(roots.map((root) => (0, promises_1.readdir)(root, { withFileTypes: true }).then((entries) => ({
         root,
         files: new Set(entries.filter((entry) => entry.isFile()).map((entry) => entry.name)),
     }))));
@@ -40,7 +40,7 @@ function findFile(searchDirectories, potentialFiles) {
 function findTailwindConfiguration(searchDirectories) {
     return findFile(searchDirectories, tailwindConfigFiles);
 }
-async function getTailwindConfig(searchDirectories, workspaceRoot, logger) {
+function getTailwindConfig(searchDirectories, workspaceRoot, logger) {
     const tailwindConfigurationPath = findTailwindConfiguration(searchDirectories);
     if (!tailwindConfigurationPath) {
         return undefined;
