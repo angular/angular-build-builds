@@ -46,7 +46,7 @@ export interface BaseResultFile {
 }
 export interface DiskFile extends BaseResultFile {
     origin: 'disk';
-    inputPath: string;
+    source: string;
 }
 export interface MemoryFile extends BaseResultFile {
     origin: 'memory';

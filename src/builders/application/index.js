@@ -53,6 +53,7 @@ const bundler_files_1 = require("../../tools/esbuild/bundler-files");
 const utils_1 = require("../../tools/esbuild/utils");
 const color_1 = require("../../utils/color");
 const delete_output_dir_1 = require("../../utils/delete-output-dir");
+const emit_files_to_disk_1 = require("../../utils/emit-files-to-disk");
 const environment_options_1 = require("../../utils/environment-options");
 const path_1 = require("../../utils/path");
 const purge_cache_1 = require("../../utils/purge-cache");
@@ -183,33 +184,12 @@ async function* buildApplication(options, context, extensions) {
             context.logger.info(`Output location: ${outputOptions.base}\n`);
         }
         // Writes the output files to disk and ensures the containing directories are present
-        const directoryExists = new Set();
         try {
-            await (0, utils_1.emitFilesToDisk)(result.files, async (file) => {
-                if (outputOptions.ignoreServer &&
-                    (file.type === bundler_files_1.BuildOutputFileType.ServerApplication ||
-                        file.type === bundler_files_1.BuildOutputFileType.ServerRoot)) {
-                    return;
-                }
-                const fullFilePath = generateFullPath(file.path, file.type, outputOptions);
-                // Ensure output subdirectories exist
-                const fileBasePath = node_path_1.default.dirname(fullFilePath);
-                if (fileBasePath && !directoryExists.has(fileBasePath)) {
-                    await promises_1.default.mkdir(fileBasePath, { recursive: true });
-                    directoryExists.add(fileBasePath);
-                }
-                if (file.origin === 'memory') {
-                    // Write file contents
-                    await promises_1.default.writeFile(fullFilePath, file.contents);
-                }
-                else {
-                    // Copy file contents
-                    await promises_1.default.cp(file.inputPath, fullFilePath, {
-                        mode: promises_1.default.constants.COPYFILE_FICLONE,
-                        preserveTimestamps: true,
-                    });
-                }
-            });
+            await (0, emit_files_to_disk_1.emitFilesToDisk)(result.files, (file) => outputOptions.ignoreServer &&
+                (file.type === bundler_files_1.BuildOutputFileType.ServerApplication ||
+                    file.type === bundler_files_1.BuildOutputFileType.ServerRoot)
+                ? undefined
+                : generateFullPath(file.path, file.type, outputOptions));
         }
         catch (error) {
             context.logger.error(error instanceof Error ? error.message : String(error));

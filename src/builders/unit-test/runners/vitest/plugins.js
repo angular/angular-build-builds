@@ -243,7 +243,7 @@ async function loadResultFile(file) {
     if (file.origin === 'memory') {
         return textDecoder.decode(file.contents);
     }
-    return (0, promises_1.readFile)(file.inputPath, 'utf-8');
+    return (0, promises_1.readFile)(file.source, 'utf-8');
 }
 function createVitestPlugins(pluginOptions) {
     const { workspaceRoot, buildResultFiles, testFileToEntryPoint, setupFiles } = pluginOptions;

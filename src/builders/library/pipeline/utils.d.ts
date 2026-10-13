@@ -18,7 +18,7 @@ export declare const TYPES_OUTPUT_DIR = "types";
  * Represents an in-memory file to be emitted to disk.
  */
 export interface MemoryOutputFile {
-    type: 'memory';
+    origin: 'memory';
     /** The destination path where the file should be written. */
     path: string;
     /** The contents of the file as either a string or byte array. */
@@ -28,7 +28,7 @@ export interface MemoryOutputFile {
  * Represents an existing file on disk to be copied to a destination path.
  */
 export interface DiskOutputFile {
-    type: 'disk';
+    origin: 'disk';
     /** The path to the source file on disk. */
     source: string;
     /** The destination path where the file should be copied. */

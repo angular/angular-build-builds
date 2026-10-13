@@ -184,7 +184,7 @@ function createBuildAssetsMiddleware(basePath, buildResultFiles, readHandler = n
         if (extension && !/\.[mc]?[jt]s(?:\.map)?$/.test(extension)) {
             const outputFile = buildResultFiles.get(pathname.slice(1));
             if (outputFile) {
-                const contents = outputFile.origin === 'memory' ? outputFile.contents : readHandler(outputFile.inputPath);
+                const contents = outputFile.origin === 'memory' ? outputFile.contents : readHandler(outputFile.source);
                 const etag = `W/${(0, hash_1.calculateHash)(contents)}`;
                 if (checkAndHandleEtag(req, res, etag)) {
                     return;

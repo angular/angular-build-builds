@@ -13,9 +13,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createSingleBuildState = createSingleBuildState;
 exports.buildAction = buildAction;
 exports.hasModifiedWatchedFile = hasModifiedWatchedFile;
-const promises_1 = require("node:fs/promises");
 const node_path_1 = __importDefault(require("node:path"));
-const utils_1 = require("../../../tools/esbuild/utils");
+const emit_files_to_disk_1 = require("../../../utils/emit-files-to-disk");
 const path_1 = require("../../../utils/path");
 const assets_1 = require("./assets");
 const bundler_1 = require("./bundler");
@@ -29,7 +28,6 @@ function createSingleBuildState() {
         previousBundleResults: new Map(),
         pendingChangedEsmFiles: new Set(),
         pendingChangedDtsFiles: new Set(),
-        directoryExists: new Set(),
     };
 }
 /**
@@ -42,7 +40,7 @@ function createSingleBuildState() {
 async function buildAction(actionContext) {
     const { options, context, stylesheetBundler, isWatchMode, watchedCompilationFiles, buildState, modifiedFiles, } = actionContext;
     const posixPackageJsonPath = (0, path_1.toPosixPath)(options.packageJsonPath);
-    const { pendingChangedEsmFiles, pendingChangedDtsFiles, directoryExists } = buildState;
+    const { pendingChangedEsmFiles, pendingChangedDtsFiles } = buildState;
     if (!modifiedFiles || modifiedFiles.has(posixPackageJsonPath)) {
         buildState.hasEmittedManifests = false;
     }
@@ -136,20 +134,7 @@ async function buildAction(actionContext) {
     }
     const resolvedAssetsToEmit = (actionContext.assetsToEmit ??= await (0, assets_1.collectAssetsToEmit)(options.assets, options.workspaceRoot, buildState.hasEmittedAssets ? modifiedFiles : undefined));
     filesToEmit.push(...resolvedAssetsToEmit);
-    await (0, utils_1.emitFilesToDisk)(filesToEmit, async (file) => {
-        const fullFilePath = node_path_1.default.join(options.outputPath, file.path);
-        const fileBasePath = node_path_1.default.dirname(fullFilePath);
-        if (fileBasePath && !directoryExists.has(fileBasePath)) {
-            await (0, promises_1.mkdir)(fileBasePath, { recursive: true });
-            directoryExists.add(fileBasePath);
-        }
-        if (file.type === 'memory') {
-            await (0, promises_1.writeFile)(fullFilePath, file.contents);
-        }
-        else {
-            await (0, promises_1.copyFile)(file.source, fullFilePath, promises_1.constants.COPYFILE_FICLONE);
-        }
-    });
+    await (0, emit_files_to_disk_1.emitFilesToDisk)(filesToEmit, (file) => node_path_1.default.join(options.outputPath, file.path));
     buildState.hasEmittedManifests = true;
     buildState.hasEmittedTslib = hasTslibImport;
     buildState.hasEmittedAssets = true;

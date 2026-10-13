@@ -13,7 +13,7 @@ const internal_1 = require("../internal");
 function updateResultRecord(file, normalizePath, htmlIndexPath, generatedFiles, assetFiles, componentStyles, initial = false) {
     if (file.origin === 'disk') {
         assetFiles.set('/' + normalizePath(file.path), {
-            source: normalizePath(file.inputPath),
+            source: normalizePath(file.source),
             updated: !initial,
         });
         return;

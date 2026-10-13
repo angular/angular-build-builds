@@ -13,7 +13,6 @@ exports.calculateEstimatedTransferSizes = calculateEstimatedTransferSizes;
 exports.withSpinner = withSpinner;
 exports.withNoProgress = withNoProgress;
 exports.getFeatureSupport = getFeatureSupport;
-exports.emitFilesToDisk = emitFilesToDisk;
 exports.createJsonBuildManifest = createJsonBuildManifest;
 exports.logMessages = logMessages;
 exports.isZonelessApp = isZonelessApp;
@@ -165,18 +164,6 @@ function getFeatureSupport(nativeAsyncAwait) {
         // For more details: https://bugs.chromium.org/p/v8/issues/detail?id=11536
         'object-rest-spread': false,
     };
-}
-const MAX_CONCURRENT_WRITES = 64;
-async function emitFilesToDisk(files, writeFileCallback) {
-    // Write files in groups of MAX_CONCURRENT_WRITES to avoid too many open files
-    for (let fileIndex = 0; fileIndex < files.length;) {
-        const groupMax = Math.min(fileIndex + MAX_CONCURRENT_WRITES, files.length);
-        const actions = [];
-        while (fileIndex < groupMax) {
-            actions.push(writeFileCallback(files[fileIndex++]));
-        }
-        await Promise.all(actions);
-    }
 }
 async function createJsonBuildManifest(result, normalizedOptions) {
     const { colors: color, outputOptions: { base, server, browser }, ssrOptions, outputMode, } = normalizedOptions;

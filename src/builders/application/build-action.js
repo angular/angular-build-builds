@@ -256,7 +256,7 @@ function* emitOutputResults({ outputFiles, assetFiles, errors, warnings, externa
         incrementalResult.files.push({
             path: destination,
             type: bundler_files_1.BuildOutputFileType.Browser,
-            inputPath: source,
+            source,
             origin: 'disk',
         });
     }
@@ -310,7 +310,7 @@ function createFullResult(outputFiles, assetFiles, warnings, outputOptions, exte
             ...assetFiles.map(({ source, destination }) => ({
                 path: destination,
                 type: bundler_files_1.BuildOutputFileType.Browser,
-                inputPath: source,
+                source,
                 origin: 'disk',
             })),
             ...outputFiles.map((file) => ({

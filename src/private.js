@@ -21,7 +21,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.loadPostcssConfiguration = exports.generateSearchDirectories = exports.findTailwindConfiguration = exports.getTestEntrypoints = exports.findTests = exports.assertCompatibleAngularVersion = exports.getSupportedBrowsers = exports.generateBuildStatsTable = exports.augmentAppWithServiceWorker = exports.purgeStaleBuildCache = exports.createTranslationLoader = exports.loadProxyConfiguration = exports.IndexHtmlGenerator = exports.loadTranslations = exports.createI18nOptions = exports.deleteOutputDir = exports.checkPort = exports.ComponentStylesheetBundler = exports.createAngularCompilation = exports.DiagnosticModes = exports.JavaScriptTransformer = exports.createJitResourceTransformer = exports.Cache = exports.SourceFileCache = exports.SassCompiler = exports.transformSupportedBrowsersToTargets = exports.emitFilesToDisk = exports.normalizeDevServerOptions = exports.serveWithVite = exports.ResultKind = exports.buildApplicationInternal = void 0;
+exports.loadPostcssConfiguration = exports.generateSearchDirectories = exports.findTailwindConfiguration = exports.getTestEntrypoints = exports.findTests = exports.assertCompatibleAngularVersion = exports.getSupportedBrowsers = exports.generateBuildStatsTable = exports.augmentAppWithServiceWorker = exports.purgeStaleBuildCache = exports.createTranslationLoader = exports.loadProxyConfiguration = exports.IndexHtmlGenerator = exports.loadTranslations = exports.createI18nOptions = exports.emitFilesToDisk = exports.deleteOutputDir = exports.checkPort = exports.ComponentStylesheetBundler = exports.createAngularCompilation = exports.DiagnosticModes = exports.JavaScriptTransformer = exports.createJitResourceTransformer = exports.Cache = exports.SourceFileCache = exports.SassCompiler = exports.transformSupportedBrowsersToTargets = exports.normalizeDevServerOptions = exports.serveWithVite = exports.ResultKind = exports.buildApplicationInternal = void 0;
 exports.createCompilerPlugin = createCompilerPlugin;
 /**
  * @fileoverview
@@ -43,8 +43,6 @@ var vite_1 = require("./builders/dev-server/vite");
 Object.defineProperty(exports, "serveWithVite", { enumerable: true, get: function () { return vite_1.serveWithVite; } });
 var options_1 = require("./builders/dev-server/options");
 Object.defineProperty(exports, "normalizeDevServerOptions", { enumerable: true, get: function () { return options_1.normalizeOptions; } });
-var utils_1 = require("./tools/esbuild/utils");
-Object.defineProperty(exports, "emitFilesToDisk", { enumerable: true, get: function () { return utils_1.emitFilesToDisk; } });
 var target_1 = require("./tools/esbuild/target");
 Object.defineProperty(exports, "transformSupportedBrowsersToTargets", { enumerable: true, get: function () { return target_1.transformSupportedBrowsersToTargets; } });
 var sass_service_1 = require("./tools/sass/sass-service");
@@ -72,6 +70,8 @@ var check_port_1 = require("./utils/check-port");
 Object.defineProperty(exports, "checkPort", { enumerable: true, get: function () { return check_port_1.checkPort; } });
 var delete_output_dir_1 = require("./utils/delete-output-dir");
 Object.defineProperty(exports, "deleteOutputDir", { enumerable: true, get: function () { return delete_output_dir_1.deleteOutputDir; } });
+var emit_files_to_disk_1 = require("./utils/emit-files-to-disk");
+Object.defineProperty(exports, "emitFilesToDisk", { enumerable: true, get: function () { return emit_files_to_disk_1.emitFilesToDisk; } });
 var i18n_options_1 = require("./utils/i18n-options");
 Object.defineProperty(exports, "createI18nOptions", { enumerable: true, get: function () { return i18n_options_1.createI18nOptions; } });
 Object.defineProperty(exports, "loadTranslations", { enumerable: true, get: function () { return i18n_options_1.loadTranslations; } });

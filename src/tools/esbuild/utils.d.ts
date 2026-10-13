@@ -9,7 +9,7 @@ import { BuilderContext } from '@angular-devkit/architect';
 import { BuildOptions, Metafile, OutputFile } from 'esbuild';
 import { NormalizedApplicationBuildOptions } from '../../builders/application/options';
 import { BudgetCalculatorResult } from '../../utils/bundle-calculator';
-import { BuildOutputAsset, ExecutionResult } from './bundler-execution-result';
+import { ExecutionResult } from './bundler-execution-result';
 import { type BuildOutputFile, type InitialFileRecord } from './bundler-files';
 export declare function logBuildStats(metafiles: Metafile[], outputFiles: BuildOutputFile[], initial: Map<string, InitialFileRecord>, budgetFailures: BudgetCalculatorResult[] | undefined, colors: boolean, changedFiles?: Set<string>, estimatedTransferSizes?: Map<string, number>, ssrOutputEnabled?: boolean, verbose?: boolean): string;
 export declare function getChunkNameFromMetafile(metafiles: Metafile[] | Metafile, file: string): string | undefined;
@@ -23,7 +23,6 @@ export declare function withNoProgress<T>(text: string, action: () => T | Promis
  * @returns An object that can be used with the esbuild build `supported` option.
  */
 export declare function getFeatureSupport(nativeAsyncAwait: boolean): BuildOptions['supported'];
-export declare function emitFilesToDisk<T = BuildOutputAsset | BuildOutputFile>(files: readonly T[], writeFileCallback: (file: T) => Promise<void>): Promise<void>;
 export declare function createJsonBuildManifest(result: ExecutionResult, normalizedOptions: NormalizedApplicationBuildOptions): Promise<string>;
 export declare function logMessages(logger: BuilderContext['logger'], executionResult: ExecutionResult, color?: boolean, jsonLogs?: boolean): Promise<void>;
 /**

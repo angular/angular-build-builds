@@ -36,7 +36,7 @@ exports.TYPES_OUTPUT_DIR = 'types';
  */
 function createDiskOutputFile(source, path) {
     return {
-        type: 'disk',
+        origin: 'disk',
         source,
         path,
     };
@@ -50,7 +50,7 @@ function createDiskOutputFile(source, path) {
  */
 function createMemoryOutputFile(path, contents) {
     return {
-        type: 'memory',
+        origin: 'memory',
         path,
         contents: typeof contents === 'string' || contents instanceof Uint8Array
             ? contents

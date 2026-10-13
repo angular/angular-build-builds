@@ -20,7 +20,6 @@ export { type Result, type ResultFile, ResultKind } from './builders/application
 export { serveWithVite } from './builders/dev-server/vite';
 export { normalizeOptions as normalizeDevServerOptions, type NormalizedDevServerOptions, } from './builders/dev-server/options';
 export type { ExternalResultMetadata } from './tools/esbuild/bundler-execution-result';
-export { emitFilesToDisk } from './tools/esbuild/utils';
 export { transformSupportedBrowsersToTargets } from './tools/esbuild/target';
 export { SassCompiler } from './tools/sass/sass-service';
 export { SourceFileCache } from './tools/esbuild/angular/source-file-cache';
@@ -41,6 +40,7 @@ export { ComponentStylesheetBundler } from './tools/esbuild/angular/component-st
 export * from './utils/bundle-calculator';
 export { checkPort } from './utils/check-port';
 export { deleteOutputDir } from './utils/delete-output-dir';
+export { emitFilesToDisk } from './utils/emit-files-to-disk';
 export { type I18nOptions, createI18nOptions, loadTranslations } from './utils/i18n-options';
 export { IndexHtmlGenerator, type IndexHtmlGeneratorOptions, type IndexHtmlGeneratorProcessOptions, type IndexHtmlTransform, } from './utils/index-file/index-html-generator';
 export type { FileInfo } from './utils/index-file/augment-index-html';
