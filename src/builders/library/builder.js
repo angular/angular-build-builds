@@ -109,9 +109,6 @@ async function* executeLibraryBuilder(options, context) {
             watchedCompilationFiles.add((0, path_1.toPosixPath)(entryPoint.entryFilePath));
         }
         if (isWatchMode) {
-            if (progress) {
-                logger.info('Watch mode enabled. Watching for file changes...');
-            }
             const { setupWatcher } = await Promise.resolve().then(() => __importStar(require('../../utils/watcher')));
             watcher = await setupWatcher({
                 workspaceRoot,
@@ -134,6 +131,9 @@ async function* executeLibraryBuilder(options, context) {
             context,
             buildState,
         }, withProgress, watcher, buildAction);
+        if (isWatchMode && progress) {
+            logger.info('Watch mode enabled. Watching for file changes...');
+        }
         yield initialResult;
         if (!isWatchMode || !watcher) {
             return;
@@ -152,10 +152,10 @@ async function* executeLibraryBuilder(options, context) {
 }
 async function executeBuild(message, actionContext, withProgress, watcher, buildAction) {
     const startTime = process.hrtime.bigint();
-    const { context, watchedCompilationFiles, isWatchMode } = actionContext;
+    const { context, watchedCompilationFiles, isWatchMode, options } = actionContext;
     try {
         await withProgress(message, () => buildAction(actionContext));
-        logBuildResult(context.logger, startTime, true);
+        logBuildResult(context.logger, startTime, true, options.outputPath);
         if (isWatchMode) {
             (0, profiling_1.logCumulativeDurations)();
         }
@@ -263,15 +263,18 @@ async function* runWatchLoop(watcher, options, stylesheetBundler, watchedCompila
 /**
  * Logs the build completion time and status.
  */
-function logBuildResult(logger, startTime, success) {
-    const durationMs = Number(process.hrtime.bigint() - startTime) / 1_000_000;
-    const durationSec = (durationMs / 1000).toFixed(2);
+function logBuildResult(logger, startTime, success, outputPath) {
+    const buildTime = Number(process.hrtime.bigint() - startTime) / 10 ** 9;
+    const message = `Library bundle generation ${success ? 'complete' : 'failed'}.` +
+        ` [${buildTime.toFixed(3)} seconds] - ${new Date().toISOString()}`;
     if (success) {
-        logger.info(`Build at: ${new Date().toISOString()} - Time: ${durationMs.toFixed(0)}ms`);
-        logger.info(`Built Angular library in ${durationSec}s.`);
+        logger.info(message);
+        if (outputPath) {
+            logger.info(`Output location: ${outputPath}\n`);
+        }
     }
     else {
-        logger.error(`Build failed after ${durationSec}s.`);
+        logger.error(message);
     }
 }
 //# sourceMappingURL=builder.js.map
