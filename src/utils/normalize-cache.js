@@ -11,7 +11,7 @@ exports.normalizeCacheOptions = normalizeCacheOptions;
 const node_fs_1 = require("node:fs");
 const node_path_1 = require("node:path");
 /** Version placeholder is replaced during the build process with actual package version */
-const VERSION = '22.3.0-next.1+sha-07845f0';
+const VERSION = '22.3.0-next.1+sha-1f31103';
 function hasCacheMetadata(value) {
     return (!!value &&
         typeof value === 'object' &&
@@ -94,7 +94,7 @@ function normalizeCacheOptions(projectMetadata, workspaceRoot, projectName = '',
     }
     const cacheBasePath = getCacheBasePath(workspaceRoot, path);
     const localCacheBasePath = (0, node_path_1.isAbsolute)(path) ? path : (0, node_path_1.resolve)(workspaceRoot, path);
-    const normalizedBuilderName = builderName.replaceAll(':', '-');
+    const normalizedBuilderName = builderName.replace('@', '').replaceAll(/[:/]/g, '-');
     return {
         enabled: cacheEnabled,
         basePath: cacheBasePath,
