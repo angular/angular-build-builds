@@ -21,14 +21,17 @@ const hash_1 = require("../../utils/hash");
  * field. The `version` field is required when used with a TypeScript BuilderProgram.
  * @param program The TypeScript Program instance to patch.
  */
-function ensureSourceFileVersions(program) {
+function ensureSourceFileVersions(program, previousProgram) {
     const baseGetSourceFiles = program.getSourceFiles;
     // TODO: Update Angular compiler to add versions to all internal files and remove this
     program.getSourceFiles = function (...parameters) {
         const files = baseGetSourceFiles(...parameters);
         for (const file of files) {
             if (file.version === undefined) {
-                file.version = (0, hash_1.calculateHash)(file.text);
+                const previousFile = previousProgram && !file.fileName.endsWith('.ngtypecheck.ts')
+                    ? previousProgram.getSourceFile(file.fileName)
+                    : undefined;
+                file.version = previousFile?.version ?? (0, hash_1.calculateHash)(file.text);
             }
         }
         return files;

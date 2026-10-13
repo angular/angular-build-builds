@@ -22,5 +22,5 @@ export interface AngularHostOptions {
  * field. The `version` field is required when used with a TypeScript BuilderProgram.
  * @param program The TypeScript Program instance to patch.
  */
-export declare function ensureSourceFileVersions(program: ts.Program): void;
+export declare function ensureSourceFileVersions(program: ts.Program, previousProgram?: ts.BuilderProgram): void;
 export declare function createAngularCompilerHost(typescript: typeof ts, compilerOptions: AngularCompilerOptions, hostOptions: AngularHostOptions, packageJsonCache: ts.PackageJsonInfoCache | undefined, sourceFileCache?: Map<string, ts.SourceFile>): AngularCompilerHost;

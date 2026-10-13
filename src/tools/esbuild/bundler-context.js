@@ -243,7 +243,11 @@ class BundlerContext {
         const initialFiles = new Map();
         for (const outputFile of result.outputFiles) {
             // Entries in the metafile are relative to the `absWorkingDir` option which is set to the workspaceRoot
-            const relativeFilePath = (0, node_path_1.relative)(this.workspaceRoot, outputFile.path);
+            // `outputFile.path` may already be relative if the `OutputFile` instance was cached in `additionalResults`
+            // across an incremental rebuild.
+            const relativeFilePath = (0, node_path_1.isAbsolute)(outputFile.path)
+                ? (0, node_path_1.relative)(this.workspaceRoot, outputFile.path)
+                : outputFile.path;
             const entryPoint = result.metafile.outputs[relativeFilePath]?.entryPoint;
             outputFile.path = relativeFilePath;
             if (entryPoint) {
