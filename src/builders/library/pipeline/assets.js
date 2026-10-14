@@ -14,15 +14,14 @@ exports.collectAssetsToEmit = collectAssetsToEmit;
 const node_fs_1 = require("node:fs");
 const node_path_1 = __importDefault(require("node:path"));
 const picomatch_1 = __importDefault(require("picomatch"));
-const path_1 = require("../../../utils/path");
 const resolve_assets_1 = require("../../../utils/resolve-assets");
 const utils_1 = require("./utils");
 /**
  * Resolves and collects configured library assets to be emitted to disk.
  *
- * @param assets The normalized asset patterns.
- * @param workspaceRoot The workspace root directory path.
- * @param modifiedFiles Optional set of modified file paths for incremental copying in watch mode.
+ * @param assets The normalized asset patterns with POSIX paths.
+ * @param workspaceRoot The normalized POSIX workspace root directory path.
+ * @param modifiedFiles Optional set of modified POSIX file paths for incremental copying in watch mode.
  * @returns An array of disk file emission descriptors.
  */
 async function collectAssetsToEmit(assets, workspaceRoot, modifiedFiles) {
@@ -30,21 +29,19 @@ async function collectAssetsToEmit(assets, workspaceRoot, modifiedFiles) {
         return [];
     }
     if (modifiedFiles) {
-        const matchers = createAssetMatchers(assets, workspaceRoot);
+        const matchers = createAssetMatchers(assets);
         const filesToEmit = [];
         for (const file of modifiedFiles) {
-            const resolvedFile = node_path_1.default.isAbsolute(file) ? file : node_path_1.default.resolve(workspaceRoot, file);
-            const posixFile = (0, path_1.toPosixPath)(resolvedFile);
-            for (const { asset, posixInputPrefix, isMatch } of matchers) {
-                if (!posixFile.startsWith(posixInputPrefix)) {
+            for (const { asset, prefix, isMatch } of matchers) {
+                if (!file.startsWith(prefix)) {
                     continue;
                 }
-                const relative = posixFile.slice(posixInputPrefix.length);
+                const relative = file.slice(prefix.length);
                 if (!isMatch(relative)) {
                     continue;
                 }
-                if ((0, node_fs_1.statSync)(resolvedFile, { throwIfNoEntry: false })?.isFile()) {
-                    filesToEmit.push((0, utils_1.createDiskOutputFile)(resolvedFile, node_path_1.default.join(asset.output, relative)));
+                if ((0, node_fs_1.statSync)(file, { throwIfNoEntry: false })?.isFile()) {
+                    filesToEmit.push((0, utils_1.createDiskOutputFile)(file, node_path_1.default.posix.join(asset.output, relative)));
                 }
             }
         }
@@ -53,15 +50,14 @@ async function collectAssetsToEmit(assets, workspaceRoot, modifiedFiles) {
     const resolvedAssets = await (0, resolve_assets_1.resolveAssets)(assets, workspaceRoot);
     return resolvedAssets.map(({ source, destination }) => (0, utils_1.createDiskOutputFile)(source, destination));
 }
-function createAssetMatchers(assets, workspaceRoot) {
+function createAssetMatchers(assets) {
     return assets.map((asset) => {
-        const absInput = node_path_1.default.resolve(workspaceRoot, asset.input);
-        const posixInput = (0, path_1.toPosixPath)(absInput).replace(/\/+$/, '');
         const isMatch = (0, picomatch_1.default)(asset.glob, {
             dot: true,
             ignore: [...resolve_assets_1.DEFAULT_ASSET_IGNORE, ...(asset.ignore ?? [])],
         });
-        return { asset, posixInputPrefix: `${posixInput}/`, isMatch };
+        const prefix = asset.input.endsWith('/') ? asset.input : `${asset.input}/`;
+        return { asset, prefix, isMatch };
     });
 }
 //# sourceMappingURL=assets.js.map

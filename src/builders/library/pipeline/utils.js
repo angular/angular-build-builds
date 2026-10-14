@@ -17,6 +17,7 @@ exports.isDeclarationFile = isDeclarationFile;
 exports.isDeclarationSourceMapFile = isDeclarationSourceMapFile;
 exports.loadPackageJson = loadPackageJson;
 const promises_1 = __importDefault(require("node:fs/promises"));
+const path_1 = require("../../../utils/path");
 const IS_DTS_FILE_REGEXP = /\.d\.[cm]?ts$/i;
 const IS_DTS_MAP_FILE_REGEXP = /\.d\.[cm]?ts\.map$/i;
 /**
@@ -28,30 +29,30 @@ exports.FESM_OUTPUT_DIR = 'fesm2022';
  */
 exports.TYPES_OUTPUT_DIR = 'types';
 /**
- * Creates an output file descriptor for an existing file on disk.
+ * Creates an output file descriptor for an existing file on disk with POSIX paths.
  *
  * @param source The path to the source file on disk.
- * @param path The destination path where the file should be copied.
- * @returns A {@link DiskOutputFile} descriptor.
+ * @param path The relative destination path where the file should be copied.
+ * @returns A {@link DiskOutputFile} descriptor with POSIX `source` and `path`.
  */
 function createDiskOutputFile(source, path) {
     return {
         origin: 'disk',
-        source,
-        path,
+        source: (0, path_1.toPosixPath)(source),
+        path: (0, path_1.toPosixPath)(path),
     };
 }
 /**
- * Creates an output file descriptor for an in-memory file.
+ * Creates an output file descriptor for an in-memory file with a POSIX destination path.
  *
- * @param path The destination path where the file should be written.
+ * @param path The relative destination path where the file should be written.
  * @param contents The contents of the file as either a string, byte array, or JSON object.
- * @returns A {@link MemoryOutputFile} descriptor.
+ * @returns A {@link MemoryOutputFile} descriptor with a POSIX `path`.
  */
 function createMemoryOutputFile(path, contents) {
     return {
         origin: 'memory',
-        path,
+        path: (0, path_1.toPosixPath)(path),
         contents: typeof contents === 'string' || contents instanceof Uint8Array
             ? contents
             : JSON.stringify(contents, null, 2) + '\n',

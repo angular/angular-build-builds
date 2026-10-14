@@ -19,10 +19,10 @@ const EMITTED_EXTENSIONS = ['.js', '.mjs', '.cjs', '.d.ts', '.d.mts', '.d.cts'];
  * Compiles all library entry points in a single TypeScript and Angular compilation pass.
  *
  * @param entryPoints The collection of normalized library entry points to compile.
- * @param options The normalized library builder options.
+ * @param options The normalized library builder options with POSIX paths.
  * @param stylesheetBundler The component stylesheet bundler instance.
  * @param cached Optional cached compilation state from a previous build iteration.
- * @param modifiedFiles Optional set of modified file paths for incremental compilation.
+ * @param modifiedFiles Optional set of modified POSIX file paths for incremental compilation.
  * @returns A promise resolving to the compilation output containing emitted files and diagnostics.
  */
 async function compileLibrary(entryPoints, options, stylesheetBundler, cached, modifiedFiles) {
@@ -92,12 +92,11 @@ async function compileLibrary(entryPoints, options, stylesheetBundler, cached, m
         }
         if (effectiveModifiedFiles) {
             for (const modifiedFile of effectiveModifiedFiles) {
-                const posixModified = (0, path_1.toPosixPath)(modifiedFile);
-                if (allReferencedFiles.has(posixModified)) {
+                if (allReferencedFiles.has(modifiedFile)) {
                     continue;
                 }
-                const basePathWithoutExt = posixModified.replace(/(?:\.d\.[cm]?ts|\.[cm]?[jt]sx?)$/i, '');
-                if (basePathWithoutExt === posixModified || (0, node_fs_1.existsSync)(posixModified)) {
+                const basePathWithoutExt = modifiedFile.replace(/(?:\.d\.[cm]?ts|\.[cm]?[jt]sx?)$/i, '');
+                if (basePathWithoutExt === modifiedFile || (0, node_fs_1.existsSync)(modifiedFile)) {
                     continue;
                 }
                 for (const ext of EMITTED_EXTENSIONS) {

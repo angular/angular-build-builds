@@ -22,7 +22,7 @@ export interface NormalizedEntryPoint {
     displayName: string;
     /** Base name of the output bundle (e.g. 'my-lib' or 'my-lib-testing'). */
     bundleName: string;
-    /** Absolute path to entry file. */
+    /** Absolute POSIX path to the entry file. */
     entryFilePath: string;
     /** Is this the primary entry point ('.')? */
     isPrimary: boolean;
@@ -52,20 +52,28 @@ export interface PackageJsonData {
 }
 /**
  * Normalized options for the library builder.
+ * All file and directory paths are normalized to POSIX format.
  */
 export interface NormalizedLibraryOptions {
+    /** Absolute POSIX path to the workspace root directory. */
     workspaceRoot: string;
+    /** Absolute POSIX path to the library project root directory. */
     projectRoot: string;
     packageName: string;
     packageJson: PackageJsonData;
+    /** Absolute POSIX path to the build output directory. */
     outputPath: string;
     deleteOutputPath: boolean;
+    /** Absolute POSIX path to the library's `package.json`. */
     packageJsonPath: string;
+    /** Absolute POSIX path to the TypeScript configuration file. */
     tsConfigPath: string;
     entryPoints: Map<string, NormalizedEntryPoint>;
     inlineStyleLanguage: 'css' | 'less' | 'sass' | 'scss';
+    /** Absolute POSIX paths to style preprocessor include directories. */
     styleIncludePaths: string[];
     sass?: StylesheetPluginsass;
+    /** Normalized asset patterns with POSIX `input` and `output` paths. */
     assets: ReturnType<typeof normalizeAssetPatterns>;
     compilationMode?: 'partial' | 'full';
     declarationMap?: boolean;
@@ -91,9 +99,9 @@ export interface NormalizedLibraryOptions {
  * Cached module ID sets for a bundled entry point.
  */
 export interface BundleResult {
-    /** Exact set of virtual ESM module IDs bundled into this entry point. */
+    /** Exact set of virtual POSIX ESM module IDs bundled into this entry point. */
     esmModuleIds: ReadonlySet<string>;
-    /** Exact set of virtual DTS module IDs bundled into this entry point. */
+    /** Exact set of virtual POSIX DTS module IDs bundled into this entry point. */
     dtsModuleIds: ReadonlySet<string>;
     /** Whether this entry point bundle imports 'tslib'. */
     hasTslibImport?: boolean;
@@ -104,11 +112,11 @@ export interface BundleResult {
 export interface SingleProgramCache {
     /** The active Angular compilation instance. */
     readonly compilationInstance: AngularCompilation;
-    /** In-memory map of emitted JavaScript files keyed by relative output path. */
+    /** In-memory map of emitted JavaScript files keyed by POSIX path. */
     readonly esmFiles: Map<string, string>;
-    /** In-memory map of emitted TypeScript declaration files keyed by relative output path. */
+    /** In-memory map of emitted TypeScript declaration files keyed by POSIX path. */
     readonly dtsFiles: Map<string, string>;
-    /** Set of file paths that failed during stylesheet bundling or compilation. */
+    /** Set of POSIX file paths that failed during stylesheet bundling or compilation. */
     readonly failedFiles?: ReadonlySet<string>;
 }
 /**
@@ -121,9 +129,9 @@ export interface SingleBuildState {
     compilationMode?: 'partial' | 'full';
     /** Map of entry point names to their previous bundle results. */
     previousBundleResults: Map<string, BundleResult>;
-    /** Set of changed ESM file paths pending bundling. */
+    /** Set of changed POSIX ESM file paths pending bundling. */
     pendingChangedEsmFiles: Set<string>;
-    /** Set of changed TypeScript declaration file paths pending bundling. */
+    /** Set of changed POSIX TypeScript declaration file paths pending bundling. */
     pendingChangedDtsFiles: Set<string>;
     /** Whether the previous build iteration encountered a compilation or diagnostic error. */
     hasCompilationError?: boolean;

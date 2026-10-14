@@ -16,7 +16,6 @@ exports.hasModifiedWatchedFile = hasModifiedWatchedFile;
 const node_path_1 = __importDefault(require("node:path"));
 const disk_files_1 = require("../../../utils/disk-files");
 const error_1 = require("../../../utils/error");
-const path_1 = require("../../../utils/path");
 const assets_1 = require("./assets");
 const bundler_1 = require("./bundler");
 const compilation_1 = require("./compilation");
@@ -38,15 +37,16 @@ function createSingleBuildState() {
  * manifest generation, and asset copying.
  *
  * @param actionContext The build action state and configuration.
+ * @returns A promise resolving to the build action result containing errors, warnings, and logs.
  */
 async function buildAction(actionContext) {
     const { options, stylesheetBundler, isWatchMode, watchedCompilationFiles, buildState, modifiedFiles, } = actionContext;
     const errors = [];
     const warnings = [];
     const logs = [];
-    const posixPackageJsonPath = (0, path_1.toPosixPath)(options.packageJsonPath);
+    const { packageJsonPath } = options;
     const { pendingChangedEsmFiles, pendingChangedDtsFiles } = buildState;
-    if (!modifiedFiles || modifiedFiles.has(posixPackageJsonPath)) {
+    if (!modifiedFiles || modifiedFiles.has(packageJsonPath)) {
         buildState.hasEmittedManifests = false;
     }
     const shouldCompileEntryPoints = !modifiedFiles ||
@@ -55,7 +55,7 @@ async function buildAction(actionContext) {
         buildState.hasEntryPointsChanges ||
         pendingChangedEsmFiles.size > 0 ||
         pendingChangedDtsFiles.size > 0 ||
-        hasModifiedWatchedFile(modifiedFiles, watchedCompilationFiles, posixPackageJsonPath);
+        hasModifiedWatchedFile(modifiedFiles, watchedCompilationFiles, packageJsonPath);
     try {
         if (!buildState.hasEmittedManifests) {
             const dependencyErrors = verifyAllowedDependencies(options);
@@ -83,13 +83,13 @@ async function buildAction(actionContext) {
             for (const file of changedDtsFiles) {
                 pendingChangedDtsFiles.add(file);
             }
-            const itemsToBundle = (0, entry_points_1.collectEntryPointsToBundle)(options, buildState, logs);
             let bundleOutput;
             let diagnostics;
             if (hasStylesheetErrors) {
                 diagnostics = await diagnosePromise;
             }
             else {
+                const itemsToBundle = (0, entry_points_1.collectEntryPointsToBundle)(options, buildState, logs);
                 try {
                     [bundleOutput, diagnostics] = await Promise.all([
                         (0, bundler_1.bundleEntryPoints)(itemsToBundle, esmFiles, dtsFiles, {
@@ -137,7 +137,7 @@ async function buildAction(actionContext) {
         }
         const resolvedAssetsToEmit = (actionContext.assetsToEmit ??= await (0, assets_1.collectAssetsToEmit)(options.assets, options.workspaceRoot, buildState.hasEmittedAssets ? modifiedFiles : undefined));
         filesToEmit.push(...resolvedAssetsToEmit);
-        await (0, disk_files_1.emitFilesToDisk)(filesToEmit, (file) => node_path_1.default.join(options.outputPath, file.path));
+        await (0, disk_files_1.emitFilesToDisk)(filesToEmit, (file) => node_path_1.default.posix.join(options.outputPath, file.path));
         buildState.hasEmittedManifests = true;
         buildState.hasEmittedTslib = hasTslibImport;
         buildState.hasEmittedAssets = true;
@@ -154,12 +154,12 @@ async function buildAction(actionContext) {
  *
  * @param modifiedFiles Set of POSIX file paths modified since the last build.
  * @param watchedCompilationFiles Set of POSIX file paths tracked for compilation.
- * @param posixPackageJsonPath The normalized POSIX path to the library's `package.json`.
+ * @param packageJsonPath The normalized POSIX path to the library's `package.json`.
  * @returns `true` if a watched compilation file was modified; otherwise `false`.
  */
-function hasModifiedWatchedFile(modifiedFiles, watchedCompilationFiles, posixPackageJsonPath) {
+function hasModifiedWatchedFile(modifiedFiles, watchedCompilationFiles, packageJsonPath) {
     for (const file of modifiedFiles) {
-        if (file !== posixPackageJsonPath && watchedCompilationFiles.has(file)) {
+        if (file !== packageJsonPath && watchedCompilationFiles.has(file)) {
             return true;
         }
     }

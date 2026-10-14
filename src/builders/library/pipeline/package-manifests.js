@@ -133,7 +133,7 @@ function createExportConditions(existingConditions, dtsPath, fesmPath) {
 let cachedTslibRange;
 /**
  * Get the tslib range used by the Angular compiler.
- * @param workspaceRoot path to the workspace root
+ * @param workspaceRoot path to the workspace root.
  * @returns tslib range
  */
 async function getAngularTslibRange(workspaceRoot) {

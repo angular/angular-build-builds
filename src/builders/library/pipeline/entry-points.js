@@ -37,9 +37,9 @@ function getEntryPointBundleName(packageName, entryPointName = '.') {
  * @param posixKey Normalized POSIX key without trailing slashes.
  * @param isPrimary Whether this is the primary entry point.
  * @param targetPath The relative file path string from exports.
- * @param projectRoot The library project root directory.
+ * @param projectRoot The library project root POSIX directory path.
  * @param packageName The root package name (e.g. `@my/lib`).
- * @returns The normalized entry point descriptor.
+ * @returns The normalized entry point descriptor with POSIX paths.
  */
 function normalizeEntryPoint(key, posixKey, isPrimary, targetPath, projectRoot, packageName) {
     const name = isPrimary
@@ -53,7 +53,7 @@ function normalizeEntryPoint(key, posixKey, isPrimary, targetPath, projectRoot, 
     const subpath = isPrimary ? '.' : `./${name}`;
     const displayName = (isPrimary ? packageName : `${packageName}/${name}`).toLowerCase();
     const bundleName = getEntryPointBundleName(packageName, name);
-    const entryFilePath = node_path_1.default.resolve(projectRoot, targetPath);
+    const entryFilePath = (0, path_1.toPosixPath)(node_path_1.default.resolve(projectRoot, targetPath));
     if (!/(?<!\.d)\.(?:ts|mts)$/.test(entryFilePath)) {
         throw new Error(`Entry point '${key}' file path must be a TypeScript file ('.ts' or '.mts'): '${entryFilePath}'.`);
     }
@@ -95,10 +95,10 @@ function resolveTarget(value) {
  * Normalizes all entry points from the library's `package.json` `exports` field.
  *
  * @param rawExports The `exports` field from `package.json`.
- * @param projectRoot The library project root directory.
- * @param packageJsonPath Path to `package.json` for error reporting.
+ * @param projectRoot The library project root POSIX directory path.
+ * @param packageJsonPath POSIX path to `package.json` for error reporting.
  * @param packageName The root package name (e.g. `@my/lib`).
- * @returns A Map of normalized entry points keyed by name.
+ * @returns A Map of normalized entry points keyed by name with POSIX entry file paths.
  */
 function normalizeEntryPoints(rawExports, projectRoot, packageJsonPath, packageName) {
     if (!rawExports || (typeof rawExports !== 'string' && typeof rawExports !== 'object')) {
@@ -151,7 +151,11 @@ function normalizeEntryPoints(rawExports, projectRoot, packageJsonPath, packageN
     return entryPoints;
 }
 /**
- * Determines whether two sets of normalized entry points differ in keys, paths, or subpaths.
+ * Determines whether two sets of normalized entry points differ in keys, POSIX entry paths, or subpaths.
+ *
+ * @param oldEntryPoints The previous map of normalized entry points.
+ * @param newEntryPoints The new map of normalized entry points.
+ * @returns `true` if any entry point was added, removed, or modified; otherwise `false`.
  */
 function haveEntryPointsChanged(oldEntryPoints, newEntryPoints) {
     if (oldEntryPoints.size !== newEntryPoints.size) {
@@ -171,12 +175,18 @@ function haveEntryPointsChanged(oldEntryPoints, newEntryPoints) {
 }
 /**
  * Updates watched files, entry points in options, and cached bundle results when package.json entry points change.
+ *
+ * @param packageJson The reloaded `package.json` data.
+ * @param options The normalized library builder options.
+ * @param buildState The state preserved across incremental builds.
+ * @param watchedCompilationFiles Set of POSIX file paths tracked for compilation.
+ * @param packageJsonPath Normalized POSIX path to `package.json`.
  */
 function updateWatchedEntryPoints(packageJson, options, buildState, watchedCompilationFiles, packageJsonPath) {
     const newEntryPoints = normalizeEntryPoints(packageJson.exports, options.projectRoot, packageJsonPath, options.packageName);
     if (haveEntryPointsChanged(options.entryPoints, newEntryPoints)) {
         for (const entryPoint of newEntryPoints.values()) {
-            watchedCompilationFiles.add((0, path_1.toPosixPath)(entryPoint.entryFilePath));
+            watchedCompilationFiles.add(entryPoint.entryFilePath);
         }
         for (const name of buildState.previousBundleResults.keys()) {
             const oldEp = options.entryPoints.get(name);
@@ -225,8 +235,8 @@ function collectEntryPointsToBundle(options, buildState, logs) {
 /**
  * Checks whether any file in `changedFiles` belongs to the given entry point's `moduleIds`.
  *
- * @param moduleIds Set of module IDs referenced by the entry point's previous bundle.
- * @param changedFiles Set of file paths that changed during compilation.
+ * @param moduleIds Set of virtual POSIX module IDs referenced by the entry point's previous bundle.
+ * @param changedFiles Set of POSIX file paths that changed during compilation.
  * @returns `true` if at least one changed file is part of `moduleIds`; otherwise `false`.
  */
 function hasEntryPointChanges(moduleIds, changedFiles) {

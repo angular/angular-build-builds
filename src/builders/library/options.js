@@ -16,17 +16,29 @@ const utils_1 = require("../../utils");
 const color_1 = require("../../utils/color");
 const error_1 = require("../../utils/error");
 const normalize_cache_1 = require("../../utils/normalize-cache");
+const path_1 = require("../../utils/path");
 const postcss_configuration_1 = require("../../utils/postcss-configuration");
 const project_metadata_1 = require("../../utils/project-metadata");
 const entry_points_1 = require("./pipeline/entry-points");
 const utils_2 = require("./pipeline/utils");
+/**
+ * Normalizes raw library builder options into {@link NormalizedLibraryOptions} with all
+ * file and directory paths normalized to POSIX format.
+ *
+ * @param context The Architect builder context.
+ * @param projectName The name of the library project.
+ * @param options The raw library builder schema options.
+ * @returns A promise resolving to the normalized library options.
+ */
 async function normalizeLibraryOptions(context, projectName, options) {
-    const { workspaceRoot } = context;
+    const workspaceRoot = (0, path_1.toPosixPath)(context.workspaceRoot);
     const projectMetadata = await context.getProjectMetadata(projectName);
-    const { projectRoot, projectSourceRoot } = (0, project_metadata_1.getProjectRootPaths)(workspaceRoot, projectMetadata);
+    const projectRootPaths = (0, project_metadata_1.getProjectRootPaths)(workspaceRoot, projectMetadata);
+    const projectRoot = (0, path_1.toPosixPath)(projectRootPaths.projectRoot);
+    const projectSourceRoot = (0, path_1.toPosixPath)(projectRootPaths.projectSourceRoot);
     const { tsConfig, assets: rawAssets, stylePreprocessorOptions, inlineStyleLanguage = 'css', compilationMode, declarationMap, allowedNonPeerDependencies: rawAllowedNonPeerDependencies = [], keepLifecycleScripts = false, watch = false, poll, preserveSymlinks = process.execArgv.includes('--preserve-symlinks'), deleteOutputPath = true, progress = true, clearScreen, } = options;
-    const resolvedTsConfigPath = node_path_1.default.resolve(workspaceRoot, tsConfig);
-    const packageJsonPath = node_path_1.default.join(projectRoot, 'package.json');
+    const resolvedTsConfigPath = (0, path_1.toPosixPath)(node_path_1.default.resolve(workspaceRoot, tsConfig));
+    const packageJsonPath = node_path_1.default.posix.join(projectRoot, 'package.json');
     let packageJson;
     try {
         packageJson = await (0, utils_2.loadPackageJson)(packageJsonPath);
@@ -62,13 +74,17 @@ async function normalizeLibraryOptions(context, projectName, options) {
         }
         defaultAssets.push({
             glob: 'README.md',
-            input: node_path_1.default.dirname(entryPoint.entryFilePath),
+            input: node_path_1.default.posix.dirname(entryPoint.entryFilePath),
             output: entryPoint.name,
         });
     }
-    const assets = (0, utils_1.normalizeAssetPatterns)([...defaultAssets, ...(rawAssets ?? [])], workspaceRoot, projectRoot, projectSourceRoot);
+    const assets = (0, utils_1.normalizeAssetPatterns)([...defaultAssets, ...(rawAssets ?? [])], workspaceRoot, projectRoot, projectSourceRoot).map((asset) => ({
+        ...asset,
+        input: (0, path_1.toPosixPath)(node_path_1.default.resolve(workspaceRoot, asset.input)),
+        output: (0, path_1.toPosixPath)(asset.output),
+    }));
     const cacheOptions = (0, normalize_cache_1.normalizeCacheOptions)(projectMetadata, workspaceRoot, projectName, context.builder.builderName);
-    const styleIncludePaths = (stylePreprocessorOptions?.includePaths ?? []).map((p) => node_path_1.default.resolve(workspaceRoot, p));
+    const styleIncludePaths = (stylePreprocessorOptions?.includePaths ?? []).map((p) => (0, path_1.toPosixPath)(node_path_1.default.resolve(workspaceRoot, p)));
     const searchDirectories = await (0, postcss_configuration_1.generateSearchDirectories)([projectRoot, workspaceRoot]);
     const postcssConfiguration = await (0, postcss_configuration_1.loadPostcssConfiguration)(searchDirectories);
     const tailwindConfiguration = postcssConfiguration
@@ -79,7 +95,7 @@ async function normalizeLibraryOptions(context, projectName, options) {
         projectRoot,
         packageName,
         packageJson,
-        outputPath: node_path_1.default.resolve(workspaceRoot, options.outputPath ?? node_path_1.default.join('dist', projectName)),
+        outputPath: (0, path_1.toPosixPath)(node_path_1.default.resolve(workspaceRoot, options.outputPath ?? node_path_1.default.posix.join('dist', projectName))),
         deleteOutputPath,
         packageJsonPath,
         tsConfigPath: resolvedTsConfigPath,

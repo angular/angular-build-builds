@@ -28,7 +28,7 @@ export declare function createSingleBuildState(): SingleBuildState;
  * Context required to execute a single library build iteration.
  */
 export interface BuildActionContext {
-    /** Normalized options for the library build. */
+    /** Normalized options for the library build with POSIX paths. */
     options: NormalizedLibraryOptions;
     /** The Architect builder context. */
     context: BuilderContext;
@@ -37,7 +37,7 @@ export interface BuildActionContext {
     /** Whether the builder is running in watch mode. */
     isWatchMode: boolean;
     /**
-     * Set of file paths tracked for compilation and configuration
+     * Set of POSIX file paths tracked for compilation and configuration
      * (including `tsconfig.json`, `package.json`, entry points, and referenced source,
      * template, and stylesheet files). Updated during compilation and used to determine
      * whether file changes require recompiling entry points, excluding asset files so
@@ -46,7 +46,7 @@ export interface BuildActionContext {
     watchedCompilationFiles: Set<string>;
     /** State preserved across incremental builds in watch mode. */
     buildState: SingleBuildState;
-    /** Set of file paths modified since the last build iteration. */
+    /** Set of POSIX file paths modified since the last build iteration. */
     modifiedFiles?: Set<string>;
     /**
      * Asset files to emit to disk for the current build iteration.
@@ -62,6 +62,7 @@ export interface BuildActionContext {
  * manifest generation, and asset copying.
  *
  * @param actionContext The build action state and configuration.
+ * @returns A promise resolving to the build action result containing errors, warnings, and logs.
  */
 export declare function buildAction(actionContext: BuildActionContext): Promise<BuildActionResult>;
 /**
@@ -70,7 +71,7 @@ export declare function buildAction(actionContext: BuildActionContext): Promise<
  *
  * @param modifiedFiles Set of POSIX file paths modified since the last build.
  * @param watchedCompilationFiles Set of POSIX file paths tracked for compilation.
- * @param posixPackageJsonPath The normalized POSIX path to the library's `package.json`.
+ * @param packageJsonPath The normalized POSIX path to the library's `package.json`.
  * @returns `true` if a watched compilation file was modified; otherwise `false`.
  */
-export declare function hasModifiedWatchedFile(modifiedFiles: ReadonlySet<string>, watchedCompilationFiles: ReadonlySet<string>, posixPackageJsonPath: string): boolean;
+export declare function hasModifiedWatchedFile(modifiedFiles: ReadonlySet<string>, watchedCompilationFiles: ReadonlySet<string>, packageJsonPath: string): boolean;

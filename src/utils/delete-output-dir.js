@@ -14,8 +14,9 @@ const node_path_1 = require("node:path");
  * Delete an output directory, but error out if it's the root of the project.
  */
 async function deleteOutputDir(root, outputPath, emptyOnlyDirectories) {
-    const resolvedOutputPath = (0, node_path_1.resolve)(root, outputPath);
-    if (resolvedOutputPath === root) {
+    const resolvedRoot = (0, node_path_1.resolve)(root);
+    const resolvedOutputPath = (0, node_path_1.resolve)(resolvedRoot, outputPath);
+    if (resolvedOutputPath === resolvedRoot) {
         throw new Error('Output path MUST not be project root directory!');
     }
     const directoriesToEmpty = emptyOnlyDirectories

@@ -56,9 +56,9 @@ const DTS_EXTENSIONS = ['.d.ts', '.d.mts', '/index.d.ts', '/index.d.mts'];
  * using at most 2 Rolldown instances total (1 for all .mjs bundles, 1 for all .d.ts bundles).
  *
  * @param items The collection of entry point inputs with change statuses.
- * @param esmFiles Map of virtual ESM output file paths to their content.
- * @param dtsFiles Map of virtual TypeScript declaration file paths to their content.
- * @param options The normalized library builder options.
+ * @param esmFiles Map of virtual POSIX ESM output file paths to their content.
+ * @param dtsFiles Map of virtual POSIX TypeScript declaration file paths to their content.
+ * @param options The normalized library builder options with POSIX paths.
  * @returns A promise resolving to the bundled output files and bundle cache results.
  */
 async function bundleEntryPoints(items, esmFiles, dtsFiles, options) {
@@ -104,23 +104,21 @@ async function bundleEntryPoints(items, esmFiles, dtsFiles, options) {
  *
  * @param entryPoints The entry points to include in the bundle input map.
  * @param dtsMode Whether the input map is for declaration files (.d.ts) rather than ESM files (.js).
- * @returns A record mapping bundle names to virtual entry file paths.
+ * @returns A record mapping bundle names to virtual POSIX entry file paths.
  */
 function resolveEntryInputMap(entryPoints, dtsMode) {
     const input = {};
     for (const { bundleName, entryFilePath } of entryPoints) {
-        const posixPath = (0, path_1.toPosixPath)(entryFilePath);
         input[bundleName] = dtsMode
-            ? posixPath.replace(/\.([cm]?ts)$/, '.d.$1')
-            : posixPath.replace(/\.([cm]?)ts$/, '.$1js');
+            ? entryFilePath.replace(/\.([cm]?ts)$/, '.d.$1')
+            : entryFilePath.replace(/\.([cm]?)ts$/, '.$1js');
     }
     return input;
 }
 /**
- * Creates a Rolldown plugin that loads modules from an in-memory file map
- * and prevents illegal cross-entry-point sibling imports.
+ * Creates a Rolldown plugin that resolves and loads modules from an in-memory file map.
  *
- * @param files Map of virtual file paths to their content.
+ * @param files Map of virtual POSIX file paths to their content.
  * @param extensions Candidate extensions to probe when resolving extensionless module specifiers.
  * @param includeMap Whether source map files should also be loaded from the memory map.
  * @returns A Rolldown plugin instance.
@@ -140,11 +138,7 @@ function createMemoryFileLoaderPlugin(files, extensions, includeMap) {
                 if (id[0] !== '.' && !node_path_1.default.isAbsolute(id)) {
                     return { id, external: true };
                 }
-                const posixId = (0, path_1.toPosixPath)(id);
-                const importerPosix = (0, path_1.toPosixPath)(importer);
-                const resolved = posixId[0] === '.'
-                    ? node_path_1.default.posix.join(node_path_1.default.posix.dirname(importerPosix), posixId)
-                    : posixId;
+                const resolved = id[0] === '.' ? node_path_1.default.posix.join(node_path_1.default.posix.dirname(importer), id) : id;
                 let resolvedCandidate;
                 if (files.has(resolved)) {
                     resolvedCandidate = resolved;
@@ -182,7 +176,7 @@ function createMemoryFileLoaderPlugin(files, extensions, includeMap) {
  * the transitive set of module IDs belonging to each entry point bundle.
  *
  * @param output The array of output chunks and assets from Rolldown.
- * @param dir The destination output directory prefix.
+ * @param dir The destination POSIX output directory prefix.
  * @returns The processed multi-bundle output.
  */
 function processRolldownOutput(output, dir) {
@@ -243,10 +237,10 @@ const IGNORED_ROLLDOWN_WARNING_CODES = new Set([
 /**
  * Executes a Rolldown bundle build across all provided entry inputs.
  *
- * @param input Map of bundle names to virtual entry file paths.
+ * @param input Map of bundle names to virtual POSIX entry file paths.
  * @param plugins Rolldown plugins to use during bundling.
  * @param extension Output file extension ('mjs' or 'd.ts').
- * @param options The normalized library options.
+ * @param options The normalized library options with POSIX paths.
  * @returns A promise resolving to the multi-bundle output.
  */
 async function executeMultiBundle(input, plugins, extension, options) {
@@ -289,7 +283,7 @@ async function executeMultiBundle(input, plugins, extension, options) {
     try {
         const { output } = await bundle.generate({
             format: 'es',
-            dir: node_path_1.default.join(outputPath, dir),
+            dir: node_path_1.default.posix.join(outputPath, dir),
             entryFileNames: `[name].${extension}`,
             chunkFileNames: `[name]-[hash].${extension}`,
             sourcemap,
@@ -309,8 +303,8 @@ async function executeMultiBundle(input, plugins, extension, options) {
  * Bundles JavaScript ESM output files for all provided entry points.
  *
  * @param entryPoints The entry points to bundle.
- * @param esmFiles Map of virtual ESM output file paths to contents.
- * @param options The normalized library options.
+ * @param esmFiles Map of virtual POSIX ESM output file paths to contents.
+ * @param options The normalized library options with POSIX paths.
  * @returns A promise resolving to the multi-bundle output.
  */
 async function bundleAllEsm(entryPoints, esmFiles, options) {
@@ -328,8 +322,8 @@ async function bundleAllEsm(entryPoints, esmFiles, options) {
  * Bundles TypeScript declaration (.d.ts) output files for all provided entry points.
  *
  * @param entryPoints The entry points to bundle.
- * @param dtsFiles Map of virtual declaration output file paths to contents.
- * @param options The normalized library options.
+ * @param dtsFiles Map of virtual POSIX declaration output file paths to contents.
+ * @param options The normalized library options with POSIX paths.
  * @returns A promise resolving to the multi-bundle output.
  */
 async function bundleAllDts(entryPoints, dtsFiles, options) {

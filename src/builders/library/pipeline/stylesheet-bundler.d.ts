@@ -7,11 +7,14 @@
  */
 import { ComponentStylesheetBundler } from '../../../tools/esbuild/angular/component-stylesheets';
 import type { NormalizedLibraryOptions } from '../types';
+/**
+ * Subset of normalized library options required to configure the component stylesheet bundler.
+ */
 export type LibraryStylesheetBundlerOptions = Pick<NormalizedLibraryOptions, 'workspaceRoot' | 'preserveSymlinks' | 'styleIncludePaths' | 'sass' | 'cacheOptions' | 'inlineStyleLanguage' | 'postcssConfiguration' | 'tailwindConfiguration'>;
 /**
  * Creates a stylesheet bundler instance configured for library compilation.
  *
- * @param options The normalized library builder options.
+ * @param options The normalized library builder options with POSIX paths.
  * @param incremental Whether incremental watch mode is enabled.
  * @param target The esbuild target environments derived from browserslist.
  * @returns A new ComponentStylesheetBundler instance.

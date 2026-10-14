@@ -19,7 +19,7 @@ export declare const TYPES_OUTPUT_DIR = "types";
  */
 export interface MemoryOutputFile {
     origin: 'memory';
-    /** The destination path where the file should be written. */
+    /** The relative POSIX destination path where the file should be written. */
     path: string;
     /** The contents of the file as either a string or byte array. */
     contents: string | Uint8Array;
@@ -29,9 +29,9 @@ export interface MemoryOutputFile {
  */
 export interface DiskOutputFile {
     origin: 'disk';
-    /** The path to the source file on disk. */
+    /** The POSIX path to the source file on disk. */
     source: string;
-    /** The destination path where the file should be copied. */
+    /** The relative POSIX destination path where the file should be copied. */
     path: string;
 }
 /**
@@ -39,19 +39,19 @@ export interface DiskOutputFile {
  */
 export type OutputFile = MemoryOutputFile | DiskOutputFile;
 /**
- * Creates an output file descriptor for an existing file on disk.
+ * Creates an output file descriptor for an existing file on disk with POSIX paths.
  *
  * @param source The path to the source file on disk.
- * @param path The destination path where the file should be copied.
- * @returns A {@link DiskOutputFile} descriptor.
+ * @param path The relative destination path where the file should be copied.
+ * @returns A {@link DiskOutputFile} descriptor with POSIX `source` and `path`.
  */
 export declare function createDiskOutputFile(source: string, path: string): DiskOutputFile;
 /**
- * Creates an output file descriptor for an in-memory file.
+ * Creates an output file descriptor for an in-memory file with a POSIX destination path.
  *
- * @param path The destination path where the file should be written.
+ * @param path The relative destination path where the file should be written.
  * @param contents The contents of the file as either a string, byte array, or JSON object.
- * @returns A {@link MemoryOutputFile} descriptor.
+ * @returns A {@link MemoryOutputFile} descriptor with a POSIX `path`.
  */
 export declare function createMemoryOutputFile(path: string, contents: string | Uint8Array | Record<string, unknown>): MemoryOutputFile;
 /**

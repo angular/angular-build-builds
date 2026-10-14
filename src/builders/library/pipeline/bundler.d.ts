@@ -36,9 +36,9 @@ export interface BundleEntryPointInput {
  * using at most 2 Rolldown instances total (1 for all .mjs bundles, 1 for all .d.ts bundles).
  *
  * @param items The collection of entry point inputs with change statuses.
- * @param esmFiles Map of virtual ESM output file paths to their content.
- * @param dtsFiles Map of virtual TypeScript declaration file paths to their content.
- * @param options The normalized library builder options.
+ * @param esmFiles Map of virtual POSIX ESM output file paths to their content.
+ * @param dtsFiles Map of virtual POSIX TypeScript declaration file paths to their content.
+ * @param options The normalized library builder options with POSIX paths.
  * @returns A promise resolving to the bundled output files and bundle cache results.
  */
 export declare function bundleEntryPoints(items: readonly BundleEntryPointInput[], esmFiles: ReadonlyMap<string, string>, dtsFiles: ReadonlyMap<string, string>, options: NormalizedLibraryOptions): Promise<BundleEntryPointsOutput>;

@@ -54,13 +54,14 @@ function normalizeAssetPatterns(assetPatterns, workspaceRoot, projectRoot, proje
     }
     // When sourceRoot is not available, we default to ${projectRoot}/src.
     const sourceRoot = projectSourceRoot || path.join(projectRoot, 'src');
-    const resolvedSourceRoot = path.resolve(workspaceRoot, sourceRoot);
-    const resolvedProjectRoot = path.resolve(workspaceRoot, projectRoot);
+    const resolvedWorkspaceRoot = path.resolve(workspaceRoot);
+    const resolvedSourceRoot = path.resolve(resolvedWorkspaceRoot, sourceRoot);
+    const resolvedProjectRoot = path.resolve(resolvedWorkspaceRoot, projectRoot);
     return assetPatterns.map((assetPattern) => {
         // Normalize string asset patterns to objects.
         if (typeof assetPattern === 'string') {
             const assetPath = path.normalize(assetPattern);
-            const resolvedAssetPath = path.resolve(workspaceRoot, assetPath);
+            const resolvedAssetPath = path.resolve(resolvedWorkspaceRoot, assetPath);
             let root;
             // Check if the string asset is within sourceRoot.
             if (resolvedAssetPath.startsWith(resolvedSourceRoot)) {
@@ -69,8 +70,8 @@ function normalizeAssetPatterns(assetPatterns, workspaceRoot, projectRoot, proje
             else if (resolvedAssetPath.startsWith(resolvedProjectRoot)) {
                 root = resolvedProjectRoot;
             }
-            else if (resolvedAssetPath.startsWith(workspaceRoot)) {
-                root = workspaceRoot;
+            else if (resolvedAssetPath.startsWith(resolvedWorkspaceRoot)) {
+                root = resolvedWorkspaceRoot;
             }
             else {
                 throw new Error(`The ${assetPattern} asset path must be within the workspace root.`);
@@ -96,11 +97,11 @@ function normalizeAssetPatterns(assetPatterns, workspaceRoot, projectRoot, proje
                 input = path.dirname(assetPath);
             }
             // Output directory for both is the relative path from the root to input.
-            const output = path.relative(root, path.resolve(workspaceRoot, input));
+            const output = path.relative(root, path.resolve(resolvedWorkspaceRoot, input));
             assetPattern = { glob, input, output };
         }
         else {
-            if (!(0, path_1.isSubDirectory)(workspaceRoot, assetPattern.input)) {
+            if (!(0, path_1.isSubDirectory)(resolvedWorkspaceRoot, assetPattern.input)) {
                 throw new Error(`The ${assetPattern.input} asset path must be within the workspace root.`);
             }
             assetPattern.output = path.join('.', assetPattern.output ?? '');

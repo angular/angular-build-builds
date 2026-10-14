@@ -10,9 +10,9 @@ import { type DiskOutputFile } from './utils';
 /**
  * Resolves and collects configured library assets to be emitted to disk.
  *
- * @param assets The normalized asset patterns.
- * @param workspaceRoot The workspace root directory path.
- * @param modifiedFiles Optional set of modified file paths for incremental copying in watch mode.
+ * @param assets The normalized asset patterns with POSIX paths.
+ * @param workspaceRoot The normalized POSIX workspace root directory path.
+ * @param modifiedFiles Optional set of modified POSIX file paths for incremental copying in watch mode.
  * @returns An array of disk file emission descriptors.
  */
 export declare function collectAssetsToEmit(assets: NormalizedLibraryOptions['assets'], workspaceRoot: string, modifiedFiles?: ReadonlySet<string>): Promise<DiskOutputFile[]>;
