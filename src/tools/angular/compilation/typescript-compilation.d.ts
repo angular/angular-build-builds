@@ -13,6 +13,7 @@ import { type CompilerOptionOverrides } from './compiler-options';
 export interface TransformedConfiguration {
     compilerOptions: ng.CompilerOptions;
     rootNames: string[];
+    fallbackRootNames?: string[];
     errors: ts.Diagnostic[];
     warnings: PartialMessage[];
     tsConfigFiles: readonly string[];

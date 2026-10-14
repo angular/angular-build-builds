@@ -60,7 +60,8 @@ class AngularCompilationState {
     useTypeScriptTranspilation;
     diagnosticCache;
     filesWithoutDtsSignature;
-    constructor(angularProgram, compilerHost, typeScriptProgram, affectedFiles, templateDiagnosticsOptimization, webWorkerTransform, useTypeScriptTranspilation, diagnosticCache = new WeakMap(), filesWithoutDtsSignature = new Set()) {
+    useFallbackRootNames;
+    constructor(angularProgram, compilerHost, typeScriptProgram, affectedFiles, templateDiagnosticsOptimization, webWorkerTransform, useTypeScriptTranspilation, diagnosticCache = new WeakMap(), filesWithoutDtsSignature = new Set(), useFallbackRootNames = false) {
         this.angularProgram = angularProgram;
         this.compilerHost = compilerHost;
         this.typeScriptProgram = typeScriptProgram;
@@ -70,6 +71,7 @@ class AngularCompilationState {
         this.useTypeScriptTranspilation = useTypeScriptTranspilation;
         this.diagnosticCache = diagnosticCache;
         this.filesWithoutDtsSignature = filesWithoutDtsSignature;
+        this.useFallbackRootNames = useFallbackRootNames;
     }
     get angularCompiler() {
         return this.angularProgram.compiler;
@@ -87,7 +89,7 @@ class AotCompilation extends typescript_compilation_1.TypeScriptCompilation {
         // Dynamically load the Angular compiler CLI package
         const { NgtscProgram, OptimizeFor } = await typescript_compilation_1.TypeScriptCompilation.loadCompilerCli();
         // Load the compiler configuration and transform as needed
-        const { compilerOptions, rootNames, errors: configurationDiagnostics, warnings, tsConfigFiles, } = await this.loadConfiguration(tsconfig, compilerOptionOverrides, buildType);
+        const { compilerOptions, rootNames, fallbackRootNames, errors: configurationDiagnostics, warnings, tsConfigFiles, } = await this.loadConfiguration(tsconfig, compilerOptionOverrides, buildType);
         const useTypeScriptTranspilation = compilerOptions['_useTypeScriptTranspilation'] ??
             !compilerOptions.isolatedModules;
         if (compilerOptions.externalRuntimeStyles) {
@@ -127,10 +129,28 @@ class AotCompilation extends typescript_compilation_1.TypeScriptCompilation {
         }
         // Create Angular compiler host
         const host = (0, angular_host_1.createAngularCompilerHost)(typescript_1.default, compilerOptions, hostOptions, packageJsonCache, this.sourceFiles);
+        // If a previous watch rebuild already fell back to the full tsconfig root file set,
+        // start directly with fallbackRootNames to avoid repeating the two-step check.
+        let useFallbackRootNames = this.#state?.useFallbackRootNames ?? false;
         // Create the Angular specific program that contains the Angular compiler
-        const angularProgram = (0, profiling_1.profileSync)('NG_CREATE_PROGRAM', () => new NgtscProgram(rootNames, compilerOptions, host, this.#state?.angularProgram));
-        const angularCompiler = angularProgram.compiler;
-        const angularTypeScriptProgram = angularProgram.getTsProgram();
+        let angularProgram = (0, profiling_1.profileSync)('NG_CREATE_PROGRAM', () => new NgtscProgram((useFallbackRootNames && fallbackRootNames) || rootNames, compilerOptions, host, this.#state?.angularProgram));
+        let angularCompiler = angularProgram.compiler;
+        await (0, profiling_1.profileAsync)('NG_ANALYZE_PROGRAM', () => angularCompiler.analyzeAsync());
+        let angularTypeScriptProgram = angularProgram.getTsProgram();
+        // When rootFiles filtering is active and a non-standalone component without a resolved
+        // NgModule scope is encountered, its declaring NgModule may not be directly imported by
+        // the test entry points. Fall back to the full tsconfig root file set if it contains
+        // additional uncompiled files so the Angular compiler can discover all NgModules and
+        // resolve component compilation scopes.
+        if (!useFallbackRootNames &&
+            fallbackRootNames?.some((file) => !angularTypeScriptProgram.getSourceFile(file)) &&
+            hasUnscopedComponent(angularCompiler)) {
+            useFallbackRootNames = true;
+            angularProgram = (0, profiling_1.profileSync)('NG_CREATE_PROGRAM_FALLBACK', () => new NgtscProgram(fallbackRootNames, compilerOptions, host, angularProgram));
+            angularCompiler = angularProgram.compiler;
+            await (0, profiling_1.profileAsync)('NG_ANALYZE_PROGRAM_FALLBACK', () => angularCompiler.analyzeAsync());
+            angularTypeScriptProgram = angularProgram.getTsProgram();
+        }
         (0, angular_host_1.ensureSourceFileVersions)(angularTypeScriptProgram);
         let oldProgram = this.#state?.typeScriptProgram;
         let usingBuildInfo = false;
@@ -148,7 +168,6 @@ class AotCompilation extends typescript_compilation_1.TypeScriptCompilation {
                 }
             }
         }
-        await (0, profiling_1.profileAsync)('NG_ANALYZE_PROGRAM', () => angularCompiler.analyzeAsync());
         let templateUpdates;
         if (useHmr && hostOptions.modifiedFiles && this.#state) {
             const componentNodes = (0, hmr_candidates_1.collectHmrCandidates)(hostOptions.modifiedFiles, angularProgram, staleSourceFiles);
@@ -219,7 +238,7 @@ class AotCompilation extends typescript_compilation_1.TypeScriptCompilation {
                 }
             }
         }
-        this.#state = new AngularCompilationState(angularProgram, host, typeScriptProgram, affectedFiles, affectedFiles.size === 1 ? OptimizeFor.SingleFile : OptimizeFor.WholeProgram, (0, web_worker_transformer_1.createWorkerTransformer)(hostOptions.processWebWorker.bind(hostOptions)), useTypeScriptTranspilation, this.#state?.diagnosticCache, filesWithoutDtsSignature);
+        this.#state = new AngularCompilationState(angularProgram, host, typeScriptProgram, affectedFiles, affectedFiles.size === 1 ? OptimizeFor.SingleFile : OptimizeFor.WholeProgram, (0, web_worker_transformer_1.createWorkerTransformer)(hostOptions.processWebWorker.bind(hostOptions)), useTypeScriptTranspilation, this.#state?.diagnosticCache, filesWithoutDtsSignature, useFallbackRootNames);
         return {
             compilerOptions,
             referencedFiles,
@@ -550,5 +569,53 @@ function populatePreviousDtsSignatures(oldProgram, modifiedFiles, filesWithoutDt
         compilerOptions.noEmit = prevNoEmit;
         compilerOptions.noEmitOnError = prevNoEmitOnError;
     }
+}
+/**
+ * Checks whether the analyzed Angular program contains any non-standalone `@Component`
+ * declarations in user source files that lack an owning `NgModule` scope.
+ */
+function hasUnscopedComponent(angularCompiler) {
+    // `incrementalCompilation.state` is typed as the `IncrementalState` union
+    // (`AnalyzedIncrementalState | DeltaIncrementalState | FreshIncrementalState`), where only
+    // `AnalyzedIncrementalState` (populated once `analyzeAsync()` completes) contains
+    // `priorAnalysis`. Because the `IncrementalStateKind` discriminant enum is not re-exported
+    // from `@angular/compiler-cli`, narrow the union via `'priorAnalysis' in state`.
+    const state = angularCompiler.incrementalCompilation.state;
+    if (!('priorAnalysis' in state)) {
+        return false;
+    }
+    let templateTypeChecker;
+    for (const [sourceFile, records] of state.priorAnalysis) {
+        if (records.length === 0 || angularCompiler.ignoreForEmit.has(sourceFile)) {
+            continue;
+        }
+        for (const { node } of records) {
+            if (!typescript_1.default.isClassDeclaration(node)) {
+                continue;
+            }
+            const meta = angularCompiler.getMeta(node);
+            if (meta && 'isComponent' in meta && meta.isComponent && !meta.isStandalone) {
+                if (!templateTypeChecker) {
+                    // `NgtscProgram` initializes `NgCompiler` with `enableTemplateTypeChecker = false`, which
+                    // guards the public `getTemplateTypeChecker()` getter. Temporarily enable the flag after
+                    // `analyzeAsync()` has already constructed `TemplateTypeCheckerImpl` so we can query
+                    // `getOwningNgModule()` without altering `typeCheckingConfig.enableTemplateTypeChecker`.
+                    const compiler = angularCompiler;
+                    const previous = compiler.enableTemplateTypeChecker;
+                    try {
+                        compiler.enableTemplateTypeChecker = true;
+                        templateTypeChecker = angularCompiler.getTemplateTypeChecker();
+                    }
+                    finally {
+                        compiler.enableTemplateTypeChecker = previous;
+                    }
+                }
+                if (templateTypeChecker.getOwningNgModule(node) === null) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 //# sourceMappingURL=aot-compilation.js.map
