@@ -8,6 +8,15 @@
 import type { ComponentStylesheetBundler } from '../../../tools/esbuild/angular/component-stylesheets';
 import type { NormalizedEntryPoint, NormalizedLibraryOptions, SingleProgramCache } from '../types';
 /**
+ * Formatted diagnostic messages produced during library compilation.
+ */
+export interface LibraryCompilationDiagnostics {
+    /** Formatted compilation error messages. */
+    readonly errors: string[];
+    /** Formatted compilation warning messages. */
+    readonly warnings: string[];
+}
+/**
  * Output of the unified library compilation step.
  */
 export interface LibraryCompilationOutput {
@@ -23,8 +32,10 @@ export interface LibraryCompilationOutput {
     readonly referencedFiles: ReadonlySet<string>;
     /** Cached compilation state for subsequent incremental builds. */
     readonly cache: SingleProgramCache;
-    /** Promise that resolves to formatted compilation warnings or rejects on diagnostic errors. */
-    readonly diagnosePromise: Promise<string[]>;
+    /** Whether any component stylesheet bundling errors occurred. */
+    readonly hasStylesheetErrors: boolean;
+    /** Promise that resolves to formatted compilation diagnostic errors and warnings. */
+    readonly diagnosePromise: Promise<LibraryCompilationDiagnostics>;
     /** Effective declarationMap setting resolved from builder options and tsconfig. */
     readonly declarationMap: boolean;
     /** Effective compilationMode setting resolved from builder options and tsconfig. */

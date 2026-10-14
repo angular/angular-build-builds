@@ -6,6 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 import type { NormalizedEntryPoint, NormalizedLibraryOptions, PackageJsonData, SingleBuildState } from '../types';
+import type { BundleEntryPointInput } from './bundler';
 /**
  * Computes the base bundle file name for an entry point.
  *
@@ -32,3 +33,13 @@ export declare function haveEntryPointsChanged(oldEntryPoints: ReadonlyMap<strin
  * Updates watched files, entry points in options, and cached bundle results when package.json entry points change.
  */
 export declare function updateWatchedEntryPoints(packageJson: PackageJsonData, options: NormalizedLibraryOptions, buildState: SingleBuildState, watchedCompilationFiles: Set<string>, packageJsonPath: string): void;
+/**
+ * Determines which entry points have modified JavaScript or declaration files
+ * and collects them for bundling.
+ *
+ * @param options The normalized library builder options.
+ * @param buildState The state preserved across incremental builds.
+ * @param logs Array of informational log messages to append to when an entry point is queued.
+ * @returns The list of entry points that require bundling in the current build iteration.
+ */
+export declare function collectEntryPointsToBundle(options: NormalizedLibraryOptions, buildState: SingleBuildState, logs: string[]): BundleEntryPointInput[];

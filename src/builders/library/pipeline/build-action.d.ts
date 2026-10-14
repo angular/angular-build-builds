@@ -10,6 +10,17 @@ import type { ComponentStylesheetBundler } from '../../../tools/esbuild/angular/
 import type { NormalizedLibraryOptions, SingleBuildState } from '../types';
 import type { DiskOutputFile } from './utils';
 /**
+ * Result of executing a single library build iteration.
+ */
+export interface BuildActionResult {
+    /** Formatted error messages produced during the build. */
+    errors: string[];
+    /** Formatted warning messages produced during the build. */
+    warnings: string[];
+    /** Informational log messages produced during the build. */
+    logs: string[];
+}
+/**
  * Creates a fresh {@link SingleBuildState} instance.
  */
 export declare function createSingleBuildState(): SingleBuildState;
@@ -52,5 +63,14 @@ export interface BuildActionContext {
  *
  * @param actionContext The build action state and configuration.
  */
-export declare function buildAction(actionContext: BuildActionContext): Promise<void>;
+export declare function buildAction(actionContext: BuildActionContext): Promise<BuildActionResult>;
+/**
+ * Checks whether any modified file (excluding `package.json`) is part of the
+ * tracked compilation file set.
+ *
+ * @param modifiedFiles Set of POSIX file paths modified since the last build.
+ * @param watchedCompilationFiles Set of POSIX file paths tracked for compilation.
+ * @param posixPackageJsonPath The normalized POSIX path to the library's `package.json`.
+ * @returns `true` if a watched compilation file was modified; otherwise `false`.
+ */
 export declare function hasModifiedWatchedFile(modifiedFiles: ReadonlySet<string>, watchedCompilationFiles: ReadonlySet<string>, posixPackageJsonPath: string): boolean;

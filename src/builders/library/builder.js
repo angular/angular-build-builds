@@ -150,16 +150,29 @@ async function* executeLibraryBuilder(options, context) {
         ]);
     }
 }
+/**
+ * Executes a single build iteration with progress reporting, logs any resulting
+ * messages, and registers newly discovered files with the watcher.
+ *
+ * @param message Progress spinner message to display while building.
+ * @param actionContext The build action context and state.
+ * @param withProgress Progress wrapper function (`withSpinner` or `withNoProgress`).
+ * @param watcher Optional file watcher for watch mode.
+ * @param buildAction The library build action function to execute.
+ * @returns A promise resolving to the Architect `BuilderOutput`.
+ */
 async function executeBuild(message, actionContext, withProgress, watcher, buildAction) {
     const startTime = process.hrtime.bigint();
     const { context, watchedCompilationFiles, isWatchMode, options } = actionContext;
     try {
-        await withProgress(message, () => buildAction(actionContext));
-        logBuildResult(context.logger, startTime, true, options.outputPath);
-        if (isWatchMode) {
+        const result = await withProgress(message, () => buildAction(actionContext));
+        logMessages(context.logger, result);
+        const success = result.errors.length === 0;
+        logBuildResult(context.logger, startTime, success, options.outputPath);
+        if (success && isWatchMode) {
             (0, profiling_1.logCumulativeDurations)();
         }
-        return { success: true };
+        return { success };
     }
     catch (error) {
         (0, error_1.assertIsError)(error);
@@ -261,7 +274,29 @@ async function* runWatchLoop(watcher, options, stylesheetBundler, watchedCompila
     }
 }
 /**
+ * Logs informational, warning, and error messages produced during a build iteration.
+ *
+ * @param logger The Architect logger API.
+ * @param result The build action result containing logs, warnings, and errors.
+ */
+function logMessages(logger, { logs, warnings, errors }) {
+    if (logs.length) {
+        logger.info(logs.join('\n'));
+    }
+    if (warnings.length) {
+        logger.warn(warnings.join('\n'));
+    }
+    if (errors.length) {
+        logger.error(errors.join('\n'));
+    }
+}
+/**
  * Logs the build completion time and status.
+ *
+ * @param logger The Architect logger API.
+ * @param startTime High-resolution timestamp recorded when the build iteration started.
+ * @param success Whether the build iteration succeeded without errors.
+ * @param outputPath Optional output directory path to log on successful builds.
  */
 function logBuildResult(logger, startTime, success, outputPath) {
     const buildTime = Number(process.hrtime.bigint() - startTime) / 10 ** 9;

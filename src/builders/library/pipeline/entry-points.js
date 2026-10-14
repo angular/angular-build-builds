@@ -14,6 +14,7 @@ exports.getEntryPointBundleName = getEntryPointBundleName;
 exports.normalizeEntryPoints = normalizeEntryPoints;
 exports.haveEntryPointsChanged = haveEntryPointsChanged;
 exports.updateWatchedEntryPoints = updateWatchedEntryPoints;
+exports.collectEntryPointsToBundle = collectEntryPointsToBundle;
 const node_path_1 = __importDefault(require("node:path"));
 const path_1 = require("../../../utils/path");
 /**
@@ -190,5 +191,53 @@ function updateWatchedEntryPoints(packageJson, options, buildState, watchedCompi
         options.entryPoints = newEntryPoints;
         buildState.hasEntryPointsChanges = true;
     }
+}
+/**
+ * Determines which entry points have modified JavaScript or declaration files
+ * and collects them for bundling.
+ *
+ * @param options The normalized library builder options.
+ * @param buildState The state preserved across incremental builds.
+ * @param logs Array of informational log messages to append to when an entry point is queued.
+ * @returns The list of entry points that require bundling in the current build iteration.
+ */
+function collectEntryPointsToBundle(options, buildState, logs) {
+    const { pendingChangedEsmFiles, pendingChangedDtsFiles, previousBundleResults } = buildState;
+    const itemsToBundle = [];
+    for (const entryPoint of options.entryPoints.values()) {
+        const previousBundleResult = previousBundleResults.get(entryPoint.name);
+        const hasEsmChanges = !previousBundleResult ||
+            hasEntryPointChanges(previousBundleResult.esmModuleIds, pendingChangedEsmFiles);
+        const hasDtsChanges = !previousBundleResult ||
+            hasEntryPointChanges(previousBundleResult.dtsModuleIds, pendingChangedDtsFiles);
+        if (hasEsmChanges || hasDtsChanges) {
+            logs.push(`Compiling ${entryPoint.displayName}...`);
+            itemsToBundle.push({
+                entryPoint,
+                hasEsmChanges,
+                hasDtsChanges,
+                previousBundleResult,
+            });
+        }
+    }
+    return itemsToBundle;
+}
+/**
+ * Checks whether any file in `changedFiles` belongs to the given entry point's `moduleIds`.
+ *
+ * @param moduleIds Set of module IDs referenced by the entry point's previous bundle.
+ * @param changedFiles Set of file paths that changed during compilation.
+ * @returns `true` if at least one changed file is part of `moduleIds`; otherwise `false`.
+ */
+function hasEntryPointChanges(moduleIds, changedFiles) {
+    if (changedFiles.size === 0) {
+        return false;
+    }
+    for (const file of changedFiles) {
+        if (moduleIds.has(file)) {
+            return true;
+        }
+    }
+    return false;
 }
 //# sourceMappingURL=entry-points.js.map
