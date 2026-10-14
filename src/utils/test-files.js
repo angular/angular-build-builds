@@ -13,7 +13,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.writeTestFiles = writeTestFiles;
 const node_path_1 = __importDefault(require("node:path"));
 const bundler_files_1 = require("../tools/esbuild/bundler-files");
-const emit_files_to_disk_1 = require("./emit-files-to-disk");
+const disk_files_1 = require("./disk-files");
 /**
  * Writes a collection of build result files to a specified directory.
  * This function handles both in-memory and on-disk files, creating subdirectories
@@ -24,7 +24,7 @@ const emit_files_to_disk_1 = require("./emit-files-to-disk");
  */
 function writeTestFiles(files, testDir) {
     // Writes the test related output files to disk and ensures the containing directories are present
-    return (0, emit_files_to_disk_1.emitFilesToDisk)(files, (file) => file.type === bundler_files_1.BuildOutputFileType.Browser || file.type === bundler_files_1.BuildOutputFileType.Media
+    return (0, disk_files_1.emitFilesToDisk)(files, (file) => file.type === bundler_files_1.BuildOutputFileType.Browser || file.type === bundler_files_1.BuildOutputFileType.Media
         ? node_path_1.default.join(testDir, file.path)
         : undefined);
 }

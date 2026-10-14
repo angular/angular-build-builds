@@ -23,3 +23,8 @@ export type EmittableFile = {
  * @param resolveDestinationPath Callback returning the absolute destination path for a file, or `undefined` to skip it.
  */
 export declare function emitFilesToDisk<T extends EmittableFile = EmittableFile>(files: readonly T[], resolveDestinationPath: (file: T) => string | undefined): Promise<void>;
+/**
+ * Deletes a collection of files from disk with bounded concurrency.
+ * @param files The collection of files to delete.
+ */
+export declare function deleteFilesFromDisk(files: readonly string[]): Promise<void>;

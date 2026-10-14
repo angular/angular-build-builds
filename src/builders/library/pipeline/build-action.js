@@ -14,7 +14,7 @@ exports.createSingleBuildState = createSingleBuildState;
 exports.buildAction = buildAction;
 exports.hasModifiedWatchedFile = hasModifiedWatchedFile;
 const node_path_1 = __importDefault(require("node:path"));
-const emit_files_to_disk_1 = require("../../../utils/emit-files-to-disk");
+const disk_files_1 = require("../../../utils/disk-files");
 const error_1 = require("../../../utils/error");
 const path_1 = require("../../../utils/path");
 const assets_1 = require("./assets");
@@ -137,7 +137,7 @@ async function buildAction(actionContext) {
         }
         const resolvedAssetsToEmit = (actionContext.assetsToEmit ??= await (0, assets_1.collectAssetsToEmit)(options.assets, options.workspaceRoot, buildState.hasEmittedAssets ? modifiedFiles : undefined));
         filesToEmit.push(...resolvedAssetsToEmit);
-        await (0, emit_files_to_disk_1.emitFilesToDisk)(filesToEmit, (file) => node_path_1.default.join(options.outputPath, file.path));
+        await (0, disk_files_1.emitFilesToDisk)(filesToEmit, (file) => node_path_1.default.join(options.outputPath, file.path));
         buildState.hasEmittedManifests = true;
         buildState.hasEmittedTslib = hasTslibImport;
         buildState.hasEmittedAssets = true;

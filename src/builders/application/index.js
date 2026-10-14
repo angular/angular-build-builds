@@ -47,13 +47,12 @@ exports.buildApplicationInternal = buildApplicationInternal;
 exports.buildApplication = buildApplication;
 const architect_1 = require("@angular-devkit/architect");
 const node_assert_1 = __importDefault(require("node:assert"));
-const promises_1 = __importDefault(require("node:fs/promises"));
 const node_path_1 = __importDefault(require("node:path"));
 const bundler_files_1 = require("../../tools/esbuild/bundler-files");
 const utils_1 = require("../../tools/esbuild/utils");
 const color_1 = require("../../utils/color");
 const delete_output_dir_1 = require("../../utils/delete-output-dir");
-const emit_files_to_disk_1 = require("../../utils/emit-files-to-disk");
+const disk_files_1 = require("../../utils/disk-files");
 const environment_options_1 = require("../../utils/environment-options");
 const path_1 = require("../../utils/path");
 const purge_cache_1 = require("../../utils/purge-cache");
@@ -185,7 +184,7 @@ async function* buildApplication(options, context, extensions) {
         }
         // Writes the output files to disk and ensures the containing directories are present
         try {
-            await (0, emit_files_to_disk_1.emitFilesToDisk)(result.files, (file) => outputOptions.ignoreServer &&
+            await (0, disk_files_1.emitFilesToDisk)(result.files, (file) => outputOptions.ignoreServer &&
                 (file.type === bundler_files_1.BuildOutputFileType.ServerApplication ||
                     file.type === bundler_files_1.BuildOutputFileType.ServerRoot)
                 ? undefined
@@ -199,10 +198,8 @@ async function* buildApplication(options, context, extensions) {
         // Delete any removed files if incremental
         if (result.kind === results_1.ResultKind.Incremental && result.removed?.length) {
             try {
-                await Promise.all(result.removed.map((file) => {
-                    const fullFilePath = generateFullPath(file.path, file.type, outputOptions);
-                    return promises_1.default.rm(fullFilePath, { force: true, maxRetries: 3 });
-                }));
+                const filesToDelete = result.removed.map((file) => generateFullPath(file.path, file.type, outputOptions));
+                await (0, disk_files_1.deleteFilesFromDisk)(filesToDelete);
             }
             catch (error) {
                 context.logger.error(error instanceof Error ? error.message : String(error));
