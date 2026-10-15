@@ -12,15 +12,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.normalizeLibraryOptions = normalizeLibraryOptions;
 const node_path_1 = __importDefault(require("node:path"));
-const utils_1 = require("../../utils");
 const color_1 = require("../../utils/color");
 const error_1 = require("../../utils/error");
+const normalize_asset_patterns_1 = require("../../utils/normalize-asset-patterns");
 const normalize_cache_1 = require("../../utils/normalize-cache");
 const path_1 = require("../../utils/path");
 const postcss_configuration_1 = require("../../utils/postcss-configuration");
 const project_metadata_1 = require("../../utils/project-metadata");
 const entry_points_1 = require("./pipeline/entry-points");
-const utils_2 = require("./pipeline/utils");
+const utils_1 = require("./pipeline/utils");
 /**
  * Normalizes raw library builder options into {@link NormalizedLibraryOptions} with all
  * file and directory paths normalized to POSIX format.
@@ -41,7 +41,7 @@ async function normalizeLibraryOptions(context, projectName, options) {
     const packageJsonPath = node_path_1.default.posix.join(projectRoot, 'package.json');
     let packageJson;
     try {
-        packageJson = await (0, utils_2.loadPackageJson)(packageJsonPath);
+        packageJson = await (0, utils_1.loadPackageJson)(packageJsonPath);
     }
     catch (error) {
         (0, error_1.assertIsError)(error);
@@ -78,7 +78,7 @@ async function normalizeLibraryOptions(context, projectName, options) {
             output: entryPoint.name,
         });
     }
-    const assets = (0, utils_1.normalizeAssetPatterns)([...defaultAssets, ...(rawAssets ?? [])], workspaceRoot, projectRoot, projectSourceRoot).map((asset) => ({
+    const assets = (0, normalize_asset_patterns_1.normalizeAssetPatterns)([...defaultAssets, ...(rawAssets ?? [])], workspaceRoot, projectRoot, projectSourceRoot).map((asset) => ({
         ...asset,
         input: (0, path_1.toPosixPath)(node_path_1.default.resolve(workspaceRoot, asset.input)),
         output: (0, path_1.toPosixPath)(asset.output),

@@ -170,9 +170,7 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     sourcemapOptions: import("./schema").SourceMapClass;
     tsconfig: string;
     projectRoot: string;
-    assets: (import("./schema").AssetPatternClass & {
-        output: string;
-    })[] | undefined;
+    assets: import("../../utils").NormalizedAssetsPattern[] | undefined;
     outputNames: {
         bundles: string;
         media: string;

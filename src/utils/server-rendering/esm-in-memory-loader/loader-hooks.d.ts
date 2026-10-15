@@ -15,4 +15,4 @@ export declare function resolve(specifier: string, context: {
 }, nextResolve: Function): any;
 export declare function load(url: string, context: {
     format?: string | null;
-}, nextLoad: Function): Promise<any>;
+}, nextLoad: Function): any;

@@ -8,7 +8,8 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 const node_module_1 = require("node:module");
-const node_url_1 = require("node:url");
 const node_worker_threads_1 = require("node:worker_threads");
-(0, node_module_1.register)('./loader-hooks.js', { parentURL: (0, node_url_1.pathToFileURL)(__filename), data: node_worker_threads_1.workerData });
+const loader_hooks_1 = require("./loader-hooks");
+(0, loader_hooks_1.initialize)(node_worker_threads_1.workerData);
+(0, node_module_1.registerHooks)({ resolve: loader_hooks_1.resolve, load: loader_hooks_1.load });
 //# sourceMappingURL=register-hooks.js.map
