@@ -55,13 +55,10 @@ async function generatePackageManifests(options, isWatchMode, hasTslibImport = f
         version: isWatchMode ? `0.0.0-watch+${Date.now()}` : version,
     };
     if (hasTslibImport && !rawPackageJson.dependencies?.['tslib']) {
-        const tslibVersion = await getAngularTslibRange(options.workspaceRoot);
-        if (tslibVersion) {
-            distPackageJson.dependencies = {
-                ...rawPackageJson.dependencies,
-                tslib: tslibVersion,
-            };
-        }
+        distPackageJson.dependencies = {
+            ...rawPackageJson.dependencies,
+            tslib: await getAngularTslibRange(options.workspaceRoot),
+        };
     }
     // Retain scripts if keepLifecycleScripts is set
     if (keepLifecycleScripts && scripts) {
@@ -113,6 +110,11 @@ async function generatePackageManifests(options, isWatchMode, hasTslibImport = f
 }
 /**
  * Creates or updates export conditions for an entry point, preserving custom user-defined conditions.
+ *
+ * @param existingConditions Existing export conditions from the user's `package.json`.
+ * @param dtsPath Relative POSIX path to the bundled `.d.ts` file.
+ * @param fesmPath Relative POSIX path to the bundled FESM `.mjs` file.
+ * @returns The merged export conditions object.
  */
 function createExportConditions(existingConditions, dtsPath, fesmPath) {
     const existing = typeof existingConditions === 'object' &&

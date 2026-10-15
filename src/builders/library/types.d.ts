@@ -8,7 +8,7 @@
 import type { AngularCompilation } from '../../tools/angular/compilation';
 import type { StylesheetPluginsass } from '../../tools/esbuild/stylesheets/stylesheet-plugin-factory';
 import type { normalizeAssetPatterns } from '../../utils';
-import type { normalizeCacheOptions } from '../../utils/normalize-cache';
+import type { NormalizedCachedOptions } from '../../utils/normalize-cache';
 import type { PostcssConfiguration } from '../../utils/postcss-configuration';
 /**
  * Normalized representation of an entry point in the library.
@@ -59,40 +59,59 @@ export interface NormalizedLibraryOptions {
     workspaceRoot: string;
     /** Absolute POSIX path to the library project root directory. */
     projectRoot: string;
+    /** Name of the npm package from the library's `package.json`. */
     packageName: string;
+    /** Parsed contents of the library's `package.json`. */
     packageJson: PackageJsonData;
     /** Absolute POSIX path to the build output directory. */
     outputPath: string;
+    /** Whether to delete the output directory before building. */
     deleteOutputPath: boolean;
     /** Absolute POSIX path to the library's `package.json`. */
     packageJsonPath: string;
     /** Absolute POSIX path to the TypeScript configuration file. */
     tsConfigPath: string;
+    /** Map of normalized entry points keyed by entry point name. */
     entryPoints: Map<string, NormalizedEntryPoint>;
+    /** Default stylesheet language for inline component styles. */
     inlineStyleLanguage: 'css' | 'less' | 'sass' | 'scss';
     /** Absolute POSIX paths to style preprocessor include directories. */
     styleIncludePaths: string[];
+    /** Optional Sass preprocessor configuration. */
     sass?: StylesheetPluginsass;
     /** Normalized asset patterns with POSIX `input` and `output` paths. */
     assets: ReturnType<typeof normalizeAssetPatterns>;
+    /** Angular compilation mode (`'partial'` or `'full'`). */
     compilationMode?: 'partial' | 'full';
+    /** Whether to generate source maps for TypeScript declaration files. */
     declarationMap?: boolean;
+    /** Regular expressions matching allowed non-peer dependencies. */
     allowedNonPeerDependencies: RegExp[];
+    /** Whether to preserve lifecycle scripts in the emitted `package.json`. */
     keepLifecycleScripts: boolean;
+    /** Whether to run the build in watch mode. */
     watch: boolean;
+    /** Optional file watching polling interval in milliseconds. */
     poll?: number;
+    /** Whether to preserve symbolic links during resolution and bundling. */
     preserveSymlinks: boolean;
+    /** Whether to display build progress in the terminal. */
     progress: boolean;
+    /** Whether to clear the terminal screen before watch rebuilds. */
     clearScreen?: boolean;
-    cacheOptions: ReturnType<typeof normalizeCacheOptions>;
+    /** Normalized build cache configuration. */
+    cacheOptions: NormalizedCachedOptions;
+    /** Resolved PostCSS configuration, if present in the workspace. */
     postcssConfiguration?: {
         config: PostcssConfiguration;
         configPath: string;
     };
+    /** Resolved Tailwind CSS configuration, if applicable. */
     tailwindConfiguration?: {
         file: string;
         package: string;
     };
+    /** Whether terminal color output is enabled. */
     colors: boolean;
 }
 /**
@@ -116,31 +135,31 @@ export interface SingleProgramCache {
     readonly esmFiles: Map<string, string>;
     /** In-memory map of emitted TypeScript declaration files keyed by POSIX path. */
     readonly dtsFiles: Map<string, string>;
-    /** Set of POSIX file paths that failed during stylesheet bundling or compilation. */
-    readonly failedFiles?: ReadonlySet<string>;
+    /** Set of POSIX file paths that failed during stylesheet bundling. */
+    readonly failedFiles: ReadonlySet<string>;
 }
 /**
- * State preserved across incremental builds in watch mode.
+ * Output of the unified library compilation step.
  */
-export interface SingleBuildState {
-    /** Cached unified TypeScript and Angular compilation state. */
-    singleProgramCache?: SingleProgramCache;
-    /** Effective compilation mode resolved from builder options and tsconfig. */
-    compilationMode?: 'partial' | 'full';
-    /** Map of entry point names to their previous bundle results. */
-    previousBundleResults: Map<string, BundleResult>;
-    /** Set of changed POSIX ESM file paths pending bundling. */
-    pendingChangedEsmFiles: Set<string>;
-    /** Set of changed POSIX TypeScript declaration file paths pending bundling. */
-    pendingChangedDtsFiles: Set<string>;
-    /** Whether the previous build iteration encountered a compilation or diagnostic error. */
-    hasCompilationError?: boolean;
-    /** Whether package.json and secondary entry point manifests have been emitted. */
-    hasEmittedManifests?: boolean;
-    /** Whether the last emitted root package.json included a tslib dependency. */
-    hasEmittedTslib?: boolean;
-    /** Whether static assets have been emitted in a prior iteration. */
-    hasEmittedAssets?: boolean;
-    /** Whether entry points in package.json changed since the last compilation. */
-    hasEntryPointsChanges?: boolean;
+export interface LibraryCompilationOutput {
+    /** Read-only map of emitted JavaScript files keyed by POSIX path. */
+    readonly esmFiles: ReadonlyMap<string, string>;
+    /** Read-only map of emitted TypeScript declaration files keyed by POSIX path. */
+    readonly dtsFiles: ReadonlyMap<string, string>;
+    /** Set of POSIX JavaScript file paths that were added, modified, or deleted in this iteration. */
+    readonly changedEsmFiles: ReadonlySet<string>;
+    /** Set of POSIX declaration file paths that were added, modified, or deleted in this iteration. */
+    readonly changedDtsFiles: ReadonlySet<string>;
+    /** Set of all POSIX source and dependency file paths referenced during compilation. */
+    readonly referencedFiles: ReadonlySet<string>;
+    /** Cached compilation state for subsequent incremental builds. */
+    readonly cache: SingleProgramCache;
+    /** Whether any component stylesheet bundling errors occurred. */
+    readonly hasStylesheetErrors: boolean;
+    /** Promise that resolves when compilation diagnostics have been formatted and recorded. */
+    readonly diagnosePromise: Promise<void>;
+    /** Effective declarationMap setting resolved from builder options and tsconfig. */
+    readonly declarationMap: boolean;
+    /** Effective compilationMode setting resolved from builder options and tsconfig. */
+    readonly compilationMode: 'partial' | 'full';
 }

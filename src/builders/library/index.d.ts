@@ -5,7 +5,7 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-import { Builder } from '@angular-devkit/architect';
+import { type Builder } from '@angular-devkit/architect';
 import { executeLibraryBuilder } from './builder';
 import type { Schema as LibraryBuilderOptions } from './schema';
 export { type LibraryBuilderOptions, executeLibraryBuilder, executeLibraryBuilder as execute };

@@ -25,7 +25,7 @@ const path_1 = require("../../../utils/path");
  * @returns The sanitized bundle base name.
  */
 function getEntryPointBundleName(packageName, entryPointName = '.') {
-    const isPrimary = !entryPointName || entryPointName === '.';
+    const isPrimary = entryPointName === '.';
     const pkgName = packageName[0] === '@' ? packageName.slice(1) : packageName;
     const epName = isPrimary ? pkgName : `${pkgName}-${entryPointName}`;
     return epName.replaceAll('/', '-').toLowerCase();
@@ -42,11 +42,7 @@ function getEntryPointBundleName(packageName, entryPointName = '.') {
  * @returns The normalized entry point descriptor with POSIX paths.
  */
 function normalizeEntryPoint(key, posixKey, isPrimary, targetPath, projectRoot, packageName) {
-    const name = isPrimary
-        ? '.'
-        : posixKey[0] === '.' && posixKey[1] === '/'
-            ? posixKey.slice(2)
-            : posixKey;
+    const name = isPrimary ? '.' : posixKey.startsWith('./') ? posixKey.slice(2) : posixKey;
     if (name !== '.' && (node_path_1.default.posix.isAbsolute(name) || name.includes('..'))) {
         throw new Error(`Invalid entry point key '${key}'. Entry point keys must be relative subpaths without '..' (e.g. './testing').`);
     }
@@ -141,9 +137,7 @@ function normalizeEntryPoints(rawExports, projectRoot, packageJsonPath, packageN
         }
         usedBundleNames.set(entryPoint.bundleName, key);
         entryPoints.set(entryPoint.name, entryPoint);
-        if (entryPoint.isPrimary) {
-            hasPrimary = true;
-        }
+        hasPrimary ||= isPrimary;
     }
     if (!hasPrimary) {
         throw new Error(`The 'exports' field in '${packageJsonPath}' must contain a primary entry point with key '.'.`);
@@ -151,7 +145,8 @@ function normalizeEntryPoints(rawExports, projectRoot, packageJsonPath, packageN
     return entryPoints;
 }
 /**
- * Determines whether two sets of normalized entry points differ in keys, POSIX entry paths, or subpaths.
+ * Determines whether two sets of normalized entry points differ in keys, POSIX entry paths,
+ * subpaths, bundle names, or display names.
  *
  * @param oldEntryPoints The previous map of normalized entry points.
  * @param newEntryPoints The new map of normalized entry points.
@@ -179,28 +174,36 @@ function haveEntryPointsChanged(oldEntryPoints, newEntryPoints) {
  * @param packageJson The reloaded `package.json` data.
  * @param options The normalized library builder options.
  * @param buildState The state preserved across incremental builds.
- * @param watchedCompilationFiles Set of POSIX file paths tracked for compilation.
- * @param packageJsonPath Normalized POSIX path to `package.json`.
  */
-function updateWatchedEntryPoints(packageJson, options, buildState, watchedCompilationFiles, packageJsonPath) {
-    const newEntryPoints = normalizeEntryPoints(packageJson.exports, options.projectRoot, packageJsonPath, options.packageName);
+function updateWatchedEntryPoints(packageJson, options, buildState) {
+    const { packageJsonPath } = options;
+    if (!packageJson.name) {
+        throw new Error(`The package.json at '${packageJsonPath}' must contain a 'name'.`);
+    }
+    const newEntryPoints = normalizeEntryPoints(packageJson.exports, options.projectRoot, packageJsonPath, packageJson.name);
+    const { watchedCompilationFiles, previousBundleResults } = buildState;
     if (haveEntryPointsChanged(options.entryPoints, newEntryPoints)) {
+        for (const oldEntryPoint of options.entryPoints.values()) {
+            watchedCompilationFiles.delete(oldEntryPoint.entryFilePath);
+        }
         for (const entryPoint of newEntryPoints.values()) {
             watchedCompilationFiles.add(entryPoint.entryFilePath);
         }
-        for (const name of buildState.previousBundleResults.keys()) {
+        for (const name of previousBundleResults.keys()) {
             const oldEp = options.entryPoints.get(name);
             const newEp = newEntryPoints.get(name);
             if (!newEp ||
                 !oldEp ||
                 newEp.entryFilePath !== oldEp.entryFilePath ||
                 newEp.bundleName !== oldEp.bundleName) {
-                buildState.previousBundleResults.delete(name);
+                previousBundleResults.delete(name);
             }
         }
         options.entryPoints = newEntryPoints;
         buildState.hasEntryPointsChanges = true;
     }
+    options.packageJson = packageJson;
+    options.packageName = packageJson.name;
 }
 /**
  * Determines which entry points have modified JavaScript or declaration files
@@ -208,11 +211,10 @@ function updateWatchedEntryPoints(packageJson, options, buildState, watchedCompi
  *
  * @param options The normalized library builder options.
  * @param buildState The state preserved across incremental builds.
- * @param logs Array of informational log messages to append to when an entry point is queued.
  * @returns The list of entry points that require bundling in the current build iteration.
  */
-function collectEntryPointsToBundle(options, buildState, logs) {
-    const { pendingChangedEsmFiles, pendingChangedDtsFiles, previousBundleResults } = buildState;
+function collectEntryPointsToBundle(options, buildState) {
+    const { pendingChangedEsmFiles, pendingChangedDtsFiles, previousBundleResults, executionResult } = buildState;
     const itemsToBundle = [];
     for (const entryPoint of options.entryPoints.values()) {
         const previousBundleResult = previousBundleResults.get(entryPoint.name);
@@ -221,7 +223,7 @@ function collectEntryPointsToBundle(options, buildState, logs) {
         const hasDtsChanges = !previousBundleResult ||
             hasEntryPointChanges(previousBundleResult.dtsModuleIds, pendingChangedDtsFiles);
         if (hasEsmChanges || hasDtsChanges) {
-            logs.push(`Compiling ${entryPoint.displayName}...`);
+            executionResult.addLog(`Compiling ${entryPoint.displayName}...`);
             itemsToBundle.push({
                 entryPoint,
                 hasEsmChanges,

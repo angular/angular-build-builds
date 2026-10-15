@@ -18,30 +18,31 @@ const EMITTED_EXTENSIONS = ['.js', '.mjs', '.cjs', '.d.ts', '.d.mts', '.d.cts'];
 /**
  * Compiles all library entry points in a single TypeScript and Angular compilation pass.
  *
- * @param entryPoints The collection of normalized library entry points to compile.
  * @param options The normalized library builder options with POSIX paths.
  * @param stylesheetBundler The component stylesheet bundler instance.
- * @param cached Optional cached compilation state from a previous build iteration.
+ * @param buildState The build state tracking compilation caches and diagnostics.
  * @param modifiedFiles Optional set of modified POSIX file paths for incremental compilation.
- * @returns A promise resolving to the compilation output containing emitted files and diagnostics.
+ * @returns A promise resolving to the compilation output containing emitted files and cache state.
  */
-async function compileLibrary(entryPoints, options, stylesheetBundler, cached, modifiedFiles) {
-    const { tsConfigPath, compilationMode, preserveSymlinks, colors, declarationMap, cacheOptions } = options;
+async function compileLibrary(options, stylesheetBundler, buildState, modifiedFiles) {
+    const { tsConfigPath, entryPoints, compilationMode, preserveSymlinks, colors, declarationMap, cacheOptions, } = options;
+    const cached = buildState.singleProgramCache;
     const entryPathsMap = {};
     const rootFiles = [];
-    for (const ep of entryPoints) {
+    for (const ep of entryPoints.values()) {
         entryPathsMap[ep.displayName] = [ep.entryFilePath];
         rootFiles.push(ep.entryFilePath);
     }
     const compilationInstance = cached?.compilationInstance ?? (await (0, compilation_1.createAngularCompilation)('aot', false));
     try {
         let effectiveModifiedFiles = modifiedFiles;
-        if (cached?.failedFiles?.size) {
+        if (cached && cached.failedFiles.size > 0) {
             stylesheetBundler.invalidate(cached.failedFiles);
-            effectiveModifiedFiles = new Set(modifiedFiles);
+            const merged = new Set(modifiedFiles);
             for (const file of cached.failedFiles) {
-                effectiveModifiedFiles.add(file);
+                merged.add(file);
             }
+            effectiveModifiedFiles = merged;
         }
         if (effectiveModifiedFiles && effectiveModifiedFiles.size > 0) {
             await compilationInstance.update?.(effectiveModifiedFiles);
@@ -83,7 +84,7 @@ async function compileLibrary(entryPoints, options, stylesheetBundler, cached, m
         }, 'library');
         const hasStylesheetErrors = stylesheetErrors.length > 0;
         const emittedFiles = hasStylesheetErrors ? [] : await compilationInstance.emitAffectedFiles();
-        const diagnosePromise = runDiagnosticsAndFormat(compilationInstance, stylesheetErrors, stylesheetWarnings, colors);
+        const diagnosePromise = runDiagnosticsAndFormat(compilationInstance, stylesheetErrors, stylesheetWarnings, colors, buildState);
         const esmFiles = cached?.esmFiles ?? new Map();
         const dtsFiles = cached?.dtsFiles ?? new Map();
         const changedEsmFiles = new Set();
@@ -91,7 +92,7 @@ async function compileLibrary(entryPoints, options, stylesheetBundler, cached, m
         for (const ref of referencedFiles) {
             allReferencedFiles.add((0, path_1.toPosixPath)(ref));
         }
-        if (effectiveModifiedFiles) {
+        if (cached && effectiveModifiedFiles) {
             for (const modifiedFile of effectiveModifiedFiles) {
                 if (allReferencedFiles.has(modifiedFile)) {
                     continue;
@@ -116,23 +117,12 @@ async function compileLibrary(entryPoints, options, stylesheetBundler, cached, m
         }
         for (const { filename, contents } of emittedFiles) {
             const normalized = (0, path_1.toPosixPath)(filename);
-            if (normalized.endsWith('.map')) {
-                const isDtsMap = (0, utils_1.isDeclarationSourceMapFile)(normalized);
-                const targetMap = isDtsMap ? dtsFiles : esmFiles;
-                if (targetMap.get(normalized) !== contents) {
-                    targetMap.set(normalized, contents);
-                    (isDtsMap ? changedDtsFiles : changedEsmFiles).add(normalized.slice(0, -4));
-                }
-            }
-            else if ((0, utils_1.isDeclarationFile)(normalized)) {
-                if (dtsFiles.get(normalized) !== contents) {
-                    changedDtsFiles.add(normalized);
-                    dtsFiles.set(normalized, contents);
-                }
-            }
-            else if (esmFiles.get(normalized) !== contents) {
-                changedEsmFiles.add(normalized);
-                esmFiles.set(normalized, contents);
+            const isMap = normalized.endsWith('.map');
+            const isDts = isMap ? (0, utils_1.isDeclarationSourceMapFile)(normalized) : (0, utils_1.isDeclarationFile)(normalized);
+            const targetFiles = isDts ? dtsFiles : esmFiles;
+            if (targetFiles.get(normalized) !== contents) {
+                targetFiles.set(normalized, contents);
+                (isDts ? changedDtsFiles : changedEsmFiles).add(isMap ? normalized.slice(0, -4) : normalized);
             }
         }
         return {
@@ -145,7 +135,7 @@ async function compileLibrary(entryPoints, options, stylesheetBundler, cached, m
                 compilationInstance,
                 esmFiles,
                 dtsFiles,
-                failedFiles: failedFiles.size > 0 ? failedFiles : undefined,
+                failedFiles,
             },
             hasStylesheetErrors,
             diagnosePromise,
@@ -161,42 +151,34 @@ async function compileLibrary(entryPoints, options, stylesheetBundler, cached, m
     }
 }
 /**
- * Formats stylesheet bundling diagnostics and TypeScript/Angular diagnostics.
+ * Formats stylesheet bundling diagnostics and TypeScript/Angular diagnostics
+ * and records them on the build state's execution result.
  *
  * @param compilationInstance The active Angular compilation instance.
  * @param stylesheetErrors List of stylesheet bundling errors.
  * @param stylesheetWarnings List of stylesheet bundling warnings.
  * @param colors Whether diagnostic messages should be formatted with ANSI colors.
- * @returns A promise resolving to the formatted diagnostic errors and warnings.
+ * @param buildState The build state whose execution result receives the formatted diagnostics.
  */
-async function runDiagnosticsAndFormat(compilationInstance, stylesheetErrors, stylesheetWarnings, colors) {
-    const errorsOut = [];
-    const warningsOut = [];
-    if (stylesheetErrors.length > 0) {
-        const formatted = await (0, esbuild_1.formatMessages)(stylesheetErrors, { kind: 'error', color: colors });
-        errorsOut.push(...formatted);
-    }
-    else if (environment_options_1.useTypeChecking) {
-        const { errors, warnings } = await compilationInstance.diagnoseFiles();
-        if (errors?.length) {
-            const formatted = await (0, esbuild_1.formatMessages)(errors, { kind: 'error', color: colors });
-            errorsOut.push(...formatted);
+async function runDiagnosticsAndFormat(compilationInstance, stylesheetErrors, stylesheetWarnings, colors, buildState) {
+    const { executionResult } = buildState;
+    const errors = [...stylesheetErrors];
+    const warnings = [];
+    if (errors.length === 0 && environment_options_1.useTypeChecking) {
+        const diagnostics = await compilationInstance.diagnoseFiles();
+        if (diagnostics.errors?.length) {
+            errors.push(...diagnostics.errors);
         }
-        if (warnings?.length) {
-            const formatted = await (0, esbuild_1.formatMessages)(warnings, { kind: 'warning', color: colors });
-            warningsOut.push(...formatted);
+        if (diagnostics.warnings?.length) {
+            warnings.push(...diagnostics.warnings);
         }
     }
-    if (stylesheetWarnings.length > 0) {
-        const formattedStyleWarnings = await (0, esbuild_1.formatMessages)(stylesheetWarnings, {
-            kind: 'warning',
-            color: colors,
-        });
-        warningsOut.push(...formattedStyleWarnings);
+    warnings.push(...stylesheetWarnings);
+    if (errors.length > 0) {
+        executionResult.addErrors(await (0, esbuild_1.formatMessages)(errors, { kind: 'error', color: colors }));
     }
-    return {
-        errors: errorsOut,
-        warnings: warningsOut,
-    };
+    if (warnings.length > 0) {
+        executionResult.addWarnings(await (0, esbuild_1.formatMessages)(warnings, { kind: 'warning', color: colors }));
+    }
 }
 //# sourceMappingURL=compilation.js.map

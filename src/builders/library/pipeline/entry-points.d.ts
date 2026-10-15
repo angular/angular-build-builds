@@ -5,7 +5,8 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-import type { NormalizedEntryPoint, NormalizedLibraryOptions, PackageJsonData, SingleBuildState } from '../types';
+import type { BuilderState } from '../builder-state';
+import type { NormalizedEntryPoint, NormalizedLibraryOptions, PackageJsonData } from '../types';
 import type { BundleEntryPointInput } from './bundler';
 /**
  * Computes the base bundle file name for an entry point.
@@ -26,7 +27,8 @@ export declare function getEntryPointBundleName(packageName: string, entryPointN
  */
 export declare function normalizeEntryPoints(rawExports: unknown, projectRoot: string, packageJsonPath: string, packageName: string): Map<string, NormalizedEntryPoint>;
 /**
- * Determines whether two sets of normalized entry points differ in keys, POSIX entry paths, or subpaths.
+ * Determines whether two sets of normalized entry points differ in keys, POSIX entry paths,
+ * subpaths, bundle names, or display names.
  *
  * @param oldEntryPoints The previous map of normalized entry points.
  * @param newEntryPoints The new map of normalized entry points.
@@ -39,17 +41,14 @@ export declare function haveEntryPointsChanged(oldEntryPoints: ReadonlyMap<strin
  * @param packageJson The reloaded `package.json` data.
  * @param options The normalized library builder options.
  * @param buildState The state preserved across incremental builds.
- * @param watchedCompilationFiles Set of POSIX file paths tracked for compilation.
- * @param packageJsonPath Normalized POSIX path to `package.json`.
  */
-export declare function updateWatchedEntryPoints(packageJson: PackageJsonData, options: NormalizedLibraryOptions, buildState: SingleBuildState, watchedCompilationFiles: Set<string>, packageJsonPath: string): void;
+export declare function updateWatchedEntryPoints(packageJson: PackageJsonData, options: NormalizedLibraryOptions, buildState: BuilderState): void;
 /**
  * Determines which entry points have modified JavaScript or declaration files
  * and collects them for bundling.
  *
  * @param options The normalized library builder options.
  * @param buildState The state preserved across incremental builds.
- * @param logs Array of informational log messages to append to when an entry point is queued.
  * @returns The list of entry points that require bundling in the current build iteration.
  */
-export declare function collectEntryPointsToBundle(options: NormalizedLibraryOptions, buildState: SingleBuildState, logs: string[]): BundleEntryPointInput[];
+export declare function collectEntryPointsToBundle(options: NormalizedLibraryOptions, buildState: BuilderState): BundleEntryPointInput[];

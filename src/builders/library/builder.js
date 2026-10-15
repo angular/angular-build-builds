@@ -52,6 +52,7 @@ const profiling_1 = require("../../utils/profiling");
 const purge_cache_1 = require("../../utils/purge-cache");
 const supported_browsers_1 = require("../../utils/supported-browsers");
 const version_1 = require("../../utils/version");
+const builder_state_1 = require("./builder-state");
 const options_1 = require("./options");
 const entry_points_1 = require("./pipeline/entry-points");
 const utils_2 = require("./pipeline/utils");
@@ -75,7 +76,7 @@ async function* executeLibraryBuilder(options, context) {
         // Purge old build disk cache
         (0, purge_cache_1.purgeStaleBuildCache)(context),
     ]);
-    const { workspaceRoot, projectRoot, outputPath, deleteOutputPath, packageJsonPath, tsConfigPath, watch: isWatchMode, poll, cacheOptions, preserveSymlinks, progress, } = normalizedOptions;
+    const { workspaceRoot, projectRoot, outputPath, deleteOutputPath, watch: isWatchMode, poll, cacheOptions, preserveSymlinks, progress, } = normalizedOptions;
     let signal = context.signal;
     if (!signal) {
         const controller = new AbortController();
@@ -89,22 +90,17 @@ async function* executeLibraryBuilder(options, context) {
         await (0, delete_output_dir_1.deleteOutputDir)(workspaceRoot, outputPath);
     }
     // Dynamically lazy-loaded to prevent importing dependencies at the top level.
-    const [{ buildAction, createSingleBuildState, hasModifiedWatchedFile }, { createComponentStylesheetBundlerForLibrary },] = await Promise.all([
+    const [{ buildAction }, { createComponentStylesheetBundlerForLibrary }] = await Promise.all([
         Promise.resolve().then(() => __importStar(require('./pipeline/build-action'))),
         Promise.resolve().then(() => __importStar(require('./pipeline/stylesheet-bundler'))),
     ]);
     let stylesheetBundler;
     let watcher;
-    const buildState = createSingleBuildState();
+    const buildState = new builder_state_1.BuilderState(normalizedOptions);
     try {
         const browsers = (0, supported_browsers_1.getSupportedBrowsers)(projectRoot, logger);
         const target = (0, target_1.transformSupportedBrowsersToTargets)(browsers);
         stylesheetBundler = createComponentStylesheetBundlerForLibrary(normalizedOptions, isWatchMode, target);
-        // Track all referenced compilation files for watch mode
-        const watchedCompilationFiles = new Set([tsConfigPath, packageJsonPath]);
-        for (const entryPoint of normalizedOptions.entryPoints.values()) {
-            watchedCompilationFiles.add(entryPoint.entryFilePath);
-        }
         if (isWatchMode) {
             const { setupWatcher } = await Promise.resolve().then(() => __importStar(require('../../utils/watcher')));
             watcher = await setupWatcher({
@@ -115,7 +111,10 @@ async function* executeLibraryBuilder(options, context) {
                 poll,
                 preserveSymlinks,
                 signal,
-                watchFiles: watchedCompilationFiles,
+                watchFiles: [
+                    ...buildState.watchedCompilationFiles,
+                    ...normalizedOptions.assets.map((asset) => asset.input),
+                ],
             });
             context.addTeardown?.(() => void watcher?.close());
         }
@@ -123,11 +122,9 @@ async function* executeLibraryBuilder(options, context) {
         const initialResult = await executeBuild('Building...', {
             options: normalizedOptions,
             stylesheetBundler,
-            watchedCompilationFiles,
             isWatchMode,
-            context,
             buildState,
-        }, withProgress, watcher, buildAction);
+        }, logger, withProgress, watcher, buildAction);
         if (isWatchMode && progress) {
             logger.info('Watch mode enabled. Watching for file changes...');
         }
@@ -135,7 +132,7 @@ async function* executeLibraryBuilder(options, context) {
         if (!isWatchMode || !watcher) {
             return;
         }
-        yield* runWatchLoop(watcher, normalizedOptions, stylesheetBundler, watchedCompilationFiles, context, withProgress, buildState, buildAction, hasModifiedWatchedFile, signal);
+        yield* runWatchLoop(watcher, normalizedOptions, stylesheetBundler, logger, withProgress, buildState, buildAction, signal);
     }
     finally {
         (0, profiling_1.logCumulativeDurations)();
@@ -143,7 +140,7 @@ async function* executeLibraryBuilder(options, context) {
         await Promise.allSettled([
             watcher?.close(),
             stylesheetBundler?.dispose(),
-            buildState.singleProgramCache?.compilationInstance.close?.(),
+            buildState.dispose(),
         ]);
     }
 }
@@ -153,32 +150,33 @@ async function* executeLibraryBuilder(options, context) {
  *
  * @param message Progress spinner message to display while building.
  * @param actionContext The build action context and state.
+ * @param logger The Architect logger API.
  * @param withProgress Progress wrapper function (`withSpinner` or `withNoProgress`).
  * @param watcher Optional file watcher for watch mode.
  * @param buildAction The library build action function to execute.
  * @returns A promise resolving to the Architect `BuilderOutput`.
  */
-async function executeBuild(message, actionContext, withProgress, watcher, buildAction) {
+async function executeBuild(message, actionContext, logger, withProgress, watcher, buildAction) {
     const startTime = process.hrtime.bigint();
-    const { context, watchedCompilationFiles, isWatchMode, options } = actionContext;
+    const { buildState, isWatchMode, options } = actionContext;
     try {
         const result = await withProgress(message, () => buildAction(actionContext));
-        logMessages(context.logger, result);
-        const success = result.errors.length === 0;
-        logBuildResult(context.logger, startTime, success, options.outputPath);
-        if (success && isWatchMode) {
+        logMessages(logger, result);
+        const { output } = result;
+        logBuildResult(logger, startTime, output.success, options.outputPath);
+        if (output.success && isWatchMode) {
             (0, profiling_1.logCumulativeDurations)();
         }
-        return { success };
+        return output;
     }
     catch (error) {
         (0, error_1.assertIsError)(error);
-        logBuildResult(context.logger, startTime, false);
+        logBuildResult(logger, startTime, false);
         return { success: false, error: error.message };
     }
     finally {
         if (watcher) {
-            watcher.add(Array.from(watchedCompilationFiles));
+            watcher.add(Array.from(buildState.watchedCompilationFiles));
             const { assetsToEmit } = actionContext;
             if (assetsToEmit?.length) {
                 watcher.add(assetsToEmit.map((asset) => asset.source));
@@ -192,19 +190,18 @@ async function executeBuild(message, actionContext, withProgress, watcher, build
  * @param watcher The file watcher instance.
  * @param options The normalized library builder options with POSIX paths.
  * @param stylesheetBundler The component stylesheet bundler instance.
- * @param watchedCompilationFiles Set of POSIX file paths tracked for compilation.
- * @param context The Architect builder context.
+ * @param logger The Architect logger API.
  * @param withProgress Progress wrapper function (`withSpinner` or `withNoProgress`).
  * @param buildState The state preserved across incremental builds.
  * @param buildAction The library build action function to execute.
- * @param hasModifiedWatchedFile Helper to check whether watched compilation files changed.
- * @param signal Optional abort signal to terminate the watch loop.
+ * @param signal Abort signal to terminate the watch loop.
+ * @returns An async iterator yielding builder output results.
  */
-async function* runWatchLoop(watcher, options, stylesheetBundler, watchedCompilationFiles, context, withProgress, buildState, buildAction, hasModifiedWatchedFile, signal) {
+async function* runWatchLoop(watcher, options, stylesheetBundler, logger, withProgress, buildState, buildAction, signal) {
     const { collectAssetsToEmit } = await Promise.resolve().then(() => __importStar(require('./pipeline/assets')));
     const { workspaceRoot, packageJsonPath, assets, clearScreen } = options;
     for await (const changes of watcher) {
-        if (signal?.aborted) {
+        if (signal.aborted) {
             break;
         }
         if (clearScreen) {
@@ -237,22 +234,18 @@ async function* runWatchLoop(watcher, options, stylesheetBundler, watchedCompila
             }
         }
         // Check if package.json was modified
-        let hasPackageJsonChanges = false;
         if (changedFiles.has(packageJsonPath)) {
+            buildState.hasEmittedManifests = false;
             try {
                 const packageJson = await (0, utils_2.loadPackageJson)(packageJsonPath);
-                if (!packageJson.name) {
-                    throw new Error(`The package.json at '${packageJsonPath}' must contain a 'name'.`);
-                }
-                options.packageJson = packageJson;
-                options.packageName = packageJson.name;
-                (0, entry_points_1.updateWatchedEntryPoints)(packageJson, options, buildState, watchedCompilationFiles, packageJsonPath);
-                hasPackageJsonChanges = true;
+                (0, entry_points_1.updateWatchedEntryPoints)(packageJson, options, buildState);
             }
             catch (error) {
                 (0, error_1.assertIsError)(error);
                 await buildState.singleProgramCache?.compilationInstance.update?.(changedFiles);
-                buildState.hasEmittedManifests = false;
+                if (buildState.shouldCompileEntryPoints(packageJsonPath, changedFiles)) {
+                    buildState.hasCompilationError = true;
+                }
                 yield {
                     success: false,
                     error: `Failed to reload 'package.json': ${error.message}`,
@@ -260,31 +253,29 @@ async function* runWatchLoop(watcher, options, stylesheetBundler, watchedCompila
                 continue;
             }
         }
-        const hasSourceChanges = !buildState.singleProgramCache ||
-            buildState.hasCompilationError ||
-            buildState.hasEntryPointsChanges ||
-            hasModifiedWatchedFile(changedFiles, watchedCompilationFiles, packageJsonPath);
+        const hasSourceChanges = buildState.shouldCompileEntryPoints(packageJsonPath, changedFiles);
+        if (!hasSourceChanges) {
+            await buildState.singleProgramCache?.compilationInstance.update?.(changedFiles);
+        }
         const assetsToEmit = await collectAssetsToEmit(assets, workspaceRoot, buildState.hasEmittedAssets ? changedFiles : undefined);
-        if (!hasSourceChanges && !hasPackageJsonChanges && assetsToEmit.length === 0) {
+        if (!hasSourceChanges && buildState.hasEmittedManifests && assetsToEmit.length === 0) {
             continue;
         }
         yield await executeBuild('Changes detected. Rebuilding...', {
             options,
             stylesheetBundler,
-            watchedCompilationFiles,
             isWatchMode: true,
-            context,
             buildState,
             modifiedFiles: changedFiles,
             assetsToEmit,
-        }, withProgress, watcher, buildAction);
+        }, logger, withProgress, watcher, buildAction);
     }
 }
 /**
  * Logs informational, warning, and error messages produced during a build iteration.
  *
  * @param logger The Architect logger API.
- * @param result The build action result containing logs, warnings, and errors.
+ * @param result The build execution result containing logs, warnings, and errors.
  */
 function logMessages(logger, { logs, warnings, errors }) {
     if (logs.length) {
