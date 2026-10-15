@@ -26,7 +26,7 @@ const EMITTED_EXTENSIONS = ['.js', '.mjs', '.cjs', '.d.ts', '.d.mts', '.d.cts'];
  * @returns A promise resolving to the compilation output containing emitted files and diagnostics.
  */
 async function compileLibrary(entryPoints, options, stylesheetBundler, cached, modifiedFiles) {
-    const { tsConfigPath, compilationMode, preserveSymlinks, colors, declarationMap } = options;
+    const { tsConfigPath, compilationMode, preserveSymlinks, colors, declarationMap, cacheOptions } = options;
     const entryPathsMap = {};
     const rootFiles = [];
     for (const ep of entryPoints) {
@@ -79,6 +79,7 @@ async function compileLibrary(entryPoints, options, stylesheetBundler, cached, m
             declarationMap,
             compilationMode,
             paths: entryPathsMap,
+            cachePath: cacheOptions.enabled ? cacheOptions.path : undefined,
         }, 'library');
         const hasStylesheetErrors = stylesheetErrors.length > 0;
         const emittedFiles = hasStylesheetErrors ? [] : await compilationInstance.emitAffectedFiles();
