@@ -43,7 +43,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ChangedFiles = void 0;
+exports.ParcelExternalManager = exports.ChangedFiles = void 0;
 exports.setupWatcher = setupWatcher;
 exports.toPosixPathNormalized = toPosixPathNormalized;
 exports.getDirectoryPath = getDirectoryPath;
@@ -362,122 +362,450 @@ function extractNodeModulesPackageDir(posixPath) {
     }
     return `${nodeModulesPath}/${segments[0]}`;
 }
-class ParcelExternalManager {
-    parcelWatcher;
-    options;
-    rootDirLookupKey;
-    handleEvents;
-    extraSubscriptions = new Map();
-    pendingSubscriptions = new Map();
-    externalDirFiles = new Map();
-    constructor(parcelWatcher, options, rootDirLookupKey, handleEvents) {
-        this.parcelWatcher = parcelWatcher;
-        this.options = options;
-        this.rootDirLookupKey = rootDirLookupKey;
-        this.handleEvents = handleEvents;
+/**
+ * Maximum number of concurrent external directory subscriptions before coalescing
+ * sibling/cousin directories into common ancestor directories.
+ * Kept well below macOS's ~512 per-process FSEvents stream limit.
+ */
+const DEFAULT_MAX_EXTERNAL_SUBSCRIPTIONS = 256;
+/**
+ * Checks whether any strict ancestor of the given trie node is already marked as a target.
+ */
+function hasTargetAncestor(node) {
+    let current = node.parent;
+    while (current) {
+        if (current.isTarget) {
+            return true;
+        }
+        current = current.parent;
     }
-    async ensureWatched(posixPath, lookupKey) {
-        if (isPathInside(lookupKey, this.rootDirLookupKey) || lookupKey === this.rootDirLookupKey) {
+    return false;
+}
+/**
+ * Manages `@parcel/watcher` directory subscriptions for watched files located outside the
+ * primary `workspaceRoot`.
+ *
+ * Because `@parcel/watcher` watches directories recursively and macOS limits each process to
+ * ~512 concurrent `FSEvents` streams, this manager:
+ * - Normalizes external `node_modules` file paths to their package root directory.
+ * - Batches synchronous `watchFile` and `removeFile` calls within a microtask before subscribing.
+ * - Uses a directory prefix tree to subsume nested child directories and iteratively coalesce
+ *   deepest branching subdirectories into common ancestors when the subscription budget is exceeded.
+ * - Dynamically lowers its subscription budget and coalesces further if `subscribe()` fails on
+ *   an existing directory due to OS stream limits.
+ */
+class ParcelExternalManager {
+    /** Active `@parcel/watcher` subscriptions keyed by subscribed directory lookup key. */
+    #extraSubscriptions = new Map();
+    /** Reference-counted watched files grouped by their target external directory lookup key. */
+    #externalDirFiles = new Map();
+    /** Reverse lookup mapping each watched file lookup key to its target directory lookup key. */
+    #fileToDirKey = new Map();
+    /** The `@parcel/watcher` module instance. */
+    #parcelWatcher;
+    /** Watcher configuration options including ignore patterns. */
+    #options;
+    /** Normalized POSIX path of the primary watched workspace root. */
+    #rootDirPosix;
+    /** Case-normalized lookup key of the primary watched workspace root. */
+    #rootDirLookupKey;
+    /** Whether the underlying filesystem is case-sensitive. */
+    #isCaseSensitive;
+    /** Callback invoked when `@parcel/watcher` emits filesystem events. */
+    #handleEvents;
+    /** Current maximum number of concurrent external directory subscriptions allowed before coalescing. */
+    #maxSubscriptions;
+    /** Whether external directory state has changed and requires a reconciliation pass. */
+    #needsReconcile = false;
+    /** Whether obsolete subscriptions should be unsubscribed before creating new ones (used after stream limit errors). */
+    #shrinkBeforeSubscribe = false;
+    /** In-flight promise for the currently scheduled or running reconciliation loop. */
+    #reconcilePromise;
+    /** Whether this manager has been closed. */
+    #isClosed = false;
+    /**
+     * Creates a new external directory subscription manager for `@parcel/watcher`.
+     *
+     * @param parcelWatcher The `@parcel/watcher` module.
+     * @param options Watcher configuration options.
+     * @param rootDirPosix Normalized POSIX path of the primary workspace root.
+     * @param rootDirLookupKey Case-normalized lookup key of the primary workspace root.
+     * @param isCaseSensitive Whether the filesystem at the workspace root is case-sensitive.
+     * @param handleEvents Callback to process incoming `@parcel/watcher` events.
+     * @param maxSubscriptions Maximum number of concurrent external directory subscriptions before coalescing.
+     */
+    constructor(parcelWatcher, options, rootDirPosix, rootDirLookupKey, isCaseSensitive, handleEvents, maxSubscriptions = DEFAULT_MAX_EXTERNAL_SUBSCRIPTIONS) {
+        this.#parcelWatcher = parcelWatcher;
+        this.#options = options;
+        this.#rootDirPosix = rootDirPosix;
+        this.#rootDirLookupKey = rootDirLookupKey;
+        this.#isCaseSensitive = isCaseSensitive;
+        this.#handleEvents = handleEvents;
+        this.#maxSubscriptions = Math.max(1, maxSubscriptions);
+    }
+    /**
+     * Registers a file path to be watched if it resides outside the primary workspace root,
+     * and schedules an asynchronous subscription reconciliation pass if needed.
+     *
+     * @param posixPath Normalized POSIX file path preserving original casing.
+     * @param lookupKey Case-normalized lookup key for the file path.
+     */
+    watchFile(posixPath, lookupKey) {
+        if (this.#isClosed ||
+            isPathInside(lookupKey, this.#rootDirLookupKey) ||
+            lookupKey === this.#rootDirLookupKey) {
             return;
         }
-        const dirPath = getDirectoryPath(posixPath);
-        const dirKey = getDirectoryPath(lookupKey);
-        let dirEntry = this.externalDirFiles.get(dirKey);
+        const pkgDir = extractNodeModulesPackageDir(posixPath);
+        const dirPath = pkgDir ?? getDirectoryPath(posixPath);
+        const dirKey = pkgDir
+            ? toLookupKey(pkgDir, this.#isCaseSensitive)
+            : getDirectoryPath(lookupKey);
+        this.#fileToDirKey.set(lookupKey, dirKey);
+        let dirEntry = this.#externalDirFiles.get(dirKey);
+        const isNewDir = !dirEntry;
         if (!dirEntry) {
             dirEntry = { dirPath, files: new Set() };
-            this.externalDirFiles.set(dirKey, dirEntry);
+            this.#externalDirFiles.set(dirKey, dirEntry);
         }
         dirEntry.files.add(lookupKey);
-        await this.ensureDirWatched(dirPath, dirKey);
+        if (isNewDir || !this.#isCoveredByActiveSubscription(dirKey)) {
+            this.#scheduleReconcile();
+        }
     }
+    /**
+     * Unregisters a previously watched external file and schedules a reconciliation pass
+     * if it was the last watched file in its target directory.
+     *
+     * @param lookupKey Case-normalized lookup key for the file path to remove.
+     */
     removeFile(lookupKey) {
-        if (isPathInside(lookupKey, this.rootDirLookupKey) || lookupKey === this.rootDirLookupKey) {
+        const dirKey = this.#fileToDirKey.get(lookupKey);
+        if (!dirKey) {
             return;
         }
-        const dirKey = getDirectoryPath(lookupKey);
-        const dirEntry = this.externalDirFiles.get(dirKey);
+        this.#fileToDirKey.delete(lookupKey);
+        const dirEntry = this.#externalDirFiles.get(dirKey);
         if (dirEntry) {
             dirEntry.files.delete(lookupKey);
             if (dirEntry.files.size === 0) {
-                this.externalDirFiles.delete(dirKey);
-                const sub = this.extraSubscriptions.get(dirKey);
-                if (sub) {
-                    this.extraSubscriptions.delete(dirKey);
-                    sub.unsubscribe().catch(() => { });
-                    for (const [remainingDirKey, remainingDirEntry] of this.externalDirFiles.entries()) {
-                        if (!this.isCoveredByExistingExternal(remainingDirKey)) {
-                            this.ensureDirWatched(remainingDirEntry.dirPath, remainingDirKey).catch(() => { });
-                        }
-                    }
-                }
+                this.#externalDirFiles.delete(dirKey);
+                this.#scheduleReconcile();
             }
         }
     }
+    /**
+     * Waits for any scheduled or in-progress subscription reconciliation pass to complete.
+     */
+    async flush() {
+        if (this.#reconcilePromise) {
+            await this.#reconcilePromise;
+        }
+    }
+    /**
+     * Closes the manager, awaiting any pending reconciliation and unsubscribing all active
+     * external directory subscriptions.
+     */
     async close() {
+        this.#isClosed = true;
+        this.#needsReconcile = false;
         try {
-            if (this.pendingSubscriptions.size > 0) {
-                await Promise.allSettled(Array.from(this.pendingSubscriptions.values()));
+            if (this.#reconcilePromise) {
+                await this.#reconcilePromise.catch(() => { });
             }
-            if (this.extraSubscriptions.size > 0) {
-                await Promise.allSettled(Array.from(this.extraSubscriptions.values()).map((sub) => sub.unsubscribe()));
+            if (this.#extraSubscriptions.size > 0) {
+                await Promise.allSettled(Array.from(this.#extraSubscriptions.values(), (sub) => sub.unsubscribe()));
             }
         }
         finally {
-            this.extraSubscriptions.clear();
-            this.pendingSubscriptions.clear();
-            this.externalDirFiles.clear();
+            this.#extraSubscriptions.clear();
+            this.#externalDirFiles.clear();
+            this.#fileToDirKey.clear();
         }
     }
-    isCoveredByExistingExternal(dirLookupKey) {
-        for (const existingDir of this.extraSubscriptions.keys()) {
-            if (dirLookupKey === existingDir || isPathInside(dirLookupKey, existingDir)) {
-                return true;
+    /**
+     * Schedules a microtask to reconcile active `@parcel/watcher` subscriptions with the
+     * current set of external directories.
+     */
+    #scheduleReconcile() {
+        if (this.#isClosed) {
+            return;
+        }
+        this.#needsReconcile = true;
+        this.#reconcilePromise ??= Promise.resolve()
+            .then(() => this.#runReconcileLoop())
+            .finally(() => {
+            this.#reconcilePromise = undefined;
+        });
+    }
+    /**
+     * Continuously executes reconciliation passes until no further changes are pending.
+     */
+    async #runReconcileLoop() {
+        while (this.#needsReconcile && !this.#isClosed) {
+            this.#needsReconcile = false;
+            await this.#reconcileOnce();
+        }
+    }
+    /**
+     * Performs a single reconciliation pass: computes the desired coalesced directory set,
+     * subscribes to newly required directories, unsubscribes obsolete directories, and
+     * triggers fallback coalescing if OS stream limits are encountered.
+     */
+    async #reconcileOnce() {
+        const desiredDirs = this.#computeDesiredDirectories();
+        if (this.#shrinkBeforeSubscribe) {
+            this.#shrinkBeforeSubscribe = false;
+            const toUnsubscribe = [];
+            for (const [existingKey, sub] of this.#extraSubscriptions.entries()) {
+                if (!desiredDirs.has(existingKey)) {
+                    this.#extraSubscriptions.delete(existingKey);
+                    toUnsubscribe.push(sub.unsubscribe().catch(() => { }));
+                }
+            }
+            if (toUnsubscribe.length > 0) {
+                await Promise.allSettled(toUnsubscribe);
             }
         }
-        for (const pendingDir of this.pendingSubscriptions.keys()) {
-            if (dirLookupKey === pendingDir || isPathInside(dirLookupKey, pendingDir)) {
+        if (this.#isClosed) {
+            return;
+        }
+        const toSubscribe = [];
+        for (const [dirKey, dirPath] of desiredDirs.entries()) {
+            if (!this.#extraSubscriptions.has(dirKey)) {
+                toSubscribe.push([dirKey, dirPath]);
+            }
+        }
+        let hadExistingDirFailure = false;
+        if (toSubscribe.length > 0) {
+            await Promise.allSettled(toSubscribe.map(async ([dirKey, dirPath]) => {
+                const ignore = isPathInside(this.#rootDirLookupKey, dirKey)
+                    ? [...(this.#options?.ignored ?? []), this.#rootDirPosix, `${this.#rootDirPosix}/**`]
+                    : this.#options?.ignored;
+                try {
+                    const sub = await this.#parcelWatcher.subscribe(dirPath, (err, events) => {
+                        if (!err) {
+                            this.#handleEvents(events);
+                        }
+                    }, { ignore });
+                    if (this.#isClosed) {
+                        await sub.unsubscribe().catch(() => { });
+                        return;
+                    }
+                    this.#extraSubscriptions.set(dirKey, sub);
+                }
+                catch {
+                    // Ignore errors for missing directories; if the directory exists on disk,
+                    // mark failure so the manager can coalesce further if over OS stream limits.
+                    if (!this.#isClosed && fs.existsSync(dirPath)) {
+                        hadExistingDirFailure = true;
+                    }
+                }
+            }));
+        }
+        if (this.#isClosed) {
+            return;
+        }
+        // Unsubscribe any previous subscriptions that are no longer desired and whose
+        // remaining watched files (if any) are now covered by another active subscription.
+        for (const [existingKey, sub] of this.#extraSubscriptions.entries()) {
+            if (!desiredDirs.has(existingKey) && this.#canRemoveSubscription(existingKey)) {
+                this.#extraSubscriptions.delete(existingKey);
+                sub.unsubscribe().catch(() => { });
+            }
+        }
+        // If subscribing to an existing directory failed (e.g. macOS FSEvents per-process limit),
+        // dynamically lower the subscription budget and re-reconcile to coalesce into ancestors.
+        if (hadExistingDirFailure && desiredDirs.size > 1 && this.#maxSubscriptions > 1) {
+            const nextMax = this.#extraSubscriptions.size > 0
+                ? Math.max(1, Math.floor(this.#extraSubscriptions.size / 2))
+                : Math.max(1, Math.floor(Math.min(this.#maxSubscriptions, desiredDirs.size) / 2));
+            if (nextMax < desiredDirs.size && nextMax < this.#maxSubscriptions) {
+                this.#maxSubscriptions = nextMax;
+                this.#shrinkBeforeSubscribe = true;
+                this.#needsReconcile = true;
+            }
+        }
+    }
+    /**
+     * Checks whether a directory lookup key is already covered by an active subscription.
+     */
+    #isCoveredByActiveSubscription(dirLookupKey) {
+        for (const existingDir of this.#extraSubscriptions.keys()) {
+            if (dirLookupKey === existingDir || isPathInside(dirLookupKey, existingDir)) {
                 return true;
             }
         }
         return false;
     }
-    async ensureDirWatched(dirPath, dirKey) {
-        if (this.isCoveredByExistingExternal(dirKey)) {
-            return;
-        }
-        const subPromise = this.parcelWatcher.subscribe(dirPath, (err, events) => {
-            if (!err) {
-                this.handleEvents(events);
-            }
-        }, {
-            ignore: this.options?.ignored,
-        });
-        this.pendingSubscriptions.set(dirKey, subPromise);
-        try {
-            const sub = await subPromise;
-            this.pendingSubscriptions.delete(dirKey);
-            if (this.externalDirFiles.has(dirKey) && !this.isCoveredByExistingExternal(dirKey)) {
-                this.extraSubscriptions.set(dirKey, sub);
-                // Subsume any nested child subscriptions that are now covered by this parent subscription
-                for (const [childDir, childSub] of this.extraSubscriptions.entries()) {
-                    if (childDir !== dirKey && isPathInside(childDir, dirKey)) {
-                        this.extraSubscriptions.delete(childDir);
-                        childSub.unsubscribe().catch(() => { });
+    /**
+     * Determines whether an existing subscription can be safely removed without leaving
+     * any remaining watched target directories uncovered.
+     */
+    #canRemoveSubscription(subKey) {
+        for (const targetDirKey of this.#externalDirFiles.keys()) {
+            if (targetDirKey === subKey || isPathInside(targetDirKey, subKey)) {
+                let coveredByOther = false;
+                for (const otherSubKey of this.#extraSubscriptions.keys()) {
+                    if (otherSubKey !== subKey &&
+                        (targetDirKey === otherSubKey || isPathInside(targetDirKey, otherSubKey))) {
+                        coveredByOther = true;
+                        break;
                     }
                 }
+                if (!coveredByOther) {
+                    return false;
+                }
             }
-            else {
-                sub.unsubscribe().catch(() => { });
+        }
+        return true;
+    }
+    /**
+     * Computes the minimal set of external directories to subscribe to (mapped from `dirKey` to `dirPath`),
+     * subsuming nested directories and coalescing branching ancestors to stay within `#maxSubscriptions`.
+     */
+    #computeDesiredDirectories() {
+        if (this.#externalDirFiles.size === 0) {
+            return new Map();
+        }
+        const nodesByKey = new Map();
+        const roots = [];
+        for (const [dirKey, { dirPath }] of this.#externalDirFiles.entries()) {
+            const chain = [];
+            let currentKey = dirKey;
+            let currentPath = dirPath;
+            while (true) {
+                chain.push({ dirKey: currentKey, dirPath: currentPath });
+                const parentKey = getDirectoryPath(currentKey);
+                if (parentKey === currentKey) {
+                    break;
+                }
+                currentKey = parentKey;
+                currentPath = getDirectoryPath(currentPath);
+            }
+            let parentNode;
+            for (let i = chain.length - 1; i >= 0; i--) {
+                const { dirKey: nodeKey, dirPath: nodePath } = chain[i];
+                const depth = chain.length - 1 - i;
+                let node = nodesByKey.get(nodeKey);
+                if (!node) {
+                    node = {
+                        dirKey: nodeKey,
+                        dirPath: nodePath,
+                        depth,
+                        parent: parentNode,
+                        children: new Map(),
+                        isTarget: false,
+                        leafCount: 0,
+                    };
+                    nodesByKey.set(nodeKey, node);
+                    if (parentNode) {
+                        parentNode.children.set(nodeKey, node);
+                    }
+                    else {
+                        roots.push(node);
+                    }
+                }
+                parentNode = node;
+            }
+            if (parentNode) {
+                parentNode.isTarget = true;
             }
         }
-        catch {
-            // Ignore subscription errors for missing or restricted external directories
+        const initSubtree = (node) => {
+            if (node.isTarget) {
+                node.children.clear();
+                node.leafCount = 1;
+                return 1;
+            }
+            let count = 0;
+            for (const child of node.children.values()) {
+                count += initSubtree(child);
+            }
+            node.leafCount = count;
+            return count;
+        };
+        let totalLeaves = 0;
+        for (const root of roots) {
+            totalLeaves += initSubtree(root);
         }
-        finally {
-            this.pendingSubscriptions.delete(dirKey);
+        if (totalLeaves > this.#maxSubscriptions) {
+            // Tier 1: non-ancestors of workspaceRoot (e.g., <monorepo>/libs, <monorepo>/node_modules)
+            // Tier 2: ancestors of workspaceRoot (e.g., <monorepo> when sibling apps/libs are directly under it)
+            const tier1ByDepth = new Map();
+            const tier2ByDepth = new Map();
+            const collectInternalNodes = (node) => {
+                if (node.isTarget) {
+                    return;
+                }
+                if (node.parent !== undefined && node.leafCount > 1) {
+                    const isWorkspaceAncestor = isPathInside(this.#rootDirLookupKey, node.dirKey);
+                    const bucketMap = isWorkspaceAncestor ? tier2ByDepth : tier1ByDepth;
+                    let bucket = bucketMap.get(node.depth);
+                    if (!bucket) {
+                        bucket = [];
+                        bucketMap.set(node.depth, bucket);
+                    }
+                    bucket.push(node);
+                }
+                for (const child of node.children.values()) {
+                    collectInternalNodes(child);
+                }
+            };
+            for (const root of roots) {
+                collectInternalNodes(root);
+            }
+            const collapseTier = (byDepth) => {
+                const sortedLevels = Array.from(byDepth.entries()).sort(([a], [b]) => b - a);
+                for (const [, nodes] of sortedLevels) {
+                    if (totalLeaves <= this.#maxSubscriptions) {
+                        return;
+                    }
+                    const candidates = nodes
+                        .filter((n) => n.leafCount > 1 && !hasTargetAncestor(n))
+                        .sort((a, b) => b.leafCount - a.leafCount || a.dirKey.localeCompare(b.dirKey));
+                    for (const candidate of candidates) {
+                        if (totalLeaves <= this.#maxSubscriptions) {
+                            return;
+                        }
+                        if (candidate.leafCount <= 1 || hasTargetAncestor(candidate)) {
+                            continue;
+                        }
+                        const reduction = candidate.leafCount - 1;
+                        candidate.isTarget = true;
+                        candidate.children.clear();
+                        candidate.leafCount = 1;
+                        totalLeaves -= reduction;
+                        let ancestor = candidate.parent;
+                        while (ancestor) {
+                            ancestor.leafCount -= reduction;
+                            ancestor = ancestor.parent;
+                        }
+                    }
+                }
+            };
+            collapseTier(tier1ByDepth);
+            if (totalLeaves > this.#maxSubscriptions) {
+                collapseTier(tier2ByDepth);
+            }
         }
+        const desired = new Map();
+        const collectTargets = (node) => {
+            if (node.isTarget) {
+                desired.set(node.dirKey, node.dirPath);
+                return;
+            }
+            for (const child of node.children.values()) {
+                collectTargets(child);
+            }
+        };
+        for (const root of roots) {
+            collectTargets(root);
+        }
+        return desired;
     }
 }
+exports.ParcelExternalManager = ParcelExternalManager;
 async function createParcelWatcher(options, parcelWatcher) {
     const watchedFiles = new Set();
     const queue = new WatcherQueue();
@@ -516,7 +844,7 @@ async function createParcelWatcher(options, parcelWatcher) {
     }, {
         ignore: options?.ignored,
     });
-    const externalManager = new ParcelExternalManager(parcelWatcher, options, rootDirLookupKey, handleEvents);
+    const externalManager = new ParcelExternalManager(parcelWatcher, options, rootDirPosix, rootDirLookupKey, isCaseSensitive, handleEvents);
     const buildWatcher = {
         [Symbol.asyncIterator]() {
             return this;
@@ -531,7 +859,7 @@ async function createParcelWatcher(options, parcelWatcher) {
                 const lookupKey = toLookupKey(posixPath, isCaseSensitive);
                 if (!watchedFiles.has(lookupKey)) {
                     watchedFiles.add(lookupKey);
-                    void externalManager.ensureWatched(posixPath, lookupKey);
+                    externalManager.watchFile(posixPath, lookupKey);
                 }
             }
         },
