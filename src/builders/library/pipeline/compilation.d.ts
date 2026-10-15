@@ -13,7 +13,7 @@ import type { LibraryCompilationOutput, NormalizedLibraryOptions } from '../type
  *
  * @param options The normalized library builder options with POSIX paths.
  * @param stylesheetBundler The component stylesheet bundler instance.
- * @param buildState The build state tracking compilation caches and diagnostics.
+ * @param buildState The build state tracking compilation caches, file references, and diagnostics.
  * @param modifiedFiles Optional set of modified POSIX file paths for incremental compilation.
  * @returns A promise resolving to the compilation output containing emitted files and cache state.
  */

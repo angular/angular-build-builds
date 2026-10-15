@@ -20,7 +20,7 @@ const EMITTED_EXTENSIONS = ['.js', '.mjs', '.cjs', '.d.ts', '.d.mts', '.d.cts'];
  *
  * @param options The normalized library builder options with POSIX paths.
  * @param stylesheetBundler The component stylesheet bundler instance.
- * @param buildState The build state tracking compilation caches and diagnostics.
+ * @param buildState The build state tracking compilation caches, file references, and diagnostics.
  * @param modifiedFiles Optional set of modified POSIX file paths for incremental compilation.
  * @returns A promise resolving to the compilation output containing emitted files and cache state.
  */
@@ -46,8 +46,8 @@ async function compileLibrary(options, stylesheetBundler, buildState, modifiedFi
         }
         if (effectiveModifiedFiles && effectiveModifiedFiles.size > 0) {
             await compilationInstance.update?.(effectiveModifiedFiles);
+            buildState.clearFileReferences(effectiveModifiedFiles);
         }
-        const allReferencedFiles = new Set();
         const stylesheetWarnings = [];
         const stylesheetErrors = [];
         const failedFiles = new Set();
@@ -57,7 +57,12 @@ async function compileLibrary(options, stylesheetBundler, buildState, modifiedFi
                 const result = stylesheetFile
                     ? await stylesheetBundler.bundleFile(stylesheetFile)
                     : await stylesheetBundler.bundleInline(data, containingFile);
-                result.referencedFiles?.forEach((f) => allReferencedFiles.add((0, path_1.toPosixPath)(f)));
+                if (result.referencedFiles) {
+                    buildState.addFileReferences(containingFile, result.referencedFiles);
+                    if (stylesheetFile) {
+                        buildState.addFileReferences(stylesheetFile, result.referencedFiles);
+                    }
+                }
                 if (result.warnings.length > 0) {
                     stylesheetWarnings.push(...result.warnings);
                 }
@@ -89,12 +94,10 @@ async function compileLibrary(options, stylesheetBundler, buildState, modifiedFi
         const dtsFiles = cached?.dtsFiles ?? new Map();
         const changedEsmFiles = new Set();
         const changedDtsFiles = new Set();
-        for (const ref of referencedFiles) {
-            allReferencedFiles.add((0, path_1.toPosixPath)(ref));
-        }
+        const posixReferencedFiles = new Set(referencedFiles.map(path_1.toPosixPath));
         if (cached && effectiveModifiedFiles) {
             for (const modifiedFile of effectiveModifiedFiles) {
-                if (allReferencedFiles.has(modifiedFile)) {
+                if (posixReferencedFiles.has(modifiedFile)) {
                     continue;
                 }
                 const basePathWithoutExt = modifiedFile.replace(/(?:\.d\.[cm]?ts|\.[cm]?[jt]sx?)$/i, '');
@@ -130,7 +133,7 @@ async function compileLibrary(options, stylesheetBundler, buildState, modifiedFi
             dtsFiles,
             changedEsmFiles,
             changedDtsFiles,
-            referencedFiles: allReferencedFiles,
+            referencedFiles: posixReferencedFiles,
             cache: {
                 compilationInstance,
                 esmFiles,

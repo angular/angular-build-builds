@@ -8,12 +8,15 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BuilderState = void 0;
+const path_1 = require("../../utils/path");
 const execution_result_1 = require("./execution-result");
 /**
- * Encapsulates incremental compilation state, watched compilation file tracking,
- * and execution results across watch-mode rebuilds.
+ * Encapsulates incremental compilation state, transitive resource reference tracking,
+ * watched compilation file tracking, and execution results across watch-mode rebuilds.
  */
 class BuilderState {
+    #referencingFiles = new Map();
+    #referencedByFile = new Map();
     #watchedCompilationFiles = new Set();
     #pendingCompilationFiles = new Set();
     #executionResult = new execution_result_1.ExecutionResult();
@@ -87,6 +90,84 @@ class BuilderState {
     resetExecutionResult() {
         this.#executionResult = new execution_result_1.ExecutionResult();
         return this.#executionResult;
+    }
+    /**
+     * Records transitive resource dependencies (such as Sass partials) for a containing
+     * component or stylesheet file and registers them in `watchedCompilationFiles`.
+     * Multiple calls for the same containing file accumulate references additively.
+     *
+     * @param containingFile Path of the referencing component or stylesheet file.
+     * @param referencedFiles Paths of the referenced files.
+     */
+    addFileReferences(containingFile, referencedFiles) {
+        const posixContainingFile = (0, path_1.toPosixPath)(containingFile);
+        let forwardReferences = this.#referencedByFile.get(posixContainingFile);
+        for (const file of referencedFiles) {
+            const posixFile = (0, path_1.toPosixPath)(file);
+            this.#watchedCompilationFiles.add(posixFile);
+            if (posixFile === posixContainingFile) {
+                continue;
+            }
+            if (!forwardReferences) {
+                forwardReferences = new Set();
+                this.#referencedByFile.set(posixContainingFile, forwardReferences);
+            }
+            forwardReferences.add(posixFile);
+            let referencing = this.#referencingFiles.get(posixFile);
+            if (!referencing) {
+                referencing = new Set();
+                this.#referencingFiles.set(posixFile, referencing);
+            }
+            referencing.add(posixContainingFile);
+        }
+    }
+    /**
+     * Clears previously recorded outgoing resource references for the given containing files
+     * before they are recompiled.
+     *
+     * @param containingFiles Paths of the containing or stylesheet files being recompiled.
+     */
+    clearFileReferences(containingFiles) {
+        for (const containingFile of containingFiles) {
+            const posixContainingFile = (0, path_1.toPosixPath)(containingFile);
+            const forwardReferences = this.#referencedByFile.get(posixContainingFile);
+            if (!forwardReferences) {
+                continue;
+            }
+            for (const prevRef of forwardReferences) {
+                const referencing = this.#referencingFiles.get(prevRef);
+                if (referencing) {
+                    referencing.delete(posixContainingFile);
+                    if (referencing.size === 0) {
+                        this.#referencingFiles.delete(prevRef);
+                    }
+                }
+            }
+            this.#referencedByFile.delete(posixContainingFile);
+        }
+    }
+    /**
+     * Returns the set of all files affected by the given changed files, including the
+     * changed files themselves and all transitively referencing files
+     * (e.g., partial `.scss` -> component `.scss` -> component `.ts`).
+     *
+     * @param files Initial changed file paths.
+     * @returns Set of POSIX paths including all transitively referencing files.
+     */
+    getAffectedFiles(files) {
+        const affected = new Set();
+        for (const file of files) {
+            affected.add((0, path_1.toPosixPath)(file));
+        }
+        for (const file of affected) {
+            const referencing = this.#referencingFiles.get(file);
+            if (referencing) {
+                for (const refFile of referencing) {
+                    affected.add(refFile);
+                }
+            }
+        }
+        return affected;
     }
     /**
      * Determines whether compilation and bundling need to run for the current build iteration.
@@ -192,6 +273,8 @@ class BuilderState {
         this.pendingChangedEsmFiles.clear();
         this.pendingChangedDtsFiles.clear();
         this.#pendingCompilationFiles.clear();
+        this.#referencingFiles.clear();
+        this.#referencedByFile.clear();
         this.#watchedCompilationFiles.clear();
     }
 }

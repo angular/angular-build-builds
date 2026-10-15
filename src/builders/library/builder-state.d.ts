@@ -8,8 +8,8 @@
 import { ExecutionResult } from './execution-result';
 import type { BundleResult, LibraryCompilationOutput, NormalizedLibraryOptions, SingleProgramCache } from './types';
 /**
- * Encapsulates incremental compilation state, watched compilation file tracking,
- * and execution results across watch-mode rebuilds.
+ * Encapsulates incremental compilation state, transitive resource reference tracking,
+ * watched compilation file tracking, and execution results across watch-mode rebuilds.
  */
 export declare class BuilderState {
     #private;
@@ -52,6 +52,31 @@ export declare class BuilderState {
      * @returns The fresh `ExecutionResult` instance for the current build iteration.
      */
     resetExecutionResult(): ExecutionResult;
+    /**
+     * Records transitive resource dependencies (such as Sass partials) for a containing
+     * component or stylesheet file and registers them in `watchedCompilationFiles`.
+     * Multiple calls for the same containing file accumulate references additively.
+     *
+     * @param containingFile Path of the referencing component or stylesheet file.
+     * @param referencedFiles Paths of the referenced files.
+     */
+    addFileReferences(containingFile: string, referencedFiles: Iterable<string>): void;
+    /**
+     * Clears previously recorded outgoing resource references for the given containing files
+     * before they are recompiled.
+     *
+     * @param containingFiles Paths of the containing or stylesheet files being recompiled.
+     */
+    clearFileReferences(containingFiles: Iterable<string>): void;
+    /**
+     * Returns the set of all files affected by the given changed files, including the
+     * changed files themselves and all transitively referencing files
+     * (e.g., partial `.scss` -> component `.scss` -> component `.ts`).
+     *
+     * @param files Initial changed file paths.
+     * @returns Set of POSIX paths including all transitively referencing files.
+     */
+    getAffectedFiles(files: Iterable<string>): Set<string>;
     /**
      * Determines whether compilation and bundling need to run for the current build iteration.
      * Also records incoming modified files so they are retained if the iteration aborts early.

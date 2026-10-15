@@ -208,29 +208,13 @@ async function* runWatchLoop(watcher, options, stylesheetBundler, logger, withPr
             // eslint-disable-next-line no-console
             console.clear();
         }
-        const changedFiles = new Set();
-        let hasStyleChanges = false;
-        let hasSassChanges = false;
-        for (const file of changes.all) {
-            const posixFile = (0, path_1.toPosixPath)(file);
-            changedFiles.add(posixFile);
+        const rawChangedFiles = changes.all.map(path_1.toPosixPath);
+        stylesheetBundler.invalidate(rawChangedFiles);
+        const changedFiles = buildState.getAffectedFiles(rawChangedFiles);
+        for (const posixFile of changedFiles) {
             if (/\.(?:scss|sass)$/i.test(posixFile)) {
-                hasStyleChanges = true;
-                hasSassChanges = true;
-            }
-            else if (/\.(?:less|css)$/i.test(posixFile)) {
-                hasStyleChanges = true;
-            }
-        }
-        if (hasStyleChanges) {
-            if (hasSassChanges) {
                 (0, sass_language_1.resetSassWorkerPoolCaches)();
-            }
-            const invalidatedStyles = stylesheetBundler.invalidate(changedFiles);
-            if (invalidatedStyles) {
-                for (const styleFile of invalidatedStyles) {
-                    changedFiles.add((0, path_1.toPosixPath)(styleFile));
-                }
+                break;
             }
         }
         // Check if package.json was modified
