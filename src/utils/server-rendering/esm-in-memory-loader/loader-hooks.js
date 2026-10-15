@@ -15,7 +15,7 @@ exports.resolve = resolve;
 exports.load = load;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_crypto_1 = require("node:crypto");
-const promises_1 = require("node:fs/promises");
+const node_fs_1 = require("node:fs");
 const node_path_1 = require("node:path");
 const node_url_1 = require("node:url");
 /**
@@ -89,7 +89,7 @@ function resolve(specifier, context, nextResolve) {
         parentURL: new URL('index.js', memoryVirtualRootUrl).href,
     });
 }
-async function load(url, context, nextLoad) {
+function load(url, context, nextLoad) {
     const { format } = context;
     // Load the file from memory if the URL is based in the virtual root
     if (url.startsWith(memoryVirtualRootUrl)) {
@@ -111,7 +111,7 @@ async function load(url, context, nextLoad) {
             return nextLoad(url, context);
         }
         const filePath = (0, node_url_1.fileURLToPath)(url);
-        const fileBytes = await (0, promises_1.readFile)(filePath);
+        const fileBytes = (0, node_fs_1.readFileSync)(filePath);
         const source = Buffer.concat([NG_SERVER_MODE_INIT_BYTES, fileBytes]);
         return {
             format,
