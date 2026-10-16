@@ -30,8 +30,8 @@ export type Schema = {
         [key: string]: string;
     };
     /**
-     * Enable hot module replacement. Defaults to the value of 'liveReload'. Currently, only
-     * global and component stylesheets are supported.
+     * Enable hot module replacement. Defaults to the value of 'liveReload'. Currently, global
+     * stylesheets, component stylesheets, and component templates are supported.
      */
     hmr?: boolean;
     /**

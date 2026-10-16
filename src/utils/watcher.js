@@ -50,7 +50,6 @@ exports.getDirectoryPath = getDirectoryPath;
 exports.createWatcher = createWatcher;
 exports.isPathInside = isPathInside;
 exports.extractNodeModulesPackageDir = extractNodeModulesPackageDir;
-const node_events_1 = require("node:events");
 const fs = __importStar(require("node:fs"));
 const path = __importStar(require("node:path"));
 const picomatch_1 = __importDefault(require("picomatch"));
@@ -887,98 +886,15 @@ async function createParcelWatcher(options, parcelWatcher) {
     };
     return buildWatcher;
 }
-/**
- * Manages selective node_modules watching for Chokidar.
- *
- * During Chokidar's initial scan, the allowed packages set is empty, causing Chokidar to prune the entire
- * node_modules directory immediately and avoid blocking the 'ready' event for minutes.
- * Packages are dynamically allowed and watched at the package root level as files are added via `watcher.add`.
- * Tracking files per package allows reference-counting so that package directories are unwatched when no
- * longer needed.
- */
-class ChokidarNodeModulesManager {
-    isCaseSensitive;
-    allowedPackages = new Map();
-    constructor(isCaseSensitive) {
-        this.isCaseSensitive = isCaseSensitive;
-    }
-    registerPackage(posixPath, lookupKey) {
-        const packageDir = extractNodeModulesPackageDir(posixPath);
-        if (!packageDir) {
-            return { isPackage: false };
-        }
-        const packageKey = toLookupKey(packageDir, this.isCaseSensitive);
-        let watchedInPkg = this.allowedPackages.get(packageKey);
-        if (!watchedInPkg) {
-            watchedInPkg = new Set();
-            this.allowedPackages.set(packageKey, watchedInPkg);
-            watchedInPkg.add(lookupKey);
-            return { isPackage: true, newPkgDir: packageDir };
-        }
-        watchedInPkg.add(lookupKey);
-        return { isPackage: true };
-    }
-    removePackageFile(posixPath, lookupKey) {
-        const packageDir = extractNodeModulesPackageDir(posixPath);
-        if (!packageDir) {
-            return { isPackage: false };
-        }
-        const packageKey = toLookupKey(packageDir, this.isCaseSensitive);
-        const watchedInPkg = this.allowedPackages.get(packageKey);
-        if (watchedInPkg) {
-            watchedInPkg.delete(lookupKey);
-            if (watchedInPkg.size === 0) {
-                this.allowedPackages.delete(packageKey);
-                return { isPackage: true, unwatchPkgDir: packageDir };
-            }
-        }
-        return { isPackage: true };
-    }
-    isIgnored(filePath) {
-        // Fast path: avoid expensive normalization for non-node_modules files
-        if (!filePath.includes(NODE_MODULES)) {
-            return false;
-        }
-        const posixPath = toPosixPathNormalized(filePath);
-        const lookupKey = toLookupKey(posixPath, this.isCaseSensitive);
-        if (!`${lookupKey}/`.includes(NODE_MODULES_SEGMENT)) {
-            return false;
-        }
-        if (this.allowedPackages.has(lookupKey)) {
-            return false;
-        }
-        for (const pkg of this.allowedPackages.keys()) {
-            if (isPathInside(lookupKey, pkg)) {
-                return false;
-            }
-        }
-        return true;
-    }
-}
-async function createChokidarWatcher(options, chokidarModule) {
-    const chokidar = chokidarModule ?? (await Promise.resolve().then(() => __importStar(require('chokidar'))));
-    const watchedFiles = new Set();
-    const fileStats = new Map();
-    let queue;
-    if (options?.polling) {
-        const pollingInterval = options.interval ?? 100;
-        const debounceMs = Math.min(250, Math.max(100, Math.ceil(pollingInterval * 1.5)));
-        const maxWaitMs = Math.max(500, debounceMs * 3);
-        queue = new WatcherQueue(debounceMs, maxWaitMs);
-    }
-    else {
-        queue = new WatcherQueue();
-    }
-    const rootDir = options?.cwd ?? process.cwd();
-    const isCaseSensitive = isFileSystemCaseSensitive(rootDir);
-    const rootDirPosix = toPosixPathNormalized(rootDir);
-    const rootDirLookupKey = toLookupKey(rootDirPosix, isCaseSensitive);
-    const nodeModulesManager = new ChokidarNodeModulesManager(isCaseSensitive);
+function createChokidarIgnored(ignoredPatterns, isCaseSensitive, watchedFiles) {
     // Strip static node_modules ignore patterns (e.g. `**/node_modules/**` from setupWatcher).
-    // If left in place, picomatch would unconditionally ignore all node_modules files and override
-    // our dynamic package allowlist above.
-    const customIgnored = options?.ignored
-        ?.filter((pattern) => !pattern.includes(NODE_MODULES))
+    // If left in place, picomatch would unconditionally ignore all node_modules files and prevent
+    // watching explicitly added files inside node_modules.
+    const customIgnored = ignoredPatterns
+        ?.filter((pattern) => {
+        const base = toPosixPathNormalized(pattern).replace(/\/\*\*$/, '');
+        return base !== NODE_MODULES && !base.endsWith(`/${NODE_MODULES}`);
+    })
         .map((pattern) => {
         if (/[*?[\]{}()]/.test(pattern)) {
             const isMatch = (0, picomatch_1.default)(pattern, { dot: true });
@@ -986,20 +902,75 @@ async function createChokidarWatcher(options, chokidarModule) {
         }
         return { path: toPosixPathNormalized(pattern), recursive: true };
     }) ?? [];
-    const ignored = [...customIgnored, (filePath) => nodeModulesManager.isIgnored(filePath)];
-    const watcher = chokidar.watch(rootDir, {
+    // When watching a directory (e.g. projectRoot via NG_BUILD_WATCH_ROOT), prune `node_modules`
+    // directories unless explicitly added to `watchedFiles`. Explicitly added files inside
+    // `node_modules` do not end with `/node_modules` and remain watchable.
+    return [
+        ...customIgnored,
+        (filePath) => {
+            if (!filePath.includes(NODE_MODULES)) {
+                return false;
+            }
+            const posixPath = toPosixPathNormalized(filePath);
+            const lookupKey = toLookupKey(posixPath, isCaseSensitive);
+            return ((lookupKey === NODE_MODULES || lookupKey.endsWith(`/${NODE_MODULES}`)) &&
+                !watchedFiles.has(lookupKey));
+        },
+    ];
+}
+// Chokidar initializes file watchers asynchronously (`await stat(path)` followed by
+// `fs.watch` or `fs.watchFile`). If a file is modified or recreated immediately after
+// `watcher.add()` is called, Chokidar may capture the post-modification state as its initial
+// baseline (or suppress the initial `'add'` event due to `ignoreInitial: true`) and miss the
+// change. Re-statting after a short delay catches any modifications or recreations that occurred
+// during asynchronous watcher registration, while `fileStats` deduplicates if Chokidar also fired.
+async function checkChokidarBaselines(baselineStats, watchedFiles, fileStats, watcher, handleEvent) {
+    await Promise.all(Array.from(baselineStats, async ([lookupKey, baseline]) => {
+        if (!watchedFiles.has(lookupKey)) {
+            return;
+        }
+        const currentStat = await fs.promises.stat(baseline.posixPath).catch(() => null);
+        if (!watchedFiles.has(lookupKey) || !currentStat?.isFile()) {
+            return;
+        }
+        if (baseline.mtimeMs === undefined || baseline.size === undefined) {
+            const recorded = fileStats.get(lookupKey);
+            if (!recorded) {
+                watcher.add(baseline.posixPath);
+                handleEvent('added', path.normalize(baseline.posixPath));
+            }
+            else if (currentStat.mtimeMs !== recorded.mtimeMs || currentStat.size !== recorded.size) {
+                handleEvent('modified', path.normalize(baseline.posixPath));
+            }
+        }
+        else if (currentStat.mtimeMs !== baseline.mtimeMs || currentStat.size !== baseline.size) {
+            handleEvent('modified', path.normalize(baseline.posixPath));
+        }
+    }));
+}
+async function createChokidarWatcher(options, chokidarModule) {
+    const chokidar = chokidarModule ?? (await Promise.resolve().then(() => __importStar(require('chokidar'))));
+    const watchedFiles = new Set();
+    const fileStats = new Map();
+    const pendingTimers = new Set();
+    const pollingInterval = options?.interval ?? 100;
+    const debounceMs = Math.min(250, Math.max(100, Math.ceil(pollingInterval * 1.5)));
+    const queue = options?.polling
+        ? new WatcherQueue(debounceMs, Math.max(500, debounceMs * 3))
+        : new WatcherQueue();
+    const rootDir = options?.cwd ?? process.cwd();
+    const isCaseSensitive = isFileSystemCaseSensitive(rootDir);
+    const ignored = createChokidarIgnored(options?.ignored, isCaseSensitive, watchedFiles);
+    const watcher = chokidar.watch([], {
         ignoreInitial: true,
         ignored,
         followSymlinks: options?.followSymlinks,
         usePolling: !!options?.polling,
         interval: options?.interval,
     });
+    // Prevent unhandled watcher errors (such as EMFILE or EACCES) from crashing the process.
+    watcher.on('error', () => { });
     const initTime = Date.now();
-    // Wait for the watcher to complete its initial filesystem scan before returning.
-    // With `ignoreInitial: true`, any file visited during the initial scan is treated as the initial baseline
-    // and will not emit 'add' or 'change' events. Awaiting 'ready' ensures that rapid file modifications
-    // made right after watcher setup (e.g. in rebuild tests) are not swallowed as initial files.
-    await (0, node_events_1.once)(watcher, 'ready');
     const handleEvent = (type, rawPath) => {
         const posixPath = toPosixPathNormalized(rawPath);
         const lookupKey = toLookupKey(posixPath, isCaseSensitive);
@@ -1012,13 +983,10 @@ async function createChokidarWatcher(options, chokidarModule) {
             return;
         }
         const stat = fs.statSync(rawPath, { throwIfNoEntry: false });
-        if (!stat) {
-            return;
-        }
         // Ignore historical events from before watcher initialization, but allow a 1000 ms window
         // to account for coarse filesystem timestamp resolution (e.g., ext4/overlayfs integer second
         // mtime truncation on Linux) where files modified during startup may have truncated .000 ms mtimes.
-        if (stat.mtimeMs < initTime - 1000) {
+        if (!stat || stat.mtimeMs < initTime - 1000) {
             return;
         }
         const previousStat = fileStats.get(lookupKey);
@@ -1031,10 +999,45 @@ async function createChokidarWatcher(options, chokidarModule) {
         fileStats.set(lookupKey, { mtimeMs: stat.mtimeMs, size: stat.size });
         queue.addChange(type, rawPath);
     };
+    const scheduleBaselineCheck = (baselineStats) => {
+        if (baselineStats.size === 0) {
+            return;
+        }
+        const timer = setTimeout(() => {
+            pendingTimers.delete(timer);
+            void checkChokidarBaselines(baselineStats, watchedFiles, fileStats, watcher, handleEvent);
+        }, 50);
+        timer.unref();
+        pendingTimers.add(timer);
+    };
     watcher.on('add', (path) => handleEvent('added', path));
     watcher.on('change', (path) => handleEvent('modified', path));
-    watcher.on('unlink', (path) => handleEvent('removed', path));
-    const buildWatcher = {
+    watcher.on('unlink', (rawPath) => {
+        const posixPath = toPosixPathNormalized(rawPath);
+        const lookupKey = toLookupKey(posixPath, isCaseSensitive);
+        if (!isPathWatched(lookupKey, watchedFiles)) {
+            return;
+        }
+        // When Chokidar processes a file removal, it closes the underlying file watcher unless only a
+        // single directory is tracked (`_watched.size === 1`). Re-adding a directly watched path
+        // ensures Chokidar continues watching either the recreated file (if replaced within the atomic
+        // window) or its parent directory for future recreation.
+        if (watchedFiles.has(lookupKey)) {
+            fileStats.delete(lookupKey);
+            watcher.add(posixPath);
+            const stat = fs.statSync(rawPath, { throwIfNoEntry: false });
+            if (stat?.isFile()) {
+                handleEvent('modified', rawPath);
+                scheduleBaselineCheck(new Map([[lookupKey, { posixPath, mtimeMs: stat.mtimeMs, size: stat.size }]]));
+                return;
+            }
+            handleEvent('removed', rawPath);
+            scheduleBaselineCheck(new Map([[lookupKey, { posixPath }]]));
+            return;
+        }
+        handleEvent('removed', rawPath);
+    });
+    return {
         [Symbol.asyncIterator]() {
             return this;
         },
@@ -1056,26 +1059,22 @@ async function createChokidarWatcher(options, chokidarModule) {
         add(paths) {
             const targets = typeof paths === 'string' ? [paths] : paths;
             const newPaths = [];
+            const baselineStats = new Map();
             for (const p of targets) {
                 const posixPath = toPosixPathNormalized(p);
                 const lookupKey = toLookupKey(posixPath, isCaseSensitive);
                 if (!watchedFiles.has(lookupKey)) {
                     watchedFiles.add(lookupKey);
-                    // For files inside node_modules, register their package directory. Only newly encountered
-                    // package directories need to be added to Chokidar.
-                    const { isPackage, newPkgDir } = nodeModulesManager.registerPackage(posixPath, lookupKey);
-                    if (newPkgDir) {
-                        newPaths.push(newPkgDir);
-                    }
-                    else if (!isPackage &&
-                        !isPathInside(lookupKey, rootDirLookupKey) &&
-                        lookupKey !== rootDirLookupKey) {
-                        newPaths.push(posixPath);
+                    newPaths.push(posixPath);
+                    const stat = fs.statSync(posixPath, { throwIfNoEntry: false });
+                    if (stat?.isFile()) {
+                        baselineStats.set(lookupKey, { posixPath, mtimeMs: stat.mtimeMs, size: stat.size });
                     }
                 }
             }
             if (newPaths.length > 0) {
                 watcher.add(newPaths);
+                scheduleBaselineCheck(baselineStats);
             }
         },
         remove(paths) {
@@ -1087,16 +1086,7 @@ async function createChokidarWatcher(options, chokidarModule) {
                 if (watchedFiles.has(lookupKey)) {
                     watchedFiles.delete(lookupKey);
                     fileStats.delete(lookupKey);
-                    // When the last watched file in a package is removed, unwatch the package directory.
-                    const { isPackage, unwatchPkgDir } = nodeModulesManager.removePackageFile(posixPath, lookupKey);
-                    if (unwatchPkgDir) {
-                        removePaths.push(unwatchPkgDir);
-                    }
-                    else if (!isPackage &&
-                        !isPathInside(lookupKey, rootDirLookupKey) &&
-                        lookupKey !== rootDirLookupKey) {
-                        removePaths.push(posixPath);
-                    }
+                    removePaths.push(posixPath);
                 }
             }
             if (removePaths.length > 0) {
@@ -1104,6 +1094,10 @@ async function createChokidarWatcher(options, chokidarModule) {
             }
         },
         async close() {
+            for (const timer of pendingTimers) {
+                clearTimeout(timer);
+            }
+            pendingTimers.clear();
             try {
                 await watcher.close();
             }
@@ -1112,6 +1106,5 @@ async function createChokidarWatcher(options, chokidarModule) {
             }
         },
     };
-    return buildWatcher;
 }
 //# sourceMappingURL=watcher.js.map
