@@ -42,6 +42,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.transformCompilerOptions = transformCompilerOptions;
 const path = __importStar(require("node:path"));
+const path_1 = require("../../../utils/path");
 function transformCompilerOptions(typeScript, baseCompilerOptions, overrides, tsconfig) {
     const compilerOptions = { ...baseCompilerOptions };
     const warnings = [];
@@ -111,6 +112,7 @@ function transformCompilerOptions(typeScript, baseCompilerOptions, overrides, ts
     return {
         compilerOptions: {
             ...compilerOptions,
+            basePath: overrides?.basePath ? (0, path_1.toPosixPath)(overrides.basePath) : compilerOptions.basePath,
             noEmitOnError: false,
             composite: false,
             inlineSources: !!overrides?.sourcemap,

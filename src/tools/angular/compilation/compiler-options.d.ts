@@ -18,6 +18,7 @@ export interface CompilerOptionOverrides {
     includeTestMetadata?: boolean;
     customConditions?: string[];
     rootFiles?: string[];
+    basePath?: string;
 }
 export declare function transformCompilerOptions(typeScript: typeof ts, baseCompilerOptions: ng.CompilerOptions, overrides?: CompilerOptionOverrides, tsconfig?: string): {
     compilerOptions: ng.CompilerOptions;
