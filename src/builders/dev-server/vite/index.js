@@ -233,6 +233,12 @@ async function* serveWithVite(serverOptions, builderName, builderAction, context
                     const filePath = '/' + normalizePath(removed.path);
                     generatedFiles.delete(filePath);
                     assetFiles.delete(filePath);
+                    // Release Vite's cached transform result for output files that no longer exist,
+                    // such as content-hashed chunks that were renamed by the rebuild.
+                    const moduleGraph = server.moduleGraph;
+                    moduleGraph
+                        .getModulesByFile(normalizePath((0, node_path_1.join)(server.config.root, filePath)))
+                        ?.forEach((m) => moduleGraph.invalidateModule(m));
                 }
                 for (const file of result.files) {
                     (0, utils_3.updateResultRecord)(file, normalizePath, htmlIndexPath, generatedFiles, assetFiles, componentStyles);
