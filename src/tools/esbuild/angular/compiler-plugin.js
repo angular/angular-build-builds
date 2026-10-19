@@ -578,6 +578,7 @@ function bundleWebWorker(build, pluginOptions, workerFile) {
             metafile: true,
             format: 'esm',
             entryNames: 'worker-[hash]',
+            chunkNames: 'worker-chunk-[hash]',
             entryPoints: [workerFile],
             sourcemap: pluginOptions.sourcemap,
             // Zone.js is not used in Web workers so no need to disable
