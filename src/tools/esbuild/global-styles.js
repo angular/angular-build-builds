@@ -67,7 +67,9 @@ function createGlobalStylesBundleOptions(options, target, initial) {
                 const files = globalStyles.find(({ name }) => name === args.path)?.files;
                 (0, node_assert_1.default)(files, `global style name should always be found [${args.path}]`);
                 return {
-                    contents: files.map((file) => `@import '${(0, path_1.toPosixPath)(file)}';`).join('\n'),
+                    contents: files
+                        .map((file) => `@import ${JSON.stringify((0, path_1.toPosixPath)(file))};`)
+                        .join('\n'),
                     loader: 'css',
                     resolveDir: workspaceRoot,
                 };
