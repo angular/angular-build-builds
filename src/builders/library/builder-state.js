@@ -10,18 +10,27 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.BuilderState = void 0;
 const path_1 = require("../../utils/path");
 const execution_result_1 = require("./execution-result");
+const assets_1 = require("./pipeline/assets");
 /**
  * Encapsulates incremental compilation state, transitive resource reference tracking,
- * watched compilation file tracking, and execution results across watch-mode rebuilds.
+ * asset matchers, and emitted output file tracking across watch-mode rebuilds.
  */
 class BuilderState {
     #referencingFiles = new Map();
     #referencedByFile = new Map();
     #watchedCompilationFiles = new Set();
     #pendingCompilationFiles = new Set();
+    #pendingAssetFiles = new Set();
+    #assetMatchers;
+    #emittedBundleFiles = new Set();
+    #emittedManifestFiles = new Set();
+    #emittedAssets = new Map();
+    #hasEmittedAssets = false;
     #executionResult = new execution_result_1.ExecutionResult();
+    #hasUpdatedBundles = false;
     #singleProgramCache;
     #compilationMode;
+    #hasEmittedTslib = false;
     /** Map of entry point names to their previous bundle results. */
     previousBundleResults = new Map();
     /** Set of changed POSIX ESM file paths pending bundling. */
@@ -32,10 +41,6 @@ class BuilderState {
     hasCompilationError = false;
     /** Whether package.json and secondary entry point manifests have been emitted. */
     hasEmittedManifests = false;
-    /** Whether the last emitted root package.json included a tslib dependency. */
-    hasEmittedTslib = false;
-    /** Whether static assets have been emitted in a prior iteration. */
-    hasEmittedAssets = false;
     /** Whether entry points in package.json changed since the last compilation. */
     hasEntryPointsChanges = false;
     constructor(options) {
@@ -50,6 +55,7 @@ class BuilderState {
                 this.#watchedCompilationFiles.add(entryPoint.entryFilePath);
             }
         }
+        this.#assetMatchers = options?.assets ? (0, assets_1.createAssetMatchers)(options.assets) : undefined;
     }
     /** Cached unified TypeScript and Angular compilation state. */
     get singleProgramCache() {
@@ -58,6 +64,10 @@ class BuilderState {
     /** Effective compilation mode resolved from builder options and tsconfig. */
     get compilationMode() {
         return this.#compilationMode;
+    }
+    /** Whether the last emitted root package.json included a tslib dependency. */
+    get hasEmittedTslib() {
+        return this.#hasEmittedTslib;
     }
     /** Whether any active entry point bundle imports `tslib`. */
     get hasTslibImport() {
@@ -83,12 +93,13 @@ class BuilderState {
         return this.#executionResult;
     }
     /**
-     * Resets the execution result for a new build iteration.
+     * Resets the execution result and staged output state for a new build iteration.
      *
      * @returns The fresh `ExecutionResult` instance for the current build iteration.
      */
     resetExecutionResult() {
         this.#executionResult = new execution_result_1.ExecutionResult();
+        this.#hasUpdatedBundles = false;
         return this.#executionResult;
     }
     /**
@@ -183,6 +194,9 @@ class BuilderState {
                 if (file !== packageJsonPath) {
                     this.#pendingCompilationFiles.add(file);
                 }
+                if (this.#hasEmittedAssets) {
+                    this.#pendingAssetFiles.add(file);
+                }
             }
         }
         if (!modifiedFiles ||
@@ -243,12 +257,13 @@ class BuilderState {
         }
     }
     /**
-     * Records active bundle results across entry points after compilation and bundling succeed,
-     * clearing pending compilation/bundle flags.
+     * Records active bundle results across entry points after compilation and bundling succeed
+     * and clears pending compilation/bundle flags.
      *
      * @param bundleResults Newly bundled results keyed by entry point name.
      */
     recordBundleOutput(bundleResults) {
+        const hadEntryPointsChanges = this.hasEntryPointsChanges;
         this.hasCompilationError = false;
         this.hasEntryPointsChanges = false;
         this.pendingChangedEsmFiles.clear();
@@ -256,6 +271,98 @@ class BuilderState {
         for (const [name, bundleResult] of bundleResults) {
             this.previousBundleResults.set(name, bundleResult);
         }
+        if (bundleResults.size > 0 || hadEntryPointsChanges || this.#emittedBundleFiles.size === 0) {
+            this.#hasUpdatedBundles = true;
+        }
+    }
+    /**
+     * Resolves and collects configured library assets to be emitted to or deleted from disk.
+     *
+     * @param options Normalized library options containing `assets` and `workspaceRoot`.
+     * @param modifiedFiles Optional set of modified POSIX file paths in watch mode.
+     * @returns The collected asset files to emit and delete.
+     */
+    collectAssets(options, modifiedFiles) {
+        let effectiveModifiedFiles;
+        if (this.#hasEmittedAssets && modifiedFiles) {
+            for (const file of modifiedFiles) {
+                this.#pendingAssetFiles.add(file);
+            }
+            effectiveModifiedFiles = this.#pendingAssetFiles;
+        }
+        return (0, assets_1.collectAssetsToEmit)(options.assets, options.workspaceRoot, this.#emittedAssets, effectiveModifiedFiles, this.#assetMatchers);
+    }
+    /**
+     * Records emitted bundle, manifest, and asset output files after disk emission,
+     * returning any stale or deleted output paths to remove from disk.
+     *
+     * @param collectedAssets Collected asset files emitted and deleted in this iteration.
+     * @param manifestFiles Optional manifest output files generated in this iteration.
+     * @returns Read-only set of relative POSIX output paths to delete from disk.
+     */
+    recordEmittedOutputs(collectedAssets, manifestFiles) {
+        const filesToDelete = new Set();
+        if (this.#hasUpdatedBundles) {
+            this.#hasUpdatedBundles = false;
+            const nextBundleFiles = new Set();
+            for (const result of this.previousBundleResults.values()) {
+                for (const file of result.esmOutputFiles) {
+                    nextBundleFiles.add(file);
+                }
+                for (const file of result.dtsOutputFiles) {
+                    nextBundleFiles.add(file);
+                }
+            }
+            for (const prevFile of this.#emittedBundleFiles) {
+                if (!nextBundleFiles.has(prevFile)) {
+                    filesToDelete.add(prevFile);
+                }
+            }
+            this.#emittedBundleFiles = nextBundleFiles;
+        }
+        if (manifestFiles) {
+            const nextManifestFiles = new Set(manifestFiles.map((file) => file.path));
+            for (const prevFile of this.#emittedManifestFiles) {
+                if (!nextManifestFiles.has(prevFile)) {
+                    filesToDelete.add(prevFile);
+                }
+            }
+            this.#emittedManifestFiles = nextManifestFiles;
+        }
+        const { filesToDelete: toDelete, filesToEmit: toEmit } = collectedAssets;
+        for (const emittedAsset of toEmit) {
+            let outputs = this.#emittedAssets.get(emittedAsset.source);
+            if (!outputs) {
+                outputs = new Set();
+                this.#emittedAssets.set(emittedAsset.source, outputs);
+            }
+            outputs.add(emittedAsset.path);
+        }
+        if (toDelete.length) {
+            const candidateDeletes = new Set();
+            for (const source of toDelete) {
+                const outputs = this.#emittedAssets.get(source);
+                if (outputs) {
+                    for (const output of outputs) {
+                        candidateDeletes.add(output);
+                    }
+                    this.#emittedAssets.delete(source);
+                }
+            }
+            for (const outputs of this.#emittedAssets.values()) {
+                for (const output of outputs) {
+                    candidateDeletes.delete(output);
+                }
+            }
+            for (const output of candidateDeletes) {
+                filesToDelete.add(output);
+            }
+        }
+        this.hasEmittedManifests = true;
+        this.#hasEmittedTslib = this.hasTslibImport;
+        this.#hasEmittedAssets = true;
+        this.#pendingAssetFiles.clear();
+        return filesToDelete;
     }
     /**
      * Disposes active compilation resources and clears cached state.
@@ -264,8 +371,8 @@ class BuilderState {
         await this.#singleProgramCache?.compilationInstance.close?.();
         this.#singleProgramCache = undefined;
         this.#compilationMode = undefined;
-        this.hasEmittedTslib = false;
-        this.hasEmittedAssets = false;
+        this.#hasEmittedTslib = false;
+        this.#hasEmittedAssets = false;
         this.hasCompilationError = false;
         this.hasEmittedManifests = false;
         this.hasEntryPointsChanges = false;
@@ -273,9 +380,14 @@ class BuilderState {
         this.pendingChangedEsmFiles.clear();
         this.pendingChangedDtsFiles.clear();
         this.#pendingCompilationFiles.clear();
+        this.#pendingAssetFiles.clear();
         this.#referencingFiles.clear();
         this.#referencedByFile.clear();
         this.#watchedCompilationFiles.clear();
+        this.#emittedBundleFiles.clear();
+        this.#emittedManifestFiles.clear();
+        this.#emittedAssets.clear();
+        this.#hasUpdatedBundles = false;
     }
 }
 exports.BuilderState = BuilderState;

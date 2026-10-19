@@ -9,7 +9,7 @@ import type { ComponentStylesheetBundler } from '../../../tools/esbuild/angular/
 import type { BuilderState } from '../builder-state';
 import type { ExecutionResult } from '../execution-result';
 import type { NormalizedLibraryOptions } from '../types';
-import type { DiskOutputFile } from './utils';
+import type { CollectedAssets } from './assets';
 /**
  * Context required to execute a single library build iteration.
  */
@@ -20,17 +20,16 @@ export interface BuildActionContext {
     stylesheetBundler: ComponentStylesheetBundler;
     /** Whether the builder is running in watch mode. */
     isWatchMode: boolean;
-    /** Build state tracking compilation caches and emitted outputs. */
+    /** Build state tracking compilation caches, file references, and emitted outputs. */
     buildState: BuilderState;
     /** Set of POSIX file paths modified since the last build iteration. */
     modifiedFiles?: Set<string>;
     /**
-     * Asset files to emit for the current build iteration.
-     * Pre-collected in the watch loop to avoid redundant asset matching, or resolved and
-     * populated by `buildAction` when omitted (such as during the initial build) so the
-     * caller can register their POSIX source paths with the file watcher.
+     * Collected asset changes for the current build iteration.
+     * Pre-collected in the watch loop to avoid redundant asset matching, or resolved by
+     * `buildAction` when omitted (such as during the initial build).
      */
-    assetsToEmit?: DiskOutputFile[];
+    collectedAssets?: CollectedAssets;
 }
 /**
  * Executes a single iteration of the library build pipeline, including

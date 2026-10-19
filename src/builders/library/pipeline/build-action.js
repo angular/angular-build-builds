@@ -14,7 +14,6 @@ exports.buildAction = buildAction;
 const node_path_1 = __importDefault(require("node:path"));
 const disk_files_1 = require("../../../utils/disk-files");
 const error_1 = require("../../../utils/error");
-const assets_1 = require("./assets");
 const bundler_1 = require("./bundler");
 const compilation_1 = require("./compilation");
 const entry_points_1 = require("./entry-points");
@@ -74,19 +73,22 @@ async function buildAction(actionContext) {
             filesToEmit.push(...bundleOutput.filesToEmit);
             buildState.recordBundleOutput(bundleOutput.bundleResults);
         }
+        let manifestFiles;
         const { hasTslibImport } = buildState;
         if (!buildState.hasEmittedManifests || buildState.hasEmittedTslib !== hasTslibImport) {
-            filesToEmit.push(...(await (0, package_manifests_1.generatePackageManifests)({
+            manifestFiles = await (0, package_manifests_1.generatePackageManifests)({
                 ...options,
                 compilationMode: buildState.compilationMode ?? options.compilationMode ?? 'partial',
-            }, isWatchMode, hasTslibImport)));
+            }, isWatchMode, hasTslibImport);
+            filesToEmit.push(...manifestFiles);
         }
-        const resolvedAssetsToEmit = (actionContext.assetsToEmit ??= await (0, assets_1.collectAssetsToEmit)(options.assets, options.workspaceRoot, buildState.hasEmittedAssets ? modifiedFiles : undefined));
-        filesToEmit.push(...resolvedAssetsToEmit);
+        const collectedAssets = actionContext.collectedAssets ?? (await buildState.collectAssets(options, modifiedFiles));
+        filesToEmit.push(...collectedAssets.filesToEmit);
         await (0, disk_files_1.emitFilesToDisk)(filesToEmit, (file) => node_path_1.default.posix.join(options.outputPath, file.path));
-        buildState.hasEmittedManifests = true;
-        buildState.hasEmittedTslib = hasTslibImport;
-        buildState.hasEmittedAssets = true;
+        const filesToDelete = buildState.recordEmittedOutputs(collectedAssets, manifestFiles);
+        if (filesToDelete.size) {
+            await (0, disk_files_1.deleteFilesFromDisk)(Array.from(filesToDelete, (file) => node_path_1.default.posix.join(options.outputPath, file)));
+        }
     }
     catch (error) {
         (0, error_1.assertIsError)(error);

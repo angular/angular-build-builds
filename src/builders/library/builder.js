@@ -177,10 +177,6 @@ async function executeBuild(message, actionContext, logger, withProgress, watche
     finally {
         if (watcher) {
             watcher.add(Array.from(buildState.watchedCompilationFiles));
-            const { assetsToEmit } = actionContext;
-            if (assetsToEmit?.length) {
-                watcher.add(assetsToEmit.map((asset) => asset.source));
-            }
         }
     }
 }
@@ -198,8 +194,7 @@ async function executeBuild(message, actionContext, logger, withProgress, watche
  * @returns An async iterator yielding builder output results.
  */
 async function* runWatchLoop(watcher, options, stylesheetBundler, logger, withProgress, buildState, buildAction, signal) {
-    const { collectAssetsToEmit } = await Promise.resolve().then(() => __importStar(require('./pipeline/assets')));
-    const { workspaceRoot, packageJsonPath, assets, clearScreen } = options;
+    const { packageJsonPath, clearScreen } = options;
     for await (const changes of watcher) {
         if (signal.aborted) {
             break;
@@ -241,8 +236,11 @@ async function* runWatchLoop(watcher, options, stylesheetBundler, logger, withPr
         if (!hasSourceChanges) {
             await buildState.singleProgramCache?.compilationInstance.update?.(changedFiles);
         }
-        const assetsToEmit = await collectAssetsToEmit(assets, workspaceRoot, buildState.hasEmittedAssets ? changedFiles : undefined);
-        if (!hasSourceChanges && buildState.hasEmittedManifests && assetsToEmit.length === 0) {
+        const collectedAssets = await buildState.collectAssets(options, changedFiles);
+        if (!hasSourceChanges &&
+            buildState.hasEmittedManifests &&
+            collectedAssets.filesToEmit.length === 0 &&
+            collectedAssets.filesToDelete.length === 0) {
             continue;
         }
         yield await executeBuild('Changes detected. Rebuilding...', {
@@ -251,7 +249,7 @@ async function* runWatchLoop(watcher, options, stylesheetBundler, logger, withPr
             isWatchMode: true,
             buildState,
             modifiedFiles: changedFiles,
-            assetsToEmit,
+            collectedAssets,
         }, logger, withProgress, watcher, buildAction);
     }
 }

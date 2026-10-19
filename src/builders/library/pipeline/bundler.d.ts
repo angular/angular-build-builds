@@ -13,7 +13,7 @@ import { type MemoryOutputFile } from './utils';
 export interface BundleEntryPointsOutput {
     /** In-memory files produced by bundling to be written to disk. */
     filesToEmit: MemoryOutputFile[];
-    /** Map of entry point names to their bundle results containing bundled module IDs. */
+    /** Map of entry point names to their bundle results. */
     bundleResults: Map<string, BundleResult>;
     /** Warning messages emitted during bundling. */
     warnings: string[];

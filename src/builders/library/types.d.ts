@@ -7,7 +7,7 @@
  */
 import type { AngularCompilation } from '../../tools/angular/compilation';
 import type { StylesheetPluginsass } from '../../tools/esbuild/stylesheets/stylesheet-plugin-factory';
-import type { normalizeAssetPatterns } from '../../utils';
+import type { NormalizedAssetsPattern } from '../../utils';
 import type { NormalizedCachedOptions } from '../../utils/normalize-cache';
 import type { PostcssConfiguration } from '../../utils/postcss-configuration';
 /**
@@ -80,7 +80,7 @@ export interface NormalizedLibraryOptions {
     /** Optional Sass preprocessor configuration. */
     sass?: StylesheetPluginsass;
     /** Normalized asset patterns with POSIX `input` and `output` paths. */
-    assets: ReturnType<typeof normalizeAssetPatterns>;
+    assets: NormalizedAssetsPattern[];
     /** Angular compilation mode (`'partial'` or `'full'`). */
     compilationMode?: 'partial' | 'full';
     /** Whether to generate source maps for TypeScript declaration files. */
@@ -115,15 +115,19 @@ export interface NormalizedLibraryOptions {
     colors: boolean;
 }
 /**
- * Cached module ID sets for a bundled entry point.
+ * Cached module ID and output file sets for a bundled entry point.
  */
 export interface BundleResult {
     /** Exact set of virtual POSIX ESM module IDs bundled into this entry point. */
     esmModuleIds: ReadonlySet<string>;
     /** Exact set of virtual POSIX DTS module IDs bundled into this entry point. */
     dtsModuleIds: ReadonlySet<string>;
+    /** Relative POSIX output paths of ESM bundle files and sourcemaps emitted for this entry point. */
+    esmOutputFiles: ReadonlySet<string>;
+    /** Relative POSIX output paths of DTS bundle files and sourcemaps emitted for this entry point. */
+    dtsOutputFiles: ReadonlySet<string>;
     /** Whether this entry point bundle imports 'tslib'. */
-    hasTslibImport?: boolean;
+    hasTslibImport: boolean;
 }
 /**
  * Cached state for the single unified library compilation.

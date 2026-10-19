@@ -82,15 +82,14 @@ async function bundleEntryPoints(items, esmFiles, dtsFiles, options) {
     ]);
     for (const { entryPoint, previousBundleResult } of items) {
         const { bundleName, name } = entryPoint;
-        const esmModuleIds = esmOutput.moduleIdsByBundle.get(bundleName);
+        const esmBundle = esmOutput.bundles.get(bundleName);
+        const dtsBundle = dtsOutput.bundles.get(bundleName);
         bundleResults.set(name, {
-            esmModuleIds: esmModuleIds ?? previousBundleResult?.esmModuleIds ?? new Set(),
-            dtsModuleIds: dtsOutput.moduleIdsByBundle.get(bundleName) ??
-                previousBundleResult?.dtsModuleIds ??
-                new Set(),
-            hasTslibImport: esmModuleIds
-                ? esmOutput.tslibBundles.has(bundleName)
-                : (previousBundleResult?.hasTslibImport ?? false),
+            esmModuleIds: esmBundle?.moduleIds ?? previousBundleResult?.esmModuleIds ?? new Set(),
+            dtsModuleIds: dtsBundle?.moduleIds ?? previousBundleResult?.dtsModuleIds ?? new Set(),
+            esmOutputFiles: esmBundle?.outputFiles ?? previousBundleResult?.esmOutputFiles ?? new Set(),
+            dtsOutputFiles: dtsBundle?.outputFiles ?? previousBundleResult?.dtsOutputFiles ?? new Set(),
+            hasTslibImport: esmBundle?.hasTslibImport ?? previousBundleResult?.hasTslibImport ?? false,
         });
     }
     return {
@@ -135,7 +134,7 @@ function createMemoryFileLoaderPlugin(files, extensions, includeMap) {
                 if (!importer) {
                     return files.has(id) ? { id, external: false } : undefined;
                 }
-                if (id[0] !== '.' && !node_path_1.default.isAbsolute(id)) {
+                if (id[0] !== '.' && !node_path_1.default.posix.isAbsolute(id)) {
                     return { id, external: true };
                 }
                 const resolved = id[0] === '.' ? node_path_1.default.posix.join(node_path_1.default.posix.dirname(importer), id) : id;
@@ -173,7 +172,8 @@ function createMemoryFileLoaderPlugin(files, extensions, includeMap) {
 }
 /**
  * Processes Rolldown output assets and chunks, extracting emitted files and computing
- * the transitive set of module IDs belonging to each entry point bundle.
+ * the transitive sets of module IDs, output file paths, and tslib imports belonging to
+ * each entry point bundle.
  *
  * @param output The array of output chunks and assets from Rolldown.
  * @param dir The destination POSIX output directory prefix.
@@ -181,11 +181,12 @@ function createMemoryFileLoaderPlugin(files, extensions, includeMap) {
  */
 function processRolldownOutput(output, dir) {
     const filesToEmit = [];
-    const moduleIdsByBundle = new Map();
-    const tslibBundles = new Set();
+    const bundles = new Map();
     const chunksByFileName = new Map();
+    const outputFileNames = new Set();
     const entryChunks = [];
     for (const item of output) {
+        outputFileNames.add(item.fileName);
         filesToEmit.push((0, utils_1.createMemoryOutputFile)(node_path_1.default.posix.join(dir, item.fileName), item.type === 'chunk' ? item.code : item.source));
         if (item.type === 'chunk') {
             chunksByFileName.set(item.fileName, item);
@@ -195,36 +196,34 @@ function processRolldownOutput(output, dir) {
         }
     }
     for (const entryChunk of entryChunks) {
-        const modSet = new Set();
-        moduleIdsByBundle.set(entryChunk.name, modSet);
-        const visited = new Set();
-        const queue = [entryChunk];
-        while (queue.length) {
-            const chunk = queue.pop();
-            if (!chunk) {
-                break;
+        const moduleIds = new Set();
+        const outputFiles = new Set();
+        let hasTslibImport = false;
+        const visited = new Set([entryChunk]);
+        for (const chunk of visited) {
+            outputFiles.add(node_path_1.default.posix.join(dir, chunk.fileName));
+            const mapFileName = `${chunk.fileName}.map`;
+            if (outputFileNames.has(mapFileName)) {
+                outputFiles.add(node_path_1.default.posix.join(dir, mapFileName));
             }
-            if (visited.has(chunk)) {
-                continue;
-            }
-            visited.add(chunk);
             for (const modId of chunk.moduleIds) {
                 if (modId[0] !== '\0') {
-                    modSet.add((0, path_1.toPosixPath)(modId));
+                    moduleIds.add((0, path_1.toPosixPath)(modId));
                 }
             }
             for (const depFile of [...chunk.imports, ...chunk.dynamicImports]) {
                 if (depFile === 'tslib') {
-                    tslibBundles.add(entryChunk.name);
+                    hasTslibImport = true;
                 }
                 const depChunk = chunksByFileName.get(depFile);
-                if (depChunk && !visited.has(depChunk)) {
-                    queue.push(depChunk);
+                if (depChunk) {
+                    visited.add(depChunk);
                 }
             }
         }
+        bundles.set(entryChunk.name, { moduleIds, outputFiles, hasTslibImport });
     }
-    return { filesToEmit, moduleIdsByBundle, tslibBundles };
+    return { filesToEmit, bundles };
 }
 /**
  * Set of Rolldown warning codes that should be ignored.
@@ -246,17 +245,9 @@ const IGNORED_ROLLDOWN_WARNING_CODES = new Set([
 async function executeMultiBundle(input, plugins, extension, options) {
     const { workspaceRoot, preserveSymlinks, declarationMap, outputPath } = options;
     const isDts = extension === 'd.ts';
-    let sourcemap;
-    let dir;
-    if (isDts) {
-        dir = utils_1.TYPES_OUTPUT_DIR;
-        sourcemap = !!declarationMap;
-    }
-    else {
-        dir = utils_1.FESM_OUTPUT_DIR;
-        // FESM (.mjs) sourcemaps are always enabled.
-        sourcemap = true;
-    }
+    const dir = isDts ? utils_1.TYPES_OUTPUT_DIR : utils_1.FESM_OUTPUT_DIR;
+    // FESM (.mjs) sourcemaps are always enabled.
+    const sourcemap = isDts ? !!declarationMap : true;
     const warnings = [];
     const { rolldown } = await (0, load_rolldown_1.loadRolldown)();
     const bundle = await rolldown({
@@ -311,8 +302,7 @@ async function bundleAllEsm(entryPoints, esmFiles, options) {
     if (entryPoints.length === 0) {
         return {
             filesToEmit: [],
-            moduleIdsByBundle: new Map(),
-            tslibBundles: new Set(),
+            bundles: new Map(),
             warnings: [],
         };
     }
@@ -330,8 +320,7 @@ async function bundleAllDts(entryPoints, dtsFiles, options) {
     if (entryPoints.length === 0) {
         return {
             filesToEmit: [],
-            moduleIdsByBundle: new Map(),
-            tslibBundles: new Set(),
+            bundles: new Map(),
             warnings: [],
         };
     }

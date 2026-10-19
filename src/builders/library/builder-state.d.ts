@@ -6,10 +6,12 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 import { ExecutionResult } from './execution-result';
+import { type CollectedAssets } from './pipeline/assets';
+import type { OutputFile } from './pipeline/utils';
 import type { BundleResult, LibraryCompilationOutput, NormalizedLibraryOptions, SingleProgramCache } from './types';
 /**
  * Encapsulates incremental compilation state, transitive resource reference tracking,
- * watched compilation file tracking, and execution results across watch-mode rebuilds.
+ * asset matchers, and emitted output file tracking across watch-mode rebuilds.
  */
 export declare class BuilderState {
     #private;
@@ -23,17 +25,15 @@ export declare class BuilderState {
     hasCompilationError: boolean;
     /** Whether package.json and secondary entry point manifests have been emitted. */
     hasEmittedManifests: boolean;
-    /** Whether the last emitted root package.json included a tslib dependency. */
-    hasEmittedTslib: boolean;
-    /** Whether static assets have been emitted in a prior iteration. */
-    hasEmittedAssets: boolean;
     /** Whether entry points in package.json changed since the last compilation. */
     hasEntryPointsChanges: boolean;
-    constructor(options?: Partial<Pick<NormalizedLibraryOptions, 'tsConfigPath' | 'packageJsonPath' | 'entryPoints'>>);
+    constructor(options?: Partial<Pick<NormalizedLibraryOptions, 'tsConfigPath' | 'packageJsonPath' | 'entryPoints' | 'assets'>>);
     /** Cached unified TypeScript and Angular compilation state. */
     get singleProgramCache(): SingleProgramCache | undefined;
     /** Effective compilation mode resolved from builder options and tsconfig. */
     get compilationMode(): 'partial' | 'full' | undefined;
+    /** Whether the last emitted root package.json included a tslib dependency. */
+    get hasEmittedTslib(): boolean;
     /** Whether any active entry point bundle imports `tslib`. */
     get hasTslibImport(): boolean;
     /**
@@ -47,7 +47,7 @@ export declare class BuilderState {
      */
     get executionResult(): ExecutionResult;
     /**
-     * Resets the execution result for a new build iteration.
+     * Resets the execution result and staged output state for a new build iteration.
      *
      * @returns The fresh `ExecutionResult` instance for the current build iteration.
      */
@@ -102,12 +102,29 @@ export declare class BuilderState {
      */
     recordCompilationOutput(output: LibraryCompilationOutput): void;
     /**
-     * Records active bundle results across entry points after compilation and bundling succeed,
-     * clearing pending compilation/bundle flags.
+     * Records active bundle results across entry points after compilation and bundling succeed
+     * and clears pending compilation/bundle flags.
      *
      * @param bundleResults Newly bundled results keyed by entry point name.
      */
     recordBundleOutput(bundleResults: ReadonlyMap<string, BundleResult>): void;
+    /**
+     * Resolves and collects configured library assets to be emitted to or deleted from disk.
+     *
+     * @param options Normalized library options containing `assets` and `workspaceRoot`.
+     * @param modifiedFiles Optional set of modified POSIX file paths in watch mode.
+     * @returns The collected asset files to emit and delete.
+     */
+    collectAssets(options: Pick<NormalizedLibraryOptions, 'assets' | 'workspaceRoot'>, modifiedFiles?: ReadonlySet<string>): Promise<CollectedAssets>;
+    /**
+     * Records emitted bundle, manifest, and asset output files after disk emission,
+     * returning any stale or deleted output paths to remove from disk.
+     *
+     * @param collectedAssets Collected asset files emitted and deleted in this iteration.
+     * @param manifestFiles Optional manifest output files generated in this iteration.
+     * @returns Read-only set of relative POSIX output paths to delete from disk.
+     */
+    recordEmittedOutputs(collectedAssets: CollectedAssets, manifestFiles?: readonly OutputFile[]): ReadonlySet<string>;
     /**
      * Disposes active compilation resources and clears cached state.
      */
