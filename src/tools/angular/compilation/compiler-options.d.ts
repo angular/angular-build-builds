@@ -21,6 +21,7 @@ export interface CompilerOptionOverrides {
     declarationMap?: boolean;
     compilationMode?: 'full' | 'partial';
     paths?: Record<string, string[]>;
+    basePath?: string;
 }
 export declare function transformCompilerOptions(typeScript: typeof ts, baseCompilerOptions: ng.CompilerOptions, overrides?: CompilerOptionOverrides, tsconfig?: string, buildType?: 'application' | 'library'): {
     compilerOptions: ng.CompilerOptions;

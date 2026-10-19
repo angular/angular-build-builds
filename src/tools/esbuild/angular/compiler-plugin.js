@@ -259,6 +259,7 @@ function createCompilerPlugin(pluginOptions, compilationContextOrCompilation, st
                         includeTestMetadata: !!pluginOptions.includeTestMetadata,
                         customConditions: build.initialOptions.conditions,
                         rootFiles: pluginOptions.rootFiles,
+                        basePath: build.initialOptions.absWorkingDir,
                     });
                     if (initializationResult.warnings?.length) {
                         setupWarnings?.push(...initializationResult.warnings);
