@@ -94,10 +94,10 @@ export type Schema = {
      */
     listTests?: boolean;
     /**
-     * Specifies a file path for the test report, applying only to the first reporter. To
-     * configure output files for multiple reporters, use the tuple format `['reporter-name', {
-     * outputFile: '...' }]` within the `reporters` option. When not provided, output is written
-     * to the console.
+     * Specifies a file path for the test report. This path is used by every configured reporter
+     * that writes to a file. To write a separate file for each reporter, use the tuple format
+     * `['reporter-name', { outputFile: '...' }]` within the `reporters` option. When not
+     * provided, output is written to the console.
      */
     outputFile?: string;
     /**
