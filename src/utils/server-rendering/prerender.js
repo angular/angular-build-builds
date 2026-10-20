@@ -107,12 +107,12 @@ async function prerenderPages(workspaceRoot, baseHref, appShellOptions, prerende
         outputFilesForWorker[manifest_1.SERVER_APP_MANIFEST_FILENAME] = (0, utils_1.createSharedFile)(manifestText.replace('routes: undefined,', `routes: ${JSON.stringify(serializableRouteTreeNodeForPrerender, undefined, 2)},`));
     }
     // Render routes
-    const { errors: renderingErrors, output } = await renderPages(baseHref, sourcemap, serializableRouteTreeNodeForPrerender, maxThreads, workspaceRoot, outputFilesForWorker, assetsReversed, outputMode, appShellRoute ?? appShellOptions?.route);
+    const { errors: renderingErrors, output } = await renderPages(baseHref, sourcemap, serializableRouteTreeNodeForPrerender, maxThreads, workspaceRoot, outputFilesForWorker, assetsReversed, outputMode, prerenderOptions?.format, appShellRoute ?? appShellOptions?.route);
     errors.push(...renderingErrors);
     const prerenderedRoutes = {};
     const baseHrefPathnameWithLeadingSlash = new URL(baseHref, 'http://localhost').pathname;
     for (const metadata of serializableRouteTreeNodeForPrerender) {
-        const outPath = getRouteOutPath(metadata.route, baseHrefPathnameWithLeadingSlash);
+        const outPath = getRouteOutPath(metadata.route, baseHrefPathnameWithLeadingSlash, prerenderOptions?.format);
         if (output[outPath]) {
             prerenderedRoutes[metadata.route] = { headers: metadata.headers };
         }
@@ -125,7 +125,7 @@ async function prerenderPages(workspaceRoot, baseHref, appShellOptions, prerende
         serializableRouteTreeNode,
     };
 }
-async function renderPages(baseHref, sourcemap, serializableRouteTreeNode, maxThreads, workspaceRoot, outputFilesForWorker, assetFilesForWorker, outputMode, appShellRoute) {
+async function renderPages(baseHref, sourcemap, serializableRouteTreeNode, maxThreads, workspaceRoot, outputFilesForWorker, assetFilesForWorker, outputMode, format, appShellRoute) {
     const output = {};
     const errors = [];
     const baseHrefPathnameWithLeadingSlash = new URL(baseHref, 'http://localhost').pathname;
@@ -136,7 +136,7 @@ async function renderPages(baseHref, sourcemap, serializableRouteTreeNode, maxTh
     for (const { route, redirectTo } of serializableRouteTreeNode) {
         // Remove the base href from the file output path.
         const routeWithoutBaseHref = getRouteWithoutBaseHref(route, baseHrefPathnameWithLeadingSlash);
-        const outPath = getRouteOutPath(route, baseHrefPathnameWithLeadingSlash);
+        const outPath = getRouteOutPath(route, baseHrefPathnameWithLeadingSlash, format);
         if (typeof redirectTo === 'string') {
             output[outPath] = { content: (0, utils_2.generateRedirectStaticPage)(redirectTo), appShellRoute: false };
             continue;
@@ -296,8 +296,11 @@ function getRouteWithoutBaseHref(route, baseHrefPathname) {
         ? (0, url_1.addLeadingSlash)(route.slice(baseHrefPathname.length))
         : route;
 }
-function getRouteOutPath(route, baseHrefPathname) {
+function getRouteOutPath(route, baseHrefPathname, format) {
     const routeWithoutBaseHref = getRouteWithoutBaseHref(route, baseHrefPathname);
+    if (format === schema_1.Format.File && routeWithoutBaseHref !== '/') {
+        return (0, url_1.stripLeadingSlash)(`${routeWithoutBaseHref}.html`);
+    }
     return (0, url_1.stripLeadingSlash)(node_path_1.posix.join(routeWithoutBaseHref, 'index.html'));
 }
 //# sourceMappingURL=prerender.js.map

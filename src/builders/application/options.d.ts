@@ -9,7 +9,7 @@ import type { BuilderContext } from '@angular-devkit/architect';
 import type { Plugin } from 'esbuild';
 import { I18nOptions } from '../../utils/i18n-options';
 import { IndexHtmlTransform } from '../../utils/index-file/index-html-generator';
-import { Schema as ApplicationBuilderOptions, I18NTranslation, OutputMode, OutputPathClass, Platform } from './schema';
+import { Schema as ApplicationBuilderOptions, I18NTranslation, OutputMode, OutputPathClass, Platform, Format as PrerenderFormat } from './schema';
 /**
  * The filename for the client-side rendered HTML template.
  * This template is used for client-side rendering (CSR) in a web application.
@@ -146,6 +146,7 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     prerenderOptions: {
         discoverRoutes: boolean;
         routesFile: string | undefined;
+        format: PrerenderFormat;
     } | undefined;
     appShellOptions: {
         route: string;
@@ -210,7 +211,7 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     budgets: import("./schema").Budget[] | undefined;
     publicPath: string | undefined;
     plugins: Plugin[] | undefined;
-    loaderExtensions: Record<string, "base64" | "binary" | "text" | "file" | "dataurl"> | undefined;
+    loaderExtensions: Record<string, "file" | "base64" | "binary" | "text" | "dataurl"> | undefined;
     jsonLogs: boolean;
     quiet: boolean | undefined;
     colors: boolean;

@@ -111,12 +111,15 @@ async function normalizeOptions(context, projectName, options, extensions) {
             throw new Error('The "ssr.entry" option is required when "outputMode" is set to "server".');
         }
     }
+    const prerenderFormat = (typeof options.prerender === 'object' && options.prerender.format) ||
+        schema_1.Format.Directory;
     if (options.outputMode) {
         if (!options.server) {
             options.ssr = false;
         }
-        if (options.prerender !== undefined) {
-            context.logger.warn('The "prerender" option is not considered when "outputMode" is specified.');
+        if (options.prerender !== undefined &&
+            (typeof options.prerender === 'boolean' || !('format' in options.prerender))) {
+            context.logger.warn('The "prerender" option has no effect when "outputMode" is specified (only "format" is supported).');
         }
         options.prerender = !!options.server;
         if (options.appShell !== undefined) {
@@ -143,6 +146,7 @@ async function normalizeOptions(context, projectName, options, extensions) {
         prerenderOptions = {
             discoverRoutes,
             routesFile: routesFile && node_path_1.default.join(workspaceRoot, routesFile),
+            format: prerenderFormat,
         };
     }
     let ssrOptions;
@@ -176,6 +180,11 @@ async function normalizeOptions(context, projectName, options, extensions) {
             options.outputMode === undefined) ||
             options.outputMode === schema_1.OutputMode.Static,
     };
+    if (prerenderOptions?.format === schema_1.Format.File && !outputOptions.ignoreServer) {
+        // The server runtime of '@angular/ssr' looks up prerendered pages as '<route>/index.html'.
+        context.logger.warn('The "prerender.format" option is not considered when the build produces a server.');
+        prerenderOptions.format = schema_1.Format.Directory;
+    }
     const outputNames = {
         bundles: options.outputHashing === schema_1.OutputHashing.All || options.outputHashing === schema_1.OutputHashing.Bundles
             ? '[name]-[hash]'

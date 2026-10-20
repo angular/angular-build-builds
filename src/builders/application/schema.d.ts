@@ -473,11 +473,30 @@ export type PrerenderClass = {
      */
     discoverRoutes?: boolean;
     /**
+     * Defines the file layout of prerendered pages. 'directory': '/foo' is written to
+     * 'foo/index.html'. 'file': '/foo' is written to 'foo.html', which some hosting services
+     * serve for '/foo' without a redirect to '/foo/'. The root route of the application and of
+     * each locale is always written to 'index.html'. Only considered when the build does not
+     * produce a server.
+     */
+    format?: Format;
+    /**
      * The path to a file that contains a list of all routes to prerender, separated by
      * newlines. This option is useful if you want to prerender routes with parameterized URLs.
      */
     routesFile?: string;
 };
+/**
+ * Defines the file layout of prerendered pages. 'directory': '/foo' is written to
+ * 'foo/index.html'. 'file': '/foo' is written to 'foo.html', which some hosting services
+ * serve for '/foo' without a redirect to '/foo/'. The root route of the application and of
+ * each locale is always written to 'index.html'. Only considered when the build does not
+ * produce a server.
+ */
+export declare enum Format {
+    Directory = "directory",
+    File = "file"
+}
 export type ScriptElement = ScriptClass | string;
 export type ScriptClass = {
     /**
