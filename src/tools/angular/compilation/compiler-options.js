@@ -47,6 +47,14 @@ function transformCompilerOptions(typeScript, baseCompilerOptions, overrides, ts
     const compilerOptions = { ...baseCompilerOptions };
     const warnings = [];
     const isLibrary = buildType === 'library';
+    if (isLibrary) {
+        compilerOptions.target = typeScript.ScriptTarget.ES2022;
+        compilerOptions.module = typeScript.ModuleKind.Preserve;
+        compilerOptions.importHelpers = true;
+        compilerOptions.declaration = true;
+        compilerOptions.declarationMap = !!(overrides?.declarationMap ?? compilerOptions.declarationMap);
+        compilerOptions.declarationDir = undefined;
+    }
     if (compilerOptions.target === undefined ||
         compilerOptions.target < typeScript.ScriptTarget.ES2022) {
         // If 'useDefineForClassFields' is already defined in the users project leave the value as is.
@@ -110,15 +118,6 @@ function transformCompilerOptions(typeScript, baseCompilerOptions, overrides, ts
             ],
         });
     }
-    if (isLibrary) {
-        compilerOptions.target = typeScript.ScriptTarget.ES2022;
-        compilerOptions.module = typeScript.ModuleKind.ES2022;
-        compilerOptions.moduleResolution = typeScript.ModuleResolutionKind.Bundler;
-        compilerOptions.importHelpers = true;
-        compilerOptions.declaration = true;
-        compilerOptions.declarationMap = !!(overrides?.declarationMap ?? compilerOptions.declarationMap);
-        compilerOptions.declarationDir = undefined;
-    }
     // Synchronize custom resolve conditions.
     // Set if using the supported bundler resolution mode (bundler is the default in new projects)
     if (compilerOptions.moduleResolution === typeScript.ModuleResolutionKind.Bundler ||
@@ -129,7 +128,9 @@ function transformCompilerOptions(typeScript, baseCompilerOptions, overrides, ts
         compilerOptions: {
             ...compilerOptions,
             basePath: overrides?.basePath ? (0, path_1.toPosixPath)(overrides.basePath) : compilerOptions.basePath,
+            noEmit: false,
             noEmitOnError: false,
+            emitDeclarationOnly: false,
             composite: false,
             inlineSources: !!overrides?.sourcemap,
             inlineSourceMap: !isLibrary && !!overrides?.sourcemap,
