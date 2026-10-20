@@ -113,6 +113,7 @@ async function* executeLibraryBuilder(options, context) {
                 signal,
                 watchFiles: [
                     ...buildState.watchedCompilationFiles,
+                    ...normalizedOptions.styleIncludePaths,
                     ...normalizedOptions.assets.map((asset) => asset.input),
                 ],
             });
@@ -195,6 +196,7 @@ async function executeBuild(message, actionContext, logger, withProgress, watche
  */
 async function* runWatchLoop(watcher, options, stylesheetBundler, logger, withProgress, buildState, buildAction, signal) {
     const { packageJsonPath, clearScreen } = options;
+    let hasPackageJsonError = false;
     for await (const changes of watcher) {
         if (signal.aborted) {
             break;
@@ -207,20 +209,22 @@ async function* runWatchLoop(watcher, options, stylesheetBundler, logger, withPr
         stylesheetBundler.invalidate(rawChangedFiles);
         const changedFiles = buildState.getAffectedFiles(rawChangedFiles);
         for (const posixFile of changedFiles) {
-            if (/\.(?:scss|sass)$/i.test(posixFile)) {
+            if (/\.(?:scss|sass|css)$/i.test(posixFile)) {
                 (0, sass_language_1.resetSassWorkerPoolCaches)();
                 break;
             }
         }
-        // Check if package.json was modified
-        if (changedFiles.has(packageJsonPath)) {
+        // Check if package.json was modified or failed to reload on a previous iteration
+        if (hasPackageJsonError || changedFiles.has(packageJsonPath)) {
             buildState.hasEmittedManifests = false;
             try {
                 const packageJson = await (0, utils_2.loadPackageJson)(packageJsonPath);
                 (0, entry_points_1.updateWatchedEntryPoints)(packageJson, options, buildState);
+                hasPackageJsonError = false;
             }
             catch (error) {
                 (0, error_1.assertIsError)(error);
+                hasPackageJsonError = true;
                 await buildState.singleProgramCache?.compilationInstance.update?.(changedFiles);
                 if (buildState.shouldCompileEntryPoints(packageJsonPath, changedFiles)) {
                     buildState.hasCompilationError = true;

@@ -55,7 +55,6 @@ class BuilderState {
                 this.#watchedCompilationFiles.add(entryPoint.entryFilePath);
             }
         }
-        this.#assetMatchers = options?.assets ? (0, assets_1.createAssetMatchers)(options.assets) : undefined;
     }
     /** Cached unified TypeScript and Angular compilation state. */
     get singleProgramCache() {
@@ -290,6 +289,9 @@ class BuilderState {
             }
             effectiveModifiedFiles = this.#pendingAssetFiles;
         }
+        if (effectiveModifiedFiles?.size && options.assets.length > 0) {
+            this.#assetMatchers ??= (0, assets_1.createAssetMatchers)(options.assets);
+        }
         return (0, assets_1.collectAssetsToEmit)(options.assets, options.workspaceRoot, this.#emittedAssets, effectiveModifiedFiles, this.#assetMatchers);
     }
     /**
@@ -371,6 +373,7 @@ class BuilderState {
         await this.#singleProgramCache?.compilationInstance.close?.();
         this.#singleProgramCache = undefined;
         this.#compilationMode = undefined;
+        this.#assetMatchers = undefined;
         this.#hasEmittedTslib = false;
         this.#hasEmittedAssets = false;
         this.hasCompilationError = false;

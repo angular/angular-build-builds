@@ -27,7 +27,7 @@ export declare class BuilderState {
     hasEmittedManifests: boolean;
     /** Whether entry points in package.json changed since the last compilation. */
     hasEntryPointsChanges: boolean;
-    constructor(options?: Partial<Pick<NormalizedLibraryOptions, 'tsConfigPath' | 'packageJsonPath' | 'entryPoints' | 'assets'>>);
+    constructor(options?: Partial<Pick<NormalizedLibraryOptions, 'tsConfigPath' | 'packageJsonPath' | 'entryPoints'>>);
     /** Cached unified TypeScript and Angular compilation state. */
     get singleProgramCache(): SingleProgramCache | undefined;
     /** Effective compilation mode resolved from builder options and tsconfig. */
