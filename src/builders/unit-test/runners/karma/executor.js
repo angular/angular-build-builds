@@ -126,7 +126,7 @@ class KarmaExecutor {
                 if (unitTestOptions.filter) {
                     let filter = unitTestOptions.filter;
                     if (filter[0] === '/' && filter.at(-1) === '/') {
-                        this.context.logger.warn('The `--filter` option is always a regular expression.' +
+                        this.context.logger.warn('The `--filter` option is always a regular expression. ' +
                             'Leading and trailing `/` are not required and will be ignored.');
                     }
                     else {

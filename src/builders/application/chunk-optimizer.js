@@ -132,20 +132,6 @@ function bundleOutputToEsbuildMetafile(bundleOutput, originalMetafile) {
     return newMetafile;
 }
 /**
- * Creates an InitialFileRecord object with a specified depth.
- * @param depth The depth of the file in the dependency graph.
- * @returns An InitialFileRecord object.
- */
-function createInitialFileRecord(depth) {
-    return {
-        type: 'script',
-        entrypoint: false,
-        external: false,
-        serverFile: false,
-        depth,
-    };
-}
-/**
  * Creates an esbuild message object for a chunk optimization failure.
  * @param message The error message detailing the cause of the failure.
  * @returns A partial esbuild message object.
@@ -303,47 +289,26 @@ async function optimizeChunks(original, sourcemap) {
     original.outputFiles = original.outputFiles.filter((file) => !usedChunks.has(file.path) &&
         !(file.path.endsWith('.map') && usedChunks.has(file.path.slice(0, -4))));
     // Add new optimized chunks
-    const importsPerFile = {};
     for (const optimizedFile of optimizedOutput) {
         if (optimizedFile.type !== 'chunk') {
             continue;
         }
-        importsPerFile[optimizedFile.fileName] = optimizedFile.imports;
         original.outputFiles.push((0, bundler_files_1.createOutputFile)(optimizedFile.fileName, optimizedFile.code, bundler_files_1.BuildOutputFileType.Browser));
         if (optimizedFile.map && optimizedFile.sourcemapFileName) {
             original.outputFiles.push((0, bundler_files_1.createOutputFile)(optimizedFile.sourcemapFileName, optimizedFile.map.toString(), bundler_files_1.BuildOutputFileType.Browser));
         }
     }
     // Update initial files to reflect optimized chunks
-    const entriesToAnalyze = [];
     for (const usedFile of usedChunks) {
         // Leave the main file since its information did not change
-        if (usedFile === mainFile) {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            entriesToAnalyze.push([mainFile, original.initialFiles.get(mainFile)]);
-            continue;
+        if (usedFile !== mainFile) {
+            original.initialFiles.delete(usedFile);
         }
-        // Remove all other used chunks
-        original.initialFiles.delete(usedFile);
     }
     // Analyze for transitive initial files
-    let currentEntry;
-    while ((currentEntry = entriesToAnalyze.pop())) {
-        const [entryPath, entryRecord] = currentEntry;
-        for (const importPath of importsPerFile[entryPath]) {
-            const existingRecord = original.initialFiles.get(importPath);
-            if (existingRecord) {
-                // Store the smallest value depth
-                if (existingRecord.depth > entryRecord.depth + 1) {
-                    existingRecord.depth = entryRecord.depth + 1;
-                }
-                continue;
-            }
-            const record = createInitialFileRecord(entryRecord.depth + 1);
-            original.initialFiles.set(importPath, record);
-            entriesToAnalyze.push([importPath, record]);
-        }
-    }
+    const mainRecord = original.initialFiles.get(mainFile);
+    (0, node_assert_1.default)(mainRecord, `Main file record should always be present in initialFiles [${mainFile}].`);
+    (0, bundler_files_1.findTransitiveInitialFiles)(newMetafile, original.initialFiles, [[mainFile, mainRecord]]);
     return original;
 }
 //# sourceMappingURL=chunk-optimizer.js.map

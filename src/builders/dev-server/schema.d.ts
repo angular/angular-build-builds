@@ -56,7 +56,8 @@ export type Schema = {
      */
     poll?: number;
     /**
-     * Port to listen on.
+     * Port to listen on. The `PORT` environment variable, when set, takes precedence over this
+     * option.
      */
     port?: number;
     /**

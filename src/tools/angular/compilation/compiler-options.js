@@ -104,8 +104,8 @@ function transformCompilerOptions(typeScript, baseCompilerOptions, overrides, ts
             location: null,
             notes: [
                 {
-                    text: `The 'emitDecoratorMetadata' option is not required by Angular` +
-                        'and can be removed if not explictly required by the project.',
+                    text: `The 'emitDecoratorMetadata' option is not required by Angular ` +
+                        'and can be removed if not explicitly required by the project.',
                 },
             ],
         });

@@ -8,9 +8,51 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BuildOutputFileType = void 0;
+exports.findTransitiveInitialFiles = findTransitiveInitialFiles;
 exports.createOutputFile = createOutputFile;
 exports.convertOutputFile = convertOutputFile;
 const hash_1 = require("../../utils/hash");
+/**
+ * Analyzes a metafile to find and record all transitive initial files starting from the given
+ * initial entries using breadth-first traversal so each file is recorded at its minimum depth.
+ *
+ * @param metafile The esbuild metafile containing output import relationships.
+ * @param initialFiles The map of initial files to populate.
+ * @param entriesToAnalyze Optional starting entries to traverse; defaults to all current `initialFiles`.
+ *   Entries must share the same starting depth (or be ordered by non-decreasing depth) to guarantee
+ *   that each transitive file is visited at its minimum depth first.
+ * @param initialFilter Optional filter predicate to determine whether a discovered record should be added.
+ */
+function findTransitiveInitialFiles(metafile, initialFiles, entriesToAnalyze = initialFiles, initialFilter) {
+    const queue = [...entriesToAnalyze];
+    for (let i = 0; i < queue.length; i++) {
+        const [entryPath, entryRecord] = queue[i];
+        const entryOutput = metafile.outputs[entryPath];
+        if (!entryOutput) {
+            continue;
+        }
+        for (const initialImport of entryOutput.imports) {
+            if (initialFiles.has(initialImport.path)) {
+                continue;
+            }
+            if (initialImport.kind === 'import-statement' || initialImport.kind === 'import-rule') {
+                const record = {
+                    type: initialImport.kind === 'import-rule' ? 'style' : 'script',
+                    entrypoint: false,
+                    external: initialImport.external,
+                    serverFile: entryRecord.serverFile,
+                    depth: entryRecord.depth + 1,
+                };
+                if (!initialFilter || initialFilter(record)) {
+                    initialFiles.set(initialImport.path, record);
+                    if (!initialImport.external) {
+                        queue.push([initialImport.path, record]);
+                    }
+                }
+            }
+        }
+    }
+}
 var BuildOutputFileType;
 (function (BuildOutputFileType) {
     BuildOutputFileType[BuildOutputFileType["Browser"] = 0] = "Browser";
