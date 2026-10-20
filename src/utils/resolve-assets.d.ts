@@ -8,7 +8,7 @@
 /**
  * Default glob ignore patterns for assets.
  */
-export declare const DEFAULT_ASSET_IGNORE: readonly [".gitkeep", "**/.DS_Store", "**/Thumbs.db"];
+export declare const DEFAULT_ASSET_IGNORE: readonly ["**/.gitkeep", "**/.DS_Store", "**/Thumbs.db"];
 export declare function resolveAssets(entries: {
     glob: string;
     ignore?: string[];

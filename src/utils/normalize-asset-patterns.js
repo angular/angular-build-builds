@@ -41,13 +41,13 @@ function normalizeAssetPatterns(assetPatterns, workspaceRoot, projectRoot, proje
             const resolvedAssetPath = node_path_1.default.resolve(resolvedWorkspaceRoot, assetPath);
             let root;
             // Check if the string asset is within sourceRoot.
-            if (resolvedAssetPath.startsWith(resolvedSourceRoot)) {
+            if ((0, path_1.isSubDirectory)(resolvedSourceRoot, resolvedAssetPath)) {
                 root = resolvedSourceRoot;
             }
-            else if (resolvedAssetPath.startsWith(resolvedProjectRoot)) {
+            else if ((0, path_1.isSubDirectory)(resolvedProjectRoot, resolvedAssetPath)) {
                 root = resolvedProjectRoot;
             }
-            else if (resolvedAssetPath.startsWith(resolvedWorkspaceRoot)) {
+            else if ((0, path_1.isSubDirectory)(resolvedWorkspaceRoot, resolvedAssetPath)) {
                 root = resolvedWorkspaceRoot;
             }
             else {

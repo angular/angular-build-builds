@@ -20,7 +20,7 @@ const path_1 = require("./path");
 /**
  * Default glob ignore patterns for assets.
  */
-exports.DEFAULT_ASSET_IGNORE = ['.gitkeep', '**/.DS_Store', '**/Thumbs.db'];
+exports.DEFAULT_ASSET_IGNORE = ['**/.gitkeep', '**/.DS_Store', '**/Thumbs.db'];
 async function resolveAssets(entries, root) {
     const resolvedEntries = await (0, concurrency_1.mapConcurrent)(entries, concurrency_1.MAX_CONCURRENT_READS, async (entry) => {
         if (!(0, path_1.isSubDirectory)(root, entry.input)) {
@@ -52,10 +52,16 @@ async function resolveAssets(entries, root) {
             ignore: entry.ignore ? [...exports.DEFAULT_ASSET_IGNORE, ...entry.ignore] : exports.DEFAULT_ASSET_IGNORE,
             followSymbolicLinks: entry.followSymlinks ?? false,
         });
-        return files.map((file) => ({
-            source: node_path_1.default.join(cwd, file),
-            destination: node_path_1.default.join(entry.output, entry.flatten ? node_path_1.default.basename(file) : file),
-        }));
+        return files.map((file) => {
+            const destination = node_path_1.default.join(entry.output, entry.flatten ? node_path_1.default.basename(file) : file);
+            if (destination === '..' || destination.startsWith(`..${node_path_1.default.sep}`)) {
+                throw new Error('An asset cannot be written to a location outside of the output path.');
+            }
+            return {
+                source: node_path_1.default.join(cwd, file),
+                destination,
+            };
+        });
     });
     return resolvedEntries.flat();
 }

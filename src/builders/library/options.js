@@ -68,16 +68,6 @@ async function normalizeLibraryOptions(context, projectName, options) {
         { glob: 'LICENSE*', input: projectRoot, output: '.' },
         { glob: 'README.md', input: projectRoot, output: '.' },
     ];
-    for (const entryPoint of entryPoints.values()) {
-        if (entryPoint.isPrimary) {
-            continue;
-        }
-        defaultAssets.push({
-            glob: 'README.md',
-            input: node_path_1.default.posix.dirname(entryPoint.entryFilePath),
-            output: entryPoint.name,
-        });
-    }
     const assets = (0, normalize_asset_patterns_1.normalizeAssetPatterns)([...defaultAssets, ...(rawAssets ?? [])], workspaceRoot, projectRoot, projectSourceRoot).map((asset) => ({
         ...asset,
         input: (0, path_1.toPosixPath)(node_path_1.default.resolve(workspaceRoot, asset.input)),
