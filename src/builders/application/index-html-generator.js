@@ -66,8 +66,13 @@ async function generateIndexHtml(initialFiles, outputFiles, buildOptions, lang) 
     let chunksIntegrity;
     if (subresourceIntegrity) {
         const integrity = new Map();
+        // Entry points and module preload hints carry their own integrity attribute. Any other
+        // initial chunk (e.g. beyond the module preload limit) is only covered by the import map.
+        const hinted = new Set(hints.map(({ url }) => url));
         for (const file of browserOutputFiles) {
-            if (!file.path.endsWith('.js') || initialFiles.has(file.path)) {
+            if (!file.path.endsWith('.js') ||
+                initialFiles.get(file.path)?.entrypoint ||
+                hinted.has(file.path)) {
                 continue;
             }
             const hash = (0, node_crypto_1.createHash)('sha384').update(file.contents).digest('base64');
