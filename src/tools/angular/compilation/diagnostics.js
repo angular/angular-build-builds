@@ -29,7 +29,7 @@ function convertTypeScriptDiagnosticInfo(typescript, info, textPrefix) {
             length: info.length,
         };
         // Calculate the line/column location and extract the full line text that has the diagnostic
-        if (info.start) {
+        if (info.start !== undefined) {
             const { line, character } = typescript.getLineAndCharacterOfPosition(info.file, info.start);
             note.location.line = line + 1;
             note.location.column = character;
@@ -38,7 +38,7 @@ function convertTypeScriptDiagnosticInfo(typescript, info, textPrefix) {
             // The end position for the slice is the first character of the next line or the length of
             // the entire file if the line is the last line of the file (getPositionOfLineAndCharacter
             // will error if a nonexistent line is passed).
-            const { line: lastLineOfFile } = typescript.getLineAndCharacterOfPosition(info.file, info.file.text.length - 1);
+            const { line: lastLineOfFile } = typescript.getLineAndCharacterOfPosition(info.file, Math.max(0, info.file.text.length - 1));
             const lineEndPosition = line < lastLineOfFile
                 ? typescript.getPositionOfLineAndCharacter(info.file, line + 1, 0)
                 : info.file.text.length;
