@@ -58,10 +58,7 @@ async function compileLibrary(options, stylesheetBundler, buildState, modifiedFi
                     ? await stylesheetBundler.bundleFile(stylesheetFile)
                     : await stylesheetBundler.bundleInline(data, containingFile);
                 if (result.referencedFiles) {
-                    buildState.addFileReferences(containingFile, result.referencedFiles);
-                    if (stylesheetFile) {
-                        buildState.addFileReferences(stylesheetFile, result.referencedFiles);
-                    }
+                    buildState.addFileReferences(stylesheetFile ?? containingFile, result.referencedFiles);
                 }
                 if (result.warnings.length > 0) {
                     stylesheetWarnings.push(...result.warnings);

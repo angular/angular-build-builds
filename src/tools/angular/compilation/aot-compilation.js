@@ -72,7 +72,8 @@ class AngularCompilationState {
     declarationDiagnostics;
     filesWithoutDtsSignature;
     useFallbackRootNames;
-    constructor(angularProgram, compilerHost, typeScriptProgram, affectedFiles, templateDiagnosticsOptimization, webWorkerTransform, useTypeScriptTranspilation, diagnosticCache = new WeakMap(), declarationDiagnostics = new WeakMap(), filesWithoutDtsSignature = new Set(), useFallbackRootNames = false) {
+    emittedDtsSourceFiles;
+    constructor(angularProgram, compilerHost, typeScriptProgram, affectedFiles, templateDiagnosticsOptimization, webWorkerTransform, useTypeScriptTranspilation, diagnosticCache = new WeakMap(), declarationDiagnostics = new WeakMap(), filesWithoutDtsSignature = new Set(), useFallbackRootNames = false, emittedDtsSourceFiles = new WeakSet()) {
         this.angularProgram = angularProgram;
         this.compilerHost = compilerHost;
         this.typeScriptProgram = typeScriptProgram;
@@ -84,6 +85,7 @@ class AngularCompilationState {
         this.declarationDiagnostics = declarationDiagnostics;
         this.filesWithoutDtsSignature = filesWithoutDtsSignature;
         this.useFallbackRootNames = useFallbackRootNames;
+        this.emittedDtsSourceFiles = emittedDtsSourceFiles;
     }
     get angularCompiler() {
         return this.angularProgram.compiler;
@@ -250,7 +252,7 @@ class AotCompilation extends typescript_compilation_1.TypeScriptCompilation {
                 }
             }
         }
-        this.#state = new AngularCompilationState(angularProgram, host, typeScriptProgram, affectedFiles, affectedFiles.size === 1 ? OptimizeFor.SingleFile : OptimizeFor.WholeProgram, (0, web_worker_transformer_1.createWorkerTransformer)(hostOptions.processWebWorker.bind(hostOptions)), useTypeScriptTranspilation, this.#state?.diagnosticCache, this.#state?.declarationDiagnostics, filesWithoutDtsSignature, useFallbackRootNames);
+        this.#state = new AngularCompilationState(angularProgram, host, typeScriptProgram, affectedFiles, affectedFiles.size === 1 ? OptimizeFor.SingleFile : OptimizeFor.WholeProgram, (0, web_worker_transformer_1.createWorkerTransformer)(hostOptions.processWebWorker.bind(hostOptions)), useTypeScriptTranspilation, this.#state?.diagnosticCache, this.#state?.declarationDiagnostics, filesWithoutDtsSignature, useFallbackRootNames, this.#state?.emittedDtsSourceFiles);
         return {
             compilerOptions,
             referencedFiles,
@@ -350,13 +352,12 @@ class AotCompilation extends typescript_compilation_1.TypeScriptCompilation {
     }
     emitAffectedFiles() {
         (0, node_assert_1.default)(this.#state, 'Angular compilation must be initialized prior to emitting files.');
-        const { affectedFiles, angularCompiler, compilerHost, declarationDiagnostics, typeScriptProgram, webWorkerTransform, useTypeScriptTranspilation, } = this.#state;
+        const { angularCompiler, compilerHost, declarationDiagnostics, emittedDtsSourceFiles, typeScriptProgram, webWorkerTransform, useTypeScriptTranspilation, } = this.#state;
         const compilerOptions = typeScriptProgram.getCompilerOptions();
         const emitDeclarations = !!compilerOptions.declaration;
         const buildInfoFilename = compilerOptions.tsBuildInfoFile ?? '.tsbuildinfo';
         const emittedFiles = new Map();
         const emittedSourceFiles = new Set();
-        const emittedDtsSourceFiles = new Set();
         const writeFileCallback = (filename, contents, _a, _b, sourceFiles) => {
             if (!sourceFiles?.length && filename.endsWith(buildInfoFilename)) {
                 // Save builder info contents to specified location
