@@ -129,8 +129,21 @@ class ComponentStylesheetBundler {
             /* useContext */ false, 
             /* initialFilter */ undefined, this.#loadCache);
         });
+        const result = await bundlerContext.bundle();
+        if (result.errors || result.warnings.length > 0) {
+            if (this.incremental && result.errors) {
+                bundlerContext.watchFiles.add(node_path_1.default.isAbsolute(filename) ? filename : node_path_1.default.join(this.options.workspaceRoot, filename));
+            }
+            for (const message of [...(result.errors ?? []), ...result.warnings]) {
+                for (const item of [message, ...(message.notes ?? [])]) {
+                    if (item.location?.file?.startsWith('angular:styles/component:')) {
+                        item.location.file = filename;
+                    }
+                }
+            }
+        }
         // Extract the result of the bundling from the output files
-        return this.extractResult(await bundlerContext.bundle(), bundlerContext.watchFiles, !!externalId, false);
+        return this.extractResult(result, bundlerContext.watchFiles, !!externalId, false);
     }
     /**
      * Invalidates both file and inline based component style bundling state for a set of modified files.

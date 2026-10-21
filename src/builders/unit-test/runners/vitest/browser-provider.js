@@ -136,7 +136,8 @@ async function setupBrowserConfiguration(browsers, headless, debug, projectSourc
     const providerName = findBrowserProvider(projectResolver);
     if (!providerName) {
         errors ??= [];
-        errors.push('The "browsers" option requires either "playwright" or "webdriverio" to be installed within the project.' +
+        errors.push('The "browsers" option requires either "@vitest/browser-playwright", "@vitest/browser-webdriverio", ' +
+            'or "@vitest/browser-preview" to be installed within the project.' +
             ' Please install one of these packages and rerun the test command.');
     }
     const instances = browsers.map(normalizeBrowserName);
