@@ -18,6 +18,20 @@ const picomatch_1 = __importDefault(require("picomatch"));
 const resolve_assets_1 = require("../../../utils/resolve-assets");
 const utils_1 = require("./utils");
 /**
+ * Normalizes a glob pattern to match `tinyglobby` semantics by stripping trailing slashes,
+ * expanding directory patterns with `/**`, and normalizing POSIX segments.
+ *
+ * @param pattern The raw glob pattern string.
+ * @returns The normalized POSIX glob pattern.
+ */
+function normalizeGlobPattern(pattern) {
+    let result = pattern.endsWith('/') ? pattern.slice(0, -1) : pattern;
+    if (pattern.endsWith('/') || !picomatch_1.default.scan(result).isGlob) {
+        result += '/**';
+    }
+    return node_path_1.default.posix.normalize(result);
+}
+/**
  * Compiles picomatch matchers and POSIX input prefixes for each asset configuration.
  *
  * @param assets The normalized asset patterns with POSIX input and output paths.
@@ -25,9 +39,13 @@ const utils_1 = require("./utils");
  */
 function createAssetMatchers(assets) {
     return assets.map((asset) => {
-        const isMatch = (0, picomatch_1.default)(asset.glob, {
+        const ignore = [...resolve_assets_1.DEFAULT_ASSET_IGNORE, ...(asset.ignore ?? [])]
+            .filter((pattern) => pattern.length > 0)
+            .map(normalizeGlobPattern);
+        const isMatch = (0, picomatch_1.default)(asset.glob ? node_path_1.default.posix.normalize(asset.glob) : [], {
             dot: true,
-            ignore: [...resolve_assets_1.DEFAULT_ASSET_IGNORE, ...(asset.ignore ?? [])],
+            windows: false,
+            ignore,
         });
         const prefix = asset.input.endsWith('/') ? asset.input : `${asset.input}/`;
         return { asset, prefix, isMatch };
@@ -49,18 +67,29 @@ async function collectAssetsToEmit(assets, workspaceRoot, emittedAssets, modifie
     }
     if (modifiedFiles) {
         const matchers = assetMatchers ?? createAssetMatchers(assets);
-        const filesToEmit = [];
-        const filesToDelete = [];
+        const filesToEmit = new Map();
+        const filesToDelete = new Set();
         for (const file of modifiedFiles) {
-            let isFile;
-            if (emittedAssets.has(file)) {
-                isFile = (0, node_fs_1.statSync)(file, { throwIfNoEntry: false })?.isFile() ?? false;
-                if (!isFile) {
-                    filesToDelete.push(file);
+            let isFileStat;
+            let isFileLstat;
+            if (!emittedAssets.has(file) && emittedAssets.size > 0) {
+                const dirPrefix = file.endsWith('/') ? file : `${file}/`;
+                let isDeletedDir;
+                for (const emittedFile of emittedAssets.keys()) {
+                    if (emittedFile.startsWith(dirPrefix)) {
+                        if (!(isDeletedDir ??= !(0, node_fs_1.statSync)(file, { throwIfNoEntry: false })?.isDirectory())) {
+                            break;
+                        }
+                        filesToDelete.add(emittedFile);
+                    }
+                }
+                if (isDeletedDir !== undefined) {
                     continue;
                 }
             }
-            for (const { asset, prefix, isMatch } of matchers) {
+            let matched = false;
+            for (let matcherIndex = 0; matcherIndex < matchers.length; matcherIndex++) {
+                const { asset, prefix, isMatch } = matchers[matcherIndex];
                 if (!file.startsWith(prefix)) {
                     continue;
                 }
@@ -68,18 +97,36 @@ async function collectAssetsToEmit(assets, workspaceRoot, emittedAssets, modifie
                 if (!isMatch(relative)) {
                     continue;
                 }
-                isFile ??= (0, node_fs_1.statSync)(file, { throwIfNoEntry: false })?.isFile() ?? false;
+                const isFile = asset.followSymlinks
+                    ? (isFileStat ??= (0, node_fs_1.statSync)(file, { throwIfNoEntry: false })?.isFile() ?? false)
+                    : (isFileLstat ??= (0, node_fs_1.lstatSync)(file, { throwIfNoEntry: false })?.isFile() ?? false);
                 if (!isFile) {
-                    break;
+                    continue;
                 }
-                filesToEmit.push((0, utils_1.createDiskOutputFile)(file, node_path_1.default.posix.join(asset.output, relative)));
+                matched = true;
+                const outputFile = (0, utils_1.createDiskOutputFile)(file, node_path_1.default.posix.join(asset.output, relative));
+                const existing = filesToEmit.get(outputFile.path);
+                if (!existing || matcherIndex >= existing.matcherIndex) {
+                    filesToEmit.set(outputFile.path, { file: outputFile, matcherIndex });
+                }
+            }
+            if (emittedAssets.has(file) && !matched) {
+                filesToDelete.add(file);
             }
         }
-        return { filesToEmit, filesToDelete };
+        return {
+            filesToEmit: Array.from(filesToEmit.values(), ({ file }) => file),
+            filesToDelete: Array.from(filesToDelete),
+        };
     }
     const resolvedAssets = await (0, resolve_assets_1.resolveAssets)(assets, workspaceRoot);
+    const filesToEmit = new Map();
+    for (const { source, destination } of resolvedAssets) {
+        const outputFile = (0, utils_1.createDiskOutputFile)(source, destination);
+        filesToEmit.set(outputFile.path, outputFile);
+    }
     return {
-        filesToEmit: resolvedAssets.map(({ source, destination }) => (0, utils_1.createDiskOutputFile)(source, destination)),
+        filesToEmit: Array.from(filesToEmit.values()),
         filesToDelete: [],
     };
 }

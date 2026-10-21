@@ -200,6 +200,9 @@ function getDirectoryPath(posixPath) {
     }
     return dir;
 }
+function isNodeModulesSegment(lookupKey) {
+    return lookupKey === NODE_MODULES || lookupKey.endsWith(`/${NODE_MODULES}`);
+}
 /**
  * Determines whether a file path lookup key or any of its parent directories are present in watchedFiles.
  */
@@ -208,7 +211,7 @@ function isPathWatched(fileLookupKey, watchedFiles) {
         return true;
     }
     let current = fileLookupKey;
-    while (true) {
+    while (!isNodeModulesSegment(current)) {
         const parent = getDirectoryPath(current);
         if (parent === current) {
             break;
@@ -903,8 +906,8 @@ function createChokidarIgnored(ignoredPatterns, isCaseSensitive, watchedFiles) {
         return { path: toPosixPathNormalized(pattern), recursive: true };
     }) ?? [];
     // When watching a directory (e.g. projectRoot via NG_BUILD_WATCH_ROOT), prune `node_modules`
-    // directories unless explicitly added to `watchedFiles`. Explicitly added files inside
-    // `node_modules` do not end with `/node_modules` and remain watchable.
+    // directories and any unwatched descendants inside `node_modules` (since Chokidar 6 keeps
+    // ancestor directories of explicitly watched package files un-ignored to traverse to them).
     return [
         ...customIgnored,
         (filePath) => {
@@ -913,8 +916,12 @@ function createChokidarIgnored(ignoredPatterns, isCaseSensitive, watchedFiles) {
             }
             const posixPath = toPosixPathNormalized(filePath);
             const lookupKey = toLookupKey(posixPath, isCaseSensitive);
-            return ((lookupKey === NODE_MODULES || lookupKey.endsWith(`/${NODE_MODULES}`)) &&
-                !watchedFiles.has(lookupKey));
+            if (!isNodeModulesSegment(lookupKey) &&
+                !lookupKey.includes(`/${NODE_MODULES}/`) &&
+                !lookupKey.startsWith(`${NODE_MODULES}/`)) {
+                return false;
+            }
+            return !isPathWatched(lookupKey, watchedFiles);
         },
     ];
 }
