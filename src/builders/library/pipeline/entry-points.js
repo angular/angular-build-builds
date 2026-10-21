@@ -47,10 +47,13 @@ function normalizeEntryPoint(key, posixKey, isPrimary, targetPath, projectRoot, 
         throw new Error(`Invalid entry point key '${key}'. Entry point keys must be relative subpaths without '..' (e.g. './testing').`);
     }
     const subpath = isPrimary ? '.' : `./${name}`;
-    const displayName = (isPrimary ? packageName : `${packageName}/${name}`).toLowerCase();
+    const displayName = isPrimary ? packageName : `${packageName}/${name}`;
     const bundleName = getEntryPointBundleName(packageName, name);
     const entryFilePath = (0, path_1.toPosixPath)(node_path_1.default.resolve(projectRoot, targetPath));
-    if (!/(?<!\.d)\.(?:ts|mts)$/.test(entryFilePath)) {
+    if (!(0, path_1.isSubDirectory)(projectRoot, entryFilePath)) {
+        throw new Error(`Entry point '${key}' file path '${entryFilePath}' is outside the project root '${projectRoot}'.`);
+    }
+    if (!/(?<!\.d)\.m?ts$/.test(entryFilePath)) {
         throw new Error(`Entry point '${key}' file path must be a TypeScript file ('.ts' or '.mts'): '${entryFilePath}'.`);
     }
     return {
@@ -124,8 +127,8 @@ function normalizeEntryPoints(rawExports, projectRoot, packageJsonPath, packageN
             // Non-JS/TS conditional export (e.g., sass/style-only subpath); preserve in package.json without compiling.
             continue;
         }
-        if (!isPrimary && !/\.m?ts$/.test(target)) {
-            // Static asset, stylesheet, or package.json export; preserve in package.json without compiling.
+        if (!isPrimary && !/(?<!\.d)\.m?ts$/.test(target)) {
+            // Static asset, stylesheet, declaration file, or package.json export; preserve in package.json without compiling.
             continue;
         }
         const entryPoint = normalizeEntryPoint(key, posixKey, isPrimary, target, projectRoot, packageName);

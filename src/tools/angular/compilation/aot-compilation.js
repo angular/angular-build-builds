@@ -11,6 +11,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AotCompilation = void 0;
+exports.ensurePreDeclarationTransformers = ensurePreDeclarationTransformers;
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_path_1 = require("node:path");
 const typescript_1 = __importDefault(require("typescript"));
@@ -68,9 +69,10 @@ class AngularCompilationState {
     webWorkerTransform;
     useTypeScriptTranspilation;
     diagnosticCache;
+    declarationDiagnostics;
     filesWithoutDtsSignature;
     useFallbackRootNames;
-    constructor(angularProgram, compilerHost, typeScriptProgram, affectedFiles, templateDiagnosticsOptimization, webWorkerTransform, useTypeScriptTranspilation, diagnosticCache = new WeakMap(), filesWithoutDtsSignature = new Set(), useFallbackRootNames = false) {
+    constructor(angularProgram, compilerHost, typeScriptProgram, affectedFiles, templateDiagnosticsOptimization, webWorkerTransform, useTypeScriptTranspilation, diagnosticCache = new WeakMap(), declarationDiagnostics = new WeakMap(), filesWithoutDtsSignature = new Set(), useFallbackRootNames = false) {
         this.angularProgram = angularProgram;
         this.compilerHost = compilerHost;
         this.typeScriptProgram = typeScriptProgram;
@@ -79,6 +81,7 @@ class AngularCompilationState {
         this.webWorkerTransform = webWorkerTransform;
         this.useTypeScriptTranspilation = useTypeScriptTranspilation;
         this.diagnosticCache = diagnosticCache;
+        this.declarationDiagnostics = declarationDiagnostics;
         this.filesWithoutDtsSignature = filesWithoutDtsSignature;
         this.useFallbackRootNames = useFallbackRootNames;
     }
@@ -247,7 +250,7 @@ class AotCompilation extends typescript_compilation_1.TypeScriptCompilation {
                 }
             }
         }
-        this.#state = new AngularCompilationState(angularProgram, host, typeScriptProgram, affectedFiles, affectedFiles.size === 1 ? OptimizeFor.SingleFile : OptimizeFor.WholeProgram, (0, web_worker_transformer_1.createWorkerTransformer)(hostOptions.processWebWorker.bind(hostOptions)), useTypeScriptTranspilation, this.#state?.diagnosticCache, filesWithoutDtsSignature, useFallbackRootNames);
+        this.#state = new AngularCompilationState(angularProgram, host, typeScriptProgram, affectedFiles, affectedFiles.size === 1 ? OptimizeFor.SingleFile : OptimizeFor.WholeProgram, (0, web_worker_transformer_1.createWorkerTransformer)(hostOptions.processWebWorker.bind(hostOptions)), useTypeScriptTranspilation, this.#state?.diagnosticCache, this.#state?.declarationDiagnostics, filesWithoutDtsSignature, useFallbackRootNames);
         return {
             compilerOptions,
             referencedFiles,
@@ -259,7 +262,7 @@ class AotCompilation extends typescript_compilation_1.TypeScriptCompilation {
     }
     *collectDiagnostics(modes) {
         (0, node_assert_1.default)(this.#state, 'Angular compilation must be initialized prior to collecting diagnostics.');
-        const { affectedFiles, angularCompiler, diagnosticCache, templateDiagnosticsOptimization, typeScriptProgram, } = this.#state;
+        const { affectedFiles, angularCompiler, declarationDiagnostics, diagnosticCache, templateDiagnosticsOptimization, typeScriptProgram, } = this.#state;
         const syntactic = modes & angular_compilation_1.DiagnosticModes.Syntactic;
         const semantic = modes & angular_compilation_1.DiagnosticModes.Semantic;
         try {
@@ -286,9 +289,13 @@ class AotCompilation extends typescript_compilation_1.TypeScriptCompilation {
                     continue;
                 }
                 yield* (0, profiling_1.profileSync)('NG_DIAGNOSTICS_SEMANTIC', () => typeScriptProgram.getSemanticDiagnostics(sourceFile), true);
-                // Declaration files cannot have template diagnostics
+                // Declaration files cannot have template or declaration emit diagnostics
                 if (sourceFile.isDeclarationFile) {
                     continue;
+                }
+                const fileDeclarationDiagnostics = declarationDiagnostics.get(sourceFile);
+                if (fileDeclarationDiagnostics) {
+                    yield* fileDeclarationDiagnostics;
                 }
                 // Only request Angular template diagnostics for affected files to avoid
                 // overhead of template diagnostics for unchanged files.
@@ -343,7 +350,7 @@ class AotCompilation extends typescript_compilation_1.TypeScriptCompilation {
     }
     emitAffectedFiles() {
         (0, node_assert_1.default)(this.#state, 'Angular compilation must be initialized prior to emitting files.');
-        const { affectedFiles, angularCompiler, compilerHost, typeScriptProgram, webWorkerTransform, useTypeScriptTranspilation, } = this.#state;
+        const { affectedFiles, angularCompiler, compilerHost, declarationDiagnostics, typeScriptProgram, webWorkerTransform, useTypeScriptTranspilation, } = this.#state;
         const compilerOptions = typeScriptProgram.getCompilerOptions();
         const emitDeclarations = !!compilerOptions.declaration;
         const buildInfoFilename = compilerOptions.tsBuildInfoFile ?? '.tsbuildinfo';
@@ -387,8 +394,14 @@ class AotCompilation extends typescript_compilation_1.TypeScriptCompilation {
         // Emit is handled in write file callback when using TypeScript
         if (useTypeScriptTranspilation) {
             // TypeScript will loop until there are no more affected files in the program
-            while (typeScriptProgram.emitNextAffectedFile(writeFileCallback, undefined, undefined, transformers)) {
-                /* empty */
+            while (true) {
+                const affectedEmitResult = typeScriptProgram.emitNextAffectedFile(writeFileCallback, undefined, undefined, transformers);
+                if (!affectedEmitResult) {
+                    break;
+                }
+                if ('kind' in affectedEmitResult.affected) {
+                    declarationDiagnostics.set(affectedEmitResult.affected, affectedEmitResult.result.diagnostics);
+                }
             }
         }
         else if (compilerOptions.tsBuildInfoFile) {
@@ -411,10 +424,12 @@ class AotCompilation extends typescript_compilation_1.TypeScriptCompilation {
                 continue;
             }
             if (useTypeScriptTranspilation) {
-                const emitOnly = emittedDtsSourceFiles.has(sourceFile)
-                    ? EmitOnly.Js
-                    : undefined;
-                typeScriptProgram.emit(sourceFile, writeFileCallback, undefined, emitOnly, transformers);
+                const hasEmittedDts = emittedDtsSourceFiles.has(sourceFile);
+                const emitOnly = hasEmittedDts ? EmitOnly.Js : undefined;
+                const emitResult = typeScriptProgram.emit(sourceFile, writeFileCallback, undefined, emitOnly, transformers);
+                if (!hasEmittedDts) {
+                    declarationDiagnostics.set(sourceFile, emitResult.diagnostics);
+                }
                 continue;
             }
             // When not using TypeScript transpilation, directly apply only Angular specific transformations
@@ -467,29 +482,40 @@ function ensurePreDeclarationTransformers(transformers) {
         return;
     }
     const beforeTransformers = transformers.before;
-    const transformedSourceFiles = new Set();
-    transformers.before = beforeTransformers.map((factory, index) => index === 0
-        ? (context) => {
-            const transform = factory(context);
-            return (sourceFile) => {
-                transformedSourceFiles.add(typescript_1.default.getOriginalNode(sourceFile, typescript_1.default.isSourceFile));
-                return transform(sourceFile);
-            };
+    const seenSourceFiles = new Set();
+    const preTransformedSourceFiles = new Map();
+    const runBefore = (beforeTransforms, sourceFile, originalSourceFile) => {
+        seenSourceFiles.add(originalSourceFile);
+        let current = sourceFile;
+        for (const transform of beforeTransforms) {
+            current = transform(current);
         }
-        : factory);
+        return current;
+    };
+    transformers.before = [
+        (context) => {
+            let beforeTransforms;
+            return (sourceFile) => {
+                const originalSourceFile = typescript_1.default.getOriginalNode(sourceFile, typescript_1.default.isSourceFile);
+                const preTransformed = preTransformedSourceFiles.get(originalSourceFile);
+                if (preTransformed !== undefined) {
+                    preTransformedSourceFiles.delete(originalSourceFile);
+                    return preTransformed;
+                }
+                beforeTransforms ??= beforeTransformers.map((factory) => factory(context));
+                return runBefore(beforeTransforms, sourceFile, originalSourceFile);
+            };
+        },
+    ];
     transformers.afterDeclarations = [
         (context) => {
             let beforeTransforms;
             return (fileOrBundle) => {
                 if (!typescript_1.default.isBundle(fileOrBundle)) {
                     const originalSourceFile = typescript_1.default.getOriginalNode(fileOrBundle, typescript_1.default.isSourceFile);
-                    if (!transformedSourceFiles.has(originalSourceFile)) {
-                        transformedSourceFiles.add(originalSourceFile);
+                    if (!seenSourceFiles.has(originalSourceFile)) {
                         beforeTransforms ??= beforeTransformers.map((factory) => factory(context));
-                        let current = originalSourceFile;
-                        for (const transform of beforeTransforms) {
-                            current = transform(current);
-                        }
+                        preTransformedSourceFiles.set(originalSourceFile, runBefore(beforeTransforms, originalSourceFile, originalSourceFile));
                     }
                 }
                 return fileOrBundle;
