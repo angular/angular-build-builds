@@ -100,6 +100,11 @@ function createAngularCompilerHost(typescript, compilerOptions, hostOptions, pac
     // The AOT compiler currently requires this hook to allow for a transformResource hook.
     // Once the AOT compiler allows only a transformResource hook, this can be reevaluated.
     host.readResource = async function (filename) {
+        // Only template resources need to be read by the compiler host.
+        // External stylesheets are read and bundled by the stylesheet bundler during `transformResource`.
+        if (!hasTemplateExtension(filename)) {
+            return '';
+        }
         return this.readFile(filename) ?? '';
     };
     // Add an AOT compiler resource transform hook
@@ -109,8 +114,8 @@ function createAngularCompilerHost(typescript, compilerOptions, hostOptions, pac
             return null;
         }
         (0, node_assert_1.default)(!context.resourceFile || !hostOptions.externalStylesheets?.has(context.resourceFile), 'External runtime stylesheets should not be transformed: ' + context.resourceFile);
-        // No transformation required if the resource is empty
-        if (data.trim().length === 0) {
+        // No transformation required if an inline resource is empty
+        if (!context.resourceFile && data.trim().length === 0) {
             return { content: '' };
         }
         const result = await hostOptions.transformStylesheet(data, context.containingFile, context.resourceFile ?? undefined, context.order, context.className);
