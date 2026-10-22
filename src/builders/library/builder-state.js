@@ -25,6 +25,7 @@ class BuilderState {
     #emittedBundleFiles = new Set();
     #emittedManifestFiles = new Set();
     #emittedAssets = new Map();
+    #emittedAssetSources = new Map();
     #hasEmittedAssets = false;
     #executionResult = new execution_result_1.ExecutionResult();
     #hasUpdatedBundles = false;
@@ -337,13 +338,13 @@ class BuilderState {
             if (outputs?.has(emittedAsset.path)) {
                 continue;
             }
-            if (this.#hasEmittedAssets) {
-                for (const [source, prevOutputs] of this.#emittedAssets) {
-                    if (prevOutputs.delete(emittedAsset.path)) {
-                        if (prevOutputs.size === 0) {
-                            this.#emittedAssets.delete(source);
-                        }
-                        break;
+            const prevSource = this.#emittedAssetSources.get(emittedAsset.path);
+            if (prevSource !== undefined) {
+                const prevOutputs = this.#emittedAssets.get(prevSource);
+                if (prevOutputs) {
+                    prevOutputs.delete(emittedAsset.path);
+                    if (prevOutputs.size === 0) {
+                        this.#emittedAssets.delete(prevSource);
                     }
                 }
             }
@@ -352,11 +353,13 @@ class BuilderState {
                 this.#emittedAssets.set(emittedAsset.source, outputs);
             }
             outputs.add(emittedAsset.path);
+            this.#emittedAssetSources.set(emittedAsset.path, emittedAsset.source);
         }
         for (const source of toDelete) {
             const outputs = this.#emittedAssets.get(source);
             if (outputs) {
                 for (const output of outputs) {
+                    this.#emittedAssetSources.delete(output);
                     filesToDelete.add(output);
                 }
                 this.#emittedAssets.delete(source);
@@ -392,6 +395,7 @@ class BuilderState {
         this.#emittedBundleFiles.clear();
         this.#emittedManifestFiles.clear();
         this.#emittedAssets.clear();
+        this.#emittedAssetSources.clear();
         this.#hasUpdatedBundles = false;
     }
 }

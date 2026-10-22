@@ -926,31 +926,21 @@ function createChokidarIgnored(ignoredPatterns, isCaseSensitive, watchedFiles) {
     ];
 }
 // Chokidar initializes file watchers asynchronously (`await stat(path)` followed by
-// `fs.watch` or `fs.watchFile`). If a file is modified or recreated immediately after
-// `watcher.add()` is called, Chokidar may capture the post-modification state as its initial
-// baseline (or suppress the initial `'add'` event due to `ignoreInitial: true`) and miss the
-// change. Re-statting after a short delay catches any modifications or recreations that occurred
-// during asynchronous watcher registration, while `fileStats` deduplicates if Chokidar also fired.
-async function checkChokidarBaselines(baselineStats, watchedFiles, fileStats, watcher, handleEvent) {
+// `fs.watch` or polling). If a file is modified immediately after `watcher.add()` is called,
+// Chokidar may capture the post-modification state as its initial baseline (with
+// `ignoreInitial: true`) and miss the change. Re-statting after a short delay catches any
+// modifications that occurred during asynchronous watcher registration, while `fileStats`
+// deduplicates if Chokidar also fired.
+async function checkChokidarBaselines(baselineStats, watchedFiles, watcher, handleEvent) {
     await Promise.all(Array.from(baselineStats, async ([lookupKey, baseline]) => {
-        if (!watchedFiles.has(lookupKey)) {
+        if (watcher.closed || !watchedFiles.has(lookupKey)) {
             return;
         }
         const currentStat = await fs.promises.stat(baseline.posixPath).catch(() => null);
-        if (!watchedFiles.has(lookupKey) || !currentStat?.isFile()) {
+        if (watcher.closed || !watchedFiles.has(lookupKey) || !currentStat?.isFile()) {
             return;
         }
-        if (baseline.mtimeMs === undefined || baseline.size === undefined) {
-            const recorded = fileStats.get(lookupKey);
-            if (!recorded) {
-                watcher.add(baseline.posixPath);
-                handleEvent('added', path.normalize(baseline.posixPath));
-            }
-            else if (currentStat.mtimeMs !== recorded.mtimeMs || currentStat.size !== recorded.size) {
-                handleEvent('modified', path.normalize(baseline.posixPath));
-            }
-        }
-        else if (currentStat.mtimeMs !== baseline.mtimeMs || currentStat.size !== baseline.size) {
+        if (currentStat.mtimeMs !== baseline.mtimeMs || currentStat.size !== baseline.size) {
             handleEvent('modified', path.normalize(baseline.posixPath));
         }
     }));
@@ -972,8 +962,8 @@ async function createChokidarWatcher(options, chokidarModule) {
         ignoreInitial: true,
         ignored,
         followSymlinks: options?.followSymlinks,
-        usePolling: !!options?.polling,
-        interval: options?.interval,
+        backend: options?.polling ? 'polling' : 'auto',
+        pollingInterval: options?.interval,
     });
     // Prevent unhandled watcher errors (such as EMFILE or EACCES) from crashing the process.
     watcher.on('error', () => { });
@@ -1007,43 +997,19 @@ async function createChokidarWatcher(options, chokidarModule) {
         queue.addChange(type, rawPath);
     };
     const scheduleBaselineCheck = (baselineStats) => {
-        if (baselineStats.size === 0) {
+        if (baselineStats.size === 0 || watcher.closed) {
             return;
         }
         const timer = setTimeout(() => {
             pendingTimers.delete(timer);
-            void checkChokidarBaselines(baselineStats, watchedFiles, fileStats, watcher, handleEvent);
+            void checkChokidarBaselines(baselineStats, watchedFiles, watcher, handleEvent);
         }, 50);
         timer.unref();
         pendingTimers.add(timer);
     };
     watcher.on('add', (path) => handleEvent('added', path));
     watcher.on('change', (path) => handleEvent('modified', path));
-    watcher.on('unlink', (rawPath) => {
-        const posixPath = toPosixPathNormalized(rawPath);
-        const lookupKey = toLookupKey(posixPath, isCaseSensitive);
-        if (!isPathWatched(lookupKey, watchedFiles)) {
-            return;
-        }
-        // When Chokidar processes a file removal, it closes the underlying file watcher unless only a
-        // single directory is tracked (`_watched.size === 1`). Re-adding a directly watched path
-        // ensures Chokidar continues watching either the recreated file (if replaced within the atomic
-        // window) or its parent directory for future recreation.
-        if (watchedFiles.has(lookupKey)) {
-            fileStats.delete(lookupKey);
-            watcher.add(posixPath);
-            const stat = fs.statSync(rawPath, { throwIfNoEntry: false });
-            if (stat?.isFile()) {
-                handleEvent('modified', rawPath);
-                scheduleBaselineCheck(new Map([[lookupKey, { posixPath, mtimeMs: stat.mtimeMs, size: stat.size }]]));
-                return;
-            }
-            handleEvent('removed', rawPath);
-            scheduleBaselineCheck(new Map([[lookupKey, { posixPath }]]));
-            return;
-        }
-        handleEvent('removed', rawPath);
-    });
+    watcher.on('unlink', (path) => handleEvent('removed', path));
     return {
         [Symbol.asyncIterator]() {
             return this;
@@ -1064,6 +1030,9 @@ async function createChokidarWatcher(options, chokidarModule) {
             return result;
         },
         add(paths) {
+            if (watcher.closed) {
+                return;
+            }
             const targets = typeof paths === 'string' ? [paths] : paths;
             const newPaths = [];
             const baselineStats = new Map();
@@ -1085,6 +1054,9 @@ async function createChokidarWatcher(options, chokidarModule) {
             }
         },
         remove(paths) {
+            if (watcher.closed) {
+                return;
+            }
             const targets = typeof paths === 'string' ? [paths] : paths;
             const removePaths = [];
             for (const p of targets) {
@@ -1105,6 +1077,8 @@ async function createChokidarWatcher(options, chokidarModule) {
                 clearTimeout(timer);
             }
             pendingTimers.clear();
+            watchedFiles.clear();
+            fileStats.clear();
             try {
                 await watcher.close();
             }

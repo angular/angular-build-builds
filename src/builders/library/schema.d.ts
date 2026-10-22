@@ -20,11 +20,13 @@ export type Schema = {
     /**
      * Angular compilation mode. Use 'partial' when publishing to npm (APF requirement). Use
      * 'full' only during development or for private, internal monorepo packages that are never
-     * published.
+     * published. Defaults to the `angularCompilerOptions.compilationMode` value in the
+     * TypeScript configuration file, or 'partial' if not set.
      */
     compilationMode?: CompilationMode;
     /**
-     * Generates a sourcemap for each corresponding '.d.ts' file.
+     * Generates a sourcemap for each corresponding '.d.ts' file. Defaults to the
+     * `compilerOptions.declarationMap` value in the TypeScript configuration file.
      */
     declarationMap?: boolean;
     /**
@@ -97,7 +99,8 @@ export type AssetPatternClass = {
 /**
  * Angular compilation mode. Use 'partial' when publishing to npm (APF requirement). Use
  * 'full' only during development or for private, internal monorepo packages that are never
- * published.
+ * published. Defaults to the `angularCompilerOptions.compilationMode` value in the
+ * TypeScript configuration file, or 'partial' if not set.
  */
 export declare enum CompilationMode {
     Full = "full",

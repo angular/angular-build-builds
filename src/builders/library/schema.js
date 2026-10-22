@@ -6,7 +6,8 @@ exports.InlineStyleLanguage = exports.CompilationMode = void 0;
 /**
  * Angular compilation mode. Use 'partial' when publishing to npm (APF requirement). Use
  * 'full' only during development or for private, internal monorepo packages that are never
- * published.
+ * published. Defaults to the `angularCompilerOptions.compilationMode` value in the
+ * TypeScript configuration file, or 'partial' if not set.
  */
 var CompilationMode;
 (function (CompilationMode) {

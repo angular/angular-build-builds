@@ -414,7 +414,8 @@ function validateBrowserCoverage(browser, testConfigBrowser, provider) {
         throw new Error(`Code coverage is enabled, but the following configured browsers do not support the V8 coverage provider: ` +
             `${unsupportedBrowsers.join(', ')}. ` +
             `V8 coverage is only supported on Chromium-based browsers (e.g., Chrome, Chromium, Edge). ` +
-            `Please disable coverage or remove the unsupported browsers.`);
+            `Please use the "istanbul" coverage provider (requires "@vitest/coverage-istanbul"), ` +
+            `remove the unsupported browsers, or disable coverage.`);
     }
 }
 async function generateCoverageOption(optionsCoverage, configCoverage, projectName, provider) {

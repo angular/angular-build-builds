@@ -17,8 +17,8 @@ export interface InitRequest {
     compilerOptionOverrides?: CompilerOptionOverrides;
     buildType?: 'application' | 'library';
     stylesheetPort: MessagePort;
-    webWorkerPort: MessagePort;
-    webWorkerSignal: Int32Array;
+    webWorkerPort?: MessagePort;
+    webWorkerSignal?: Int32Array;
 }
 export declare function initialize(request: InitRequest): Promise<AngularCompilationResult>;
 export declare function diagnose(modes: DiagnosticModes): Promise<{

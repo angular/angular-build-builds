@@ -15,7 +15,6 @@ exports.diagnose = diagnose;
 exports.emit = emit;
 exports.update = update;
 const node_assert_1 = __importDefault(require("node:assert"));
-const node_crypto_1 = require("node:crypto");
 const node_worker_threads_1 = require("node:worker_threads");
 const hash_1 = require("../../../utils/hash");
 const profiling_1 = require("../../../utils/profiling");
@@ -35,6 +34,7 @@ async function initialize(request) {
         compilation ??= request.jit
             ? new jit_compilation_1.JitCompilation(request.browserOnlyBuild)
             : new aot_compilation_1.AotCompilation(request.browserOnlyBuild);
+        let nextRequestId = 0;
         const stylesheetRequests = new Map();
         request.stylesheetPort.on('message', ({ requestId, value, error }) => {
             const handlers = stylesheetRequests.get(requestId);
@@ -52,7 +52,7 @@ async function initialize(request) {
             fileReplacements: request.fileReplacements,
             modifiedFiles: currentModifiedFiles,
             transformStylesheet(data, containingFile, stylesheetFile, order, className) {
-                const requestId = (0, node_crypto_1.randomUUID)();
+                const requestId = ++nextRequestId;
                 const resultPromise = new Promise((resolve, reject) => stylesheetRequests.set(requestId, [resolve, reject]));
                 request.stylesheetPort.postMessage({
                     requestId,
@@ -65,6 +65,9 @@ async function initialize(request) {
                 return resultPromise;
             },
             processWebWorker(workerFile, containingFile) {
+                if (!request.webWorkerPort || !request.webWorkerSignal) {
+                    return workerFile;
+                }
                 Atomics.store(request.webWorkerSignal, 0, 0);
                 request.webWorkerPort.postMessage({ workerFile, containingFile });
                 Atomics.wait(request.webWorkerSignal, 0, 0);

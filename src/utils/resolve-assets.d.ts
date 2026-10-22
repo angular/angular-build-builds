@@ -6,9 +6,13 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 /**
- * Default glob ignore patterns for assets.
+ * Combines default asset ignore patterns with user-provided ignore patterns and normalizes
+ * them so directory patterns (such as `'sub'` or `'sub/'`) exclude all nested files.
+ *
+ * @param ignore Optional user-provided ignore glob patterns.
+ * @returns The normalized ignore glob patterns.
  */
-export declare const DEFAULT_ASSET_IGNORE: readonly ["**/.gitkeep", "**/.DS_Store", "**/Thumbs.db"];
+export declare function normalizeAssetIgnorePatterns(ignore?: readonly string[]): string[];
 export declare function resolveAssets(entries: {
     glob: string;
     ignore?: string[];

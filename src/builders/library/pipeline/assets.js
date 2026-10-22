@@ -18,20 +18,6 @@ const picomatch_1 = __importDefault(require("picomatch"));
 const resolve_assets_1 = require("../../../utils/resolve-assets");
 const utils_1 = require("./utils");
 /**
- * Normalizes a glob pattern to match `tinyglobby` semantics by stripping trailing slashes,
- * expanding directory patterns with `/**`, and normalizing POSIX segments.
- *
- * @param pattern The raw glob pattern string.
- * @returns The normalized POSIX glob pattern.
- */
-function normalizeGlobPattern(pattern) {
-    let result = pattern.endsWith('/') ? pattern.slice(0, -1) : pattern;
-    if (pattern.endsWith('/') || !result.endsWith('*')) {
-        result += '/**';
-    }
-    return node_path_1.default.posix.normalize(result);
-}
-/**
  * Resolves the candidate POSIX source file path within `matcher` that would map to `outputPath`,
  * or `undefined` if `outputPath` is outside `matcher.asset.output` or does not match `matcher`.
  */
@@ -59,13 +45,10 @@ function isMatchingAssetFile(file, followSymlinks) {
 function createAssetMatchers(assets) {
     return assets.map((asset) => {
         const { glob: rawGlob, ignore: rawIgnore, input } = asset;
-        const ignore = [...resolve_assets_1.DEFAULT_ASSET_IGNORE, ...(rawIgnore ?? [])]
-            .filter((pattern) => pattern.length > 0)
-            .map(normalizeGlobPattern);
-        const isMatch = (0, picomatch_1.default)(rawGlob ? node_path_1.default.posix.normalize(rawGlob) : [], {
+        const isMatch = (0, picomatch_1.default)(rawGlob && !rawGlob.endsWith('/') ? node_path_1.default.posix.normalize(rawGlob) : [], {
             dot: true,
             windows: false,
-            ignore,
+            ignore: (0, resolve_assets_1.normalizeAssetIgnorePatterns)(rawIgnore),
         });
         const prefix = input.endsWith('/') ? input : `${input}/`;
         return { asset, prefix, isMatch };
@@ -140,67 +123,39 @@ async function collectAssetsToEmit(assets, workspaceRoot, emittedAssets, modifie
             }
         }
         if (matchers.length > 1) {
-            // Ensure lower-priority modified assets do not overwrite existing higher-priority assets on disk.
+            // Ensure lower-priority modified assets do not overwrite existing higher-priority assets.
             for (const [outputPath, { file, matcherIndex }] of filesToEmit) {
                 for (let laterIndex = matchers.length - 1; laterIndex > matcherIndex; laterIndex--) {
-                    const laterMatcher = matchers[laterIndex];
-                    const candidateFile = getCandidateSourceForOutput(laterMatcher, outputPath);
-                    if (!candidateFile || candidateFile === file.source) {
-                        continue;
-                    }
-                    if (isMatchingAssetFile(candidateFile, laterMatcher.asset.followSymlinks)) {
-                        if (emittedAssets.get(candidateFile)?.has(outputPath)) {
-                            filesToEmit.delete(outputPath);
-                        }
-                        else {
-                            filesToEmit.set(outputPath, {
-                                file: (0, utils_1.createDiskOutputFile)(candidateFile, outputPath),
-                                matcherIndex: laterIndex,
-                            });
-                        }
+                    const candidateFile = getCandidateSourceForOutput(matchers[laterIndex], outputPath);
+                    if (candidateFile &&
+                        candidateFile !== file.source &&
+                        !filesToDelete.has(candidateFile) &&
+                        emittedAssets.get(candidateFile)?.has(outputPath)) {
+                        filesToEmit.delete(outputPath);
                         break;
-                    }
-                    else if (emittedAssets.get(candidateFile)?.has(outputPath)) {
-                        filesToDelete.add(candidateFile);
                     }
                 }
             }
             // Restore lower-priority fallback assets when a higher-priority overriding asset is deleted.
             for (const deletedFile of filesToDelete) {
-                for (let deletedMatcherIndex = 0; deletedMatcherIndex < matchers.length; deletedMatcherIndex++) {
-                    const { asset, prefix, isMatch } = matchers[deletedMatcherIndex];
-                    if (!deletedFile.startsWith(prefix)) {
-                        continue;
-                    }
-                    const relative = deletedFile.slice(prefix.length);
-                    if (!isMatch(relative)) {
-                        continue;
-                    }
-                    const outputPath = node_path_1.default.posix.join(asset.output, relative);
-                    if (filesToEmit.has(outputPath)) {
-                        continue;
-                    }
-                    for (let candidateIndex = matchers.length - 1; candidateIndex >= 0; candidateIndex--) {
-                        if (candidateIndex === deletedMatcherIndex) {
-                            continue;
-                        }
+                const deletedOutputs = emittedAssets.get(deletedFile);
+                if (!deletedOutputs) {
+                    continue;
+                }
+                for (const outputPath of deletedOutputs) {
+                    const minCandidateIndex = (filesToEmit.get(outputPath)?.matcherIndex ?? -1) + 1;
+                    for (let candidateIndex = matchers.length - 1; candidateIndex >= minCandidateIndex; candidateIndex--) {
                         const candidateMatcher = matchers[candidateIndex];
                         const candidateFile = getCandidateSourceForOutput(candidateMatcher, outputPath);
                         if (!candidateFile || filesToDelete.has(candidateFile)) {
                             continue;
                         }
                         if (isMatchingAssetFile(candidateFile, candidateMatcher.asset.followSymlinks)) {
-                            if (candidateIndex < deletedMatcherIndex ||
-                                !emittedAssets.get(candidateFile)?.has(outputPath)) {
-                                filesToEmit.set(outputPath, {
-                                    file: (0, utils_1.createDiskOutputFile)(candidateFile, outputPath),
-                                    matcherIndex: candidateIndex,
-                                });
-                            }
+                            filesToEmit.set(outputPath, {
+                                file: (0, utils_1.createDiskOutputFile)(candidateFile, outputPath),
+                                matcherIndex: candidateIndex,
+                            });
                             break;
-                        }
-                        else if (emittedAssets.get(candidateFile)?.has(outputPath)) {
-                            filesToDelete.add(candidateFile);
                         }
                     }
                 }
