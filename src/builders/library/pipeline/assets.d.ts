@@ -45,4 +45,4 @@ export declare function createAssetMatchers(assets: NormalizedAssetsPattern[]): 
  * @param assetMatchers Optional pre-compiled asset matchers for incremental matching.
  * @returns The collected asset files to emit and delete.
  */
-export declare function collectAssetsToEmit(assets: NormalizedAssetsPattern[], workspaceRoot: string, emittedAssets: ReadonlyMap<string, unknown>, modifiedFiles?: ReadonlySet<string>, assetMatchers?: readonly AssetMatcher[]): Promise<CollectedAssets>;
+export declare function collectAssetsToEmit(assets: NormalizedAssetsPattern[], workspaceRoot: string, emittedAssets: ReadonlyMap<string, ReadonlySet<string>>, modifiedFiles?: ReadonlySet<string>, assetMatchers?: readonly AssetMatcher[]): Promise<CollectedAssets>;

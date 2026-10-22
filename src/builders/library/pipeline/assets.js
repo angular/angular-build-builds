@@ -26,10 +26,29 @@ const utils_1 = require("./utils");
  */
 function normalizeGlobPattern(pattern) {
     let result = pattern.endsWith('/') ? pattern.slice(0, -1) : pattern;
-    if (pattern.endsWith('/') || !picomatch_1.default.scan(result).isGlob) {
+    if (pattern.endsWith('/') || !result.endsWith('*')) {
         result += '/**';
     }
     return node_path_1.default.posix.normalize(result);
+}
+/**
+ * Resolves the candidate POSIX source file path within `matcher` that would map to `outputPath`,
+ * or `undefined` if `outputPath` is outside `matcher.asset.output` or does not match `matcher`.
+ */
+function getCandidateSourceForOutput(matcher, outputPath) {
+    const relative = node_path_1.default.posix.relative(matcher.asset.output, outputPath);
+    if (!relative || relative.startsWith('..') || node_path_1.default.posix.isAbsolute(relative)) {
+        return undefined;
+    }
+    return matcher.isMatch(relative) ? `${matcher.prefix}${relative}` : undefined;
+}
+/**
+ * Checks whether a POSIX path exists on disk as a file, respecting `followSymlinks`.
+ */
+function isMatchingAssetFile(file, followSymlinks) {
+    return followSymlinks
+        ? ((0, node_fs_1.statSync)(file, { throwIfNoEntry: false })?.isFile() ?? false)
+        : ((0, node_fs_1.lstatSync)(file, { throwIfNoEntry: false })?.isFile() ?? false);
 }
 /**
  * Compiles picomatch matchers and POSIX input prefixes for each asset configuration.
@@ -39,15 +58,16 @@ function normalizeGlobPattern(pattern) {
  */
 function createAssetMatchers(assets) {
     return assets.map((asset) => {
-        const ignore = [...resolve_assets_1.DEFAULT_ASSET_IGNORE, ...(asset.ignore ?? [])]
+        const { glob: rawGlob, ignore: rawIgnore, input } = asset;
+        const ignore = [...resolve_assets_1.DEFAULT_ASSET_IGNORE, ...(rawIgnore ?? [])]
             .filter((pattern) => pattern.length > 0)
             .map(normalizeGlobPattern);
-        const isMatch = (0, picomatch_1.default)(asset.glob ? node_path_1.default.posix.normalize(asset.glob) : [], {
+        const isMatch = (0, picomatch_1.default)(rawGlob ? node_path_1.default.posix.normalize(rawGlob) : [], {
             dot: true,
             windows: false,
             ignore,
         });
-        const prefix = asset.input.endsWith('/') ? asset.input : `${asset.input}/`;
+        const prefix = input.endsWith('/') ? input : `${input}/`;
         return { asset, prefix, isMatch };
     });
 }
@@ -74,16 +94,21 @@ async function collectAssetsToEmit(assets, workspaceRoot, emittedAssets, modifie
             let isFileLstat;
             if (!emittedAssets.has(file) && emittedAssets.size > 0) {
                 const dirPrefix = file.endsWith('/') ? file : `${file}/`;
-                let isDeletedDir;
+                let isDirectory;
                 for (const emittedFile of emittedAssets.keys()) {
                     if (emittedFile.startsWith(dirPrefix)) {
-                        if (!(isDeletedDir ??= !(0, node_fs_1.statSync)(file, { throwIfNoEntry: false })?.isDirectory())) {
-                            break;
+                        if (isDirectory === undefined) {
+                            const stats = (0, node_fs_1.statSync)(file, { throwIfNoEntry: false });
+                            isDirectory = stats?.isDirectory() ?? false;
+                            isFileStat = stats?.isFile() ?? false;
+                            if (isDirectory) {
+                                break;
+                            }
                         }
                         filesToDelete.add(emittedFile);
                     }
                 }
-                if (isDeletedDir !== undefined) {
+                if (isDirectory !== undefined && !isFileStat) {
                     continue;
                 }
             }
@@ -112,6 +137,73 @@ async function collectAssetsToEmit(assets, workspaceRoot, emittedAssets, modifie
             }
             if (emittedAssets.has(file) && !matched) {
                 filesToDelete.add(file);
+            }
+        }
+        if (matchers.length > 1) {
+            // Ensure lower-priority modified assets do not overwrite existing higher-priority assets on disk.
+            for (const [outputPath, { file, matcherIndex }] of filesToEmit) {
+                for (let laterIndex = matchers.length - 1; laterIndex > matcherIndex; laterIndex--) {
+                    const laterMatcher = matchers[laterIndex];
+                    const candidateFile = getCandidateSourceForOutput(laterMatcher, outputPath);
+                    if (!candidateFile || candidateFile === file.source) {
+                        continue;
+                    }
+                    if (isMatchingAssetFile(candidateFile, laterMatcher.asset.followSymlinks)) {
+                        if (emittedAssets.get(candidateFile)?.has(outputPath)) {
+                            filesToEmit.delete(outputPath);
+                        }
+                        else {
+                            filesToEmit.set(outputPath, {
+                                file: (0, utils_1.createDiskOutputFile)(candidateFile, outputPath),
+                                matcherIndex: laterIndex,
+                            });
+                        }
+                        break;
+                    }
+                    else if (emittedAssets.get(candidateFile)?.has(outputPath)) {
+                        filesToDelete.add(candidateFile);
+                    }
+                }
+            }
+            // Restore lower-priority fallback assets when a higher-priority overriding asset is deleted.
+            for (const deletedFile of filesToDelete) {
+                for (let deletedMatcherIndex = 0; deletedMatcherIndex < matchers.length; deletedMatcherIndex++) {
+                    const { asset, prefix, isMatch } = matchers[deletedMatcherIndex];
+                    if (!deletedFile.startsWith(prefix)) {
+                        continue;
+                    }
+                    const relative = deletedFile.slice(prefix.length);
+                    if (!isMatch(relative)) {
+                        continue;
+                    }
+                    const outputPath = node_path_1.default.posix.join(asset.output, relative);
+                    if (filesToEmit.has(outputPath)) {
+                        continue;
+                    }
+                    for (let candidateIndex = matchers.length - 1; candidateIndex >= 0; candidateIndex--) {
+                        if (candidateIndex === deletedMatcherIndex) {
+                            continue;
+                        }
+                        const candidateMatcher = matchers[candidateIndex];
+                        const candidateFile = getCandidateSourceForOutput(candidateMatcher, outputPath);
+                        if (!candidateFile || filesToDelete.has(candidateFile)) {
+                            continue;
+                        }
+                        if (isMatchingAssetFile(candidateFile, candidateMatcher.asset.followSymlinks)) {
+                            if (candidateIndex < deletedMatcherIndex ||
+                                !emittedAssets.get(candidateFile)?.has(outputPath)) {
+                                filesToEmit.set(outputPath, {
+                                    file: (0, utils_1.createDiskOutputFile)(candidateFile, outputPath),
+                                    matcherIndex: candidateIndex,
+                                });
+                            }
+                            break;
+                        }
+                        else if (emittedAssets.get(candidateFile)?.has(outputPath)) {
+                            filesToDelete.add(candidateFile);
+                        }
+                    }
+                }
             }
         }
         return {
