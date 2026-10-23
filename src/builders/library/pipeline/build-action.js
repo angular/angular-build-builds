@@ -53,7 +53,7 @@ async function buildAction(actionContext) {
                         ...options,
                         declarationMap,
                         compilationMode,
-                    }),
+                    }, buildState.previousBundleResults),
                     diagnosePromise,
                 ]);
             }

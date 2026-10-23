@@ -52,39 +52,136 @@ const utils_1 = require("./utils");
 const ESM_EXTENSIONS = ['.js', '.mjs', '/index.js', '/index.mjs'];
 const DTS_EXTENSIONS = ['.d.ts', '.d.mts', '/index.d.ts', '/index.d.mts'];
 /**
+ * Expands the selected entry points to include any available entry points whose module IDs
+ * transitively overlap with the selected set.
+ */
+function expandOverlappingEntryPoints(selectedEntryPoints, allEntryPoints, isAvailable, getModuleIds) {
+    (0, node_assert_1.default)(selectedEntryPoints.length <= allEntryPoints.length, 'Selected entry points cannot exceed all entry points.');
+    if (selectedEntryPoints.length === allEntryPoints.length) {
+        return selectedEntryPoints;
+    }
+    const selected = new Set(selectedEntryPoints);
+    for (const ep of selected) {
+        const moduleIds = getModuleIds(ep);
+        if (!moduleIds?.size) {
+            continue;
+        }
+        for (const candidate of allEntryPoints) {
+            if (selected.has(candidate) || !isAvailable(candidate)) {
+                continue;
+            }
+            const candidateIds = getModuleIds(candidate);
+            if (candidateIds && !moduleIds.isDisjointFrom(candidateIds)) {
+                selected.add(candidate);
+            }
+        }
+    }
+    return selected.size > selectedEntryPoints.length
+        ? allEntryPoints.filter((ep) => selected.has(ep))
+        : selectedEntryPoints;
+}
+/**
+ * Checks whether any bundled entry point acquired a module ID that was not present in its
+ * previous bundle result.
+ */
+function hasNewlyAddedModules(bundledEntryPoints, output, getPreviousModuleIds) {
+    for (const ep of bundledEntryPoints) {
+        const bundle = output.bundles.get(ep.bundleName);
+        (0, node_assert_1.default)(bundle, `Expected bundle output for entry point "${ep.bundleName}".`);
+        const prevIds = getPreviousModuleIds(ep);
+        if (!prevIds) {
+            return true;
+        }
+        for (const id of bundle.moduleIds) {
+            if (!prevIds.has(id)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+/**
+ * Bundles dirty entry points for a single mode (ESM or DTS), automatically expanding the entry
+ * point set before or after bundling when module IDs overlap across entry points.
+ */
+async function bundleModeWithSharedModules(dirtyEntryPoints, allEntryPoints, files, dtsMode, getPreviousModuleIds, bundleFn, options) {
+    if (dirtyEntryPoints.length === 0) {
+        return { filesToEmit: [], bundles: new Map(), warnings: [] };
+    }
+    if (dirtyEntryPoints.length === allEntryPoints.length) {
+        return bundleFn(dirtyEntryPoints, files, options);
+    }
+    const isAvailable = (ep) => files.has(resolveEntryInputPath(ep.entryFilePath, dtsMode));
+    const initialEntryPoints = expandOverlappingEntryPoints(dirtyEntryPoints, allEntryPoints, isAvailable, getPreviousModuleIds);
+    const output = await bundleFn(initialEntryPoints, files, options);
+    if (initialEntryPoints.length < allEntryPoints.length &&
+        hasNewlyAddedModules(initialEntryPoints, output, getPreviousModuleIds)) {
+        const expandedEntryPoints = expandOverlappingEntryPoints(initialEntryPoints, allEntryPoints, isAvailable, (ep) => output.bundles.get(ep.bundleName)?.moduleIds ?? getPreviousModuleIds(ep));
+        if (expandedEntryPoints.length > initialEntryPoints.length) {
+            return bundleFn(expandedEntryPoints, files, options);
+        }
+    }
+    return output;
+}
+/**
+ * Collects all normalized entry points from options and bundle input items.
+ */
+function getAllEntryPoints(items, options) {
+    const byName = new Map();
+    if (options.entryPoints) {
+        for (const ep of options.entryPoints.values()) {
+            byName.set(ep.name, ep);
+        }
+    }
+    for (const item of items) {
+        byName.set(item.entryPoint.name, item.entryPoint);
+    }
+    return Array.from(byName.values());
+}
+/**
  * Bundles the compiled in-memory JavaScript and declaration files for all dirty entry points
- * using at most 2 Rolldown instances total (1 for all .mjs bundles, 1 for all .d.ts bundles).
+ * using at most 2 Rolldown instances per pass (1 for all .mjs bundles, 1 for all .d.ts bundles).
  *
  * @param items The collection of entry point inputs with change statuses.
  * @param esmFiles Map of virtual POSIX ESM output file paths to their content.
  * @param dtsFiles Map of virtual POSIX TypeScript declaration file paths to their content.
  * @param options The normalized library builder options with POSIX paths.
+ * @param previousBundleResults Optional map of entry point names to their previous bundle results.
  * @returns A promise resolving to the bundled output files and bundle cache results.
  */
-async function bundleEntryPoints(items, esmFiles, dtsFiles, options) {
+async function bundleEntryPoints(items, esmFiles, dtsFiles, options, previousBundleResults) {
     const bundleResults = new Map();
     if (items.length === 0) {
         return { filesToEmit: [], bundleResults, warnings: [] };
     }
+    const allEntryPoints = getAllEntryPoints(items, options);
+    const itemsByName = new Map(items.map((item) => [item.entryPoint.name, item]));
+    const getPreviousResult = (name) => itemsByName.get(name)?.previousBundleResult ?? previousBundleResults?.get(name);
     const esmEntryPoints = [];
     const dtsEntryPoints = [];
     for (const item of items) {
-        if (item.hasEsmChanges || !item.previousBundleResult) {
-            esmEntryPoints.push(item.entryPoint);
+        const { entryPoint } = item;
+        const previousBundleResult = getPreviousResult(entryPoint.name);
+        if (item.hasEsmChanges || !previousBundleResult) {
+            esmEntryPoints.push(entryPoint);
         }
-        if (item.hasDtsChanges || !item.previousBundleResult) {
-            dtsEntryPoints.push(item.entryPoint);
+        if (item.hasDtsChanges || !previousBundleResult) {
+            dtsEntryPoints.push(entryPoint);
         }
     }
     const [esmOutput, dtsOutput] = await Promise.all([
-        bundleAllEsm(esmEntryPoints, esmFiles, options),
-        bundleAllDts(dtsEntryPoints, dtsFiles, options),
+        bundleModeWithSharedModules(esmEntryPoints, allEntryPoints, esmFiles, false, (ep) => getPreviousResult(ep.name)?.esmModuleIds, bundleAllEsm, options),
+        bundleModeWithSharedModules(dtsEntryPoints, allEntryPoints, dtsFiles, true, (ep) => getPreviousResult(ep.name)?.dtsModuleIds, bundleAllDts, options),
     ]);
-    for (const { entryPoint, previousBundleResult } of items) {
-        const { bundleName, name } = entryPoint;
-        const esmBundle = esmOutput.bundles.get(bundleName);
-        const dtsBundle = dtsOutput.bundles.get(bundleName);
-        bundleResults.set(name, {
+    for (const entryPoint of allEntryPoints) {
+        const item = itemsByName.get(entryPoint.name);
+        const esmBundle = esmOutput.bundles.get(entryPoint.bundleName);
+        const dtsBundle = dtsOutput.bundles.get(entryPoint.bundleName);
+        if (!item && !esmBundle && !dtsBundle) {
+            continue;
+        }
+        const previousBundleResult = getPreviousResult(entryPoint.name);
+        bundleResults.set(entryPoint.name, {
             esmModuleIds: esmBundle?.moduleIds ?? previousBundleResult?.esmModuleIds ?? new Set(),
             dtsModuleIds: dtsBundle?.moduleIds ?? previousBundleResult?.dtsModuleIds ?? new Set(),
             esmOutputFiles: esmBundle?.outputFiles ?? previousBundleResult?.esmOutputFiles ?? new Set(),
@@ -99,6 +196,14 @@ async function bundleEntryPoints(items, esmFiles, dtsFiles, options) {
     };
 }
 /**
+ * Resolves the compiled in-memory entry file path for a TypeScript entry point.
+ */
+function resolveEntryInputPath(entryFilePath, dtsMode) {
+    return dtsMode
+        ? entryFilePath.replace(/\.(m?ts)$/, '.d.$1')
+        : entryFilePath.replace(/\.(m?)ts$/, '.$1js');
+}
+/**
  * Generates the Rolldown input mapping object from the specified entry points.
  *
  * @param entryPoints The entry points to include in the bundle input map.
@@ -108,9 +213,7 @@ async function bundleEntryPoints(items, esmFiles, dtsFiles, options) {
 function resolveEntryInputMap(entryPoints, dtsMode) {
     const input = {};
     for (const { bundleName, entryFilePath } of entryPoints) {
-        input[bundleName] = dtsMode
-            ? entryFilePath.replace(/\.([cm]?ts)$/, '.d.$1')
-            : entryFilePath.replace(/\.([cm]?)ts$/, '.$1js');
+        input[bundleName] = resolveEntryInputPath(entryFilePath, dtsMode);
     }
     return input;
 }
@@ -123,6 +226,7 @@ function resolveEntryInputMap(entryPoints, dtsMode) {
  * @returns A Rolldown plugin instance.
  */
 function createMemoryFileLoaderPlugin(files, extensions, includeMap) {
+    const isDts = extensions === DTS_EXTENSIONS;
     return {
         name: 'memory-file-loader',
         resolveId: {
@@ -134,26 +238,23 @@ function createMemoryFileLoaderPlugin(files, extensions, includeMap) {
                 if (!importer) {
                     return files.has(id) ? { id, external: false } : undefined;
                 }
-                if (id[0] !== '.' && !node_path_1.default.posix.isAbsolute(id)) {
+                if (id[0] !== '.' && !node_path_1.default.isAbsolute(id)) {
                     return { id, external: true };
                 }
                 const resolved = id[0] === '.' ? node_path_1.default.posix.join(node_path_1.default.posix.dirname(importer), id) : id;
-                let resolvedCandidate;
-                if (files.has(resolved)) {
-                    resolvedCandidate = resolved;
+                const normalizedResolved = resolved.replace(/\/+$/, '');
+                if (files.has(normalizedResolved)) {
+                    return { id: normalizedResolved, external: false };
                 }
-                else {
-                    const base = resolved.replace(/\.[cm]?js$/, '');
-                    for (const ext of extensions) {
-                        const candidate = base + ext;
-                        if (files.has(candidate)) {
-                            resolvedCandidate = candidate;
-                            break;
-                        }
+                const base = normalizedResolved.replace(/\.m?js$/, '');
+                if (isDts && normalizedResolved.endsWith('.mjs') && files.has(`${base}.d.mts`)) {
+                    return { id: `${base}.d.mts`, external: false };
+                }
+                for (const ext of extensions) {
+                    const candidate = base + ext;
+                    if (files.has(candidate)) {
+                        return { id: candidate, external: false };
                     }
-                }
-                if (resolvedCandidate) {
-                    return { id: resolvedCandidate, external: false };
                 }
                 return undefined;
             },
