@@ -222,9 +222,9 @@ function collectEntryPointsToBundle(options, buildState) {
     for (const entryPoint of options.entryPoints.values()) {
         const previousBundleResult = previousBundleResults.get(entryPoint.name);
         const hasEsmChanges = !previousBundleResult ||
-            hasEntryPointChanges(previousBundleResult.esmModuleIds, pendingChangedEsmFiles);
+            !previousBundleResult.esmModuleIds.isDisjointFrom(pendingChangedEsmFiles);
         const hasDtsChanges = !previousBundleResult ||
-            hasEntryPointChanges(previousBundleResult.dtsModuleIds, pendingChangedDtsFiles);
+            !previousBundleResult.dtsModuleIds.isDisjointFrom(pendingChangedDtsFiles);
         if (hasEsmChanges || hasDtsChanges) {
             executionResult.addLog(`Compiling ${entryPoint.displayName}...`);
             itemsToBundle.push({
@@ -236,23 +236,5 @@ function collectEntryPointsToBundle(options, buildState) {
         }
     }
     return itemsToBundle;
-}
-/**
- * Checks whether any file in `changedFiles` belongs to the given entry point's `moduleIds`.
- *
- * @param moduleIds Set of virtual POSIX module IDs referenced by the entry point's previous bundle.
- * @param changedFiles Set of POSIX file paths that changed during compilation.
- * @returns `true` if at least one changed file is part of `moduleIds`; otherwise `false`.
- */
-function hasEntryPointChanges(moduleIds, changedFiles) {
-    if (changedFiles.size === 0) {
-        return false;
-    }
-    for (const file of changedFiles) {
-        if (moduleIds.has(file)) {
-            return true;
-        }
-    }
-    return false;
 }
 //# sourceMappingURL=entry-points.js.map

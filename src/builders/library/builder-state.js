@@ -207,10 +207,8 @@ class BuilderState {
             this.pendingChangedDtsFiles.size > 0) {
             return true;
         }
-        for (const file of this.#pendingCompilationFiles) {
-            if (this.#watchedCompilationFiles.has(file)) {
-                return true;
-            }
+        if (!this.#pendingCompilationFiles.isDisjointFrom(this.#watchedCompilationFiles)) {
+            return true;
         }
         this.#pendingCompilationFiles.clear();
         return false;
@@ -227,11 +225,7 @@ class BuilderState {
             this.#pendingCompilationFiles.clear();
             return undefined;
         }
-        const files = new Set(modifiedFiles);
-        for (const file of this.#pendingCompilationFiles) {
-            files.add(file);
-        }
-        return files;
+        return modifiedFiles.union(this.#pendingCompilationFiles);
     }
     /**
      * Records compilation output into the build state, updating the program cache,
@@ -304,7 +298,7 @@ class BuilderState {
      * @returns Read-only set of relative POSIX output paths to delete from disk.
      */
     recordEmittedOutputs(collectedAssets, manifestFiles) {
-        const filesToDelete = new Set();
+        let filesToDelete = new Set();
         if (this.#hasUpdatedBundles) {
             this.#hasUpdatedBundles = false;
             const nextBundleFiles = new Set();
@@ -316,19 +310,13 @@ class BuilderState {
                     nextBundleFiles.add(file);
                 }
             }
-            for (const prevFile of this.#emittedBundleFiles) {
-                if (!nextBundleFiles.has(prevFile)) {
-                    filesToDelete.add(prevFile);
-                }
-            }
+            filesToDelete = this.#emittedBundleFiles.difference(nextBundleFiles);
             this.#emittedBundleFiles = nextBundleFiles;
         }
         if (manifestFiles) {
             const nextManifestFiles = new Set(manifestFiles.map((file) => file.path));
-            for (const prevFile of this.#emittedManifestFiles) {
-                if (!nextManifestFiles.has(prevFile)) {
-                    filesToDelete.add(prevFile);
-                }
+            for (const prevFile of this.#emittedManifestFiles.difference(nextManifestFiles)) {
+                filesToDelete.add(prevFile);
             }
             this.#emittedManifestFiles = nextManifestFiles;
         }
