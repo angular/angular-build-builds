@@ -6,6 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 import type { BrowserConfigOptions, Vite } from 'vitest/node';
+import type { NormalizedCachedOptions } from '../../../../utils/normalize-cache';
 import type { ResultFile } from '../../../application/results';
 import type { NormalizedUnitTestBuilderOptions } from '../../options';
 interface PluginOptions {
@@ -18,6 +19,7 @@ interface PluginOptions {
 }
 interface VitestConfigPluginOptions {
     browser: BrowserConfigOptions | undefined;
+    cacheOptions: NormalizedCachedOptions;
     coverage: NormalizedUnitTestBuilderOptions['coverage'];
     projectName: string;
     projectSourceRoot: string;

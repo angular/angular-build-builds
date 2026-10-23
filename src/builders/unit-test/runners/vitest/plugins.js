@@ -186,6 +186,12 @@ async function createVitestConfigPlugin(options) {
                 validateBrowserCoverage(browser, testConfig?.browser, determinedProvider);
             }
             const projectResolver = (0, resolve_project_1.createProjectResolver)(projectSourceRoot);
+            // Vitest enables its file system module cache by default and stores it in `node_modules`,
+            // regardless of `cache` and `cacheDir`. Follow the Angular CLI cache settings instead,
+            // unless the Vitest configuration file sets them.
+            const fsModuleCache = testConfig?.fsModuleCache ?? options.cacheOptions.enabled;
+            const fsModuleCachePath = testConfig?.fsModuleCachePath ??
+                node_path_1.default.join(options.cacheOptions.path, 'vitest-module-cache');
             const projectDefaults = {
                 extends: false,
                 test: {
@@ -194,6 +200,8 @@ async function createVitestConfigPlugin(options) {
                     // Default to `false` to align with the Karma/Jasmine experience.
                     isolate: false,
                     sequence: { setupFiles: 'list' },
+                    fsModuleCache,
+                    fsModuleCachePath,
                 },
                 optimizeDeps: {
                     noDiscovery: true,
@@ -211,7 +219,6 @@ async function createVitestConfigPlugin(options) {
                 test: {
                     name: projectName,
                     include,
-                    fsModuleCache: false,
                     // CLI provider browser options override, if present
                     ...(browser ? { browser } : {}),
                     // Only override if the user explicitly set it via CLI
@@ -229,7 +236,9 @@ async function createVitestConfigPlugin(options) {
             const projectConfig = mergeConfig(projectBase, projectOverrides);
             return {
                 test: {
-                    fsModuleCache: false,
+                    // The cache metadata is always read from the root configuration.
+                    fsModuleCache,
+                    fsModuleCachePath,
                     coverage: await generateCoverageOption(options.coverage, testConfig?.coverage, projectName, determinedProvider),
                     ...(reporters ? { reporters } : {}),
                     projects: [projectConfig],
@@ -250,12 +259,44 @@ function createVitestPlugins(pluginOptions) {
     const isWindows = (0, node_os_1.platform)() === 'win32';
     const setupFileSet = new Set(setupFiles.map((file) => (0, path_1.toPosixPath)(node_path_1.default.isAbsolute(file) ? file : node_path_1.default.join(workspaceRoot, file))));
     let vitestConfig;
+    /** The build output path served for a module, whether it is a test entry point or a built artifact. */
+    const getOutputPath = (id) => {
+        const entryPoint = testFileToEntryPoint.get(id);
+        return entryPoint ? entryPoint + '.js' : (0, path_1.toPosixPath)(node_path_1.default.relative(workspaceRoot, id));
+    };
+    // Setup files must not be wrapped in a virtual import stub because Vitest only invalidates
+    // the setup file itself between test files; wrapping it would cause the underlying bundle
+    // to be cached, preventing per-test hooks from running on subsequent test files.
+    const isCoverageRedirect = (id) => !!vitestConfig?.coverage?.enabled && testFileToEntryPoint.has(id) && !setupFileSet.has(id);
     return [
         {
             name: 'angular:test-in-memory-provider',
             enforce: 'pre',
             configureVitest(context) {
                 vitestConfig = context.vitest.config;
+                // Vitest keys its file system module cache on the file found on disk. A test entry point is
+                // served from its bundle instead, which also holds the application code it imports, so the
+                // key must follow the served build output, or the cache would return a stale bundle.
+                // Vitest 4.1 only has the experimental name, and 4.0 has no file system module cache at all.
+                const pluginContext = context;
+                const defineCacheKeyGenerator = pluginContext.defineCacheKeyGenerator ??
+                    pluginContext.experimental_defineCacheKeyGenerator;
+                defineCacheKeyGenerator?.(({ id }) => {
+                    const outputPath = getOutputPath(id);
+                    // With coverage, `load` serves a redirect stub instead of the bundle, see below.
+                    if (isCoverageRedirect(id)) {
+                        return `coverage-redirect:${outputPath}`;
+                    }
+                    const outputFile = buildResultFiles.get(outputPath);
+                    if (!outputFile) {
+                        return undefined;
+                    }
+                    if (outputFile.origin !== 'memory') {
+                        return false;
+                    }
+                    const sourceMapFile = buildResultFiles.get(outputPath + '.map');
+                    return `${outputFile.hash}:${sourceMapFile?.origin === 'memory' ? sourceMapFile.hash : ''}`;
+                });
             },
             resolveId: (id, importer) => {
                 // Fast path for test entry points.
@@ -309,28 +350,15 @@ function createVitestPlugins(pluginOptions) {
             },
             async load(id) {
                 (0, node_assert_1.default)(buildResultFiles.size > 0, 'buildResult must be available for in-memory loading.');
-                // Attempt to load as a source test file.
-                const entryPoint = testFileToEntryPoint.get(id);
-                let outputPath;
-                if (entryPoint) {
-                    outputPath = entryPoint + '.js';
-                    // Setup files must not be wrapped in a virtual import stub because Vitest only invalidates
-                    // the setup file itself between test files; wrapping it would cause the underlying bundle
-                    // to be cached, preventing per-test hooks from running on subsequent test files.
-                    const isSetupFile = setupFileSet.has(id);
-                    if (vitestConfig?.coverage?.enabled && !isSetupFile) {
-                        // To support coverage exclusion of the actual test file, the virtual
-                        // test entry point only references the built and bundled intermediate file.
-                        // If vitest supported an "excludeOnlyAfterRemap" option, this could be removed completely.
-                        return {
-                            code: `import "./${outputPath}";`,
-                        };
-                    }
-                }
-                else {
-                    // Attempt to load as a built artifact.
-                    const relativePath = node_path_1.default.relative(workspaceRoot, id);
-                    outputPath = (0, path_1.toPosixPath)(relativePath);
+                // Attempt to load as a source test file, or else as a built artifact.
+                const outputPath = getOutputPath(id);
+                if (isCoverageRedirect(id)) {
+                    // To support coverage exclusion of the actual test file, the virtual
+                    // test entry point only references the built and bundled intermediate file.
+                    // If vitest supported an "excludeOnlyAfterRemap" option, this could be removed completely.
+                    return {
+                        code: `import "./${outputPath}";`,
+                    };
                 }
                 const outputFile = buildResultFiles.get(outputPath);
                 if (outputFile) {

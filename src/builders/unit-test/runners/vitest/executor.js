@@ -322,6 +322,7 @@ class VitestExecutor {
             plugins: [
                 await (0, plugins_1.createVitestConfigPlugin)({
                     browser: browserOptions.browser,
+                    cacheOptions,
                     coverage,
                     projectName,
                     projectSourceRoot,
