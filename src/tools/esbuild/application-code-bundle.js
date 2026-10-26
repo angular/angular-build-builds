@@ -28,6 +28,7 @@ const compiler_plugin_options_1 = require("./compiler-plugin-options");
 const external_packages_plugin_1 = require("./external-packages-plugin");
 const i18n_locale_plugin_1 = require("./i18n-locale-plugin");
 const loader_import_attribute_plugin_1 = require("./loader-import-attribute-plugin");
+const platform_server_domino_plugin_1 = require("./platform-server-domino-plugin");
 const rxjs_esm_resolution_plugin_1 = require("./rxjs-esm-resolution-plugin");
 const server_bundle_metadata_plugin_1 = require("./server-bundle-metadata-plugin");
 const sourcemap_ignorelist_plugin_1 = require("./sourcemap-ignorelist-plugin");
@@ -162,7 +163,7 @@ function createServerPolyfillBundleOptions(options, target, loadResultCache) {
         },
     };
     buildOptions.plugins ??= [];
-    buildOptions.plugins.push((0, server_bundle_metadata_plugin_1.createServerBundleMetadata)());
+    buildOptions.plugins.push((0, server_bundle_metadata_plugin_1.createServerBundleMetadata)(), (0, platform_server_domino_plugin_1.createPlatformServerDominoExposePlugin)());
     return () => buildOptions;
 }
 function createServerMainCodeBundleOptions(options, target, sourceFileCache, stylesheetBundler, angularCompilationContext) {
@@ -210,7 +211,7 @@ function createServerMainCodeBundleOptions(options, target, sourceFileCache, sty
             // Note: The framework already issues a warning when using XHR with SSR.
             buildOptions.external.push('xhr2');
         }
-        buildOptions.plugins.push((0, server_bundle_metadata_plugin_1.createServerBundleMetadata)(), (0, virtual_module_plugin_1.createVirtualModulePlugin)({
+        buildOptions.plugins.push((0, server_bundle_metadata_plugin_1.createServerBundleMetadata)(), (0, platform_server_domino_plugin_1.createPlatformServerDominoRedirectPlugin)(), (0, virtual_module_plugin_1.createVirtualModulePlugin)({
             namespace: mainServerInjectManifestNamespace,
             cache: loadResultCache,
             entryPointOnly: false,
