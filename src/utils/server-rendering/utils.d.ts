@@ -15,6 +15,8 @@ export declare function isSsrRequestHandler(value: unknown): value is ReturnType
  * This function creates a simple HTML page that performs a redirect using a meta tag.
  * It includes a fallback link in case the meta-refresh doesn't work.
  *
+ * The provided URL is HTML-escaped before being interpolated.
+ *
  * @param url - The URL to which the page should redirect.
  * @returns The HTML content of the static redirect page.
  */
