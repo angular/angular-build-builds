@@ -35,6 +35,7 @@ async function buildAction(actionContext) {
         if (!buildState.hasEmittedManifests && !verifyAllowedDependencies(options, result)) {
             return result;
         }
+        let collectedAssets = actionContext.collectedAssets;
         const filesToEmit = [];
         if (shouldCompileEntryPoints) {
             buildState.hasCompilationError = true;
@@ -48,13 +49,14 @@ async function buildAction(actionContext) {
             const itemsToBundle = (0, entry_points_1.collectEntryPointsToBundle)(options, buildState);
             let bundleOutput;
             try {
-                [bundleOutput] = await Promise.all([
+                [bundleOutput, , collectedAssets] = await Promise.all([
                     (0, bundler_1.bundleEntryPoints)(itemsToBundle, esmFiles, dtsFiles, {
                         ...options,
                         declarationMap,
                         compilationMode,
                     }, buildState.previousBundleResults),
                     diagnosePromise,
+                    collectedAssets ?? buildState.collectAssets(options, modifiedFiles),
                 ]);
             }
             catch (error) {
@@ -82,13 +84,13 @@ async function buildAction(actionContext) {
             }, isWatchMode, hasTslibImport);
             filesToEmit.push(...manifestFiles);
         }
-        const collectedAssets = actionContext.collectedAssets ?? (await buildState.collectAssets(options, modifiedFiles));
+        collectedAssets ??= await buildState.collectAssets(options, modifiedFiles);
         filesToEmit.push(...collectedAssets.filesToEmit);
-        await (0, disk_files_1.emitFilesToDisk)(filesToEmit, (file) => node_path_1.default.posix.join(options.outputPath, file.path));
         const filesToDelete = buildState.recordEmittedOutputs(collectedAssets, manifestFiles);
         if (filesToDelete.size) {
             await (0, disk_files_1.deleteFilesFromDisk)(Array.from(filesToDelete, (file) => node_path_1.default.posix.join(options.outputPath, file)));
         }
+        await (0, disk_files_1.emitFilesToDisk)(filesToEmit, (file) => node_path_1.default.posix.join(options.outputPath, file.path));
     }
     catch (error) {
         (0, error_1.assertIsError)(error);
@@ -105,7 +107,7 @@ async function buildAction(actionContext) {
  * @returns `true` if all dependencies are allowed; otherwise `false`.
  */
 function verifyAllowedDependencies(options, result) {
-    const { packageJson, allowedNonPeerDependencies } = options;
+    const { packageJson, packageJsonPath, allowedNonPeerDependencies } = options;
     const dependencies = {
         ...(packageJson.dependencies ?? {}),
         ...(packageJson.optionalDependencies ?? {}),
@@ -114,7 +116,7 @@ function verifyAllowedDependencies(options, result) {
     for (const dep of Object.keys(dependencies)) {
         if (!allowedNonPeerDependencies.some((regex) => regex.test(dep))) {
             result.addError(`Dependency '${dep}' must be explicitly allowed using the 'allowedNonPeerDependencies' option, ` +
-                `or moved to 'peerDependencies' in 'package.json'.`);
+                `or moved to 'peerDependencies' in '${packageJsonPath}'.`);
             isValid = false;
         }
     }
