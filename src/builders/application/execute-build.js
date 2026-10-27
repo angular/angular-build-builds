@@ -64,6 +64,33 @@ const i18n_1 = require("./i18n");
 const setup_bundling_1 = require("./setup-bundling");
 /** The esbuild error text prefix used to detect top-level await errors. */
 const TOP_LEVEL_AWAIT_ERROR_TEXT = 'Top-level await is not available in the configured target environment';
+/** Returns a shallow copy of a record with its keys sorted. */
+function sortObjectKeys(value) {
+    const sorted = {};
+    for (const key of Object.keys(value).sort()) {
+        sorted[key] = value[key];
+    }
+    return sorted;
+}
+/**
+ * Serializes a metafile with its dynamic path keys sorted so the stats file is identical across
+ * builds. Only `inputs`, `outputs`, and each output's `inputs` have dynamic keys; the remaining
+ * fixed-schema objects are left untouched so V8 keeps its native `JSON.stringify` fast path.
+ */
+function stableStringify(metafile) {
+    const outputs = {};
+    for (const key of Object.keys(metafile.outputs).sort()) {
+        const output = metafile.outputs[key];
+        outputs[key] = {
+            ...output,
+            inputs: sortObjectKeys(output.inputs),
+        };
+    }
+    return JSON.stringify({
+        inputs: sortObjectKeys(metafile.inputs),
+        outputs,
+    }, null, 2);
+}
 // eslint-disable-next-line max-lines-per-function
 async function executeBuild(options, context, rebuildState) {
     const { projectRoot, workspaceRoot, i18nOptions, optimizationOptions, assets, cacheOptions, serverEntryPoint, baseHref, ssrOptions, verbose, colors, jsonLogs, security, } = options;
@@ -300,9 +327,9 @@ async function executeBuild(options, context, rebuildState) {
         }
         // Write metafiles if stats option is enabled
         if (options.stats) {
-            executionResult.addOutputFile('browser-stats.json', JSON.stringify(browserMetafile, null, 2), bundler_files_1.BuildOutputFileType.Root);
+            executionResult.addOutputFile('browser-stats.json', stableStringify(browserMetafile), bundler_files_1.BuildOutputFileType.Root);
             if (serverEntryPoint) {
-                executionResult.addOutputFile('server-stats.json', JSON.stringify(serverMetafile, null, 2), bundler_files_1.BuildOutputFileType.Root);
+                executionResult.addOutputFile('server-stats.json', stableStringify(serverMetafile), bundler_files_1.BuildOutputFileType.Root);
             }
         }
         if (!jsonLogs && !options.quiet) {
