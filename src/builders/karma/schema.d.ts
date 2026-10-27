@@ -47,9 +47,9 @@ export type Schema = {
     /**
      * Globs of files to include, relative to the project source root.
      * There are 2 special cases:
-     * - when a path to a directory is provided, all spec files ending ".spec.@(ts|tsx)" will be
-     * included
-     * - when a path to a file is provided, and a matching spec file exists, it will be included
+     * - when a path to a directory is provided, all test files ending ".@(spec|test).@(ts|tsx)"
+     * will be included
+     * - when a path to a file is provided, and a matching test file exists, it will be included
      * instead.
      */
     include?: string[];

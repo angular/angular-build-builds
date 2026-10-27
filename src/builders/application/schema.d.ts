@@ -194,8 +194,9 @@ export type Schema = {
      */
     ssr?: SsrUnion;
     /**
-     * Generates a 'stats.json' file which can be analyzed with
-     * https://esbuild.github.io/analyze/.
+     * Generates a 'browser-stats.json' file which can be analyzed with
+     * https://esbuild.github.io/analyze/. When server-side rendering is enabled, a
+     * 'server-stats.json' file is also generated.
      */
     statsJson?: boolean;
     /**
