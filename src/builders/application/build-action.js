@@ -238,10 +238,10 @@ function* emitOutputResults({ outputFiles, assetFiles, errors, warnings, externa
         }
     }
     // Initially assume all previous assets files have been removed
-    const removedAssetFiles = new Map(previousAssetsInfo);
+    const removedAssetFiles = new Set(previousAssetsInfo);
     for (const { source, destination } of assetFiles) {
-        removedAssetFiles.delete(source);
-        if (!previousAssetsInfo.has(source)) {
+        removedAssetFiles.delete(destination);
+        if (!previousAssetsInfo.has(destination)) {
             incrementalResult.added.push(destination);
             incrementalResult.background = false;
         }
@@ -272,7 +272,7 @@ function* emitOutputResults({ outputFiles, assetFiles, errors, warnings, externa
     incrementalResult.removed.push(...Array.from(removedOutputFiles.values(), ({ type, path }) => ({
         path,
         type,
-    })), ...Array.from(removedAssetFiles.values(), (path) => ({
+    })), ...Array.from(removedAssetFiles, (path) => ({
         path,
         type: bundler_files_1.BuildOutputFileType.Browser,
     })));
