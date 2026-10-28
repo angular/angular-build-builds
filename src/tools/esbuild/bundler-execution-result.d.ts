@@ -28,7 +28,7 @@ export interface RebuildState {
         type: BuildOutputFileType;
         path: string;
     }>;
-    previousAssetsInfo: ReadonlyMap<string, string>;
+    previousAssetsInfo: ReadonlySet<string>;
     templateUpdates?: Map<string, string>;
 }
 export interface ExternalResultMetadata {
