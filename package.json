@@ -1,6 +1,6 @@
 {
   "name": "@angular/build",
-  "version": "22.3.0-next.3+sha-19de4c3",
+  "version": "22.3.0-next.3+sha-79b278c",
   "description": "Official build system for Angular",
   "keywords": [
     "Angular CLI",
@@ -23,9 +23,9 @@
   "builders": "builders.json",
   "dependencies": {
     "@ampproject/remapping": "2.3.0",
-    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#19de4c3",
-    "@babel/core": "8.0.7",
-    "@inquirer/confirm": "6.3.4",
+    "@angular-devkit/architect": "github:angular/angular-devkit-architect-builds#79b278c",
+    "@babel/core": "8.0.9",
+    "@inquirer/confirm": "6.3.5",
     "@parcel/watcher": "2.6.0",
     "@vitejs/plugin-basic-ssl": "2.3.0",
     "beasties": "0.5.5",
@@ -35,16 +35,16 @@
     "https-proxy-agent": "9.1.0",
     "jsonc-parser": "3.3.1",
     "listr2": "11.4.0",
-    "magic-string": "1.4.3",
+    "magic-string": "1.4.5",
     "mrmime": "2.0.1",
-    "oxc-parser": "0.155.0",
+    "oxc-parser": "0.156.0",
     "parse5-html-rewriting-stream": "8.0.1",
     "picomatch": "4.0.7",
     "piscina": "5.3.2",
-    "rolldown": "1.2.14",
+    "rolldown": "1.2.15",
     "rolldown-plugin-dts": "0.28.8",
-    "sass": "1.106.0",
-    "sass-embedded": "1.106.0",
+    "sass": "1.106.1",
+    "sass-embedded": "1.106.1",
     "semver": "7.8.5",
     "source-map-support": "0.5.21",
     "tinyglobby": "0.2.17",
@@ -52,8 +52,8 @@
     "xxhash-wasm": "1.1.0"
   },
   "optionalDependencies": {
-    "@oxc-parser/binding-wasm32-wasi": "0.155.0",
-    "lmdb": "3.5.8"
+    "@oxc-parser/binding-wasm32-wasi": "0.156.0",
+    "lmdb": "3.5.9"
   },
   "peerDependencies": {
     "@angular/compiler": "^22.0.0 || ^22.3.0-next.0",
@@ -63,7 +63,7 @@
     "@angular/platform-browser": "^22.0.0 || ^22.3.0-next.0",
     "@angular/platform-server": "^22.0.0 || ^22.3.0-next.0",
     "@angular/service-worker": "^22.0.0 || ^22.3.0-next.0",
-    "@angular/ssr": "github:angular/angular-ssr-builds#19de4c3",
+    "@angular/ssr": "github:angular/angular-ssr-builds#79b278c",
     "istanbul-lib-instrument": "^6.0.0",
     "karma": "^6.4.0",
     "less": "^4.2.0",
