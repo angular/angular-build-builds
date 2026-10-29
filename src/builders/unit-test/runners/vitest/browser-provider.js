@@ -149,8 +149,8 @@ async function setupBrowserConfiguration(browsers, headless, debug, projectSourc
             // Validate that the imported module has the expected structure
             const providerFactory = providerModule[providerName];
             if (typeof providerFactory === 'function') {
+                const executablePath = process.env['CHROME_BIN'];
                 if (providerName === 'playwright') {
-                    const executablePath = process.env['CHROME_BIN'];
                     const baseOptions = {
                         contextOptions: {
                             // Enables `prefer-color-scheme` for Vitest browser instead of `light`
@@ -164,6 +164,20 @@ async function setupBrowserConfiguration(browsers, headless, debug, projectSourc
                                 instance.provider = providerFactory({
                                     ...baseOptions,
                                     launchOptions: { executablePath },
+                                });
+                            }
+                        }
+                    }
+                }
+                else if (providerName === 'webdriverio') {
+                    provider = providerFactory();
+                    if (executablePath) {
+                        for (const instance of instances) {
+                            if (instance.browser === 'chrome' || instance.browser === 'chromium') {
+                                instance.provider = providerFactory({
+                                    capabilities: {
+                                        'goog:chromeOptions': { binary: executablePath },
+                                    },
                                 });
                             }
                         }
