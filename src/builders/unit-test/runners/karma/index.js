@@ -19,12 +19,10 @@ const KarmaTestRunner = {
         const checker = new dependency_checker_1.DependencyChecker(options.projectSourceRoot);
         checker.check('karma');
         checker.check('karma-jasmine');
-        // Check for browser launchers
-        if (options.browsers?.length) {
-            for (const browser of options.browsers) {
-                const launcherName = `karma-${browser.toLowerCase().split('headless')[0]}-launcher`;
-                checker.check(launcherName);
-            }
+        // A custom configuration loads its own launcher plugins and may define custom launchers.
+        // The built-in configuration only loads the Chrome launcher, which also provides Chromium.
+        if (!options.runnerConfig) {
+            checker.check('karma-chrome-launcher');
         }
         if (options.coverage.enabled) {
             checker.check('karma-coverage');
