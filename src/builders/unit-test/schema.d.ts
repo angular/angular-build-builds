@@ -8,9 +8,11 @@ export type Schema = {
      */
     browserViewport?: string;
     /**
-     * Specifies the browsers to use for test execution. When not specified, tests are run in a
-     * Node.js environment using jsdom. For both Vitest and Karma, browser names ending with
-     * 'Headless' (e.g., 'ChromeHeadless') will enable headless mode.
+     * Specifies the browsers to use for test execution. When not specified, the Vitest runner
+     * runs tests in a Node.js environment using `happy-dom` if it is installed, otherwise
+     * `jsdom`, and the Karma runner uses the browsers of its configuration. Browser names
+     * ending with `Headless` enable headless mode (e.g., `ChromiumHeadless` for Vitest with the
+     * Playwright provider, or `ChromeHeadless` for Karma).
      */
     browsers?: [string, ...string[]];
     /**

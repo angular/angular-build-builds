@@ -34,6 +34,7 @@ function createOutputFile(path, data, type) {
             set contents(value) {
                 cachedContents = value;
                 cachedText = null;
+                cachedHash = null;
             },
             get text() {
                 cachedText ??= new TextDecoder('utf-8').decode(this.contents);
@@ -62,6 +63,7 @@ function createOutputFile(path, data, type) {
             set contents(value) {
                 cachedContents = value;
                 cachedText = null;
+                cachedHash = null;
             },
             path,
             type,
@@ -85,6 +87,7 @@ function createOutputFile(path, data, type) {
 function convertOutputFile(file, type) {
     let { contents: cachedContents } = file;
     let cachedText = null;
+    let cachedHash = file.hash;
     return {
         get contents() {
             return cachedContents;
@@ -92,8 +95,12 @@ function convertOutputFile(file, type) {
         set contents(value) {
             cachedContents = value;
             cachedText = null;
+            cachedHash = null;
         },
-        hash: file.hash,
+        get hash() {
+            cachedHash ??= (0, hash_1.calculateHash)(cachedContents);
+            return cachedHash;
+        },
         path: file.path,
         type,
         get size() {

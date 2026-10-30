@@ -237,6 +237,20 @@ async function optimizeChunks(original, sourcemap) {
                     };
                     return result;
                 },
+                ...(sourcemap
+                    ? {
+                        augmentChunkHash(chunk) {
+                            let hash = '';
+                            for (const id of chunk.moduleIds) {
+                                const mapHash = maps[id]?.hash;
+                                if (mapHash) {
+                                    hash += mapHash;
+                                }
+                            }
+                            return hash || undefined;
+                        },
+                    }
+                    : {}),
             },
         ];
         if (environment_options_1.useRolldownChunks) {
