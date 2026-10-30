@@ -224,6 +224,20 @@ async function optimizeChunks(original, sourcemap) {
                     };
                     return result;
                 },
+                ...(sourcemap
+                    ? {
+                        augmentChunkHash(chunk) {
+                            let hash = '';
+                            for (const id of chunk.moduleIds) {
+                                const mapHash = maps[id]?.hash;
+                                if (mapHash) {
+                                    hash += mapHash;
+                                }
+                            }
+                            return hash || undefined;
+                        },
+                    }
+                    : {}),
             },
         ];
         const chunkFileNames = (chunkInfo) => `${chunkInfo.name.replace(/-[a-zA-Z0-9_-]{8}$/, '')}-[hash].js`;
