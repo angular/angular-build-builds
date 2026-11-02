@@ -5,6 +5,7 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
+import './oxc-wasi-shim';
 import type { DecodedSourceMap } from '@ampproject/remapping';
 export interface OxcTransformOptions {
     sourcemap?: boolean;

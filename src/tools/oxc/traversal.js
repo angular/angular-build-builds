@@ -8,6 +8,7 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.traversePostOrder = traversePostOrder;
+require("./oxc-wasi-shim");
 const oxc_parser_1 = require("oxc-parser");
 /**
  * A set of TypeScript AST node types that contain executable code or runtime declarations.

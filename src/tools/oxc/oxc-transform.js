@@ -8,6 +8,7 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.transform = transform;
+require("./oxc-wasi-shim");
 const linker_1 = require("@angular/compiler-cli/linker");
 const magic_string_1 = require("magic-string");
 const oxc_parser_1 = require("oxc-parser");
