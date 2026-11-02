@@ -42,6 +42,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.inlineFileBatch = inlineFileBatch;
 exports.inlineCode = inlineCode;
+require("../oxc/oxc-wasi-shim");
 const localize_1 = require("@angular/localize");
 const magic_string_1 = require("magic-string");
 const node_v8_1 = require("node:v8");
