@@ -14,12 +14,13 @@ exports.isTrailingSourceMapComment = isTrailingSourceMapComment;
 exports.loadInputSourceMapFromUrl = loadInputSourceMapFromUrl;
 exports.loadInputSourceMap = loadInputSourceMap;
 const node_fs_1 = require("node:fs");
+const node_module_1 = require("node:module");
 const node_path_1 = require("node:path");
 const node_url_1 = require("node:url");
-const load_oxc_parser_1 = require("../tools/oxc/load-oxc-parser");
 exports.SOURCEMAP_COMMENT_PREFIX = '//# sourceMappingURL=';
 exports.SOURCEMAP_COMMENT_BYTES = Buffer.from(exports.SOURCEMAP_COMMENT_PREFIX);
 const SOURCEMAP_COMMENT_VALUE_PREFIX = exports.SOURCEMAP_COMMENT_PREFIX.slice(2);
+let parseSync;
 /**
  * Checks for a single trailing `//# sourceMappingURL=` comment on a raw buffer.
  *
@@ -92,7 +93,11 @@ function removeSourceMappingURLFromString(code, skipTrailingCheck = false) {
             return code.slice(0, prevIdx < 0 ? 0 : prevIdx + 1);
         }
     }
-    const { comments } = (0, load_oxc_parser_1.loadOxcParser)().parseSync('source.js', code, {
+    if (!parseSync) {
+        const localRequire = (0, node_module_1.createRequire)(__filename);
+        parseSync = localRequire('oxc-parser').parseSync;
+    }
+    const { comments } = parseSync('source.js', code, {
         lang: 'js',
         sourceType: 'unambiguous',
     });

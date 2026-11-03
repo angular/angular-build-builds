@@ -45,7 +45,7 @@ exports.inlineCode = inlineCode;
 const localize_1 = require("@angular/localize");
 const magic_string_1 = require("magic-string");
 const node_v8_1 = require("node:v8");
-const load_oxc_parser_1 = require("../oxc/load-oxc-parser");
+const oxc_parser_1 = require("oxc-parser");
 const traversal_1 = require("../oxc/traversal");
 const i18n_translation_reader_1 = require("./i18n-translation-reader");
 const locale_data_1 = require("./locale-data");
@@ -232,7 +232,7 @@ function translateMessage(diagnostics, translations, messageParts, substitutions
  * @returns The extracted localization metadata.
  */
 function extractLocalizeMetadata(filename, code) {
-    const { program } = (0, load_oxc_parser_1.loadOxcParser)().parseSync(filename, code, {
+    const { program } = (0, oxc_parser_1.parseSync)(filename, code, {
         sourceType: 'unambiguous',
     });
     if (!program) {
