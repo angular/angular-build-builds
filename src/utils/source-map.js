@@ -16,8 +16,10 @@ exports.loadInputSourceMap = loadInputSourceMap;
 const node_fs_1 = require("node:fs");
 const node_path_1 = require("node:path");
 const node_url_1 = require("node:url");
+const load_oxc_parser_1 = require("../tools/oxc/load-oxc-parser");
 exports.SOURCEMAP_COMMENT_PREFIX = '//# sourceMappingURL=';
 exports.SOURCEMAP_COMMENT_BYTES = Buffer.from(exports.SOURCEMAP_COMMENT_PREFIX);
+const SOURCEMAP_COMMENT_VALUE_PREFIX = exports.SOURCEMAP_COMMENT_PREFIX.slice(2);
 /**
  * Checks for a single trailing `//# sourceMappingURL=` comment on a raw buffer.
  *
@@ -64,170 +66,96 @@ function removeSourceMappingURL(code) {
     if (trailing && isTrailingSourceMapComment(trailing.urlLine)) {
         return trailing.code;
     }
-    // Fallback to full decode and state-machine stripping for multiple comments or non-trailing comments
+    // Fallback to full decode and AST lexer comment stripping for multiple or non-trailing comments
     const dataBuffer = Buffer.isBuffer(code)
         ? code
         : Buffer.from(code.buffer, code.byteOffset, code.byteLength);
     const text = dataBuffer.toString('utf-8');
-    const stripped = removeSourceMappingURLFromString(text);
+    const stripped = removeSourceMappingURLFromString(text, true);
     return stripped === text ? code : Buffer.from(stripped, 'utf-8');
 }
-function removeSourceMappingURLFromString(code) {
-    if (!code.includes(exports.SOURCEMAP_COMMENT_PREFIX)) {
+function removeSourceMappingURLFromString(code, skipTrailingCheck = false) {
+    const firstIndex = code.indexOf(exports.SOURCEMAP_COMMENT_PREFIX);
+    if (firstIndex === -1) {
         return code;
     }
+    if (!skipTrailingCheck) {
+        const lastIndex = code.lastIndexOf(exports.SOURCEMAP_COMMENT_PREFIX);
+        let prevIdx = lastIndex - 1;
+        while (prevIdx >= 0 && (code[prevIdx] === ' ' || code[prevIdx] === '\t')) {
+            prevIdx--;
+        }
+        const isLineStart = prevIdx < 0 || code[prevIdx] === '\n' || code[prevIdx] === '\r';
+        if (firstIndex === lastIndex &&
+            isLineStart &&
+            isTrailingSourceMapComment(code.slice(lastIndex + exports.SOURCEMAP_COMMENT_PREFIX.length))) {
+            return code.slice(0, prevIdx < 0 ? 0 : prevIdx + 1);
+        }
+    }
+    const { comments } = (0, load_oxc_parser_1.loadOxcParser)().parseSync('source.js', code, {
+        lang: 'js',
+        sourceType: 'unambiguous',
+    });
     const result = [];
     let lastCopiedIndex = 0;
-    let i = 0;
-    const len = code.length;
-    // Stack to track template literal state and curly brace depth for nested interpolations.
-    const stack = [];
-    let currentState = 'normal';
-    while (i < len) {
-        const char = code[i];
-        const nextChar = code[i + 1];
-        if (currentState === 'normal') {
-            if (char === '/' && nextChar === '*') {
-                currentState = 'comment_block';
-                i += 2;
-                continue;
-            }
-            if (char === '/' && nextChar === '/') {
-                // Detect if the comment is escaped (e.g. inside a regex literal like `/\/\/#/`).
-                let isEscaped = false;
-                let prevIdx = i - 1;
-                while (prevIdx >= 0 && /\s/.test(code[prevIdx])) {
-                    prevIdx--;
-                }
-                if (prevIdx >= 0 && code[prevIdx] === '\\') {
-                    let bsCount = 0;
-                    while (prevIdx >= 0 && code[prevIdx] === '\\') {
-                        bsCount++;
-                        prevIdx--;
-                    }
-                    if (bsCount % 2 === 1) {
-                        isEscaped = true;
-                    }
-                }
-                if (!isEscaped && code.startsWith(exports.SOURCEMAP_COMMENT_PREFIX, i)) {
-                    if (i > lastCopiedIndex) {
-                        result.push(code.slice(lastCopiedIndex, i));
-                    }
-                    // Skip the rest of the comment line up to the newline
-                    i += exports.SOURCEMAP_COMMENT_PREFIX.length;
-                    while (i < len && code[i] !== '\n' && code[i] !== '\r') {
-                        i++;
-                    }
-                    lastCopiedIndex = i;
-                    continue;
-                }
-                else {
-                    currentState = 'comment_line';
-                    i += 2;
-                    continue;
-                }
-            }
-            if (char === '"') {
-                currentState = 'string_double';
-                i++;
-                continue;
-            }
-            if (char === "'") {
-                currentState = 'string_single';
-                i++;
-                continue;
-            }
-            if (char === '`') {
-                currentState = 'template';
-                stack.push({ type: 'template', braceDepth: 0 });
-                i++;
-                continue;
-            }
-            if (char === '{') {
-                const top = stack[stack.length - 1];
-                if (top) {
-                    top.braceDepth++;
-                }
-                i++;
-                continue;
-            }
-            if (char === '}') {
-                const top = stack[stack.length - 1];
-                if (top) {
-                    top.braceDepth--;
-                    if (top.braceDepth < 0) {
-                        // Exiting a template literal interpolation ${ ... }
-                        stack.pop();
-                        currentState = 'template';
-                        i++;
-                        continue;
-                    }
-                }
-                i++;
-                continue;
-            }
-            i++;
+    for (const comment of comments) {
+        if (comment.type !== 'Line' || !comment.value.startsWith(SOURCEMAP_COMMENT_VALUE_PREFIX)) {
+            continue;
         }
-        else if (currentState === 'string_double') {
-            if (char === '\\') {
-                i += 2;
-                continue;
-            }
-            if (char === '"') {
-                currentState = 'normal';
-            }
-            i++;
+        let start = comment.start;
+        let end = comment.end;
+        // Preserve line terminators on non-trailing comments so subsequent line numbers stay aligned
+        // with already-generated sourcemaps (and ASI is unaffected when comments follow code). When a
+        // comment is the only content on its line, strip leading horizontal whitespace—and if only
+        // whitespace follows to EOF, strip to the end of the file to match the trailing fast path.
+        let lineStart = start;
+        while (lineStart > lastCopiedIndex && isHorizontalWhitespace(code.charCodeAt(lineStart - 1))) {
+            lineStart--;
         }
-        else if (currentState === 'string_single') {
-            if (char === '\\') {
-                i += 2;
-                continue;
+        if (lineStart === 0 || isLineTerminator(code.charCodeAt(lineStart - 1))) {
+            start = lineStart;
+            if (isWhitespaceToEnd(code, end)) {
+                end = code.length;
             }
-            if (char === "'") {
-                currentState = 'normal';
-            }
-            i++;
         }
-        else if (currentState === 'template') {
-            if (char === '\\') {
-                i += 2;
-                continue;
-            }
-            if (char === '$' && nextChar === '{') {
-                // Entering template literal interpolation context
-                currentState = 'normal';
-                stack.push({ type: 'template', braceDepth: 0 });
-                i += 2;
-                continue;
-            }
-            if (char === '`') {
-                stack.pop();
-                currentState = 'normal';
-            }
-            i++;
+        if (start > lastCopiedIndex) {
+            result.push(code.slice(lastCopiedIndex, start));
         }
-        else if (currentState === 'comment_block') {
-            if (char === '*' && nextChar === '/') {
-                currentState = 'normal';
-                i += 2;
-                continue;
-            }
-            i++;
-        }
-        else if (currentState === 'comment_line') {
-            if (char === '\n' || char === '\r') {
-                currentState = 'normal';
-            }
-            i++;
-        }
+        lastCopiedIndex = end;
     }
     if (lastCopiedIndex === 0) {
         return code;
     }
-    if (lastCopiedIndex < len) {
+    if (lastCopiedIndex < code.length) {
         result.push(code.slice(lastCopiedIndex));
     }
     return result.join('');
+}
+function isHorizontalWhitespace(code) {
+    return code === 32 || code === 9; // space, tab
+}
+function isLineTerminator(code) {
+    return code === 10 || code === 13; // \n, \r
+}
+function isWhitespaceToEnd(code, start) {
+    for (let i = start; i < code.length; i++) {
+        const char = code.charCodeAt(i);
+        if (!isHorizontalWhitespace(char) && !isLineTerminator(char)) {
+            return false;
+        }
+    }
+    return true;
+}
+function isBase64Char(code) {
+    return ((code >= 65 && code <= 90) || // A-Z
+        (code >= 97 && code <= 122) || // a-z
+        (code >= 48 && code <= 57) || // 0-9
+        code === 43 || // +
+        code === 47 || // /
+        code === 61 || // =
+        code === 45 || // -
+        code === 95 // _
+    );
 }
 /**
  * Extracts the base64 payload from an inline sourcemap data URI line and verifies
@@ -245,13 +173,21 @@ function extractTrailingBase64Payload(urlLine) {
     }
     const payloadStart = base64StartIndex + 7;
     let payloadEnd = urlLine.length;
-    // Find the first trailing whitespace character that marks the end of the base64 payload.
+    // Find the first trailing whitespace character that marks the end of the base64 payload,
+    // while ensuring all payload characters are valid base64 (preventing false positives when
+    // closing quotes, backticks, or `*/` immediately follow the payload).
     for (let i = payloadStart; i < urlLine.length; i++) {
         const char = urlLine[i];
         if (char === ' ' || char === '\r' || char === '\n' || char === '\t') {
             payloadEnd = i;
             break;
         }
+        if (!isBase64Char(urlLine.charCodeAt(i))) {
+            return undefined;
+        }
+    }
+    if (payloadEnd === payloadStart) {
+        return undefined;
     }
     // Verify that everything after the base64 payload is trailing whitespace
     // to ensure this is a valid trailing sourceMappingURL comment at the end of the file.
@@ -274,7 +210,7 @@ function extractTrailingUrl(urlLine) {
         return undefined;
     }
     const urlMatch = /^([^\r\n\s'"`]+)/.exec(urlLine);
-    if (!urlMatch) {
+    if (!urlMatch || urlMatch[1].includes('*/')) {
         return undefined;
     }
     const remaining = urlLine.slice(urlMatch[1].length);

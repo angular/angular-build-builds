@@ -8,8 +8,8 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.traversePostOrder = traversePostOrder;
-require("./oxc-wasi-shim");
-const oxc_parser_1 = require("oxc-parser");
+const load_oxc_parser_1 = require("./load-oxc-parser");
+let visitorKeys;
 /**
  * A set of TypeScript AST node types that contain executable code or runtime declarations.
  */
@@ -228,7 +228,7 @@ function pushChildNodes(node, stack) {
             if (isTypeOnlyTypeScriptNode(node.type)) {
                 break;
             }
-            const keys = oxc_parser_1.visitorKeys[node.type];
+            const keys = (visitorKeys ??= (0, load_oxc_parser_1.loadOxcParser)().visitorKeys)[node.type];
             if (!keys) {
                 break;
             }

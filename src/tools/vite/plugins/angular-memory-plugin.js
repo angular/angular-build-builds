@@ -110,16 +110,25 @@ async function createAngularMemoryPlugin(options) {
                 }
                 return undefined;
             }
-            const code = Buffer.from(codeContents).toString('utf-8');
             const mapContents = outputFiles.get(relativeFile + '.map')?.contents;
+            const strippedContents = mapContents ? (0, source_map_1.removeSourceMappingURL)(codeContents) : codeContents;
             return {
                 // Remove source map URL comments from the code if a sourcemap is present.
                 // Vite will inline and add an additional sourcemap URL for the sourcemap.
-                code: mapContents ? (0, source_map_1.removeSourceMappingURL)(code) : code,
-                map: mapContents && Buffer.from(mapContents).toString('utf-8'),
+                code: decodeUtf8(strippedContents),
+                map: mapContents && decodeUtf8(mapContents),
             };
         },
     };
+}
+/**
+ * Decodes UTF-8 bytes into a string without copying the underlying memory.
+ */
+function decodeUtf8(data) {
+    const buffer = Buffer.isBuffer(data)
+        ? data
+        : Buffer.from(data.buffer, data.byteOffset, data.byteLength);
+    return buffer.toString('utf-8');
 }
 /**
  * Reads the resolved Vite client code from disk and updates the content to remove
