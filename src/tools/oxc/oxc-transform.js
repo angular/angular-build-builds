@@ -10,8 +10,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.transform = transform;
 const linker_1 = require("@angular/compiler-cli/linker");
 const magic_string_1 = require("magic-string");
+const oxc_parser_1 = require("oxc-parser");
 const oxc_linker_1 = require("../angular/linker/oxc-linker");
-const load_oxc_parser_1 = require("./load-oxc-parser");
 const traversal_1 = require("./traversal");
 /**
  * A set of constructor names that are considered to be side-effect free.
@@ -231,7 +231,7 @@ function analyzeClassStaticProperties(classNode, code) {
  */
 // eslint-disable-next-line max-lines-per-function
 function transform(filename, code, options) {
-    const { program } = (0, load_oxc_parser_1.loadOxcParser)().parseSync(filename, code, { range: true });
+    const { program } = (0, oxc_parser_1.parseSync)(filename, code, { range: true });
     const source = new magic_string_1.MagicString(code);
     const shouldLink = options.link && (0, linker_1.needsLinking)(filename, code);
     const linker = shouldLink ? new oxc_linker_1.OxcLinker(filename, code, options.jit) : undefined;
