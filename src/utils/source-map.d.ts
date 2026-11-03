@@ -21,10 +21,11 @@ export declare function findTrailingSourceMapComment(data: Uint8Array): {
 } | null | undefined;
 /**
  * Removes `//# sourceMappingURL=` comments safely from the given JavaScript code,
- * ignoring any occurrences that are inside string literals, template literals, or block comments.
+ * ignoring any occurrences that are inside string literals, template literals, regex literals,
+ * or block comments.
  *
- * For raw Uint8Array / Buffer inputs, it optimizes performance by inspecting trailing byte sequences
- * to slice the buffer directly without full string decoding.
+ * Single trailing sourcemap comments are sliced directly via a fast path; files with multiple
+ * or non-trailing occurrences lazily fall back to `oxc-parser` comment extraction.
  *
  * @param code The JavaScript source code as a string or Uint8Array.
  * @returns The code with top-level sourcemap comments removed.

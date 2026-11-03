@@ -117,12 +117,12 @@ async function transformJavaScript(request) {
                 isAlreadyStripped = true;
             }
             else {
-                // Fallback to full decode and state-machine stripping
+                // Not a valid trailing sourcemap: fall back to full decode and oxc comment stripping
                 textData = textDecoder.decode(data);
             }
         }
         else {
-            // Multiple comments or comment not at line start: fall back to full decode and string parser
+            // Multiple comments or comment not at line start: fall back to full decode and oxc comment stripping
             textData = textDecoder.decode(data);
         }
     }
