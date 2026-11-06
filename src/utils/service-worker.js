@@ -42,7 +42,6 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.augmentAppWithServiceWorker = augmentAppWithServiceWorker;
 exports.augmentAppWithServiceWorkerEsbuild = augmentAppWithServiceWorkerEsbuild;
-exports.augmentAppWithServiceWorkerCore = augmentAppWithServiceWorkerCore;
 const crypto = __importStar(require("node:crypto"));
 const node_fs_1 = require("node:fs");
 const path = __importStar(require("node:path"));
