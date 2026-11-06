@@ -8,9 +8,7 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ThresholdSeverity = exports.BYTES_IN_KILOBYTE = exports.BudgetType = void 0;
-exports.calculateThresholds = calculateThresholds;
 exports.checkBudgets = checkBudgets;
-exports.checkThresholds = checkThresholds;
 const schema_1 = require("../builders/application/schema");
 Object.defineProperty(exports, "BudgetType", { enumerable: true, get: function () { return schema_1.Type; } });
 const format_bytes_1 = require("./format-bytes");

@@ -167,6 +167,8 @@ async function setupBuildOptions(options, context, projectSourceRoot, outputPath
         polyfills,
         webWorkerTsConfig: options.webWorkerTsConfig,
         watch: options.watch,
+        poll: options.poll,
+        progress: options.progress,
         stylePreprocessorOptions: options.stylePreprocessorOptions,
         inlineStyleLanguage: options.inlineStyleLanguage,
         fileReplacements: options.fileReplacements,

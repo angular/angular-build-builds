@@ -40,6 +40,4 @@ export interface BudgetStats {
     chunks?: BudgetChunk[];
     assets?: BudgetAsset[];
 }
-export declare function calculateThresholds(budget: BudgetEntry): IterableIterator<Threshold>;
 export declare function checkBudgets(budgets: BudgetEntry[], stats: BudgetStats, checkComponentStyles?: boolean): IterableIterator<BudgetCalculatorResult>;
-export declare function checkThresholds(thresholds: Iterable<Threshold>, size: number, label?: string): IterableIterator<BudgetCalculatorResult>;

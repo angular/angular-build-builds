@@ -17,7 +17,6 @@ exports.emitFilesToDisk = emitFilesToDisk;
 exports.createJsonBuildManifest = createJsonBuildManifest;
 exports.logMessages = logMessages;
 exports.isZonelessApp = isZonelessApp;
-exports.getEntryPointName = getEntryPointName;
 const esbuild_1 = require("esbuild");
 const listr2_1 = require("listr2");
 const node_path_1 = require("node:path");
