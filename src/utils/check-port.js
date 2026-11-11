@@ -51,11 +51,11 @@ function createInUseError(port) {
     return new Error(`Port ${port} is already in use. Use '--port' to specify a different port.`);
 }
 async function checkPort(port, host) {
-    // Disabled due to Vite not handling port 0 and instead always using the default value (5173)
-    // TODO: Enable this again once Vite is fixed
-    // if (port === 0) {
-    //   return 0;
-    // }
+    // A port of 0 requests an OS-assigned ephemeral port. Vite now binds this correctly
+    // (https://github.com/vitejs/vite/pull/23158); webpack-dev-server always has.
+    if (port === 0) {
+        return 0;
+    }
     return new Promise((resolve, reject) => {
         const server = (0, node_net_1.createServer)();
         server
