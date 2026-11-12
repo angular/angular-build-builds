@@ -53,8 +53,11 @@ const purge_cache_1 = require("../../utils/purge-cache");
  * @returns A BuilderOutput object.
  *
  * @experimental Direct usage of this function is considered experimental.
+ * @deprecated Use the `@angular/build:library` builder instead. Deprecated since v22.3.
  */
 async function* execute(options, context) {
+    context.logger.warn('The "@angular/build:ng-packagr" builder is deprecated. ' +
+        'Use "@angular/build:library" instead.');
     // Purge old build disk cache.
     await (0, purge_cache_1.purgeStaleBuildCache)(context);
     const workspaceRoot = context.workspaceRoot;
