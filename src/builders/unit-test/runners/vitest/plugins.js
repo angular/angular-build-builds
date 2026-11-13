@@ -255,9 +255,10 @@ async function loadResultFile(file) {
     return (0, promises_1.readFile)(file.source, 'utf-8');
 }
 function createVitestPlugins(pluginOptions) {
-    const { workspaceRoot, buildResultFiles, testFileToEntryPoint, setupFiles } = pluginOptions;
+    const { buildResultFiles, setupFiles } = pluginOptions;
+    let { workspaceRoot, testFileToEntryPoint } = pluginOptions;
     const isWindows = (0, node_os_1.platform)() === 'win32';
-    const setupFileSet = new Set(setupFiles.map((file) => (0, path_1.toPosixPath)(node_path_1.default.isAbsolute(file) ? file : node_path_1.default.join(workspaceRoot, file))));
+    let setupFileSet = new Set(setupFiles.map((file) => (0, path_1.toPosixPath)(node_path_1.default.isAbsolute(file) ? file : node_path_1.default.join(workspaceRoot, file))));
     let vitestConfig;
     /** The build output path served for a module, whether it is a test entry point or a built artifact. */
     const getOutputPath = (id) => {
@@ -274,6 +275,17 @@ function createVitestPlugins(pluginOptions) {
             enforce: 'pre',
             configureVitest(context) {
                 vitestConfig = context.vitest.config;
+                if (vitestConfig.root && vitestConfig.root !== (0, path_1.toPosixPath)(workspaceRoot)) {
+                    const previousRoot = workspaceRoot;
+                    workspaceRoot = vitestConfig.root;
+                    testFileToEntryPoint = new Map(Array.from(testFileToEntryPoint, ([file, entryPoint]) => [
+                        file.startsWith('angular:')
+                            ? file
+                            : (0, path_1.toPosixPath)(node_path_1.default.join(workspaceRoot, node_path_1.default.relative(previousRoot, file))),
+                        entryPoint,
+                    ]));
+                    setupFileSet = new Set(setupFiles.map((file) => (0, path_1.toPosixPath)(node_path_1.default.join(workspaceRoot, node_path_1.default.isAbsolute(file) ? node_path_1.default.relative(previousRoot, file) : file))));
+                }
                 // Vitest keys its file system module cache on the file found on disk. A test entry point is
                 // served from its bundle instead, which also holds the application code it imports, so the
                 // key must follow the served build output, or the cache would return a stale bundle.
