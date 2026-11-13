@@ -49,6 +49,7 @@ const node_path_1 = __importDefault(require("node:path"));
 const promises_1 = require("node:timers/promises");
 const utils_1 = require("../../../../tools/vite/utils");
 const error_1 = require("../../../../utils/error");
+const path_1 = require("../../../../utils/path");
 const results_1 = require("../../../application/results");
 const browser_provider_1 = require("./browser-provider");
 const configuration_1 = require("./configuration");
@@ -301,9 +302,13 @@ class VitestExecutor {
         // Filter internal entries and setup files from the include list
         const internalEntries = ['angular:'];
         const setupFileSet = new Set(testSetupFiles);
-        const include = [...this.testFileToEntryPoint.keys()].filter((entry) => {
-            return (!internalEntries.some((internal) => entry.startsWith(internal)) && !setupFileSet.has(entry));
-        });
+        const include = [];
+        for (const entry of this.testFileToEntryPoint.keys()) {
+            if (!internalEntries.some((internal) => entry.startsWith(internal)) &&
+                !setupFileSet.has(entry)) {
+                include.push((0, path_1.toPosixPath)(node_path_1.default.relative(workspaceRoot, entry)));
+            }
+        }
         this.debugLog(DebugLogLevel.Verbose, 'Included test files (after filtering):', include);
         const vitestConfig = {
             config: externalConfigPath,
