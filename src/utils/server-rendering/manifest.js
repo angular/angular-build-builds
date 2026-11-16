@@ -168,7 +168,8 @@ async function generateAngularServerAppManifest(additionalHtmlOutputFiles, outpu
     for (const file of [...additionalHtmlOutputFiles.values(), ...outputFiles]) {
         const extension = (0, node_path_1.extname)(file.path);
         if (extension === '.html') {
-            const jsChunkFilePath = `assets-chunks/${file.path.replace(/[./]/g, '_')}.mjs`;
+            // Mirror the asset path, which is unique, so that two assets never share a chunk.
+            const jsChunkFilePath = `assets-chunks/${file.path}.mjs`;
             const escapedContent = escapeUnsafeChars(file.text);
             serverAssetsChunks.push((0, bundler_files_1.createOutputFile)(jsChunkFilePath, `export default \`${escapedContent}\`;`, bundler_files_1.BuildOutputFileType.ServerApplication));
             // JavaScript engine script parsers normalize `\r\n` (2 bytes in UTF-8) to `\n` (1 byte in UTF-8) in template literals.

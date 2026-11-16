@@ -179,7 +179,7 @@ class InlineFontsProcessor {
                 if (data.length > CONTENT_HASH_LENGTH) {
                     const storedHash = data.slice(0, CONTENT_HASH_LENGTH);
                     const content = data.slice(CONTENT_HASH_LENGTH);
-                    const contentHash = (0, node_crypto_1.createHash)(CONTENT_HASH_ALGORITHM).update(content).digest('base64');
+                    const contentHash = (0, node_crypto_1.createHash)(CONTENT_HASH_ALGORITHM).update(content).digest('hex');
                     if (storedHash === contentHash) {
                         // Return valid content
                         return content;
@@ -229,8 +229,9 @@ class InlineFontsProcessor {
             }).on('error', (e) => reject(new Error(`Inlining of fonts failed. An error has occurred while retrieving ${url} over the internet.\n` +
                 e.message)));
         });
-        if (cacheFile) {
+        if (cacheFile && this.cachePath) {
             try {
+                await (0, promises_1.mkdir)(this.cachePath, { recursive: true });
                 const dataHash = (0, node_crypto_1.createHash)(CONTENT_HASH_ALGORITHM).update(data).digest('hex');
                 await (0, promises_1.writeFile)(cacheFile, dataHash + data);
             }
