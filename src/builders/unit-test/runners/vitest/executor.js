@@ -138,6 +138,10 @@ class VitestExecutor {
         const vitest = this.vitest;
         let testResults;
         if (buildResult.kind === results_1.ResultKind.Incremental) {
+            const vitestRoot = vitest.config.root;
+            const workspaceRoot = this.options.workspaceRoot;
+            const isAliasedRoot = Boolean(vitestRoot && vitestRoot !== (0, path_1.toPosixPath)(workspaceRoot));
+            const activeRoot = isAliasedRoot ? vitestRoot : workspaceRoot;
             // To rerun tests, Vitest needs the original test file paths, not the output paths.
             const modifiedSourceFiles = new Set();
             for (const modifiedFile of [...buildResult.modified, ...buildResult.added]) {
@@ -151,12 +155,13 @@ class VitestExecutor {
                 else {
                     this.debugLog(DebugLogLevel.Verbose, `Could not map output file '${modifiedFile}' to a source file. It may not be a test file.`);
                 }
-                vitest.invalidateFile(this.normalizePath(node_path_1.default.join(this.options.workspaceRoot, modifiedFile)));
+                vitest.invalidateFile(this.normalizePath(node_path_1.default.join(activeRoot, modifiedFile)));
             }
             const specsToRerun = [];
             for (const file of modifiedSourceFiles) {
-                vitest.invalidateFile(file);
-                const specs = vitest.getModuleSpecifications(file);
+                const targetFile = isAliasedRoot ? (0, plugins_1.rebasePath)(file, workspaceRoot, vitestRoot) : file;
+                vitest.invalidateFile(targetFile);
+                const specs = vitest.getModuleSpecifications(targetFile);
                 if (specs) {
                     specsToRerun.push(...specs);
                 }

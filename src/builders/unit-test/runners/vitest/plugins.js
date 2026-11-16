@@ -44,6 +44,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createVitestConfigPlugin = createVitestConfigPlugin;
+exports.rebasePath = rebasePath;
 exports.createVitestPlugins = createVitestPlugins;
 const node_assert_1 = __importDefault(require("node:assert"));
 const promises_1 = require("node:fs/promises");
@@ -254,6 +255,26 @@ async function loadResultFile(file) {
     }
     return (0, promises_1.readFile)(file.source, 'utf-8');
 }
+/**
+ * Rebases a file path from `fromRoot` to `toRoot` in POSIX format.
+ *
+ * The path is rebased using its location relative to `fromRoot`. This includes a path outside of
+ * `fromRoot` (reached through `..` segments), which matches how Vitest resolves the root relative
+ * test `include` entries. Only a path that cannot be expressed relative to `fromRoot`, such as a
+ * file on a different Windows drive, is left unchanged (as POSIX).
+ *
+ * @param filePath The absolute file path to rebase.
+ * @param fromRoot The root that `filePath` is currently based on.
+ * @param toRoot The root to rebase `filePath` onto.
+ * @param pathImpl The path implementation to use. Defaults to that of the host platform.
+ * @returns The rebased file path in POSIX format.
+ */
+function rebasePath(filePath, fromRoot, toRoot, pathImpl = node_path_1.default) {
+    const relative = pathImpl.relative(fromRoot, filePath);
+    const rebased = pathImpl.isAbsolute(relative) ? filePath : pathImpl.join(toRoot, relative);
+    // Equivalent to `toPosixPath` but follows `pathImpl` instead of the host platform.
+    return pathImpl.sep === '\\' ? rebased.replace(/\\/g, '/') : rebased;
+}
 function createVitestPlugins(pluginOptions) {
     const { buildResultFiles, setupFiles } = pluginOptions;
     let { workspaceRoot, testFileToEntryPoint } = pluginOptions;
@@ -276,15 +297,15 @@ function createVitestPlugins(pluginOptions) {
             configureVitest(context) {
                 vitestConfig = context.vitest.config;
                 if (vitestConfig.root && vitestConfig.root !== (0, path_1.toPosixPath)(workspaceRoot)) {
-                    const previousRoot = workspaceRoot;
+                    const originalRoot = pluginOptions.workspaceRoot;
                     workspaceRoot = vitestConfig.root;
-                    testFileToEntryPoint = new Map(Array.from(testFileToEntryPoint, ([file, entryPoint]) => [
-                        file.startsWith('angular:')
-                            ? file
-                            : (0, path_1.toPosixPath)(node_path_1.default.join(workspaceRoot, node_path_1.default.relative(previousRoot, file))),
+                    testFileToEntryPoint = new Map(Array.from(pluginOptions.testFileToEntryPoint, ([file, entryPoint]) => [
+                        file.startsWith('angular:') ? file : rebasePath(file, originalRoot, workspaceRoot),
                         entryPoint,
                     ]));
-                    setupFileSet = new Set(setupFiles.map((file) => (0, path_1.toPosixPath)(node_path_1.default.join(workspaceRoot, node_path_1.default.isAbsolute(file) ? node_path_1.default.relative(previousRoot, file) : file))));
+                    setupFileSet = new Set(setupFiles.map((file) => node_path_1.default.isAbsolute(file)
+                        ? rebasePath(file, originalRoot, workspaceRoot)
+                        : (0, path_1.toPosixPath)(node_path_1.default.join(workspaceRoot, file))));
                 }
                 // Vitest keys its file system module cache on the file found on disk. A test entry point is
                 // served from its bundle instead, which also holds the application code it imports, so the
