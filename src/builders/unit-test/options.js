@@ -53,12 +53,15 @@ async function normalizeOptions(context, projectName, options) {
     const { projectRoot, projectSourceRoot } = (0, project_metadata_1.getProjectRootPaths)(workspaceRoot, projectMetadata);
     // Gather persistent caching option and provide a project specific cache location
     const cacheOptions = (0, normalize_cache_1.normalizeCacheOptions)(projectMetadata, workspaceRoot, projectName, context.builder.builderName);
-    const { runner, browsers, progress, filter, browserViewport, ui, runnerConfig, isolate, splitting = true, polyfills, } = options;
+    const { runner, browsers, progress, filter, browserViewport, ui, runnerConfig, runnerArgs, isolate, splitting = true, polyfills, } = options;
     if (ui && runner !== schema_1.Runner.Vitest) {
         throw new Error('The "ui" option is only available for the "vitest" runner.');
     }
     if (isolate && runner !== schema_1.Runner.Vitest) {
         throw new Error('The "isolate" option is only available for the "vitest" runner.');
+    }
+    if (runnerArgs?.length && (runner ?? schema_1.Runner.Vitest) !== schema_1.Runner.Vitest) {
+        throw new Error('The "runnerArgs" option is only available for the "vitest" runner.');
     }
     const [width, height] = browserViewport?.split('x').map(Number) ?? [];
     let tsConfig = options.tsConfig;
@@ -128,6 +131,7 @@ async function normalizeOptions(context, projectName, options) {
                 ? true
                 : node_path_1.default.resolve(workspaceRoot, runnerConfig)
             : runnerConfig,
+        runnerArgs: runnerArgs?.length ? runnerArgs : undefined,
     };
 }
 function injectTestingPolyfills(polyfills = []) {

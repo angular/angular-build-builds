@@ -54,5 +54,6 @@ export declare function normalizeOptions(context: BuilderContext, projectName: s
     preserveSymlinks: boolean;
     polyfills: string[] | undefined;
     runnerConfig: string | boolean | undefined;
+    runnerArgs: string[] | undefined;
 }>;
 export declare function injectTestingPolyfills(polyfills?: string[]): string[];

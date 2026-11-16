@@ -233,8 +233,13 @@ async function createVitestConfigPlugin(options) {
                 optimizeDeps,
                 resolve,
             };
+            // The order of precedence from lowest to highest is the builder defaults, the Vitest
+            // configuration file, the `runnerArgs` builder option, and then the other builder options.
             const projectBase = mergeConfig(projectDefaults, testConfig ? { test: testConfig } : {});
-            const projectConfig = mergeConfig(projectBase, projectOverrides);
+            const projectWithRunnerArgs = options.runnerArgOptions
+                ? mergeConfig(projectBase, { test: options.runnerArgOptions })
+                : projectBase;
+            const projectConfig = mergeConfig(projectWithRunnerArgs, projectOverrides);
             return {
                 test: {
                     // The cache metadata is always read from the root configuration.

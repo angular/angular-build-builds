@@ -32,6 +32,8 @@ interface VitestConfigPluginOptions {
     watch: boolean;
     isolate: boolean | undefined;
     preserveSymlinks?: boolean;
+    /** Vitest project options from the `runnerArgs` builder option. */
+    runnerArgOptions?: Record<string, unknown>;
 }
 export declare function createVitestConfigPlugin(options: VitestConfigPluginOptions): Promise<Vite.Plugin>;
 /**

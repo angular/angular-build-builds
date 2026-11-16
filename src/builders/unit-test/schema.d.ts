@@ -135,6 +135,14 @@ export type Schema = {
      */
     runner?: Runner;
     /**
+     * Additional command line arguments to provide to the test runner. Each argument must be a
+     * separate value, for example `--runner-args=--update --runner-args=--bail=1`. This option
+     * is only available for the Vitest runner and only a subset of the Vitest command line
+     * options is supported. Options that have an equivalent builder option, such as
+     * `--reporter` or `--coverage`, must be configured with the builder option.
+     */
+    runnerArgs?: string[];
+    /**
      * Specifies the configuration file for the selected test runner. If a string is provided,
      * it will be used as the path to the configuration file. If `true`, the builder will search
      * for a default configuration file (e.g., `vitest-base.config.mts` or `karma.conf.js`). If

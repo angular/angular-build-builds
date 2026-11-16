@@ -52,6 +52,7 @@ const error_1 = require("../../../../utils/error");
 const path_1 = require("../../../../utils/path");
 const results_1 = require("../../../application/results");
 const browser_provider_1 = require("./browser-provider");
+const cli_options_1 = require("./cli-options");
 const configuration_1 = require("./configuration");
 const plugins_1 = require("./plugins");
 var DebugLogLevel;
@@ -65,6 +66,7 @@ class VitestExecutor {
     projectName;
     options;
     logger;
+    runnerArgOptions;
     buildResultFiles = new Map();
     externalMetadata = {
         implicitBrowser: [],
@@ -79,12 +81,13 @@ class VitestExecutor {
     // Example: `Map<'/path/to/src/app.spec.ts', 'spec-src-app-spec'>`
     testFileToEntryPoint = new Map();
     entryPointToTestFile = new Map();
-    constructor(projectName, options, testEntryPointMappings, logger) {
+    constructor(projectName, options, testEntryPointMappings, logger, runnerArgOptions) {
         const level = parseInt(process.env['NG_TEST_LOG'] ?? '0', 10);
         this.debugLevel = isNaN(level) ? 0 : level;
         this.projectName = projectName;
         this.options = options;
         this.logger = logger;
+        this.runnerArgOptions = runnerArgOptions;
         this.debugLog(DebugLogLevel.Info, 'VitestExecutor instantiated.');
         this.debugLog(DebugLogLevel.Verbose, 'NormalizedUnitTestBuilderOptions:', options);
         if (testEntryPointMappings) {
@@ -237,7 +240,7 @@ class VitestExecutor {
     }
     async initializeVitest() {
         this.debugLog(DebugLogLevel.Info, 'Initializing Vitest.');
-        const { coverage, reporters, outputFile, workspaceRoot, browsers, debug, watch, browserViewport, ui, projectRoot, runnerConfig, projectSourceRoot, cacheOptions, } = this.options;
+        const { coverage, reporters, workspaceRoot, browsers, debug, watch, browserViewport, projectRoot, runnerConfig, projectSourceRoot, cacheOptions, } = this.options;
         const projectName = this.projectName;
         let vitestNodeModule;
         try {
@@ -279,13 +282,6 @@ class VitestExecutor {
             testFileToEntryPoint: this.testFileToEntryPoint,
             setupFiles: testSetupFiles,
         });
-        const debugOptions = debug
-            ? {
-                inspectBrk: true,
-                isolate: false,
-                fileParallelism: false,
-            }
-            : {};
         const externalConfigPath = runnerConfig === true
             ? await (0, configuration_1.findVitestBaseConfig)([projectRoot, workspaceRoot])
             : runnerConfig;
@@ -315,17 +311,7 @@ class VitestExecutor {
             }
         }
         this.debugLog(DebugLogLevel.Verbose, 'Included test files (after filtering):', include);
-        const vitestConfig = {
-            config: externalConfigPath,
-            root: workspaceRoot,
-            project,
-            watch,
-            ...(outputFile !== undefined ? { outputFile } : {}),
-            ...(cacheOptions.enabled ? {} : { cache: false }),
-            ...(this.options.filter !== undefined ? { testNamePattern: this.options.filter } : {}),
-            ...(typeof ui === 'boolean' ? { ui } : {}),
-            ...debugOptions,
-        };
+        const vitestConfig = (0, cli_options_1.createVitestCliOptions)(this.options, project, externalConfigPath, this.runnerArgOptions?.cli);
         const vitestServerConfig = {
             // Note `.vitest` is auto appended to the path.
             cacheDir: cacheOptions.path,
@@ -344,6 +330,7 @@ class VitestExecutor {
                     watch,
                     isolate: this.options.isolate,
                     preserveSymlinks: this.options.preserveSymlinks,
+                    runnerArgOptions: this.runnerArgOptions?.project,
                 }),
             ],
         };
